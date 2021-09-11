@@ -24,5 +24,5 @@ ADDITIONS IN 0.1.2
 - Bug Fixes
 
 ----------------------------------------------
-Thanks for checking out our Engine! Do you have any question? Text me at Jloor # 2491 on Discord!
+Thanks for checking out our Engine! Do you have any question? Text me at Jloor # 2491 or 『𝑴𝒂𝒏𝒖𝒙』#6183 on Discord!
 ----------------------------------------------

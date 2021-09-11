@@ -46,7 +46,7 @@ class StoryMenuState extends MusicBeatState
 	];
 
 	var weekNames:Array<String> = [
-		"",
+		"Go to Funk!!",
 		"Daddy Dearest",
 		"Spooky Month",
 		"PICO",
@@ -424,7 +424,6 @@ class StoryMenuState extends MusicBeatState
 			default:
 				grpWeekCharacters.members[0].offset.set(100, 100);
 				grpWeekCharacters.members[0].setGraphicSize(Std.int(grpWeekCharacters.members[0].width * 1));
-				// grpWeekCharacters.members[0].updateHitbox();
 		}
 
 		var stringThing:Array<String> = weekData[curWeek];

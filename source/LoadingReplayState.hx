@@ -48,7 +48,7 @@ class LoadingReplayState extends MusicBeatState
         addWeek(['Satin-Panties', 'High', 'Milf'], 4, ['mom']);
         addWeek(['Cocoa', 'Eggnog', 'Winter-Horrorland'], 5, ['parents-christmas', 'parents-christmas', 'monster-christmas']);
         
-        addWeek(['Senpai', 'Roses', 'Thorns'], 6, ['senpai', 'senpai', 'spirit']);
+        addWeek(['Senpai', 'Roses', 'Thorns', 'Test'], 6, ['senpai', 'senpai', 'spirit', 'bf-pixel']);
 
 
         for(i in 0...controlsStrings.length)

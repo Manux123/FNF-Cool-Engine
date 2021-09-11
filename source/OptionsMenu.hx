@@ -29,8 +29,7 @@ class OptionsMenu extends MusicBeatState
 			(FlxG.save.data.dfjk ? 'DFJK' : 'WASD') + 
 			"\n" + (FlxG.save.data.newInput ? "New input" : "Old Input") + 
 			"\n" + (FlxG.save.data.downscroll ? 'Downscroll' : 'Upscroll') + 
-			"\nSong Position " + (!FlxG.save.data.songPosition ? "off" : "on") + 
-			"\nLoad replays");
+			"\nSong Position " + (!FlxG.save.data.songPosition ? "off" : "on"));
 		
 		trace(controlsStrings);
 
@@ -38,6 +37,7 @@ class OptionsMenu extends MusicBeatState
 		menuBG.updateHitbox();
 		menuBG.screenCenter();
 		menuBG.antialiasing = true;
+		menuBG.color = 0xFF453F3F;
 		add(menuBG);
 
 		grpControls = new FlxTypedGroup<Alphabet>();

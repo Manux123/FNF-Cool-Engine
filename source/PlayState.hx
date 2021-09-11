@@ -745,13 +745,40 @@ class PlayState extends MusicBeatState
 		add(camFollow);
 
 		FlxG.camera.follow(camFollow, LOCKON, 0.04);
-		// FlxG.camera.setScrollBounds(0, FlxG.width, 0, FlxG.height);
 		FlxG.camera.zoom = defaultCamZoom;
 		FlxG.camera.focusOn(camFollow.getPosition());
 
 		FlxG.worldBounds.set(0, 0, FlxG.width, FlxG.height);
 
 		FlxG.fixedTimestep = false;
+
+		if (FlxG.save.data.songPosition)
+			{
+				songPosBG = new FlxSprite(0, strumLine.y - 15).loadGraphic(Paths.image('healthBar'));
+				if (FlxG.save.data.downscroll)
+					songPosBG.y = FlxG.height * 0.9 + 45; 
+				songPosBG.screenCenter(X);
+				songPosBG.scrollFactor.set();
+				add(songPosBG);
+	
+				if (curStage.contains("school") && FlxG.save.data.downscroll)
+					songPosBG.y -= 45;
+				
+				songPosBar = new FlxBar(songPosBG.x + 4, songPosBG.y + 4, LEFT_TO_RIGHT, Std.int(songPosBG.width - 8), Std.int(songPosBG.height - 8), this,
+					'songPositionBar', 0, 90000);
+				songPosBar.scrollFactor.set();
+				songPosBar.createFilledBar(FlxColor.GRAY, FlxColor.LIME);
+				add(songPosBar);
+	
+				var songName = new FlxText(songPosBG.x + (songPosBG.width / 2) - 20,songPosBG.y,0,SONG.song, 16);
+				if (FlxG.save.data.downscroll)
+					songName.y -= 3;
+				if (!curStage.contains("school"))
+					songName.x -= 15;
+				songName.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
+				songName.scrollFactor.set();
+				add(songName);
+			}
 
 		healthBarBG = new FlxSprite(0, FlxG.height * 0.9).loadGraphic(Paths.image('healthBar'));
 		if (FlxG.save.data.downscroll)
@@ -763,7 +790,33 @@ class PlayState extends MusicBeatState
 		healthBar = new FlxBar(healthBarBG.x + 4, healthBarBG.y + 4, RIGHT_TO_LEFT, Std.int(healthBarBG.width - 8), Std.int(healthBarBG.height - 8), this,
 		'health', 0, 2);
 		healthBar.scrollFactor.set();
-		healthBar.createFilledBar(0xFFFF0000, 0xFF66FF33);
+
+		switch (SONG.song.toLowerCase())
+		{
+			case 'tutorial':
+				healthBar.createFilledBar(0xFFa5004d, 0xFF31b0d1);
+			case 'bopeebo' | 'fresh' | 'dadbattle':
+				healthBar.createFilledBar(0xFFaf66ce, 0xFF31b0d1);
+			case 'spookeez' | 'south':
+				healthBar.createFilledBar(0xFFd57e00, 0xFF31b0d1);
+			case 'pico' | 'blammed' | 'philly':
+				healthBar.createFilledBar(0xFFb7d855, 0xFF31b0d1);
+			case 'milf' | 'satin-panties' | 'high':
+				healthBar.createFilledBar(0xFFd8558e, 0xFF31b0d1);
+			case 'cocoa' | 'eggnog':
+				healthBar.createFilledBar(0xFFaf66ce, 0xFF31b0d1);
+			case 'winter-horrorland' | 'monster':
+				healthBar.createFilledBar(0xFFf3ff6e, 0xFF31b0d1);
+			case 'senpai' | 'roses':
+				healthBar.createFilledBar(0xFFffaa6f, 0xFF7bd6f6);
+			case 'thorns':
+				healthBar.createFilledBar(0xFFff3c6e, 0xFF7bd6f6);
+			case 'test':
+				healthBar.createFilledBar(0xFF7bd6f6, 0xFF31b0d1);
+			default:
+				healthBar.createFilledBar(0xFFFF0000, 0xFF31b0d1);
+		}
+
 		// healthBar
 		add(healthBar);
 
@@ -1073,38 +1126,6 @@ class PlayState extends MusicBeatState
 			FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), 1, false);
 		FlxG.sound.music.onComplete = endSong;
 		vocals.play();
-
-		if (FlxG.save.data.songPosition)
-			{
-				remove(songPosBG);
-				remove(songPosBar);
-				remove(songName);
-
-				songPosBG = new FlxSprite(0, strumLine.y - 20).loadGraphic(Paths.image('healthBar'));
-				if (FlxG.save.data.downscroll)
-					songPosBG.y = FlxG.height * 1; 
-				songPosBG.screenCenter(X);
-				songPosBG.scrollFactor.set();
-				add(songPosBG);
-
-				if (curStage.contains("school") && FlxG.save.data.downscroll)
-					songPosBG.y -= 45;
-
-				songPosBar = new FlxBar(songPosBG.x + 4, songPosBG.y + 4, LEFT_TO_RIGHT, Std.int(songPosBG.width - 8), Std.int(songPosBG.height - 8), this,
-					'songPositionBar', 0, 90000);
-				songPosBar.scrollFactor.set();
-				songPosBar.createFilledBar(FlxColor.GRAY, FlxColor.LIME);
-				add(songPosBar);
-
-				var songName = new FlxText(songPosBG.x + (songPosBG.width / 2) - 20,songPosBG.y,0,SONG.song, 16);
-				if (FlxG.save.data.downscroll)
-					songName.y -= 3;
-				if (!curStage.contains("school"))
-					songName.x -= 15;
-				songName.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
-				songName.scrollFactor.set();
-				add(songName);
-			}
 
 		#if desktop
 		// Song duration in a float, useful for the time left feature

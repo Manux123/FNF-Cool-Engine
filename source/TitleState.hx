@@ -366,10 +366,9 @@ class TitleState extends MusicBeatState
 			// credTextShit.text = 'In association \nwith';
 			// credTextShit.screenCenter();
 			case 5:
-				createCoolText(['In association', 'with']);
+				createCoolText(['Cool Engine', 'by']);
 			case 7:
-				addMoreText('newgrounds');
-				ngSpr.visible = true;
+				addMoreText('Jloor and Manux');
 			// credTextShit.text += '\nNewgrounds';
 			case 8:
 				deleteCoolText();
@@ -396,7 +395,7 @@ class TitleState extends MusicBeatState
 				addMoreText('Night');
 			// credTextShit.text += '\nNight';
 			case 15:
-				addMoreText('Funkin'); // credTextShit.text += '\nFunkin';
+				addMoreText("Funkin"); // credTextShit.text += '\nFunkin';
 
 			case 16:
 				skipIntro();

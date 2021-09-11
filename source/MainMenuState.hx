@@ -26,12 +26,13 @@ class MainMenuState extends MusicBeatState
 	var menuItems:FlxTypedGroup<FlxSprite>;
 
 	#if !switch
-	var optionShit:Array<String> = ['story mode', 'freeplay', 'donate', 'options'];
+	var optionShit:Array<String> = ['story mode', 'freeplay', 'options'];
 	#else
 	var optionShit:Array<String> = ['story mode', 'freeplay'];
 	#end
 
 	var magenta:FlxSprite;
+	var canSnap:Array<Float> = [];
 	var camFollow:FlxObject;
 	var newInput:Bool = true;
 
@@ -84,17 +85,38 @@ class MainMenuState extends MusicBeatState
 
 		for (i in 0...optionShit.length)
 		{
-			var menuItem:FlxSprite = new FlxSprite(0, 60 + (i * 160));
+			var menuItem:FlxSprite = new FlxSprite(0, 80 + (i * 200));
 			menuItem.frames = tex;
 			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
 			menuItem.animation.play('idle');
+			canSnap[i] = -1;
+			// set the id
 			menuItem.ID = i;
-			// menuItem.screenCenter(X);
-			menuItem.x -= 350;
+			// menuItem.alpha = 0;
+
+			// placements
+			menuItem.screenCenter(X);
+			// if the id is divisible by 2
+			if (menuItem.ID % 2 == 0)
+				menuItem.x += 1000;
+			else
+				menuItem.x -= 1000;
+
+			// actually add the item
 			menuItems.add(menuItem);
 			menuItem.scrollFactor.set();
 			menuItem.antialiasing = true;
+			menuItem.updateHitbox();
+
+			/*
+				FlxTween.tween(menuItem, {alpha: 1, x: ((FlxG.width / 2) - (menuItem.width / 2))}, 0.35, {
+					ease: FlxEase.smootherStepInOut,
+					onComplete: function(tween:FlxTween)
+					{
+						canSnap[i] = 0;
+					}
+			});*/
 		}
 
 		//FlxG.camera.follow(camFollow, null, 0.06);
@@ -141,13 +163,8 @@ class MainMenuState extends MusicBeatState
 
 			if (controls.ACCEPT)
 			{
-				if (optionShit[curSelected] == 'donate')
+				if (optionShit[curSelected] == '')
 				{
-					#if linux
-					Sys.command('/usr/bin/xdg-open', ["https://ninja-muffin24.itch.io/funkin", "&"]);
-					#else
-					FlxG.openURL('https://ninja-muffin24.itch.io/funkin');
-					#end
 				}
 				else
 				{
@@ -185,8 +202,6 @@ class MainMenuState extends MusicBeatState
 										trace("Freeplay Menu Selected");
 
 									case 'options':
-										FlxTransitionableState.skipNextTransIn = true;
-										FlxTransitionableState.skipNextTransOut = true;
 										FlxG.switchState(new OptionsMenu());
 								}
 							});

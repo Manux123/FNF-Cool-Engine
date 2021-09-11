@@ -1,5 +1,8 @@
 package;
 
+#if desktop
+import Discord.DiscordClient;
+#end
 import Controls.KeyboardScheme;
 import Controls.Control;
 import Section.SwagSection;
@@ -31,10 +34,14 @@ class OptionsMenu extends MusicBeatState
 			(FlxG.save.data.dfjk ? 'DFJK' : 'WASD') + 
 			"\n" + (FlxG.save.data.newInput ? "New input" : "Old Input") + 
 			"\n" + (FlxG.save.data.downscroll ? 'Downscroll' : 'Upscroll') + 
-			"\nSong Position " + (!FlxG.save.data.songPosition ? "off" : "on") +
-			"\n" + (FlxG.save.data.miss ? "Disable Acuraccy" : "Acurracy on"));
+			"\nSong Position " + (!FlxG.save.data.songPosition ? "off" : "on"));
 		
 		trace(controlsStrings);
+
+		#if desktop
+		// Updating Discord Rich Presence
+		DiscordClient.changePresence("In the Options", null);
+		#end
 
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
 		menuBG.updateHitbox();

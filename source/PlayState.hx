@@ -826,11 +826,14 @@ class PlayState extends MusicBeatState
 		scoreTxt.x += -250;
 		add(scoreTxt);
 
-		missesTxt = new FlxText(healthBarBG.x + healthBarBG.width - 190, healthBarBG.y + 30, 0, "", 20);
-		missesTxt.setFormat(Paths.font("vcr.ttf"), 16,FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		missesTxt.scrollFactor.set();
-		missesTxt.x += -50;
-		add(missesTxt);
+		if (FlxG.save.data.miss)
+		{
+			missesTxt = new FlxText(healthBarBG.x + healthBarBG.width - 190, healthBarBG.y + 30, 0, "", 20);
+			missesTxt.setFormat(Paths.font("vcr.ttf"), 16,FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			missesTxt.scrollFactor.set();
+			missesTxt.x += -50;
+			add(missesTxt);
+		}
 
 		replayTxt = new FlxText(healthBarBG.x + healthBarBG.width / 2 - 75, healthBarBG.y + (FlxG.save.data.downscroll ? 100 : -100), 0, "REPLAY", 20);
 		replayTxt.setFormat(Paths.font("vcr.ttf"), 42, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
@@ -1909,7 +1912,7 @@ class PlayState extends MusicBeatState
 
 		var rating:FlxSprite = new FlxSprite();
 		var score:Int = 350;
-		var misses:Int = 1;
+		var misses:Int = 0;
 
 		var daRating:String = "sick";
 
@@ -1917,7 +1920,7 @@ class PlayState extends MusicBeatState
 		{
 			daRating = 'shit';
 			score = 50;
-			misses += 1;
+			misses = 1;
 			ss = false;
 			if (theFunne)
 				{
@@ -1935,11 +1938,11 @@ class PlayState extends MusicBeatState
 				{
 					score = -1000;
 					health -= 0.03;
-					misses += 1;
+					misses = 1;
 				}
 				else
 					score = 100;
-					misses += 1;
+					misses = 1;
 			ss = false;
 			bads++;
 		}
@@ -1947,15 +1950,16 @@ class PlayState extends MusicBeatState
 		{
 			daRating = 'good';
 			score = 200;
+			misses = 0;
 			if (theFunne)
 				{
 					score = 200;
-					misses += 0;
+					misses = 0;
 					//health -= 0.01;
 				}
 				else
 					score = 200;
-					misses += 0;
+					misses = 0;
 				ss = false;
 				goods++;
 		}

@@ -15,11 +15,8 @@ class OptionsData
 			if (FlxG.save.data.dfjk == null)
 				FlxG.save.data.dfjk = false;
 	
-			if (FlxG.save.data.accuracyDisplay == null)
-				FlxG.save.data.accuracyDisplay = true;
-	
-			if (FlxG.save.data.accuracyDisplay == null)
-				FlxG.save.data.accuracyDisplay = true;
+			if (FlxG.save.data.miss == null)
+				FlxG.save.data.miss = false;
 	
 			if (FlxG.save.data.offset == null)
 				FlxG.save.data.offset = 0;

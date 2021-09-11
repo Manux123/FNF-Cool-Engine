@@ -15,7 +15,7 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import lime.utils.Assets;
 
-class OptionsMenu extends MusicBeatState
+class OptionsMenuPause extends MusicBeatState
 {
 	var selector:FlxText;
 	var curSelected:Int = 0;
@@ -82,7 +82,8 @@ class OptionsMenu extends MusicBeatState
 		super.update(elapsed);
 
 			if (controls.BACK)
-				FlxG.switchState(new MainMenuState());
+				trace('switch');
+				FlxG.switchState(new PauseSubState());
 			if (controls.UP_P)
 				changeSelection(-1);
 			if (controls.DOWN_P)
@@ -140,13 +141,6 @@ class OptionsMenu extends MusicBeatState
 						ctrl.targetY = curSelected - 3;
 						ctrl.screenCenter(X);
 						grpControls.add(ctrl);
-					case 4:
-						FlxG.save.data.miss = !FlxG.save.data.miss;
-						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.miss ? "Disable Acuraccy" : "Acurracy on"), true, false);
-						ctrl.isMenuItem = true;
-						ctrl.targetY = curSelected - 4;
-						ctrl.screenCenter(X);
-						grpControls.add(ctrl);
 				}
 			}
 		FlxG.save.flush();
@@ -187,5 +181,32 @@ class OptionsMenu extends MusicBeatState
 				// item.setGraphicSize(Std.int(item.width));
 			}
 		}
+	}
+
+	public static function initSave()
+	{
+		if (FlxG.save.data.newInput == null)
+			FlxG.save.data.newInput = true;
+
+		if (FlxG.save.data.downscroll == null)
+			FlxG.save.data.downscroll = false;
+
+		if (FlxG.save.data.dfjk == null)
+			FlxG.save.data.dfjk = false;
+
+		if (FlxG.save.data.accuracyDisplay == null)
+			FlxG.save.data.accuracyDisplay = true;
+
+		if (FlxG.save.data.accuracyDisplay == null)
+			FlxG.save.data.accuracyDisplay = true;
+
+		if (FlxG.save.data.offset == null)
+			FlxG.save.data.offset = 0;
+
+		if (FlxG.save.data.offset == null)
+			FlxG.save.data.offset = 0;
+
+		if (FlxG.save.data.songPosition == null)
+			FlxG.save.data.songPosition = false;
 	}
 }

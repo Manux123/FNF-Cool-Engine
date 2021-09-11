@@ -84,6 +84,7 @@ class PlayState extends MusicBeatState
 	private var gfSpeed:Int = 1;
 	private var health:Float = 1;
 	private var combo:Int = 0;
+	public static var misses:Int = 0;
 	private var ss:Bool = false;
 
 	private var healthBarBG:FlxSprite;
@@ -767,14 +768,15 @@ class PlayState extends MusicBeatState
 		add(healthBar);
 
 		scoreTxt = new FlxText(healthBarBG.x + healthBarBG.width - 190, healthBarBG.y + 30, 0, "", 20);
-		scoreTxt.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, RIGHT);
+		scoreTxt.setFormat(Paths.font("vcr.ttf"), 16,FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		scoreTxt.scrollFactor.set();
+		scoreTxt.x += -250;
 		add(scoreTxt);
 
 		missesTxt = new FlxText(healthBarBG.x + healthBarBG.width - 190, healthBarBG.y + 30, 0, "", 20);
-		missesTxt.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, RIGHT);
+		missesTxt.setFormat(Paths.font("vcr.ttf"), 16,FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		missesTxt.scrollFactor.set();
-		missesTxt.x += 200;
+		missesTxt.x += -50;
 		add(missesTxt);
 
 		replayTxt = new FlxText(healthBarBG.x + healthBarBG.width / 2 - 75, healthBarBG.y + (FlxG.save.data.downscroll ? 100 : -100), 0, "REPLAY", 20);
@@ -1078,13 +1080,11 @@ class PlayState extends MusicBeatState
 				remove(songPosBar);
 				remove(songName);
 
-				songPosBG = new FlxSprite(0, strumLine.y - 15).loadGraphic(Paths.image('bgSong'));
+				songPosBG = new FlxSprite(0, strumLine.y - 20).loadGraphic(Paths.image('healthBar'));
 				if (FlxG.save.data.downscroll)
-					songPosBG.y = FlxG.height * 0.9 + 45; 
+					songPosBG.y = FlxG.height * 1; 
 				songPosBG.screenCenter(X);
 				songPosBG.scrollFactor.set();
-				if (FlxG.save.data.downscroll)
-					songPosBG.y = FlxG.height * 0.9 + 45; 
 				add(songPosBG);
 
 				if (curStage.contains("school") && FlxG.save.data.downscroll)
@@ -2265,21 +2265,13 @@ class PlayState extends MusicBeatState
 				gf.playAnim('sad');
 			}
 			combo = 0;
+			misses++;
 
 			songScore -= 10;
-			songMisses += 1;
 
 			FlxG.sound.play(Paths.soundRandom('missnote', 1, 3), FlxG.random.float(0.1, 0.2));
 			// FlxG.sound.play(Paths.sound('missnote1'), 1, false);
 			// FlxG.log.add('played imss note');
-
-			boyfriend.stunned = true;
-
-			// get stunned for 5 seconds
-			new FlxTimer().start(5 / 60, function(tmr:FlxTimer)
-			{
-				boyfriend.stunned = false;
-			});
 
 			switch (direction)
 			{

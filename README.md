@@ -1,6 +1,6 @@
 # Friday Night Funkin: Cool Engine
 
-This is the repository for Friday Night Funkin: Cool Engine, a game originally made for Ludum Dare 47 "Stuck In a Loop".
+**This is the repository for Friday Night Funkin: Cool Engine, this is a modification of the original Friday Night Funkin source that includes new options and better graphics :D**
 
 Play the Ludum Dare prototype original here: https://ninja-muffin24.itch.io/friday-night-funkin
 Play the Newgrounds original one here: https://www.newgrounds.com/portal/view/770371

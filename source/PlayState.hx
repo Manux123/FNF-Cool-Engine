@@ -124,6 +124,7 @@ class PlayState extends MusicBeatState
 	var songMisses:Int = 0;
 	var scoreTxt:FlxText;
 	var missesTxt:FlxText;
+	var replayTxt:FlxText;
 
 	public static var campaignScore:Int = 0;
 
@@ -1798,7 +1799,7 @@ class PlayState extends MusicBeatState
 		if (SONG.validScore)
 		{
 			#if !switch
-			Highscore.saveScore(SONG.song, songScore, songMisses, storyDifficulty);
+			Highscore.saveScore(SONG.song, songScore, storyDifficulty);
 			#end
 		}
 

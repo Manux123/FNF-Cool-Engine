@@ -797,12 +797,6 @@ class PlayState extends MusicBeatState
 		// healthBar
 		add(healthBar);
 
-		//Versión del Cool Engine facherooo
-		var coolVersion = new FlxText(4,FlxG.height - 4,0,SONG.song + " " + (storyDifficulty == 2 ? "Hard" : storyDifficulty == 1 ? "Normal" : "Easy") + " - CoolEngine " + MainMenuState.coolEngineVer, 16);
-		coolVersion.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
-		coolVersion.scrollFactor.set();
-		add(coolVersion);
-
 		scoreTxt = new FlxText(healthBarBG.x + healthBarBG.width / 2 - 150, healthBarBG.y + 50, 0, "", 20);
 		if (!FlxG.save.data.accuracyDisplay)
 			scoreTxt.x = healthBarBG.x + healthBarBG.width / 2;

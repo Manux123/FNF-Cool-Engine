@@ -31,12 +31,11 @@ class MainMenuState extends MusicBeatState
 	var optionShit:Array<String> = ['story mode', 'freeplay'];
 	#end
 
-	public static var coolEngineVer:String = "0.1.3";
-
 	var magenta:FlxSprite;
 	var canSnap:Array<Float> = [];
 	var camFollow:FlxObject;
 	var newInput:Bool = true;
+	var bf:FlxSprite;
 
 	override function create()
 	{
@@ -54,6 +53,17 @@ class MainMenuState extends MusicBeatState
 		}
 
 		persistentUpdate = persistentDraw = true;
+
+		bf = new FlxSprite();
+		bf.frames = Paths.getSparrowAtlas('BOYFRIEND');
+		bf.animation.addByPrefix('idle', "BF idle dance", 24);
+		bf.animation.play('idle');
+		bf.updateHitbox();
+		bf.antialiasing = true;
+		bf.screenCenter();
+		bf.x = 800;
+		bf.y = 315;
+		add(bf);
 
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBG'));
 		bg.scrollFactor.x = 0;
@@ -124,7 +134,7 @@ class MainMenuState extends MusicBeatState
 
 		//FlxG.camera.follow(camFollow, null, 0.06);
 
-		var versionShit:FlxText = new FlxText(5, FlxG.height - 18, 0, "Cool Engine BETA - v" + Application.current.meta.get('version'), 12);
+		var versionShit:FlxText = new FlxText(5, FlxG.height - 18, 0, "FNF Cool Engine BETA - v" + Application.current.meta.get('version'), 12);
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);

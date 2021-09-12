@@ -31,6 +31,8 @@ class MainMenuState extends MusicBeatState
 	var optionShit:Array<String> = ['story mode', 'freeplay'];
 	#end
 
+	public static var coolEngineVer:String = "0.1.3";
+
 	var magenta:FlxSprite;
 	var canSnap:Array<Float> = [];
 	var camFollow:FlxObject;

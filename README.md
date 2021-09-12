@@ -16,12 +16,10 @@
 
 ----------------------------------------------
 
-ADDITIONS IN 0.1.2
+ADDITIONS IN 0.1.3
 
-- Our logo!!
-- New designs
-- HealthBar Colors
-- Bug Fixes
+- New Menu
+- Bugs Fixes
 
 ----------------------------------------------
 Thanks for checking out our Engine! Do you have any question? Text me at Jloor # 2491 or 『𝑴𝒂𝒏𝒖𝒙』#6183 on Discord!

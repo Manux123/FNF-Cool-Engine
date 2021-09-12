@@ -29,7 +29,7 @@ class OptionsMenu extends MusicBeatState
 	var versionShit:FlxText;
 	override function create()
 	{
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
+		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 		controlsStrings = CoolUtil.coolStringFile(
 			(FlxG.save.data.dfjk ? 'DFJK' : 'WASD') + 
 			"\n" + (FlxG.save.data.newInput ? "Ghost Tapping On" : "Ghost Tapping Off") + 
@@ -50,7 +50,7 @@ class OptionsMenu extends MusicBeatState
 		menuBG.color = 0xFF453F3F;
 		add(menuBG);
 
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('optionsfront'));
+		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/optionsfront'));
 		bg.antialiasing = true;
 		add(bg);
 
@@ -67,7 +67,7 @@ class OptionsMenu extends MusicBeatState
 		}
 
 		var optionsBG:FlxSprite = new FlxSprite();
-		optionsBG.frames = Paths.getSparrowAtlas('menuoptions');
+		optionsBG.frames = Paths.getSparrowAtlas('menu/menuoptions');
 	    optionsBG.animation.addByPrefix('idle', 'options basic', 24, false);
 	    optionsBG.animation.play('idle');
 	    optionsBG.antialiasing = true;

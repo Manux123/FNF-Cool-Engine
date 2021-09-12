@@ -27,6 +27,7 @@ class FreeplayState extends MusicBeatState
 	var diffText:FlxText;
 	var lerpScore:Int = 0;
 	var intendedScore:Int = 0;
+	var bf:FlxSprite;
 
 	private var grpSongs:FlxTypedGroup<Alphabet>;
 	private var curPlaying:Bool = false;
@@ -77,6 +78,17 @@ class FreeplayState extends MusicBeatState
 
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGBlue'));
 		add(bg);
+
+		bf = new FlxSprite();
+        bf.frames = Paths.getSparrowAtlas('BOYFRIEND');
+        bf.animation.addByPrefix('idle', "BF idle dance", 24);
+        bf.animation.play('idle');
+        bf.updateHitbox();
+        bf.antialiasing = true;
+        bf.screenCenter();
+        bf.x = 800;
+        bf.y = 315;
+        add(bf);
 
 		grpSongs = new FlxTypedGroup<Alphabet>();
 		add(grpSongs);

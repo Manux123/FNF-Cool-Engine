@@ -22,6 +22,7 @@ class OptionsMenu extends MusicBeatState
 {
 	var selector:FlxText;
 	var curSelected:Int = 0;
+	var menuBG:FlxSprite;
 
 	var controlsStrings:Array<String> = [];
 
@@ -29,10 +30,10 @@ class OptionsMenu extends MusicBeatState
 	var versionShit:FlxText;
 	override function create()
 	{
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
+		menuBG = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 		controlsStrings = CoolUtil.coolStringFile(
 			(FlxG.save.data.dfjk ? 'DFJK' : 'WASD') + 
-			"\n" + (FlxG.save.data.newInput ? "Ghost Tapping On" : "Ghost Tapping Off") + 
+			"\n" + (FlxG.save.data.newInput ? "Kade Engine Input On" : "Input Traditional") + 
 			"\n" + (FlxG.save.data.downscroll ? 'Downscroll' : 'Upscroll') + 
 			"\nAccuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on"));
 		
@@ -49,10 +50,6 @@ class OptionsMenu extends MusicBeatState
 		menuBG.antialiasing = true;
 		menuBG.color = 0xFF453F3F;
 		add(menuBG);
-
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/optionsfront'));
-		bg.antialiasing = true;
-		add(bg);
 
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
@@ -72,7 +69,6 @@ class OptionsMenu extends MusicBeatState
 	    optionsBG.animation.play('idle');
 	    optionsBG.antialiasing = true;
 		optionsBG.screenCenter(X);
-		optionsBG.y -= 450;
 	    add(optionsBG);
 
 		versionShit = new FlxText(5, FlxG.height - 18, 0, "Offset (Left, Right): " + FlxG.save.data.offset, 12);
@@ -118,7 +114,7 @@ class OptionsMenu extends MusicBeatState
 						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.dfjk ? 'DFJK' : 'WASD'), true, false);
 						ctrl.isMenuItem = true;
 						ctrl.targetY = curSelected;
-						ctrl.screenCenter(X);
+						menuBG.color = 0xFFa0a0a0;
 						grpControls.add(ctrl);
 						if (FlxG.save.data.dfjk)
 							controls.setKeyboardScheme(KeyboardScheme.Solo, true);
@@ -127,23 +123,24 @@ class OptionsMenu extends MusicBeatState
 						
 					case 1:
 						FlxG.save.data.newInput = !FlxG.save.data.newInput;
-						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.newInput ? "Ghost Tapping On" : "Ghost Tapping Off"), true, false);
+						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.newInput ? "Kade Engine Input On" : "Input Traditional"), true, false);
 						ctrl.isMenuItem = true;
 						ctrl.targetY = curSelected - 1;
-						ctrl.screenCenter(X);
+						menuBG.color = 0xFF7a7a7a;
 						grpControls.add(ctrl);
 					case 2:
 						FlxG.save.data.downscroll = !FlxG.save.data.downscroll;
 						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.downscroll ? 'Downscroll' : 'Upscroll'), true, false);
 						ctrl.isMenuItem = true;
 						ctrl.targetY = curSelected - 2;
-						ctrl.screenCenter(X);
+						menuBG.color = 0xFF878787;
 						grpControls.add(ctrl);
 					case 3:
 						FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay;
 						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, "Accuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on"), true, false);
 						ctrl.isMenuItem = true;
 						ctrl.targetY = curSelected - 3;
+						menuBG.color = 0xFFadadad;
 						grpControls.add(ctrl);
 				}
 			}

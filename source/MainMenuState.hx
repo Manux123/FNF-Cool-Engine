@@ -96,7 +96,7 @@ class MainMenuState extends MusicBeatState
 			// menuItem.alpha = 0;
 
 			// placements
-			menuItem.screenCenter(X);
+			// menuItem.screenCenter(X);
 			// if the id is divisible by 2
 			if (menuItem.ID % 2 == 0)
 				menuItem.x += 1000;

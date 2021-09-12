@@ -32,7 +32,7 @@ class OptionsMenu extends MusicBeatState
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		controlsStrings = CoolUtil.coolStringFile(
 			(FlxG.save.data.dfjk ? 'DFJK' : 'WASD') + 
-			"\n" + (FlxG.save.data.newInput ? "New input" : "Old Input") + 
+			"\n" + (FlxG.save.data.newInput ? "Kade Engine Input" : "Input Traditional") + 
 			"\n" + (FlxG.save.data.downscroll ? 'Downscroll' : 'Upscroll') + 
 			"\nSong Position " + (!FlxG.save.data.songPosition ? "off" : "on"));
 		
@@ -128,7 +128,7 @@ class OptionsMenu extends MusicBeatState
 						
 					case 1:
 						FlxG.save.data.newInput = !FlxG.save.data.newInput;
-						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.newInput ? "New input" : "Old Input"), true, false);
+						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.newInput ? "Kade Engine Input" : "Input Traditional"), true, false);
 						ctrl.isMenuItem = true;
 						ctrl.targetY = curSelected - 1;
 						ctrl.screenCenter(X);
@@ -145,13 +145,6 @@ class OptionsMenu extends MusicBeatState
 						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, "Song Position " + (!FlxG.save.data.songPosition ? "off" : "on"), true, false);
 						ctrl.isMenuItem = true;
 						ctrl.targetY = curSelected - 3;
-						ctrl.screenCenter(X);
-						grpControls.add(ctrl);
-					case 4:
-						FlxG.save.data.miss = !FlxG.save.data.miss;
-						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.miss ? "Disable Acuraccy" : "Acurracy on"), true, false);
-						ctrl.isMenuItem = true;
-						ctrl.targetY = curSelected - 4;
 						ctrl.screenCenter(X);
 						grpControls.add(ctrl);
 				}

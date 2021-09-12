@@ -694,7 +694,7 @@ class PlayState extends MusicBeatState
 				gf.x += 180;
 				gf.y += 300;
 			case 'stagetest':
-				dad.y += 600;
+				dad.y += 510;
 				dad.x += 250;
 		}
 

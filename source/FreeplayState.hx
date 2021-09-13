@@ -80,7 +80,7 @@ class FreeplayState extends MusicBeatState
 		add(bg);
 
 		bf = new FlxSprite();
-        bf.frames = Paths.getSparrowAtlas('BOYFRIEND');
+        bf.frames = Paths.getSparrowAtlas('menu/BOYFRIEND');
         bf.animation.addByPrefix('idle', "BF idle dance", 24);
         bf.animation.play('idle');
         bf.updateHitbox();

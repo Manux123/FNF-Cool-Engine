@@ -54,17 +54,6 @@ class MainMenuState extends MusicBeatState
 
 		persistentUpdate = persistentDraw = true;
 
-		bf = new FlxSprite();
-		bf.frames = Paths.getSparrowAtlas('BOYFRIEND');
-		bf.animation.addByPrefix('idle', "BF idle dance", 24);
-		bf.animation.play('idle');
-		bf.updateHitbox();
-		bf.antialiasing = true;
-		bf.screenCenter();
-		bf.x = 800;
-		bf.y = 315;
-		add(bf);
-
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBG'));
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0.18;

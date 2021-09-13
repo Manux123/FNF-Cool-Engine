@@ -108,7 +108,6 @@ class PlayState extends MusicBeatState
 	private var totalPlayed:Int = 0;
 	private var ss:Bool = false;
 
-
 	private var healthBarBG:FlxSprite;
 	private var healthBar:FlxBar;
 	private var songPositionBar:Float = 0;
@@ -2099,6 +2098,7 @@ class PlayState extends MusicBeatState
 			}
 		}
 
+		
 	public function NearlyEquals(value1:Float, value2:Float, unimportantDifference:Float = 10):Bool
 		{
 			return Math.abs(FlxMath.roundDecimal(value1, 1) - FlxMath.roundDecimal(value2, 1)) < unimportantDifference;
@@ -2413,9 +2413,95 @@ class PlayState extends MusicBeatState
 			{
 				gf.playAnim('sad');
 			}
-			combo = 0;
-			misses++;
 
+			var seperatedScore:Array<Int> = [];
+
+			for (i in seperatedScore)
+				{
+					var daLoop:Int = 0;
+					var pixelShitPart1:String = "";
+					var pixelShitPart2:String = '';
+
+					var placement:String = Std.string(combo);
+
+					var coolText:FlxText = new FlxText(0, 0, 0, placement, 32);
+					coolText.screenCenter();
+					coolText.x = FlxG.width * 0.55;
+
+					var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(pixelShitPart1 + 'combo' + pixelShitPart2));
+					comboSpr.screenCenter();
+					comboSpr.x = coolText.x;
+					comboSpr.y += 200;
+					comboSpr.acceleration.y = 600;
+					comboSpr.velocity.y -= 150;
+
+					var numScore:FlxSprite = new FlxSprite().loadGraphic(Paths.image(pixelShitPart1 + 'num' + Std.int(i) + pixelShitPart2));
+
+					var numScoreNegative:FlxSprite = new FlxSprite().loadGraphic(Paths.image(pixelShitPart1 + 'num-' + pixelShitPart2));
+					numScore.screenCenter();
+
+					numScoreNegative.screenCenter();
+
+					numScore.x = coolText.x + (43 * daLoop) - 90;
+					numScoreNegative.x = coolText.x + (43 * daLoop) - 90;
+					numScoreNegative.x -= 10;
+					numScore.y += 80 + 200;
+					numScoreNegative.y += 80 + 200;
+		
+					if (!curStage.startsWith('school'))
+					{
+						numScore.antialiasing = true;
+
+						numScoreNegative.antialiasing = true;
+
+						numScore.setGraphicSize(Std.int(numScore.width * 0.5));
+
+						numScoreNegative.setGraphicSize(Std.int(numScore.width * 0.5));
+					}
+					else
+					{
+						numScore.setGraphicSize(Std.int(numScore.width * daPixelZoom));
+
+						numScoreNegative.setGraphicSize(Std.int(numScore.width * daPixelZoom));
+					}
+					numScore.updateHitbox();
+
+					numScoreNegative.updateHitbox();
+		
+					numScore.acceleration.y = FlxG.random.int(200, 300);
+
+					numScoreNegative.acceleration.y = FlxG.random.int(200, 300);
+
+					numScore.velocity.y -= FlxG.random.int(140, 160);
+					numScore.velocity.x = FlxG.random.float(-5, 5);
+
+					numScoreNegative.velocity.y -= FlxG.random.int(140, 160);
+					numScoreNegative.velocity.x = FlxG.random.float(-5, 5);
+		
+					if (combo >= 10 || combo == 0)
+						add(numScore);
+						add(numScoreNegative);
+		
+					FlxTween.tween(numScore, {alpha: 0}, 0.2, {
+						onComplete: function(tween:FlxTween)
+						{
+							numScore.destroy();
+						},
+						startDelay: Conductor.crochet * 0.002
+					});
+
+					FlxTween.tween(numScoreNegative, {alpha: 0}, 0.2, {
+						onComplete: function(tween:FlxTween)
+						{
+							numScoreNegative.destroy();
+						},
+						startDelay: Conductor.crochet * 0.002
+					});
+
+					combo = 0;
+					misses++;
+				}
+			
 			songScore -= 10;
 
 			FlxG.sound.play(Paths.soundRandom('missnote', 1, 3), FlxG.random.float(0.1, 0.2));

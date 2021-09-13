@@ -41,7 +41,7 @@ class MainMenuState extends MusicBeatState
 	{
 		#if desktop
 		// Updating Discord Rich Presence
-		DiscordClient.changePresence("In the Menus", null);
+		DiscordClient.changePresence("In the Menu", null);
 		#end
 
 		transIn = FlxTransitionableState.defaultTransIn;
@@ -91,15 +91,10 @@ class MainMenuState extends MusicBeatState
 			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
 			menuItem.animation.play('idle');
-			menuItem.x -= 600;
+			menuItem.x += 300;
 			canSnap[i] = -1;
-			// set the id
 			menuItem.ID = i;
-			// menuItem.alpha = 0;
-
-			// placements
-			// menuItem.screenCenter(X);
-			// if the id is divisible by 2
+			
 			if (menuItem.ID % 2 == 0)
 				menuItem.x += 1000;
 			else
@@ -111,14 +106,6 @@ class MainMenuState extends MusicBeatState
 			menuItem.antialiasing = true;
 			menuItem.updateHitbox();
 
-			/*
-				FlxTween.tween(menuItem, {alpha: 1, x: ((FlxG.width / 2) - (menuItem.width / 2))}, 0.35, {
-					ease: FlxEase.smootherStepInOut,
-					onComplete: function(tween:FlxTween)
-					{
-						canSnap[i] = 0;
-					}
-			});*/
 		}
 
 		//FlxG.camera.follow(camFollow, null, 0.06);

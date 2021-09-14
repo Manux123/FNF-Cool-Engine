@@ -25,11 +25,7 @@ class OptionsMenu extends MusicBeatState
 	var menuBG:FlxSprite;
 
 	var controlsStrings:Array<String> = [];
-<<<<<<< Updated upstream
 	public static var coolColors:Array<Int> = [];
-=======
-	var coolColors:Array<Int> = [];
->>>>>>> Stashed changes
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
 	var versionShit:FlxText;

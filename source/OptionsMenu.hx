@@ -25,7 +25,11 @@ class OptionsMenu extends MusicBeatState
 	var menuBG:FlxSprite;
 
 	var controlsStrings:Array<String> = [];
+<<<<<<< Updated upstream
 	public static var coolColors:Array<Int> = [];
+=======
+	var coolColors:Array<Int> = [];
+>>>>>>> Stashed changes
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
 	var versionShit:FlxText;
@@ -33,8 +37,7 @@ class OptionsMenu extends MusicBeatState
 	{
 		menuBG = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 		controlsStrings = CoolUtil.coolStringFile(
-			(FlxG.save.data.dfjk ? 'DFJK' : 'WASD') + 
-			"\n" + (FlxG.save.data.newInput ? "Kade Engine Input On" : "Input Traditional") + 
+			("\n" + (FlxG.save.data.newInput ? "Kade Engine Input On" : "Input Traditional")) + 
 			"\n" + (FlxG.save.data.downscroll ? 'Downscroll' : 'Upscroll') + 
 			"\nAccuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on"));
 		
@@ -90,7 +93,7 @@ class OptionsMenu extends MusicBeatState
 		super.update(elapsed);
 
 			if (controls.BACK)
-				FlxG.switchState(new MainMenuState());
+				FlxG.switchState(new SectionsOptions());
 			if (controls.UP_P)
 				changeSelection(-1);
 			if (controls.DOWN_P)
@@ -116,37 +119,22 @@ class OptionsMenu extends MusicBeatState
 				switch(curSelected)
 				{
 					case 0:
-						FlxG.save.data.dfjk = !FlxG.save.data.dfjk;
-						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.dfjk ? 'DFJK' : 'WASD'), true, false);
-						ctrl.isMenuItem = true;
-						ctrl.targetY = curSelected;
-						menuBG.color = 0xFFa0a0a0;
-						grpControls.add(ctrl);
-						if (FlxG.save.data.dfjk)
-							controls.setKeyboardScheme(KeyboardScheme.Solo, true);
-						else
-							controls.setKeyboardScheme(KeyboardScheme.Duo(true), true);
-						
-					case 1:
 						FlxG.save.data.newInput = !FlxG.save.data.newInput;
 						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.newInput ? "Kade Engine Input On" : "Input Traditional"), true, false);
 						ctrl.isMenuItem = true;
 						ctrl.targetY = curSelected - 1;
-						menuBG.color = 0xFF7a7a7a;
-						grpControls.add(ctrl);
-					case 2:
+						grpControls.add(ctrl);		
+					case 1:
 						FlxG.save.data.downscroll = !FlxG.save.data.downscroll;
 						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.downscroll ? 'Downscroll' : 'Upscroll'), true, false);
 						ctrl.isMenuItem = true;
 						ctrl.targetY = curSelected - 2;
-						menuBG.color = 0xFF878787;
 						grpControls.add(ctrl);
-					case 3:
+					case 2:
 						FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay;
 						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, "Accuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on"), true, false);
 						ctrl.isMenuItem = true;
 						ctrl.targetY = curSelected - 3;
-						menuBG.color = 0xFFadadad;
 						grpControls.add(ctrl);
 				}
 			}

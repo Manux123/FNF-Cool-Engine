@@ -35,7 +35,6 @@ class MainMenuState extends MusicBeatState
 	var canSnap:Array<Float> = [];
 	var camFollow:FlxObject;
 	var newInput:Bool = true;
-	var bf:FlxSprite;
 
 	override function create()
 	{
@@ -200,7 +199,7 @@ class MainMenuState extends MusicBeatState
 										trace("Freeplay Menu Selected");
 
 									case 'options':
-										FlxG.switchState(new OptionsMenu());
+										FlxG.switchState(new SectionsOptions());
 								}
 							});
 						}

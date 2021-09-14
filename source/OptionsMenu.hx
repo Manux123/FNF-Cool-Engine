@@ -62,6 +62,11 @@ class OptionsMenu extends MusicBeatState
 			grpControls.add(controlLabel);
 			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
 		}
+		var colorsList = CoolUtil.coolTextFile(Paths.txt('optionsColors'));
+		for (i in 0...colorsList.length)
+		{
+			coolColors.push(Std.parseInt(colorsList[i]));
+		}
 
 		var optionsBG:FlxSprite = new FlxSprite();
 		optionsBG.frames = Paths.getSparrowAtlas('menu/menuoptions');

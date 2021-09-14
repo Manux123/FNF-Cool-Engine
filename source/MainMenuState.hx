@@ -63,6 +63,15 @@ class MainMenuState extends MusicBeatState
 		bg.antialiasing = true;
 		add(bg);
 
+		var light:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/light_menu'));
+		light.scrollFactor.x = 0;
+		light.scrollFactor.y = 0.18;
+		light.setGraphicSize(Std.int(light.width * 1.1));
+		light.updateHitbox();
+		light.screenCenter();
+		light.antialiasing = true;
+		add(light);
+
 		camFollow = new FlxObject(0, 0, 1, 1);
 		add(camFollow);
 

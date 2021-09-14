@@ -311,13 +311,20 @@ class TitleState extends MusicBeatState
 		}
 	}
 
-	function addMoreText(text:String)
+	function addMoreText(text:String, yOffset:Float = 0)
 	{
 		var coolText:Alphabet = new Alphabet(0, 0, text, true, false);
 		coolText.screenCenter(X);
-		coolText.y += (textGroup.length * 60) + 200;
+		if (yOffset != 0)
+			coolText.y -= yOffset;
 		credGroup.add(coolText);
 		textGroup.add(coolText);
+		
+		FlxTween.tween(coolText,{y: coolText.y + (textGroup.length * 60) + 200},0.4,{ease: FlxEase.expoInOut, onComplete: function(flxTween:FlxTween) 
+			{ 
+			}});
+
+
 	}
 
 	function deleteCoolText()
@@ -342,6 +349,8 @@ class TitleState extends MusicBeatState
 			gfDance.animation.play('danceLeft');
 
 		FlxG.log.add(curBeat);
+
+		FlxTween.tween(FlxG.camera, {zoom:1.02}, 0.3, {ease: FlxEase.quadOut, type: BACKWARD});
 
 		switch (curBeat)
 		{

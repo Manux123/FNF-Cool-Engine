@@ -10,6 +10,7 @@ import flixel.addons.display.FlxGridOverlay;
 import flixel.addons.transition.FlxTransitionableState;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
+import flixel.tweens.FlxEase;
 import StoryMenuState;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
@@ -47,6 +48,7 @@ class FreeplayState extends MusicBeatState
 	var songs:Array<SongMetadata> = [];
 
 	var selector:FlxText;
+	var disc:FlxSprite;
 	private static var curSelected:Int = 0;
 	private static var curDifficulty:Int = 1;
 
@@ -97,13 +99,7 @@ class FreeplayState extends MusicBeatState
 			coolColors.push(Std.parseInt(colorsList[i]));
 		}
 
-		/* 
-			if (FlxG.sound.music != null)
-			{
-				if (!FlxG.sound.music.playing)
-					FlxG.sound.playMusic(Paths.music('freakyMenu'));
-			}
-		 */
+		// Jloor god B)
 
 		#if desktop
 		// Updating Discord Rich Presence
@@ -289,6 +285,22 @@ class FreeplayState extends MusicBeatState
 			vocals.looped = true;
 			vocals.volume = 0.7;
 			instPlaying = curSelected;
+
+			disc = new FlxSprite();
+			disc.frames = Paths.getSparrowAtlas('freeplay/record player freeplay'); // made by zero B) is very cool.
+			disc.antialiasing = true;
+			disc.animation.addByPrefix('idle', 'disco', 24);
+			disc.animation.play('idle');
+			disc.x += 750;
+			disc.y += 280;
+			disc.setGraphicSize(Std.int(disc.width * 0.5));
+			disc.updateHitbox();
+			add(disc);
+
+				FlxTween.tween(disc, {y: disc.y + 170}, 2.9, {ease: FlxEase.quadInOut, type: PINGPONG});
+
+			// I speak spanish ._.XD
+			// code made by Manux Bv
 		}
 		else #end if (accepted)
 		{

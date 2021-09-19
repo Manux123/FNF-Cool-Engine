@@ -297,7 +297,7 @@ class FreeplayState extends MusicBeatState
 			disc.updateHitbox();
 			add(disc);
 
-				FlxTween.tween(disc, {y: disc.y + 170}, 2.9, {ease: FlxEase.quadInOut, type: PINGPONG});
+				// FlxTween.tween(disc, {y: disc.y + 170}, 2.9, {ease: FlxEase.quadInOut, type: PINGPONG});
 
 			// I speak spanish ._.XD
 			// code made by Manux Bv

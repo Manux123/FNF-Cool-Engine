@@ -17,11 +17,10 @@
 
 ----------------------------------------------
 
-ADDITIONS IN 0.1.4
+ADDITIONS IN 0.1.5
 
-- New Story Menu
-- New Freeplay Menu
-- +FPS
+- New Sections Options
+- New Controls
 - Bugs Fixes
 
 ----------------------------------------------

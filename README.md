@@ -17,11 +17,13 @@
 
 ----------------------------------------------
 
-ADDITIONS IN 0.1.5
+ADDITIONS IN 0.1.6 (NO FINAL)
 
-- New Sections Options
-- New Controls
-- Bugs Fixes
+- Improved sorting of folders
+
+COMING SOON IN THE 0.1.6 FINAL
+
+- Playstate.hx more orderly
 
 ----------------------------------------------
 Thanks for checking out our Engine! Do you have any question? Text me at Jloor # 2491 or 『𝑴𝒂𝒏𝒖𝒙』#6183 on Discord!

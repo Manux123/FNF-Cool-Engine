@@ -61,7 +61,8 @@ class FreeplayState extends MusicBeatState
 		null,	
 		null,
 		null,
-		null	
+		null,
+		null
 	];
 
 	var scoreBG:FlxSprite;

@@ -539,13 +539,13 @@ class PlayState extends MusicBeatState
 		{
 			defaultCamZoom = 0.9;
 			curStage = 'stagetest';
-			var bg:FlxSprite = new FlxSprite(-600, -200).loadGraphic(Paths.image('stageback'));
+			var bg:FlxSprite = new FlxSprite(-600, -200).loadGraphic(Paths.image('backgrounds/week1/stageback'));
 			bg.antialiasing = true;
 			bg.scrollFactor.set(0.9, 0.9);
 			bg.active = false;
 			add(bg);
 
-			var stageFront:FlxSprite = new FlxSprite(-650, 600).loadGraphic(Paths.image('stagefront'));
+			var stageFront:FlxSprite = new FlxSprite(-650, 600).loadGraphic(Paths.image('backgrounds/week1/stagefront'));
 			stageFront.setGraphicSize(Std.int(stageFront.width * 1.1));
 			stageFront.updateHitbox();
 			stageFront.antialiasing = true;
@@ -553,7 +553,7 @@ class PlayState extends MusicBeatState
 			stageFront.active = false;
 			add(stageFront);
 
-			var stageCurtains:FlxSprite = new FlxSprite(-500, -300).loadGraphic(Paths.image('stagecurtains'));
+			var stageCurtains:FlxSprite = new FlxSprite(-500, -300).loadGraphic(Paths.image('backgrounds/week1/stagecurtains'));
 			stageCurtains.setGraphicSize(Std.int(stageCurtains.width * 0.9));
 			stageCurtains.updateHitbox();
 			stageCurtains.antialiasing = true;
@@ -566,13 +566,13 @@ class PlayState extends MusicBeatState
 		{
 			defaultCamZoom = 0.9;
 			curStage = 'stage';
-			var bg:FlxSprite = new FlxSprite(-600, -200).loadGraphic(Paths.image('stageback'));
+			var bg:FlxSprite = new FlxSprite(-600, -200).loadGraphic(Paths.image('backgrounds/week1/stageback'));
 			bg.antialiasing = true;
 			bg.scrollFactor.set(0.9, 0.9);
 			bg.active = false;
 			add(bg);
 
-			var stageFront:FlxSprite = new FlxSprite(-650, 600).loadGraphic(Paths.image('stagefront'));
+			var stageFront:FlxSprite = new FlxSprite(-650, 600).loadGraphic(Paths.image('backgrounds/week1/stagefront'));
 			stageFront.setGraphicSize(Std.int(stageFront.width * 1.1));
 			stageFront.updateHitbox();
 			stageFront.antialiasing = true;
@@ -580,7 +580,7 @@ class PlayState extends MusicBeatState
 			stageFront.active = false;
 			add(stageFront);
 
-			var stageCurtains:FlxSprite = new FlxSprite(-500, -300).loadGraphic(Paths.image('stagecurtains'));
+			var stageCurtains:FlxSprite = new FlxSprite(-500, -300).loadGraphic(Paths.image('backgrounds/week1/stagecurtains'));
 			stageCurtains.setGraphicSize(Std.int(stageCurtains.width * 0.9));
 			stageCurtains.updateHitbox();
 			stageCurtains.antialiasing = true;
@@ -754,7 +754,7 @@ class PlayState extends MusicBeatState
 
 		FlxG.fixedTimestep = false;
 
-		healthBarBG = new FlxSprite(0, FlxG.height * 0.9).loadGraphic(Paths.image('healthBar'));
+		healthBarBG = new FlxSprite(0, FlxG.height * 0.9).loadGraphic(Paths.image('UI/healthBar'));
 		if (FlxG.save.data.downscroll)
 			healthBarBG.y = 50;
 		healthBarBG.screenCenter(X);
@@ -1258,7 +1258,7 @@ class PlayState extends MusicBeatState
 					}
 
 				default:
-					babyArrow.frames = Paths.getSparrowAtlas('NOTE_assets');
+					babyArrow.frames = Paths.getSparrowAtlas('UI/NOTE_assets');
 					babyArrow.animation.addByPrefix('green', 'arrowUP');
 					babyArrow.animation.addByPrefix('blue', 'arrowDOWN');
 					babyArrow.animation.addByPrefix('purple', 'arrowLEFT');
@@ -1862,18 +1862,46 @@ class PlayState extends MusicBeatState
 	
 			var daRating:String = "sick";
 				
-			if (noteDiff > Conductor.safeZoneOffset * 2)
+			if (noteDiff > Conductor.safeZoneOffset * 3)
+				{
+					daRating = 'miss';
+					totalNotesHit -= 3;
+					ss = false;
+					if (theFunne)
+					{
+						score = -3000;
+						combo = 0;
+						misses++;
+						health -= 0.2;
+					}
+					shits++;
+				}
+				else if (noteDiff < Conductor.safeZoneOffset * -3)
+				{
+					daRating = 'miss';
+					totalNotesHit -= 3;
+					if (theFunne)
+					{
+						score = -3000;
+						combo = 0;
+						misses++;
+						health -= 0.2;
+					}
+					ss = false;
+					shits++;
+				}
+				else if (noteDiff > Conductor.safeZoneOffset * 2)
 				{
 					daRating = 'shit';
 					totalNotesHit -= 2;
 					ss = false;
 					if (theFunne)
-						{
-							score = -3000;
-							combo = 0;
-							misses++;
-							health -= 0.2;
-						}
+					{
+						score = -3000;
+						combo = 0;
+						misses++;
+						health -= 0.2;
+					}
 					shits++;
 				}
 				else if (noteDiff < Conductor.safeZoneOffset * -2)

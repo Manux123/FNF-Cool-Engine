@@ -580,6 +580,15 @@ class PlayState extends MusicBeatState
 			stageFront.active = false;
 			add(stageFront);
 
+			var stagelight:FlxSprite = new FlxSprite(-500, -300).loadGraphic(Paths.image('backgrounds/week1/stage_light'));
+			stagelight.setGraphicSize(Std.int(stagelight.width * 0.9));
+			stagelight.updateHitbox();
+			stagelight.antialiasing = true;
+			stagelight.scrollFactor.set(1.3, 1.3);
+			stagelight.active = false;
+			add(stagelight);
+
+
 			var stageCurtains:FlxSprite = new FlxSprite(-500, -300).loadGraphic(Paths.image('backgrounds/week1/stagecurtains'));
 			stageCurtains.setGraphicSize(Std.int(stageCurtains.width * 0.9));
 			stageCurtains.updateHitbox();

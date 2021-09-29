@@ -60,9 +60,16 @@ class KeyBindMenu extends FlxSubState
             if (k == null)
                 keys[i] = defaultKeys[i];
         }
-	
-		blackScreen = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
-		add(blackScreen);
+
+        var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBG'));
+		bg.scrollFactor.x = 0;
+		bg.scrollFactor.y = 0;
+		bg.setGraphicSize(Std.int(bg.width * 1.18));
+		bg.updateHitbox();
+		bg.screenCenter();
+		bg.antialiasing = true;
+		bg.color = 0xFF077904; //If you don't like the actual color just change it
+		add(bg);
 
 		persistentUpdate = persistentDraw = true;
 

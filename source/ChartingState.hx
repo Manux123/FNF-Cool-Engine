@@ -4,6 +4,7 @@ import Conductor.BPMChangeEvent;
 import Section.SwagSection;
 import Song.SwagSong;
 import flixel.FlxG;
+import flixel.tweens.FlxTween;
 import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
 import flixel.addons.ui.FlxInputText;
@@ -21,6 +22,7 @@ import flixel.math.FlxMath;
 import flixel.math.FlxPoint;
 import flixel.system.FlxSound;
 import flixel.text.FlxText;
+import flixel.util.FlxColor;
 import flixel.ui.FlxButton;
 import flixel.ui.FlxSpriteButton;
 import flixel.util.FlxColor;
@@ -31,6 +33,7 @@ import openfl.events.IOErrorEvent;
 import openfl.media.Sound;
 import openfl.net.FileReference;
 import openfl.utils.ByteArray;
+import PlayState.SONG;
 
 using StringTools;
 
@@ -54,6 +57,7 @@ class ChartingState extends MusicBeatState
 	var curSong:String = 'Dadbattle';
 	var amountSteps:Int = 0;
 	var bullshitUI:FlxGroup;
+	var bg:FlxSprite;
 
 	var highlight:FlxSprite;
 
@@ -85,11 +89,19 @@ class ChartingState extends MusicBeatState
 	{
 		curSection = lastSection;
 
+		bg = new FlxSprite().loadGraphic(Paths.image('menu/menuChartingBG'));
+		bg.setGraphicSize(Std.int(bg.width * 1.5));
+		bg.updateHitbox();
+		bg.screenCenter();
+		bg.x -= 200;
+		bg.antialiasing = true;
+		add(bg);
+
 		gridBG = FlxGridOverlay.create(GRID_SIZE, GRID_SIZE, GRID_SIZE * 8, GRID_SIZE * 16);
 		add(gridBG);
 
-		leftIcon = new HealthIcon('bf');
-		rightIcon = new HealthIcon('dad');
+		leftIcon = new HealthIcon(SONG.player1, true);
+		rightIcon = new HealthIcon(SONG.player2, false);
 		leftIcon.scrollFactor.set(1, 1);
 		rightIcon.scrollFactor.set(1, 1);
 
@@ -580,7 +592,7 @@ class ChartingState extends MusicBeatState
 				if (FlxG.sound.music.playing)
 				{
 					FlxG.sound.music.pause();
-					vocals.pause();
+					vocals.pause();	
 				}
 				else
 				{
@@ -791,13 +803,13 @@ class ChartingState extends MusicBeatState
 	{
 		if (check_mustHitSection.checked)
 		{
-			leftIcon.animation.play('bf');
-			rightIcon.animation.play('dad');
+			leftIcon.animation.play(SONG.player1);
+			rightIcon.animation.play(SONG.player2);
 		}
 		else
 		{
-			leftIcon.animation.play('dad');
-			rightIcon.animation.play('bf');
+			leftIcon.animation.play(SONG.player1);
+			rightIcon.animation.play(SONG.player2);
 		}
 	}
 

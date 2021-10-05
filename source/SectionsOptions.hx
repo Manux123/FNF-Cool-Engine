@@ -32,7 +32,8 @@ class SectionsOptions extends MusicBeatState
 		menuBG = new FlxSprite().loadGraphic(Paths.image('menu/menuBG'));
 		controlsStrings = CoolUtil.coolStringFile(
 			("\n" + 'Preferences') +
-			("\n" + 'Controls'));
+			("\n" + 'Controls') +
+			("\n" + 'Exit'));
 		
 		trace(controlsStrings);
 
@@ -66,8 +67,6 @@ class SectionsOptions extends MusicBeatState
 	{
 		super.update(elapsed);
 
-			if (controls.BACK)
-				FlxG.switchState(new MainMenuState());
 			if (controls.UP_P)
 				changeSelection(-1);
 			if (controls.DOWN_P)
@@ -83,6 +82,8 @@ class SectionsOptions extends MusicBeatState
 						FlxG.switchState(new OptionsMenu());
 					case 1:
 						FlxG.switchState(new KeyBindMenu());
+					case 2:
+						FlxG.switchState(new MainMenuState());
 				}
 			}
 		FlxG.save.flush();

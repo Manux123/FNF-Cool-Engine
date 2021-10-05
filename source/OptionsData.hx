@@ -23,6 +23,9 @@ class OptionsData
 
 			if (FlxG.save.data.notesplashes == null)
 				FlxG.save.data.notesplashes = true;
+
+			if (FlxG.save.data.graphics == null)
+				FlxG.save.data.graphics = true;
 	
 			if (FlxG.save.data.offset == null)
 				FlxG.save.data.offset = 0;

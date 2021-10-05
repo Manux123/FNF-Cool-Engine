@@ -1,5 +1,6 @@
 package;
 
+import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
 
@@ -16,6 +17,14 @@ class BackgroundGirls extends FlxSprite
 		animation.addByIndices('danceRight', 'BG girls group', CoolUtil.numberArray(30, 15), "", 24, false);
 
 		animation.play('danceLeft');
+
+		if (FlxG.save.data.graphics)
+			frames = Paths.getSparrowAtlas('weeb/bgFreaks');
+
+			animation.addByIndices('danceLeft', 'BG girls group', CoolUtil.numberArray(14), "", 24, false);
+			animation.addByIndices('danceRight', 'BG girls group', CoolUtil.numberArray(14), "", 24, false);
+
+			animation.play('danceLeft');
 	}
 
 	var danceDir:Bool = false;
@@ -25,6 +34,11 @@ class BackgroundGirls extends FlxSprite
 		animation.addByIndices('danceLeft', 'BG fangirls dissuaded', CoolUtil.numberArray(14), "", 24, false);
 		animation.addByIndices('danceRight', 'BG fangirls dissuaded', CoolUtil.numberArray(30, 15), "", 24, false);
 		dance();
+
+		if (FlxG.save.data.graphics)
+			animation.addByIndices('danceLeft', 'BG fangirls dissuaded', CoolUtil.numberArray(14), "", 24, false);
+			animation.addByIndices('danceRight', 'BG fangirls dissuaded', CoolUtil.numberArray(14), "", 24, false);
+			dance();
 	}
 
 	public function dance():Void

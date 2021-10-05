@@ -94,6 +94,7 @@ class PlayState extends MusicBeatState
 
 	private var strumLineNotes:FlxTypedGroup<FlxSprite>;
 	private var playerStrums:FlxTypedGroup<FlxSprite>;
+	public static var cpuStrums:FlxTypedGroup<FlxSprite> = null;
 
 	private var camZooming:Bool = false;
 	private var curSong:String = "";
@@ -136,6 +137,7 @@ class PlayState extends MusicBeatState
 	var upperBoppers:FlxSprite;
 	var bottomBoppers:FlxSprite;
 	var santa:FlxSprite;
+	var light2:FlxSprite;
 
 	var fc:Bool = true;
 
@@ -280,9 +282,21 @@ class PlayState extends MusicBeatState
 			halloweenBG.animation.addByPrefix('lightning', 'halloweem bg lightning strike', 24, false);
 			halloweenBG.animation.play('idle');
 			halloweenBG.antialiasing = true;
-			add(halloweenBG);
+			if (FlxG.save.data.graphics)
+				add(halloweenBG);
 
 			isHalloween = true;
+
+			if (FlxG.save.data.graphics)
+				var hallowTex = Paths.getSparrowAtlas('halloween_bg');
+
+				halloweenBG = new FlxSprite(-200, -100);
+				halloweenBG.frames = hallowTex;
+				halloweenBG.animation.addByPrefix('idle', 'halloweem bg0', 1, false);
+				halloweenBG.antialiasing = true;
+				add(halloweenBG);
+
+				isHalloween = true;
 		}
 		else if (SONG.song.toLowerCase() == 'pico' || SONG.song.toLowerCase() == 'blammed' || SONG.song.toLowerCase() == 'philly')
 		{
@@ -309,8 +323,18 @@ class PlayState extends MusicBeatState
 				light.setGraphicSize(Std.int(light.width * 0.85));
 				light.updateHitbox();
 				light.antialiasing = true;
-				phillyCityLights.add(light);
+				if (FlxG.save.data.graphics)
+					phillyCityLights.add(light);
 			}
+
+			if (FlxG.save.data.graphics)
+				light2 = new FlxSprite(city.x).loadGraphic(Paths.image('philly/win1'));
+				light2.scrollFactor.set(0.3, 0.3);
+				light2.visible = false;
+				light2.setGraphicSize(Std.int(light2.width * 0.85));
+				light2.updateHitbox();
+				light2.antialiasing = true;
+				add(light2);
 
 			var streetBehind:FlxSprite = new FlxSprite(-40, 50).loadGraphic(Paths.image('philly/behindTrain'));
 			add(streetBehind);
@@ -340,7 +364,15 @@ class PlayState extends MusicBeatState
 			bgLimo.animation.addByPrefix('drive', "background limo pink", 24);
 			bgLimo.animation.play('drive');
 			bgLimo.scrollFactor.set(0.4, 0.4);
-			add(bgLimo);
+			if (FlxG.save.data.graphics)
+				add(bgLimo);
+
+			if (FlxG.save.data.graphics)
+				var bgLimo:FlxSprite = new FlxSprite(-200, 480);
+				bgLimo.frames = Paths.getSparrowAtlas('limo/bgLimo');
+				bgLimo.animation.addByPrefix('drive', "background limo pink", 1);
+				bgLimo.scrollFactor.set(0.4, 0.4);
+				add(bgLimo);
 
 			grpLimoDancers = new FlxTypedGroup<BackgroundDancer>();
 			add(grpLimoDancers);
@@ -416,7 +448,18 @@ class PlayState extends MusicBeatState
 			bottomBoppers.scrollFactor.set(0.9, 0.9);
 			bottomBoppers.setGraphicSize(Std.int(bottomBoppers.width * 1));
 			bottomBoppers.updateHitbox();
-			add(bottomBoppers);
+			if (FlxG.save.data.graphics)
+				add(bottomBoppers);
+
+			if (FlxG.save.data.graphics)
+				bottomBoppers = new FlxSprite(-300, 140);
+				bottomBoppers.frames = Paths.getSparrowAtlas('christmas/bottomBop');
+				bottomBoppers.animation.addByPrefix('bop', 'Bottom Level Boppers', 1, false);
+				bottomBoppers.antialiasing = true;
+				bottomBoppers.scrollFactor.set(0.9, 0.9);
+				bottomBoppers.setGraphicSize(Std.int(bottomBoppers.width * 1));
+				bottomBoppers.updateHitbox();
+				add(bottomBoppers);
 
 			var fgSnow:FlxSprite = new FlxSprite(-600, 700).loadGraphic(Paths.image('christmas/fgSnow'));
 			fgSnow.active = false;
@@ -425,7 +468,7 @@ class PlayState extends MusicBeatState
 
 			santa = new FlxSprite(-840, 150);
 			santa.frames = Paths.getSparrowAtlas('christmas/santa');
-			santa.animation.addByPrefix('idle', 'santa idle in fear', 24, false);
+			santa.animation.addByPrefix('idle', 'santa idle in fear', 1, false);
 			santa.antialiasing = true;
 			add(santa);
 		}
@@ -580,15 +623,6 @@ class PlayState extends MusicBeatState
 			stageFront.active = false;
 			add(stageFront);
 
-			var stagelight:FlxSprite = new FlxSprite(-500, -300).loadGraphic(Paths.image('backgrounds/week1/stage_light'));
-			stagelight.setGraphicSize(Std.int(stagelight.width * 0.9));
-			stagelight.updateHitbox();
-			stagelight.antialiasing = true;
-			stagelight.scrollFactor.set(1.3, 1.3);
-			stagelight.active = false;
-			add(stagelight);
-
-
 			var stageCurtains:FlxSprite = new FlxSprite(-500, -300).loadGraphic(Paths.image('backgrounds/week1/stagecurtains'));
 			stageCurtains.setGraphicSize(Std.int(stageCurtains.width * 0.9));
 			stageCurtains.updateHitbox();
@@ -735,6 +769,7 @@ class PlayState extends MusicBeatState
 		add(splashNotes);
 
 		playerStrums = new FlxTypedGroup<FlxSprite>();
+		cpuStrums = new FlxTypedGroup<FlxSprite>();
 
 		// startCountdown();
 
@@ -1313,14 +1348,22 @@ class PlayState extends MusicBeatState
 
 			babyArrow.ID = i;
 
-			if (player == 1)
+			switch (player)
 			{
-				playerStrums.add(babyArrow);
+				case 0:
+					cpuStrums.add(babyArrow);
+				case 1:
+					playerStrums.add(babyArrow);
 			}
 
 			babyArrow.animation.play('static');
 			babyArrow.x += 50;
 			babyArrow.x += ((FlxG.width / 2) * player);
+
+			cpuStrums.forEach(function(spr:FlxSprite)
+			{					
+				spr.centerOffsets(); //CPU arrows start out slightly off-center
+			});
 
 			strumLineNotes.add(babyArrow);
 		}
@@ -1554,10 +1597,7 @@ class PlayState extends MusicBeatState
 				{
 					case 'mom':
 						camFollow.y = dad.getMidpoint().y;
-					case 'senpai':
-						camFollow.y = dad.getMidpoint().y - 430;
-						camFollow.x = dad.getMidpoint().x - 100;
-					case 'senpai-angry':
+					case 'senpai' | 'senpai-angry':
 						camFollow.y = dad.getMidpoint().y - 430;
 						camFollow.x = dad.getMidpoint().x - 100;
 				}
@@ -1581,10 +1621,7 @@ class PlayState extends MusicBeatState
 						camFollow.x = boyfriend.getMidpoint().x - 300;
 					case 'mall':
 						camFollow.y = boyfriend.getMidpoint().y - 200;
-					case 'school':
-						camFollow.x = boyfriend.getMidpoint().x - 200;
-						camFollow.y = boyfriend.getMidpoint().y - 200;
-					case 'schoolEvil':
+					case 'school' | 'schoolEvil':
 						camFollow.x = boyfriend.getMidpoint().x - 200;
 						camFollow.y = boyfriend.getMidpoint().y - 200;
 				}
@@ -1713,6 +1750,24 @@ class PlayState extends MusicBeatState
 							case 0:
 								dad.playAnim('singLEFT' + altAnim, true);
 						}
+
+						
+						cpuStrums.forEach(function(spr:FlxSprite)
+							{
+								if (Math.abs(daNote.noteData) == spr.ID)
+								{
+									spr.animation.play('confirm', true);
+								}
+								if (spr.animation.curAnim.name == 'confirm' && !curStage.startsWith('school'))
+								{
+									spr.centerOffsets();
+									spr.offset.x -= 13;
+									spr.offset.y -= 13;
+								}
+								else
+									spr.centerOffsets();
+							});
+							
 	
 						dad.holdTimer = 0;
 	
@@ -1759,6 +1814,15 @@ class PlayState extends MusicBeatState
 			}
 
 
+		cpuStrums.forEach(function(spr:FlxSprite)
+			{
+				if (spr.animation.finished)
+				{
+					spr.animation.play('static');
+					spr.centerOffsets();
+				}
+			});
+			
 		if (!inCutscene)
 			keyShit();
 

@@ -25,7 +25,6 @@ class OptionsMenu extends MusicBeatState
 	var menuBG:FlxSprite;
 
 	var controlsStrings:Array<String> = [];
-	public static var coolColors:Array<Int> = [];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
 	var versionShit:FlxText;
@@ -35,6 +34,7 @@ class OptionsMenu extends MusicBeatState
 		controlsStrings = CoolUtil.coolStringFile(
 			("\n" + (FlxG.save.data.newInput ? "Kade Engine Input On" : "Input Traditional")) + 
 			"\n" + (FlxG.save.data.downscroll ? 'Downscroll' : 'Upscroll') + 
+			// "\n" + (FlxG.save.data.graphics ? 'Optimization Normal' : 'Optimization High') + 
 			"\nAccuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on"));
 		
 		trace(controlsStrings);
@@ -61,11 +61,6 @@ class OptionsMenu extends MusicBeatState
 			controlLabel.targetY = i;
 			grpControls.add(controlLabel);
 			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
-		}
-		var colorsList = CoolUtil.coolTextFile(Paths.txt('optionsColors'));
-		for (i in 0...colorsList.length)
-		{
-			coolColors.push(Std.parseInt(colorsList[i]));
 		}
 
 		var optionsBG:FlxSprite = new FlxSprite();
@@ -119,7 +114,7 @@ class OptionsMenu extends MusicBeatState
 						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.newInput ? "Kade Engine Input On" : "Input Traditional"), true, false);
 						ctrl.isMenuItem = true;
 						ctrl.targetY = curSelected - 1;
-						grpControls.add(ctrl);		
+						grpControls.add(ctrl);
 					case 1:
 						FlxG.save.data.downscroll = !FlxG.save.data.downscroll;
 						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.downscroll ? 'Downscroll' : 'Upscroll'), true, false);
@@ -130,7 +125,7 @@ class OptionsMenu extends MusicBeatState
 						FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay;
 						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, "Accuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on"), true, false);
 						ctrl.isMenuItem = true;
-						ctrl.targetY = curSelected - 3;
+						ctrl.targetY = curSelected - 4;
 						grpControls.add(ctrl);
 				}
 			}

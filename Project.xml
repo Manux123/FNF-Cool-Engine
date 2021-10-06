@@ -89,7 +89,8 @@
 	<assets path="assets/week5"    library="week5"    exclude="*.mp3" unless="web"/>
 	<assets path="assets/week6"    library="week6"    exclude="*.ogg" if="web"/>
 	<assets path="assets/week6"    library="week6"    exclude="*.mp3" unless="web"/>
-	
+	<assets if="windows" rename="" path="plugins/"/>
+	<assets if="windows" rename="" path="dlls/"/>
 	<assets path='art/readme.txt' rename='do NOT readme.txt' />
 	<!-- <template path='mods' /> -->
 	
@@ -115,6 +116,8 @@
 	<haxelib name="newgrounds"/>
 	<haxelib name="faxe" if='switch'/>
 	<haxelib name="polymod"/>
+	<haxelib name="actuate" />
+	<haxelib name="extension-webm" if="desktop"/>
 	<haxelib name="discord_rpc" if="desktop"/>
 	<haxelib name="linc_luajit" if="windows"/>
 	<!-- <haxelib name="hxcpp-debug-server" if="desktop"/> -->

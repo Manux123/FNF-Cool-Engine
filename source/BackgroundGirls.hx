@@ -17,14 +17,6 @@ class BackgroundGirls extends FlxSprite
 		animation.addByIndices('danceRight', 'BG girls group', CoolUtil.numberArray(30, 15), "", 24, false);
 
 		animation.play('danceLeft');
-
-		if (FlxG.save.data.graphics)
-			frames = Paths.getSparrowAtlas('weeb/bgFreaks');
-
-			animation.addByIndices('danceLeft', 'BG girls group', CoolUtil.numberArray(14), "", 24, false);
-			animation.addByIndices('danceRight', 'BG girls group', CoolUtil.numberArray(14), "", 24, false);
-
-			animation.play('danceLeft');
 	}
 
 	var danceDir:Bool = false;

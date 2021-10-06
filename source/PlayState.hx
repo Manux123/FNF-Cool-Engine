@@ -451,15 +451,15 @@ class PlayState extends MusicBeatState
 			if (FlxG.save.data.graphics)
 				add(bottomBoppers);
 
-			if (FlxG.save.data.graphics)
-				bottomBoppers = new FlxSprite(-300, 140);
-				bottomBoppers.frames = Paths.getSparrowAtlas('christmas/bottomBop');
-				bottomBoppers.animation.addByPrefix('bop', 'Bottom Level Boppers', 1, false);
-				bottomBoppers.antialiasing = true;
-				bottomBoppers.scrollFactor.set(0.9, 0.9);
-				bottomBoppers.setGraphicSize(Std.int(bottomBoppers.width * 1));
-				bottomBoppers.updateHitbox();
-				add(bottomBoppers);
+			// if (FlxG.save.data.graphics)
+				//bottomBoppers = new FlxSprite(-300, 140);
+				// bottomBoppers.frames = Paths.getSparrowAtlas('christmas/bottomBop');
+				// bottomBoppers.animation.addByPrefix('bop', 'Bottom Level Boppers', 1, false);
+				// bottomBoppers.antialiasing = true;
+				// bottomBoppers.scrollFactor.set(0.9, 0.9);
+				// bottomBoppers.setGraphicSize(Std.int(bottomBoppers.width * 1));
+				// bottomBoppers.updateHitbox();
+				// add(bottomBoppers);
 
 			var fgSnow:FlxSprite = new FlxSprite(-600, 700).loadGraphic(Paths.image('christmas/fgSnow'));
 			fgSnow.active = false;
@@ -468,7 +468,7 @@ class PlayState extends MusicBeatState
 
 			santa = new FlxSprite(-840, 150);
 			santa.frames = Paths.getSparrowAtlas('christmas/santa');
-			santa.animation.addByPrefix('idle', 'santa idle in fear', 1, false);
+			santa.animation.addByPrefix('idle', 'santa idle in fear', 24, false);
 			santa.antialiasing = true;
 			add(santa);
 		}
@@ -681,11 +681,7 @@ class PlayState extends MusicBeatState
 				dad.y += 300;
 			case 'parents-christmas':
 				dad.x -= 500;
-			case 'senpai':
-				dad.x += 150;
-				dad.y += 360;
-				camPos.set(dad.getGraphicMidpoint().x + 300, dad.getGraphicMidpoint().y);
-			case 'senpai-angry':
+			case 'senpai' | 'senpai-angry':
 				dad.x += 150;
 				dad.y += 360;
 				camPos.set(dad.getGraphicMidpoint().x + 300, dad.getGraphicMidpoint().y);
@@ -902,12 +898,10 @@ class PlayState extends MusicBeatState
 							});
 						});
 					});
-				case 'senpai':
+				case 'senpai' | 'thorns':
 					schoolIntro(doof);
 				case 'roses':
 					FlxG.sound.play(Paths.sound('ANGRY'));
-					schoolIntro(doof);
-				case 'thorns':
 					schoolIntro(doof);
 				default:
 					startCountdown();

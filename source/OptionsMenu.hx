@@ -34,7 +34,7 @@ class OptionsMenu extends MusicBeatState
 		controlsStrings = CoolUtil.coolStringFile(
 			("\n" + (FlxG.save.data.newInput ? "Kade Engine Input On" : "Input Traditional")) + 
 			"\n" + (FlxG.save.data.downscroll ? 'Downscroll' : 'Upscroll') + 
-			// "\n" + (FlxG.save.data.graphics ? 'Optimization Normal' : 'Optimization High') + 
+			"\n" + (!FlxG.save.data.middlescroll ? 'Middlescroll off' : 'Middlescroll on') + 
 			"\nAccuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on"));
 		
 		trace(controlsStrings);
@@ -122,6 +122,12 @@ class OptionsMenu extends MusicBeatState
 						ctrl.targetY = curSelected - 2;
 						grpControls.add(ctrl);
 					case 2:
+						FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay;
+						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (!FlxG.save.data.middlescroll ? "Middlescroll off" : "Middlescroll on"), true, false);
+						ctrl.isMenuItem = true;
+						ctrl.targetY = curSelected - 3;
+						grpControls.add(ctrl);
+					case 3:
 						FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay;
 						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, "Accuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on"), true, false);
 						ctrl.isMenuItem = true;

@@ -54,6 +54,7 @@ class PlayState extends MusicBeatState
 	public static var storyPlaylist:Array<String> = [];
 	public static var storyDifficulty:Int = 1;
 	public static var weekSong:Int = 0;
+	public static var missess:Int = 0;
 	public static var shits:Int = 0;
 	public static var bads:Int = 0;
 	public static var goods:Int = 0;
@@ -173,6 +174,7 @@ class PlayState extends MusicBeatState
 		sicks = 0;
 		bads = 0;
 		shits = 0;
+		missess = 0;
 		goods = 0;
 
 		misses = 0;
@@ -282,21 +284,9 @@ class PlayState extends MusicBeatState
 			halloweenBG.animation.addByPrefix('lightning', 'halloweem bg lightning strike', 24, false);
 			halloweenBG.animation.play('idle');
 			halloweenBG.antialiasing = true;
-			if (FlxG.save.data.graphics)
-				add(halloweenBG);
+			add(halloweenBG);
 
 			isHalloween = true;
-
-			if (FlxG.save.data.graphics)
-				var hallowTex = Paths.getSparrowAtlas('halloween_bg');
-
-				halloweenBG = new FlxSprite(-200, -100);
-				halloweenBG.frames = hallowTex;
-				halloweenBG.animation.addByPrefix('idle', 'halloweem bg0', 1, false);
-				halloweenBG.antialiasing = true;
-				add(halloweenBG);
-
-				isHalloween = true;
 		}
 		else if (SONG.song.toLowerCase() == 'pico' || SONG.song.toLowerCase() == 'blammed' || SONG.song.toLowerCase() == 'philly')
 		{
@@ -1859,7 +1849,7 @@ class PlayState extends MusicBeatState
 				transIn = FlxTransitionableState.defaultTransIn;
 				transOut = FlxTransitionableState.defaultTransOut;
 
-				FlxG.switchState(new StoryMenuState());
+				FlxG.switchState(new FinalRaiting());
 
 				// if ()
 				StoryMenuState.weekUnlocked[Std.int(Math.min(storyWeek + 1, StoryMenuState.weekUnlocked.length - 1))] = true;
@@ -1943,10 +1933,10 @@ class PlayState extends MusicBeatState
 					{
 						score = -3000;
 						combo = 0;
-						misses++;
+						missess++;
 						health -= 0.2;
 					}
-					shits++;
+					missess++;
 				}
 				else if (noteDiff < Conductor.safeZoneOffset * -3)
 				{
@@ -1956,11 +1946,11 @@ class PlayState extends MusicBeatState
 					{
 						score = -3000;
 						combo = 0;
-						misses++;
+						missess++;
 						health -= 0.2;
 					}
 					ss = false;
-					shits++;
+					missess++;
 				}
 				else if (noteDiff > Conductor.safeZoneOffset * 2)
 				{

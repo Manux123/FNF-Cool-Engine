@@ -221,12 +221,10 @@ class Character extends FlxSprite
 				animation.addByPrefix('singLEFT', 'Monster left note', 24, false);
 				animation.addByPrefix('singRIGHT', 'Monster Right note', 24, false);
 
-				addOffset('idle');
-				addOffset("singUP", -20, 50);
-				addOffset("singRIGHT", -51);
-				addOffset("singLEFT", -30);
-				addOffset("singDOWN", -40, -94);
+				loadOffsetFile(curCharacter);
+
 				playAnim('idle');
+
 			case 'pico':
 				tex = Paths.getSparrowAtlas('Pico_FNF_assetss');
 				frames = tex;
@@ -252,15 +250,7 @@ class Character extends FlxSprite
 				animation.addByPrefix('singUPmiss', 'pico Up note miss', 24);
 				animation.addByPrefix('singDOWNmiss', 'Pico Down Note MISS', 24);
 
-				addOffset('idle');
-				addOffset("singUP", -29, 27);
-				addOffset("singRIGHT", -68, -7);
-				addOffset("singLEFT", 65, 9);
-				addOffset("singDOWN", 200, -70);
-				addOffset("singUPmiss", -19, 67);
-				addOffset("singRIGHTmiss", -60, 41);
-				addOffset("singLEFTmiss", 62, 64);
-				addOffset("singDOWNmiss", 210, -28);
+				loadOffsetFile(curCharacter);
 
 				playAnim('idle');
 
@@ -286,20 +276,7 @@ class Character extends FlxSprite
 
 				animation.addByPrefix('scared', 'BF idle shaking', 24);
 
-				addOffset('idle', -5);
-				addOffset("singUP", -29, 27);
-				addOffset("singRIGHT", -38, -7);
-				addOffset("singLEFT", 12, -6);
-				addOffset("singDOWN", -10, -50);
-				addOffset("singUPmiss", -29, 27);
-				addOffset("singRIGHTmiss", -30, 21);
-				addOffset("singLEFTmiss", 12, 24);
-				addOffset("singDOWNmiss", -11, -19);
-				addOffset("hey", 7, 4);
-				addOffset('firstDeath', 37, 11);
-				addOffset('deathLoop', 37, 5);
-				addOffset('deathConfirm', 37, 69);
-				addOffset('scared', -4);
+				loadOffsetFile(curCharacter);
 
 				playAnim('idle');
 
@@ -319,20 +296,12 @@ class Character extends FlxSprite
 				animation.addByPrefix('singDOWNmiss', 'BF NOTE DOWN MISS', 24, false);
 				animation.addByPrefix('hey', 'BF HEY', 24, false);
 
-				addOffset('idle', -5);
-				addOffset("singUP", -29, 27);
-				addOffset("singRIGHT", -38, -7);
-				addOffset("singLEFT", 12, -6);
-				addOffset("singDOWN", -10, -50);
-				addOffset("singUPmiss", -29, 27);
-				addOffset("singRIGHTmiss", -30, 21);
-				addOffset("singLEFTmiss", 12, 24);
-				addOffset("singDOWNmiss", -11, -19);
-				addOffset("hey", 7, 4);
+				loadOffsetFile(curCharacter);
 
 				playAnim('idle');
 
 				flipX = true;
+
 			case 'bf-car':
 				var tex = Paths.getSparrowAtlas('characters/week4/bfCar');
 				frames = tex;
@@ -346,18 +315,12 @@ class Character extends FlxSprite
 				animation.addByPrefix('singRIGHTmiss', 'BF NOTE RIGHT MISS', 24, false);
 				animation.addByPrefix('singDOWNmiss', 'BF NOTE DOWN MISS', 24, false);
 
-				addOffset('idle', -5);
-				addOffset("singUP", -29, 27);
-				addOffset("singRIGHT", -38, -7);
-				addOffset("singLEFT", 12, -6);
-				addOffset("singDOWN", -10, -50);
-				addOffset("singUPmiss", -29, 27);
-				addOffset("singRIGHTmiss", -30, 21);
-				addOffset("singLEFTmiss", 12, 24);
-				addOffset("singDOWNmiss", -11, -19);
+				loadOffsetFile(curCharacter);
+
 				playAnim('idle');
 
 				flipX = true;
+
 			case 'bf-pixel':
 				frames = Paths.getSparrowAtlas('weeb/bfPixel');
 				animation.addByPrefix('idle', 'BF IDLE', 24, false);
@@ -370,15 +333,7 @@ class Character extends FlxSprite
 				animation.addByPrefix('singRIGHTmiss', 'BF RIGHT MISS', 24, false);
 				animation.addByPrefix('singDOWNmiss', 'BF DOWN MISS', 24, false);
 
-				addOffset('idle');
-				addOffset("singUP");
-				addOffset("singRIGHT");
-				addOffset("singLEFT");
-				addOffset("singDOWN");
-				addOffset("singUPmiss");
-				addOffset("singRIGHTmiss");
-				addOffset("singLEFTmiss");
-				addOffset("singDOWNmiss");
+				loadOffsetFile(curCharacter);
 
 				setGraphicSize(Std.int(width * 6));
 				updateHitbox();
@@ -391,6 +346,7 @@ class Character extends FlxSprite
 				antialiasing = false;
 
 				flipX = true;
+
 			case 'bf-pixel-dead':
 				frames = Paths.getSparrowAtlas('weeb/bfPixelsDEAD');
 				animation.addByPrefix('singUP', "BF Dies pixel", 24, false);
@@ -399,14 +355,14 @@ class Character extends FlxSprite
 				animation.addByPrefix('deathConfirm', "RETRY CONFIRM", 24, false);
 				animation.play('firstDeath');
 
-				addOffset('firstDeath');
-				addOffset('deathLoop', -37);
-				addOffset('deathConfirm', -37);
+				loadOffsetFile(curCharacter);
 				playAnim('firstDeath');
-				// pixel bullshit
+
 				setGraphicSize(Std.int(width * 6));
 				updateHitbox();
+
 				antialiasing = false;
+				
 				flipX = true;
 
 			case 'senpai':
@@ -417,11 +373,7 @@ class Character extends FlxSprite
 				animation.addByPrefix('singRIGHT', 'SENPAI RIGHT NOTE', 24, false);
 				animation.addByPrefix('singDOWN', 'SENPAI DOWN NOTE', 24, false);
 
-				addOffset('idle');
-				addOffset("singUP", 5, 37);
-				addOffset("singRIGHT");
-				addOffset("singLEFT", 40);
-				addOffset("singDOWN", 14);
+				loadOffsetFile(curCharacter);
 
 				playAnim('idle');
 
@@ -429,6 +381,7 @@ class Character extends FlxSprite
 				updateHitbox();
 
 				antialiasing = false;
+
 			case 'senpai-angry':
 				frames = Paths.getSparrowAtlas('weeb/senpai');
 				animation.addByPrefix('idle', 'Angry Senpai Idle', 24, false);
@@ -437,11 +390,8 @@ class Character extends FlxSprite
 				animation.addByPrefix('singRIGHT', 'Angry Senpai RIGHT NOTE', 24, false);
 				animation.addByPrefix('singDOWN', 'Angry Senpai DOWN NOTE', 24, false);
 
-				addOffset('idle');
-				addOffset("singUP", 5, 37);
-				addOffset("singRIGHT");
-				addOffset("singLEFT", 40);
-				addOffset("singDOWN", 14);
+				loadOffsetFile(curCharacter);
+
 				playAnim('idle');
 
 				setGraphicSize(Std.int(width * 6));
@@ -457,11 +407,7 @@ class Character extends FlxSprite
 				animation.addByPrefix('singLEFT', "left_", 24, false);
 				animation.addByPrefix('singDOWN', "spirit down_", 24, false);
 
-				addOffset('idle', -220, -280);
-				addOffset('singUP', -220, -240);
-				addOffset("singRIGHT", -220, -280);
-				addOffset("singLEFT", -200, -280);
-				addOffset("singDOWN", 170, 110);
+				loadOffsetFile(curCharacter);
 
 				setGraphicSize(Std.int(width * 6));
 				updateHitbox();
@@ -484,15 +430,7 @@ class Character extends FlxSprite
 				animation.addByPrefix('singLEFT-alt', 'Parent Left Note Mom', 24, false);
 				animation.addByPrefix('singRIGHT-alt', 'Parent Right Note Mom', 24, false);
 
-				addOffset('idle');
-				addOffset("singUP", -47, 24);
-				addOffset("singRIGHT", -1, -23);
-				addOffset("singLEFT", -30, 16);
-				addOffset("singDOWN", -31, -29);
-				addOffset("singUP-alt", -47, 24);
-				addOffset("singRIGHT-alt", -1, -24);
-				addOffset("singLEFT-alt", -30, 15);
-				addOffset("singDOWN-alt", -30, -27);
+				loadOffsetFile(curCharacter);
 
 				playAnim('idle');
 		}
@@ -519,6 +457,17 @@ class Character extends FlxSprite
 					animation.getByName('singLEFTmiss').frames = oldMiss;
 				}
 			}
+		}
+	}
+
+	public function loadOffsetFile(character:String, library:String = 'shared')
+	{
+		var offset:Array<String> = CoolUtil.coolTextFile(Paths.txt('offsets/' + character + "Offsets", library));
+
+		for (i in 0...offset.length)
+		{
+			var data:Array<String> = offset[i].split(' ');
+			addOffset(data[0], Std.parseInt(data[1]), Std.parseInt(data[2]));
 		}
 	}
 

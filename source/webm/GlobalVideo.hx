@@ -1,4 +1,4 @@
-package;
+package webm;
 
 import openfl.Lib;
 

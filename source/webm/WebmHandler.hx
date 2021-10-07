@@ -1,4 +1,4 @@
-package;
+package webm;
 
 import flixel.FlxG;
 import openfl.display.Sprite;

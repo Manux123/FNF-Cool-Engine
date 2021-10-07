@@ -25,7 +25,7 @@ echo Presiona cualquier tecla para instalar PolyMod.
 pause >nul
 title FNF Setup - Installation of libraries
 haxelib remove polymod
-haxelib git polymod https://github.com/Manux123/Polymod
+haxelib git polymod https://github.com/PabloelproxD210/Polymod
 cls
 echo Press any key to install Discord_RPC
 pause >nul

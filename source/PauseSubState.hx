@@ -26,6 +26,10 @@ class PauseSubState extends MusicBeatSubstate
 	{
 		super();
 
+		if (PlayState.storyPlaylist.length > 1 && PlayState.isStoryMode){
+			menuItems.insert(2, "Skip Song");
+		}
+		
 		pauseMusic = new FlxSound().loadEmbedded(Paths.music('breakfast'), true, true);
 		pauseMusic.volume = 0;
 		pauseMusic.play(false, FlxG.random.int(0, Std.int(pauseMusic.length / 2)));

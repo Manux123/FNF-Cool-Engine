@@ -1844,6 +1844,7 @@ class PlayState extends MusicBeatState
 
 			if (storyPlaylist.length <= 0)
 			{
+<<<<<<< Updated upstream
 				FlxG.sound.playMusic(Paths.music('freakyMenu'));
 
 				transIn = FlxTransitionableState.defaultTransIn;
@@ -1862,6 +1863,28 @@ class PlayState extends MusicBeatState
 
 				FlxG.save.data.weekUnlocked = StoryMenuState.weekUnlocked;
 				FlxG.save.flush();
+=======
+				FlxG.switchState(new FinalRaiting());
+				
+//				FlxG.sound.playMusic(Paths.music('freakyMenu'));
+//
+//				transIn = FlxTransitionableState.defaultTransIn;
+//				transOut = FlxTransitionableState.defaultTransOut;
+//
+//				FlxG.switchState(new StoryMenuState());
+//
+//				// if ()
+//				StoryMenuState.weekUnlocked[Std.int(Math.min(storyWeek + 1, StoryMenuState.weekUnlocked.length - 1))] = true;
+//
+//				if (SONG.validScore)
+//				{
+//					NGio.unlockMedal(60961);
+//					Highscore.saveWeekScore(storyWeek, campaignScore, storyDifficulty);
+//				}
+//
+//				FlxG.save.data.weekUnlocked = StoryMenuState.weekUnlocked;
+//				FlxG.save.flush();
+>>>>>>> Stashed changes
 			}
 			else
 			{

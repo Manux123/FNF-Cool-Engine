@@ -1,73 +1,76 @@
 package;
 
+import flixel.text.FlxText;
 import states.PlayState;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.util.FlxColor;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
+import flixel.FlxSubState;
 
-class FinalRating extends states.MusicBeatState
+class FinalRating extends FlxSubState
 {
+//  var daRatings:String = "S";
+    var comboText:FlxText;
     override public function create()
     {
-        var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
-        bg.alpha = 0.55;
+        var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGBlue'));
 		add(bg);
 
+        var daLights:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/light_menu'));
+        add(daLights);
+
+        FlxG.sound.playMusic(Paths.music('configurator'));
+
         var bfTex = Paths.getSparrowAtlas('menu/BOYFRIEND');
-        var bf:FlxSprite = new FlxSprite();
+        var bf:FlxSprite = new FlxSprite(200, 400);
         bf.frames = bfTex;
 		bf.animation.addByPrefix('idle', 'BF HEY!!', 24, false);
 		bf.animation.play('idle');
 		bf.antialiasing = true;
 		add(bf);
 
-        var daRatings:String = "S";
+        comboText = new FlxText(0,0,'Score: ${PlayState.songScore}\nSicks: ${PlayState.sicks}\nGoods: ${PlayState.goods}\nBads: ${PlayState.bads}\nShits: ${PlayState.shits}
+        ');
+        comboText.size = 28;
+        comboText.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);
+        comboText.color = FlxColor.WHITE;
+        comboText.scrollFactor.set();
+        add(comboText);
 
-        if (daRatings == 'S')
-        {
-            var s:FlxSprite = new FlxSprite().loadGraphic(Paths.image('ratings/S'));
-            add(s);
-        
-        }
+        var helpText:FlxText = new FlxText(0,650,'Press Enter To Continue');
+        helpText.size = 28;
+        add(helpText);
 
-        if (daRatings == 'A')
-        {
-            var a:FlxSprite = new FlxSprite().loadGraphic(Paths.image('ratings/A'));
-            add(a);
-             
-        }
+        var daRank:FlxSprite = new FlxSprite(600, 400).loadGraphic(Paths.image('ratings/${Rank.generateLetterRank()}'));
+        daRank.scale.x = 1.5; //I tried other method but this is the one it worked
+        daRank.scale.y = 1.5;
+        add(daRank);
 
-        if (daRatings == 'B')
-        {
-            var b:FlxSprite = new FlxSprite().loadGraphic(Paths.image('ratings/B'));
-            add(b);
-            
-        }
+        var daLogo:FlxSprite = new FlxSprite(600, 200).loadGraphic(Paths.image('titlestate/daLogo'));
+        daLogo.scale.x = 0.5;
+        daLogo.scale.y = 0.5;
+        add(daLogo);
 
-        if (daRatings == 'C')
-        {
-            var c:FlxSprite = new FlxSprite().loadGraphic(Paths.image('ratings/C'));
-            add(c);
-            
-        }
+        FlxTween.tween(bg, {alpha: 0.5},0.5);
+        FlxTween.tween(daRank, {y:150},0.5,{ease: FlxEase.expoInOut});
+        FlxTween.tween(bf, {y:200},0.5,{ease: FlxEase.expoInOut});
     } 
 
     override function update(elapsed:Float)
     {
         super.update(elapsed);
 
-			if (controls.BACK)
-			{
-                if (FlxG.keys.justPressed.ENTER)
-                {
-                    FlxG.camera.flash(FlxColor.WHITE, 4);
-                    
-				    if (PlayState.isStoryMode)
-                        FlxG.switchState(new states.StoryMenuState());
-                    else
-                        FlxG.switchState(new states.FreeplayState());
-                }
-			}
+        if (FlxG.keys.justPressed.ENTER)
+            {
+                FlxG.camera.flash(FlxColor.WHITE, 4);
+                
+                if (PlayState.isStoryMode)
+                    FlxG.switchState(new states.StoryMenuState());
+                else
+                    FlxG.switchState(new states.FreeplayState());
+            }
 	}
     /*
     public override function press():Bool

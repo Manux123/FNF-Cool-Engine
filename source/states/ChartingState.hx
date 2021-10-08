@@ -90,10 +90,7 @@ class ChartingState extends states.MusicBeatState
 		curSection = lastSection;
 
 		bg = new FlxSprite().loadGraphic(Paths.image('menu/menuChartingBG'));
-		bg.setGraphicSize(Std.int(bg.width * 1.5));
-		bg.updateHitbox();
-		bg.screenCenter();
-		bg.x -= 200;
+		bg.scrollFactor.set();
 		bg.antialiasing = true;
 		add(bg);
 

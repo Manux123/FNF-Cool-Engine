@@ -105,7 +105,7 @@ class PlayState extends states.MusicBeatState
 	private var health:Float = 1;
 	private var combo:Int = 0;
 	public static var misses:Int = 0;
-	private var accuracy:Float = 0.00;
+	public static var accuracy:Float = 0.00;
 	private var totalNotesHit:Float = 0;
 	private var totalPlayed:Int = 0;
 	private var ss:Bool = false;
@@ -146,7 +146,7 @@ class PlayState extends states.MusicBeatState
 	var wiggleShit:WiggleEffect = new WiggleEffect();
 
 	var talking:Bool = true;
-	var songScore:Int = 0;
+	public static var songScore:Int = 0;
 	var scoreTxt:FlxText;
 	
 	public static var campaignScore:Int = 0;
@@ -176,6 +176,8 @@ class PlayState extends states.MusicBeatState
 		shits = 0;
 		missess = 0;
 		goods = 0;
+
+		accuracy = 0;
 
 		misses = 0;
 
@@ -1900,7 +1902,11 @@ class PlayState extends states.MusicBeatState
 		else
 		{
 			trace('WENT BACK TO FREEPLAY??');
-			FlxG.switchState(new FreeplayState());
+
+			FlxG.sound.music.stop();
+			vocals.stop();
+
+			FlxG.switchState(new FinalRating());
 		}
 	}
 

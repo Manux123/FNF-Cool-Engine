@@ -3,10 +3,7 @@ package;
 #if desktop
 import Discord.DiscordClient;
 #end
-import Controls.KeyboardScheme;
 import Controls.Control;
-import Section.SwagSection;
-import Song.SwagSong;
 import flash.text.TextField;
 import flixel.FlxG;
 import flixel.FlxSprite;
@@ -22,41 +19,38 @@ class OptionsMenu extends states.MusicBeatState
 {
 	var selector:FlxText;
 	var curSelected:Int = 0;
-	var menuBG:FlxSprite;
 
-	var controlsStrings:Array<String> = [];
+	var options:Array<Option> = [
+		new NewInputOption(),
+		new DownscrollOption(),
+		new MiddleScroll(),
+		new AccuracyOption()
+	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
 	var versionShit:FlxText;
 	override function create()
 	{
-		menuBG = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
-		controlsStrings = CoolUtil.coolStringFile(
-			("\n" + (FlxG.save.data.newInput ? "Kade Engine Input On" : "Input Traditional")) + 
-			"\n" + (FlxG.save.data.downscroll ? 'Downscroll' : 'Upscroll') + 
-			"\n" + (FlxG.save.data.middlescroll ? 'Middlescroll off' : 'Middlescroll on') + 
-			"\nAccuracy " + (FlxG.save.data.accuracyDisplay ? "off" : "on"));
-		
-		trace(controlsStrings);
+		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 
+		menuBG.color = 0xFF453F3F;
+		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
+		menuBG.updateHitbox();
+		menuBG.screenCenter();
+		menuBG.antialiasing = true;
+		add(menuBG);
+
+		grpControls = new FlxTypedGroup<Alphabet>();
+		add(grpControls);
+		
 		#if desktop
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("In the Options", null);
 		#end
 
-		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
-		menuBG.updateHitbox();
-		menuBG.screenCenter();
-		menuBG.antialiasing = true;
-		menuBG.color = 0xFF453F3F;
-		add(menuBG);
-
-		grpControls = new FlxTypedGroup<Alphabet>();
-		add(grpControls);
-
-		for (i in 0...controlsStrings.length)
+		for (i in 0...options.length)
 		{
-			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 30, controlsStrings[i], true, false);
+			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 30, options[i].getDisplay(), true, false);
 			controlLabel.isMenuItem = true;
 			controlLabel.targetY = i;
 			grpControls.add(controlLabel);
@@ -105,34 +99,11 @@ class OptionsMenu extends states.MusicBeatState
 
 			if (controls.ACCEPT)
 			{
-				if (curSelected != 5)
+				if (options[curSelected].press()) {
 					grpControls.remove(grpControls.members[curSelected]);
-				switch(curSelected)
-				{
-					case 0:
-						FlxG.save.data.newInput = !FlxG.save.data.newInput;
-						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.newInput ? "Kade Engine Input On" : "Input Traditional"), true, false);
-						ctrl.isMenuItem = true;
-						ctrl.targetY = curSelected - 1;
-						grpControls.add(ctrl);
-					case 1:
-						FlxG.save.data.downscroll = !FlxG.save.data.downscroll;
-						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.downscroll ? 'Downscroll' : 'Upscroll'), true, false);
-						ctrl.isMenuItem = true;
-						ctrl.targetY = curSelected - 2;
-						grpControls.add(ctrl);
-					case 2:
-						FlxG.save.data.accuracyDisplay = !FlxG.save.data.middlescroll;
-						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.middlescroll ? "Middlescroll off" : "Middlescroll on"), true, false);
-						ctrl.isMenuItem = true;
-						ctrl.targetY = curSelected - 3;
-						grpControls.add(ctrl);
-					case 3:
-						FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay;
-						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, "Accuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on"), true, false);
-						ctrl.isMenuItem = true;
-						ctrl.targetY = curSelected - 4;
-						grpControls.add(ctrl);
+					var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, options[curSelected].getDisplay(), true, false);
+					ctrl.isMenuItem = true;
+					grpControls.add(ctrl);
 				}
 			}
 		FlxG.save.flush();
@@ -143,10 +114,10 @@ class OptionsMenu extends states.MusicBeatState
 	function changeSelection(change:Int = 0)
 	{
 		#if !switch
-		// NGio.logEvent('Fresh');
+		// NGio.logEvent("Fresh");
 		#end
 		
-		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+		FlxG.sound.play(Paths.sound("scrollMenu"), 0.4);
 
 		curSelected += change;
 
@@ -173,5 +144,83 @@ class OptionsMenu extends states.MusicBeatState
 				// item.setGraphicSize(Std.int(item.width));
 			}
 		}
+	}
+}
+
+class Option
+{
+	public function new()
+	{
+		display = updateDisplay();
+	}
+
+	private var display:String;
+	public final function getDisplay():String
+	{
+		return display;
+	}
+
+	// Returns whether the label is to be updated.
+	public function press():Bool { return throw "stub!"; }
+	private function updateDisplay():String { return throw "stub!"; }
+}
+
+class DownscrollOption extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.downscroll = !FlxG.save.data.downscroll;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return FlxG.save.data.downscroll ? "Downscroll" : "Upscroll";
+	}
+}
+
+class AccuracyOption extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return "Accuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on");
+	}
+}
+
+class NewInputOption extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.newInput = !FlxG.save.data.newInput;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return !FlxG.save.data.newInput ? "Traditional Input" : "Kade Engine Input";
+	}
+}
+
+class MiddleScroll extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.middlescroll = !FlxG.save.data.middlescroll;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return !FlxG.save.data.middlescroll ? "Middlescroll On" : "Middlescroll Off";
 	}
 }

@@ -10,7 +10,7 @@ import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.text.FlxText;
 import flixel.tweens.FlxEase;
 
-class FinalRaiting extends MusicBeatState
+class FinalRating extends MusicBeatState
 {
     override public function create()
     {
@@ -186,6 +186,6 @@ class FinalRaiting extends MusicBeatState
 	}
     public override function press():Bool
     {
-        PlayState.instance.openSubState(new FinalRaiting());
+        PlayState.instance.openSubState(new FinalRating());
     }
 }

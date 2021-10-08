@@ -1,4 +1,4 @@
-package;
+package states;
 
 import Conductor.BPMChangeEvent;
 import flixel.FlxG;

@@ -11,7 +11,7 @@ import flixel.addons.transition.FlxTransitionableState;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
 import flixel.tweens.FlxEase;
-import StoryMenuState;
+import states.StoryMenuState;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flixel.tweens.FlxTween;
@@ -21,7 +21,7 @@ import openfl.utils.Assets as OpenFlAssets;
 
 using StringTools;
 
-class FreeplayState extends MusicBeatState
+class FreeplayState extends states.MusicBeatState
 {
 	//Character head icons for your songs
 	static var songsHeads:Array<Dynamic> = [
@@ -273,14 +273,14 @@ class FreeplayState extends MusicBeatState
 		{
 			destroyFreeplayVocals();
 			var poop:String = Highscore.formatSong(songs[curSelected].songName.toLowerCase(), curDifficulty);
-			PlayState.SONG = Song.loadFromJson(poop, songs[curSelected].songName.toLowerCase());
-			if (PlayState.SONG.needsVoices)
-				vocals = new FlxSound().loadEmbedded(Paths.voices(PlayState.SONG.song));
+			states.PlayState.SONG = Song.loadFromJson(poop, songs[curSelected].songName.toLowerCase());
+			if (states.PlayState.SONG.needsVoices)
+				vocals = new FlxSound().loadEmbedded(Paths.voices(states.PlayState.SONG.song));
 			else
 				vocals = new FlxSound();
 
 			FlxG.sound.list.add(vocals);
-			FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), 0.7);
+			FlxG.sound.playMusic(Paths.inst(states.PlayState.SONG.song), 0.7);
 			vocals.play();
 			vocals.persist = true;
 			vocals.looped = true;
@@ -314,16 +314,16 @@ class FreeplayState extends MusicBeatState
 			}
 			trace(poop);
 
-			PlayState.SONG = Song.loadFromJson(poop, songLowercase);
-			PlayState.isStoryMode = false;
-			PlayState.storyDifficulty = curDifficulty;
+			states.PlayState.SONG = Song.loadFromJson(poop, songLowercase);
+			states.PlayState.isStoryMode = false;
+			states.PlayState.storyDifficulty = curDifficulty;
 
-			PlayState.storyWeek = songs[curSelected].week;
+			states.PlayState.storyWeek = songs[curSelected].week;
 			trace('CURRENT WEEK: ' + getCurrentWeekNumber());
 			if(colorTween != null) {
 				colorTween.cancel();
 			}
-			LoadingState.loadAndSwitchState(new PlayState());
+			LoadingState.loadAndSwitchState(new states.PlayState());
 
 			FlxG.sound.music.volume = 0;
 					
@@ -354,7 +354,7 @@ class FreeplayState extends MusicBeatState
 		intendedRating = Highscore.getRating(songs[curSelected].songName, curDifficulty);
 		#end
 
-		PlayState.storyDifficulty = curDifficulty;
+		states.PlayState.storyDifficulty = curDifficulty;
 		diffText.text = '< ' + CoolUtil.difficultyString() + ' >';
 		positionHighscore();
 	}
@@ -433,7 +433,7 @@ class FreeplayState extends MusicBeatState
 
 	public static function difficultyString():String
 	{
-		return difficultyStuff[PlayState.storyDifficulty][0].toUpperCase();
+		return difficultyStuff[states.PlayState.storyDifficulty][0].toUpperCase();
 	}
 
 	public static function boundTo(value:Float, min:Float, max:Float):Float {
@@ -444,7 +444,7 @@ class FreeplayState extends MusicBeatState
 	}
 
 	public static function getCurrentWeekNumber():Int {
-		return getWeekNumber(PlayState.storyWeek);
+		return getWeekNumber(states.PlayState.storyWeek);
 	}
 
 	public static function getWeekNumber(num:Int):Int {
@@ -472,8 +472,8 @@ class SongMetadata
 		this.songName = song;
 		this.week = week;
 		this.songCharacter = songCharacter;
-		if(week < FreeplayState.coolColors.length) {
-			this.color = FreeplayState.coolColors[week];
+		if(week < states.FreeplayState.coolColors.length) {
+			this.color = states.FreeplayState.coolColors[week];
 		}
 	}
 }

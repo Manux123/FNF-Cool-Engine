@@ -18,7 +18,7 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import lime.utils.Assets;
 
-class SectionsOptions extends MusicBeatState
+class SectionsOptions extends states.MusicBeatState
 {
 	var selector:FlxText;
 	var curSelected:Int = 0;
@@ -83,7 +83,7 @@ class SectionsOptions extends MusicBeatState
 					case 1:
 						FlxG.switchState(new KeyBindMenu());
 					case 2:
-						FlxG.switchState(new MainMenuState());
+						FlxG.switchState(new states.MainMenuState());
 				}
 			}
 		FlxG.save.flush();

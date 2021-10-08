@@ -17,7 +17,7 @@ import openfl.Lib;
 
 using StringTools;
 
-class VideoState extends MusicBeatState
+class VideoState extends states.MusicBeatState
 {
 	public var leSource:String = "";
 	public var transClass:FlxState;

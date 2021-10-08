@@ -18,7 +18,7 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import lime.utils.Assets;
 
-class OptionsMenu extends MusicBeatState
+class OptionsMenu extends states.MusicBeatState
 {
 	var selector:FlxText;
 	var curSelected:Int = 0;

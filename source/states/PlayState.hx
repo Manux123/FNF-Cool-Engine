@@ -45,7 +45,7 @@ import Discord.DiscordClient;
 
 using StringTools;
 
-class PlayState extends MusicBeatState
+class PlayState extends states.MusicBeatState
 {
 	public static var curStage:String = '';
 	public static var SONG:SwagSong;

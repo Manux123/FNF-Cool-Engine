@@ -19,7 +19,7 @@ import lime.app.Application;
 
 using StringTools;
 
-class MainMenuState extends MusicBeatState
+class MainMenuState extends states.MusicBeatState
 {
 	var curSelected:Int = 0;
 

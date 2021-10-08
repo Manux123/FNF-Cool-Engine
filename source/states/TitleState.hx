@@ -30,7 +30,7 @@ import openfl.Assets;
 
 using StringTools;
 
-class TitleState extends MusicBeatState
+class TitleState extends states.MusicBeatState
 {
 	static var initialized:Bool = false;
 
@@ -81,9 +81,9 @@ class TitleState extends MusicBeatState
 		}
 
 		#if FREEPLAY
-		FlxG.switchState(new FreeplayState());
+		FlxG.switchState(new states.FreeplayState());
 		#elseif CHARTING
-		FlxG.switchState(new ChartingState());
+		FlxG.switchState(new states.ChartingState());
 		#else
 		new FlxTimer().start(1, function(tmr:FlxTimer)
 		{
@@ -274,11 +274,11 @@ class TitleState extends MusicBeatState
 
 				if (version.trim() != NGio.GAME_VER_NUMS.trim() && !OutdatedSubState.leftState)
 				{
-					FlxG.switchState(new MainMenuState());
+					FlxG.switchState(new states.MainMenuState());
 				}
 				else
 				{
-					FlxG.switchState(new MainMenuState());
+					FlxG.switchState(new states.MainMenuState());
 				}
 			});
 			// FlxG.sound.play(Paths.music('titleShoot'), 0.7);

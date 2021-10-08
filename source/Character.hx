@@ -92,7 +92,7 @@ class Character extends FlxSprite
 
 				playAnim('danceRight');
 
-				setGraphicSize(Std.int(width * PlayState.daPixelZoom));
+				setGraphicSize(Std.int(width * states.PlayState.daPixelZoom));
 				updateHitbox();
 				antialiasing = false;
 

@@ -20,7 +20,7 @@ import lime.net.curl.CURLCode;
 
 using StringTools;
 
-class StoryMenuState extends MusicBeatState
+class StoryMenuState extends states.MusicBeatState
 {
 	var scoreText:FlxText;
 

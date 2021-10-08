@@ -4,7 +4,7 @@ import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
 
-class GitarooPause extends MusicBeatState
+class GitarooPause extends states.MusicBeatState
 {
 	var replayButton:FlxSprite;
 	var cancelButton:FlxSprite;
@@ -59,11 +59,11 @@ class GitarooPause extends MusicBeatState
 		{
 			if (replaySelect)
 			{
-				FlxG.switchState(new PlayState());
+				FlxG.switchState(new states.PlayState());
 			}
 			else
 			{
-				FlxG.switchState(new MainMenuState());
+				FlxG.switchState(new states.MainMenuState());
 			}
 		}
 

@@ -66,8 +66,8 @@ class Replay
     public function SaveReplay()
     {
         var json = {
-            "songName": PlayState.SONG.song.toLowerCase(),
-            "songDiff": PlayState.storyDifficulty,
+            "songName": states.PlayState.SONG.song.toLowerCase(),
+            "songDiff": states.PlayState.storyDifficulty,
             "keyPresses": replay.keyPresses,
             "keyReleases": replay.keyReleases,
             "timestamp": Date.now(),

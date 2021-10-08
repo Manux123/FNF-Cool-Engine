@@ -77,12 +77,12 @@ class Main extends Sprite
 	
 		#if web
 		var str1:String = "HTML CRAP";
-		var vHandler = new VideoHandler();
+		var vHandler = new webm.VideoHandler();
 		vHandler.init1();
 		vHandler.video.name = str1;
 		addChild(vHandler.video);
 		vHandler.init2();
-		GlobalVideo.setVid(vHandler);
+		webm.GlobalVideo.setVid(vHandler);
 		vHandler.source(ourSource);
 		#elseif desktop
 		var str1:String = "WEBM SHIT"; 
@@ -91,7 +91,7 @@ class Main extends Sprite
 		webmHandle.makePlayer();
 		webmHandle.webm.name = str1;
 		addChild(webmHandle.webm);
-		GlobalVideo.setWebm(webmHandle);
+		webm.GlobalVideo.setWebm(webmHandle);
 		#end
 	}
 }

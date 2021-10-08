@@ -24,7 +24,7 @@ ADDITIONS IN 0.1.6 (FINAL!!)
 
 - New TitleState.
 - Better Menu Charting.
-- Videos Webm!!
+- Webm Videos!!
 - Tutorials.
 - Now PlayState.hx more ordered!
 - Improved sorting of folders.

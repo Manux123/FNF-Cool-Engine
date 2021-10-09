@@ -30,6 +30,7 @@ using StringTools;
 class KeyBindMenu extends FlxSubState
 {
 
+    var bg:FlxSprite;
     var keyTextDisplay:FlxText;
     var keyWarning:FlxText;
     var warningTween:FlxTween;
@@ -66,7 +67,7 @@ class KeyBindMenu extends FlxSubState
 		add(blackScreen);
         */
 
-        var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBG'));
+        bg = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBG'));
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0;
 		bg.setGraphicSize(Std.int(bg.width * 1.18));
@@ -223,7 +224,7 @@ class KeyBindMenu extends FlxSubState
         save();
 
         FlxTween.tween(keyTextDisplay, {alpha: 0}, 1, {ease: FlxEase.expoInOut});
-        FlxTween.tween(blackBox, {alpha: 0}, 1.1, {ease: FlxEase.expoInOut, onComplete: function(flx:FlxTween){close();}});
+        FlxTween.tween(bg, {alpha: 0}, 1.1, {ease: FlxEase.expoInOut, onComplete: function(flx:FlxTween){close();}});
         FlxTween.tween(infoText, {alpha: 0}, 1, {ease: FlxEase.expoInOut});
 
         FlxG.switchState(new SectionsOptions());

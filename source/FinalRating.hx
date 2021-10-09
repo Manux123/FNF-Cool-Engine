@@ -15,6 +15,7 @@ class FinalRating extends FlxSubState
     var comboText:FlxText;
     override public function create()
     {
+        FlxG.camera.fade(FlxColor.BLACK, 0.8, true);
         var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGBlue'));
 		add(bg);
 

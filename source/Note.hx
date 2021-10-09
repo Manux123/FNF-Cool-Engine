@@ -126,6 +126,9 @@ class Note extends FlxSprite
 			noteScore * 0.2;
 			alpha = 0.6;
 
+			if(FlxG.save.data.downscroll)
+				flipY = true;
+
 			x += width / 2;
 
 			switch (noteData)

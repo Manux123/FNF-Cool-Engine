@@ -83,7 +83,8 @@ class OptionsMenu extends states.MusicBeatState
 				changeSelection(-1);
 			if (controls.DOWN_P)
 				changeSelection(1);
-			
+
+
 			if (controls.RIGHT_R)
 			{
 				FlxG.save.data.offset++;
@@ -135,7 +136,7 @@ class OptionsMenu extends states.MusicBeatState
 			item.targetY = bullShit - curSelected;
 			bullShit++;
 
-			item.alpha = 0.6;
+			item.alpha = 0.3;
 			// item.setGraphicSize(Std.int(item.width * 0.8));
 
 			if (item.targetY == 0)

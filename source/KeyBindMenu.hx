@@ -61,8 +61,20 @@ class KeyBindMenu extends FlxSubState
                 keys[i] = defaultKeys[i];
         }
 	
+        /*
 		blackScreen = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		add(blackScreen);
+        */
+
+        var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBG'));
+		bg.scrollFactor.x = 0;
+		bg.scrollFactor.y = 0;
+		bg.setGraphicSize(Std.int(bg.width * 1.18));
+		bg.updateHitbox();
+		bg.screenCenter();
+		bg.antialiasing = true;
+		bg.color = 0xFF077904; //If you don't like the actual color just change it
+		add(bg);
 
 		persistentUpdate = persistentDraw = true;
 
@@ -72,8 +84,10 @@ class KeyBindMenu extends FlxSubState
 		keyTextDisplay.borderSize = 2;
 		keyTextDisplay.borderQuality = 3;
 
+        /*
         blackBox = new FlxSprite(0,0).makeGraphic(FlxG.width,FlxG.height,FlxColor.BLACK);
         add(blackBox);
+        */
 
         infoText = new FlxText(-10, 580, 1280, "(Escape to save, backspace to leave without saving)", 72);
 		infoText.scrollFactor.set(0, 0);
@@ -85,12 +99,12 @@ class KeyBindMenu extends FlxSubState
         add(infoText);
         add(keyTextDisplay);
 
-        blackBox.alpha = 0;
+        //blackBox.alpha = 0; lol
         keyTextDisplay.alpha = 0;
 
         FlxTween.tween(keyTextDisplay, {alpha: 1}, 1, {ease: FlxEase.expoInOut});
         FlxTween.tween(infoText, {alpha: 1}, 1.4, {ease: FlxEase.expoInOut});
-        FlxTween.tween(blackBox, {alpha: 0.7}, 1, {ease: FlxEase.expoInOut});
+        FlxTween.tween(bg, {alpha: 0.7}, 1, {ease: FlxEase.expoInOut});
 
         textUpdate();
 

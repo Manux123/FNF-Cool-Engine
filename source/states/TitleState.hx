@@ -314,7 +314,7 @@ class TitleState extends states.MusicBeatState
 		credGroup.add(coolText);
 		textGroup.add(coolText);
 		
-		FlxTween.tween(coolText,{y: coolText.y + (textGroup.length * 60) + 200},0.4,{ease: FlxEase.expoInOut, onComplete: function(flxTween:FlxTween) 
+		FlxTween.tween(coolText,{y: coolText.y + (textGroup.length * 60) + 150},0.4,{ease: FlxEase.expoInOut, onComplete: function(flxTween:FlxTween) 
 			{ 
 			}});
 

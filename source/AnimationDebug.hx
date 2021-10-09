@@ -24,6 +24,7 @@ class AnimationDebug extends FlxState
 	var isDad:Bool = true;
 	var daAnim:String = 'spooky';
 	var camFollow:FlxObject;
+	var textcontrols:FlxText;
 
 	public function new(daAnim:String = 'spooky')
 	{
@@ -33,9 +34,9 @@ class AnimationDebug extends FlxState
 
 	override function create()
 	{
-		FlxG.sound.music.stop();
+		FlxG.sound.playMusic(Paths.music('configurator'));
 
-		var gridBG:FlxSprite = FlxGridOverlay.create(10, 10);
+		var gridBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		gridBG.scrollFactor.set(0.5, 0.5);
 		add(gridBG);
 
@@ -65,6 +66,13 @@ class AnimationDebug extends FlxState
 
 		dumbTexts = new FlxTypedGroup<FlxText>();
 		add(dumbTexts);
+
+		textcontrols = new FlxText(0,0,'J = Camera Left  L = Camera Right  I = Camera Up  K = Camera Down');
+        textcontrols.size = 28;
+        textcontrols.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);
+        textcontrols.color = FlxColor.WHITE;
+        textcontrols.scrollFactor.set();
+        add(textcontrols);
 
 		textAnim = new FlxText(300, 16);
 		textAnim.size = 26;

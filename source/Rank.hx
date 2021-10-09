@@ -12,7 +12,10 @@ class Rank
             PlayState.accuracy >= 99.99, //S
             PlayState.accuracy >= 89.99, //A
             PlayState.accuracy >= 69.99, //B
-            PlayState.accuracy <= 69 //C
+            PlayState.accuracy >= 64.99, //C
+            PlayState.accuracy >= 59.99, //D
+            PlayState.accuracy >= 54.99, //E
+            PlayState.accuracy <= 49 //F
         ];
 
         for(i in 0...wifeConditions.length)
@@ -30,6 +33,12 @@ class Rank
 						ranking = "B";
 					case 3:
 						ranking = "C";
+                    case 4:
+                        ranking = "D";
+                    case 5:
+                        ranking = "E";
+                    case 6:
+                        ranking = "F";
                 }
                 break;
             }

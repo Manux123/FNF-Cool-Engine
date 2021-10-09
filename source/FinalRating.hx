@@ -50,6 +50,7 @@ class FinalRating extends FlxSubState
         var daRank:FlxSprite = new FlxSprite(600, 400).loadGraphic(Paths.image('ratings/${Rank.generateLetterRank()}'));
         daRank.scale.x = 1.5; //I tried other method but this is the one it worked
         daRank.scale.y = 1.5;
+        daRank.antialiasing = true;
         add(daRank);
 
         var daLogo:FlxSprite = new FlxSprite(600, 200).loadGraphic(Paths.image('titlestate/daLogo'));

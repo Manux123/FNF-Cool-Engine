@@ -63,9 +63,7 @@ class FinalRating extends FlxSubState
         super.update(elapsed);
 
         if (FlxG.keys.justPressed.ENTER)
-            {
-                FlxG.camera.flash(FlxColor.WHITE, 4);
-                
+            {   
                 if (PlayState.isStoryMode)
                     FlxG.switchState(new states.StoryMenuState());
                 else

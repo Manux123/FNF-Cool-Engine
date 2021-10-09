@@ -366,6 +366,7 @@ class TitleState extends states.MusicBeatState
 				addMoreText('Jloor');
 				addMoreText('Chasetodie Manux');
 				addMoreText('Juanen');
+				addMoreText('Strexx');
 			// credTextShit.text += '\nNewgrounds';
 			case 8:
 				deleteCoolText();

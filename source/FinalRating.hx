@@ -8,11 +8,13 @@ import flixel.util.FlxColor;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.FlxSubState;
+import flixel.util.FlxTimer;
 
 class FinalRating extends FlxSubState
 {
 //  var daRatings:String = "S";
     var comboText:FlxText;
+    var bf:FlxSprite;
     override public function create()
     {
         FlxG.camera.fade(FlxColor.BLACK, 0.8, true);
@@ -25,9 +27,10 @@ class FinalRating extends FlxSubState
         FlxG.sound.playMusic(Paths.music('configurator'));
 
         var bfTex = Paths.getSparrowAtlas('menu/BOYFRIEND');
-        var bf:FlxSprite = new FlxSprite(200, 400);
+        bf = new FlxSprite(200, 400);
         bf.frames = bfTex;
-		bf.animation.addByPrefix('idle', 'BF HEY!!', 24, false);
+		bf.animation.addByPrefix('idle', 'BF idle dance', 24, false);
+        bf.animation.addByPrefix('hey', 'BF HEY!!', 24, false);
 		bf.animation.play('idle');
 		bf.antialiasing = true;
 		add(bf);
@@ -54,9 +57,11 @@ class FinalRating extends FlxSubState
         daLogo.scale.y = 0.5;
         add(daLogo);
 
-        FlxTween.tween(bg, {alpha: 0.5},0.5);
-        FlxTween.tween(daRank, {y:150},0.5,{ease: FlxEase.expoInOut});
-        FlxTween.tween(bf, {y:200},0.5,{ease: FlxEase.expoInOut});
+        FlxG.camera.flash(FlxColor.WHITE, 1);
+
+        FlxTween.tween(bg, {alpha: 0.5},1.1);
+        FlxTween.tween(daRank, {y:150},1.1,{ease: FlxEase.expoInOut});
+        FlxTween.tween(bf, {y:200},1.1,{ease: FlxEase.expoInOut});
     } 
 
     override function update(elapsed:Float)
@@ -65,10 +70,25 @@ class FinalRating extends FlxSubState
 
         if (FlxG.keys.justPressed.ENTER)
             {   
-                if (PlayState.isStoryMode)
-                    FlxG.switchState(new states.StoryMenuState());
-                else
-                    FlxG.switchState(new states.FreeplayState());
+                bf.animation.play('hey', true);
+
+                FlxG.camera.flash(FlxColor.WHITE, 2.5);
+
+                new FlxTimer().start(2, function(tmr:FlxTimer)
+                    {
+                    //Strexx estuvo aca
+        
+                        if (PlayState.isStoryMode)
+                        {
+                            FlxG.switchState(new states.StoryMenuState());
+                            FlxG.camera.fade(FlxColor.BLACK, 0.8, false);
+                        }
+                        else
+                        {
+                            FlxG.switchState(new states.FreeplayState());
+                            FlxG.camera.fade(FlxColor.BLACK, 0.8, false);
+                        }
+                    });
             }
 	}
     /*

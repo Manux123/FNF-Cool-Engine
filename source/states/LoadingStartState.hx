@@ -1,114 +1,161 @@
 package states;
 
-import haxe.Exception;
-import flixel.tweens.FlxEase;
-import flixel.tweens.FlxTween;
 import flixel.FlxG;
 import flixel.FlxSprite;
-import sys.FileSystem;
-import sys.io.File;
-import flixel.addons.transition.FlxTransitionSprite.GraphicTransTileDiamond;
-import flixel.addons.transition.FlxTransitionableState;
-import flixel.addons.transition.TransitionData;
 import flixel.graphics.FlxGraphic;
-import flixel.graphics.frames.FlxAtlasFrames;
-import flixel.math.FlxPoint;
-import flixel.math.FlxRect;
-import flixel.util.FlxColor;
-import flixel.util.FlxTimer;
+import openfl.display.BitmapData;
 import flixel.text.FlxText;
+import flixel.util.FlxColor;
 
 using StringTools;
 
 class LoadingStartState extends MusicBeatState
 {
-    var toBeDone = 0;
-    var done = 0;
+    var toBeFinished = 0;
+	var finished = 0;
 
-    var text:FlxText;
-    var bg:FlxSprite;
+	var loading:FlxText;
+	var musicloading:Bool = false;
+	var musicgame:Array<String> = [	"Tutorial", 
+									"Boopebo", 
+									"Fresh", 
+									"Dadbattle", 
+									"Spookeez", 
+									"South", 
+									"Pico", 
+									"Philly", 
+									"Blammed", 
+									"Satin-Panties", 
+									"High", 
+									"Milf",
+									"Cocoa", 
+									"Eggnog",
+									"Senpai",
+									"Roses",
+									"Thorns"];
+
+	var charactersloading:Bool = false;
+	var characters:Array<String> = ["characters/BOYFRIEND", 
+									"characters/week4/bfCar", 
+									"christmas/bfChristmas", 
+									"weeb/bfPixel", "weeb/bfPixelsDEAD",
+									"characters/GF_assets", 
+									"characters/week4/gfCar", 
+									"christmas/gfChristmas", 
+									"weeb/gfPixel",
+									"characters/week1/DADDY_DEAREST", 
+									"spooky_kids_assets", 
+									"Monster_Assets",
+									"Pico_FNF_assetss", 
+									"characters/week4/Mom_Assets", 
+									"characters/week4/momCar",
+									"christmas/mom_dad_christmas_assets", 
+									"christmas/monsterChristmas",
+									"weeb/senpai", "weeb/spirit", "weeb/senpaiCrazy"];
+
+	var loadingStart:Bool = false;
 
 	override function create()
 	{
-        FlxG.mouse.visible = false;
+        FlxG.save.bind('data');
+		Highscore.load();
+		KeyBinds.keyCheck();
+		PlayerSettings.init();
 
-        FlxG.worldBounds.set(0,0);
+        toBeFinished = Lambda.count(characters) + Lambda.count(musicgame);
 
-        bg = new FlxSprite().loadGraphic(Paths.image('titlestate/titlestateBG'));
-		bg.scrollFactor.set();
-		bg.antialiasing = true;
+		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('titlestate/titlestateBG'));
 		add(bg);
 
-        text = new FlxText(FlxG.width / 2 + 250, FlxG.height / 2 + 300,0,"Loading...");
-        text.size = 34;
-        text.alignment = FlxTextAlign.CENTER;
+        loading = new FlxText(0, 680);
+        loading.size = 24;
+        add(loading);
 
-        add(text);
-        
-        sys.thread.Thread.create(() -> {
-            cache();
-        });
+		preload();
+		
 
+		super.create();
+	}
 
-        super.create();
-    }
-
-    var calledDone = false;
-
-    override function update(elapsed) 
+	override function update(elapsed:Float)
     {
-
-        if (toBeDone != 0 && done != toBeDone)
-        {
-            var alpha = truncateFloat(done / toBeDone * 100,2) / 100;
-            text.alpha = 1;
-            text.text = "Loading... (" + done + "/" + toBeDone + ")";
-        }
-
         super.update(elapsed);
+
+        if (musicloading && charactersloading)
+        {
+            loading.text = "Finished. Press Enter To Continue";
+            if (FlxG.keys.justPressed.ENTER)
+            {   
+                FlxG.switchState(new states.TitleState());
+                FlxG.camera.fade(FlxColor.BLACK, 0.8, false);
+            }
+        }
+	}
+
+    function preload(){
+
+        loading.text = "Loading Assets";
+
+        if(!charactersloading){
+            #if sys sys.thread.Thread.create(() -> { #end
+                preloadAssets();
+            #if sys }); #end
+        }
+        
+        if(!musicloading){ 
+            #if sys sys.thread.Thread.create(() -> { #end
+                preloadMusic();
+            #if sys }); #end
+        }
     }
 
-    function truncateFloat( number : Float, precision : Int): Float {
-		var num = number;
-		num = num * Math.pow(10, precision);
-		num = Math.round( num ) / Math.pow(10, precision);
-		return num;
-		}
-
-    function cache()
-    {
-
-        var images = [];
-        var music = [];
-
-        trace("caching images...");
-
-        for (i in FileSystem.readDirectory(FileSystem.absolutePath("assets/shared/images")))
-        {
-            if (!i.endsWith(".png"))
-                continue;
-            images.push(i);
+    function preloadMusic(){
+        for(x in musicgame){
+            FlxG.sound.cache(Paths.inst(x));
+            FlxG.sound.cache(Paths.voices(x));
+            loading.text = "Music Loaded (" + finished + "/" + toBeFinished + ")";
+            trace("Chached " + x);
+            finished++;
         }
+        
+        loading.text = "Songs loaded";
+        musicloading = true;
+    }
 
-        trace("caching music...");
-
-        for (i in FileSystem.readDirectory(FileSystem.absolutePath("assets/songs")))
-        {
-            music.push(i);
+    function preloadAssets(){
+        for(x in characters){
+            loading.text = "Assets Loaded (" + finished + "/" + toBeFinished + ")";
+            ImageCache.add(Paths.image(x));
+            trace("Chached " + x);
+            finished++;
         }
+        loading.text = "Assets Loaded";
+        charactersloading = true;
+    }
 
-        toBeDone = Lambda.count(images) + Lambda.count(music);
+}
 
-        for (i in music)
-        {
-            FlxG.sound.cache(Paths.inst(i));
-            FlxG.sound.cache(Paths.voices(i));
-            done++;
-        }
+//End of Loading and Start of Image Caching
 
-        trace("Finished caching...");
 
-        FlxG.switchState(new TitleState());
+class ImageCache{
+
+    public static var cache:Map<String,FlxGraphic> = new Map<String,FlxGraphic>();
+
+    public static function add(path:String):Void{
+        
+        var data:FlxGraphic = FlxGraphic.fromBitmapData(BitmapData.fromFile(path));
+        data.persist = true;
+
+        cache.set(path, data);
+    }
+
+    public static function get(path:String):FlxGraphic{
+        return cache.get(path);
+    }
+
+    public static function exists(path:String){
+        return cache.exists(path);
     }
 
 }

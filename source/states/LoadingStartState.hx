@@ -64,7 +64,7 @@ class LoadingStartState extends MusicBeatState
 
         toBeFinished = Lambda.count(characters) + Lambda.count(musicgame);
 
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('titlestate/titlestateBG'));
+		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGloading'));
 		add(bg);
 
         loading = new FlxText(0, 680);

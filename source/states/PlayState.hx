@@ -178,6 +178,8 @@ class PlayState extends states.MusicBeatState
 
 		misses = 0;
 
+		songScore = 0; //LOL
+
 		repPresses = 0;
 		repReleases = 0;
 

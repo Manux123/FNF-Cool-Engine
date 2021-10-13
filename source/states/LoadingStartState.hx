@@ -37,21 +37,21 @@ class LoadingStartState extends MusicBeatState
 	var charactersloading:Bool = false;
 	var characters:Array<String> = ["characters/BOYFRIEND", 
 									"characters/week4/bfCar", 
-									"christmas/bfChristmas", 
-									"weeb/bfPixel", "weeb/bfPixelsDEAD",
+									"characters/christmas/bfChristmas", 
+									"characters/characters/weeb/bfPixel", "characters/weeb/bfPixelsDEAD",
 									"characters/GF_assets", 
 									"characters/week4/gfCar", 
-									"christmas/gfChristmas", 
-									"weeb/gfPixel",
+									"characters/christmas/gfChristmas", 
+									"characters/weeb/gfPixel",
 									"characters/week1/DADDY_DEAREST", 
-									"spooky_kids_assets", 
-									"Monster_Assets",
-									"Pico_FNF_assetss", 
+									"characters/spooky_kids_assets", 
+									"characters/Monster_Assets",
+									"characters/Pico_FNF_assetss", 
 									"characters/week4/Mom_Assets", 
 									"characters/week4/momCar",
-									"christmas/mom_dad_christmas_assets", 
-									"christmas/monsterChristmas",
-									"weeb/senpai", "weeb/spirit", "weeb/senpaiCrazy"];
+									"characters/christmas/mom_dad_christmas_assets", 
+									"characters/christmas/monsterChristmas",
+									"characters/weeb/senpai", "characters/weeb/spirit", "characters/weeb/senpaiCrazy"];
 
 	var loadingStart:Bool = false;
 

@@ -2366,7 +2366,7 @@ class PlayState extends states.MusicBeatState
 						if (upP && spr.animation.curAnim.name != 'confirm')
 						{
 							spr.animation.play('pressed');
-							trace('play');
+							//trace('play'); wtf
 						}
 						if (upR)
 						{

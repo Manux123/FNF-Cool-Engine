@@ -68,6 +68,7 @@ class TitleState extends states.MusicBeatState
 		FlxG.save.bind('funkin', 'ninjamuffin99');
 
 		OptionsData.initSave();
+		KeyBinds.keyCheck();
 
 		Highscore.load();
 
@@ -103,27 +104,6 @@ class TitleState extends states.MusicBeatState
 
 	function startIntro()
 	{
-		if (!initialized)
-		{
-			var diamond:FlxGraphic = FlxGraphic.fromClass(GraphicTransTileDiamond);
-			diamond.persist = true;
-			diamond.destroyOnNoUse = false;
-
-			FlxTransitionableState.defaultTransIn = new TransitionData(FADE, FlxColor.BLACK, 1, new FlxPoint(0, -1), {asset: diamond, width: 32, height: 32},
-				new FlxRect(-200, -200, FlxG.width * 1.4, FlxG.height * 1.4));
-			FlxTransitionableState.defaultTransOut = new TransitionData(FADE, FlxColor.BLACK, 0.7, new FlxPoint(0, 1),
-				{asset: diamond, width: 32, height: 32}, new FlxRect(-200, -200, FlxG.width * 1.4, FlxG.height * 1.4));
-
-			transIn = FlxTransitionableState.defaultTransIn;
-			transOut = FlxTransitionableState.defaultTransOut;
-
-			// is very cool BV
-			FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
-
-			FlxG.sound.music.fadeIn(4, 0, 0.7);
-		}
-
-		Conductor.changeBPM(102);
 		persistentUpdate = true;
 
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('titlestate/titlestateBG'));
@@ -190,7 +170,33 @@ class TitleState extends states.MusicBeatState
 		if (initialized)
 			skipIntro();
 		else
-			initialized = true;
+			{
+				var diamond:FlxGraphic = FlxGraphic.fromClass(GraphicTransTileDiamond);
+				diamond.persist = true;
+				diamond.destroyOnNoUse = false;
+
+				FlxTransitionableState.defaultTransIn = new TransitionData(FADE, FlxColor.BLACK, 1, new FlxPoint(0, -1), {asset: diamond, width: 32, height: 32},
+					new FlxRect(-200, -200, FlxG.width * 1.4, FlxG.height * 1.4));
+				FlxTransitionableState.defaultTransOut = new TransitionData(FADE, FlxColor.BLACK, 0.7, new FlxPoint(0, 1),
+					{asset: diamond, width: 32, height: 32}, new FlxRect(-200, -200, FlxG.width * 1.4, FlxG.height * 1.4));
+
+				transIn = FlxTransitionableState.defaultTransIn;
+				transOut = FlxTransitionableState.defaultTransOut;
+
+				// HAD TO MODIFY SOME BACKEND SHIT
+				// IF THIS PR IS HERE IF ITS ACCEPTED UR GOOD TO GO
+				// https://github.com/HaxeFlixel/flixel-addons/pull/348
+
+				// var music:FlxSound = new FlxSound();
+				// music.loadStream(Paths.music('freakyMenu'));
+				// FlxG.sound.list.add(music);
+				// music.play();
+				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
+
+				FlxG.sound.music.fadeIn(4, 0, 0.7);
+				Conductor.changeBPM(102);
+				initialized = true;
+			}
 
 		// credGroup.add(credTextShit);
 	}
@@ -365,6 +371,7 @@ class TitleState extends states.MusicBeatState
 			case 5:
 				createCoolText(['Cool Engine', 'by']);
 			case 7:
+				// NO, we aren't gonna put every single fucking person that helps on the engine here
 				addMoreText('Manux');
 				addMoreText('JLoor');
 				addMoreText('Chasetodie');

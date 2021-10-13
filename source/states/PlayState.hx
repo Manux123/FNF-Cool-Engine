@@ -155,8 +155,6 @@ class PlayState extends states.MusicBeatState
 	public static var theFunne:Bool = true;
 	var funneEffect:FlxSprite;
 	var inCutscene:Bool = false;
-	public static var repPresses:Int = 0;
-	public static var repReleases:Int = 0;
 
 	public static var timeCurrently:Float = 0;
 	public static var timeCurrentlyR:Float = 0;
@@ -179,9 +177,6 @@ class PlayState extends states.MusicBeatState
 		misses = 0;
 
 		songScore = 0; //LOL
-
-		repPresses = 0;
-		repReleases = 0;
 
 		#if desktop
 		// Making difficulty text for Discord Rich Presence.
@@ -2227,7 +2222,6 @@ class PlayState extends states.MusicBeatState
 		// FlxG.watch.addQuick('asdfa', upP);
 		if ((upP || rightP || downP || leftP) && !boyfriend.stunned && generatedMusic)
 			{
-				repPresses++;
 				boyfriend.holdTimer = 0;
 	
 				var possibleNotes:Array<Note> = [];
@@ -2371,7 +2365,6 @@ class PlayState extends states.MusicBeatState
 						if (upR)
 						{
 							spr.animation.play('static');
-							repReleases++;
 						}
 					case 3:
 						if (rightP && spr.animation.curAnim.name != 'confirm')
@@ -2379,7 +2372,6 @@ class PlayState extends states.MusicBeatState
 						if (rightR)
 						{
 							spr.animation.play('static');
-							repReleases++;
 						}
 					case 1:
 						if (downP && spr.animation.curAnim.name != 'confirm')
@@ -2387,7 +2379,6 @@ class PlayState extends states.MusicBeatState
 						if (downR)
 						{
 							spr.animation.play('static');
-							repReleases++;
 						}
 					case 0:
 						if (leftP && spr.animation.curAnim.name != 'confirm')
@@ -2395,7 +2386,6 @@ class PlayState extends states.MusicBeatState
 						if (leftR)
 						{
 							spr.animation.play('static');
-							repReleases++;
 						}
 				}
 				

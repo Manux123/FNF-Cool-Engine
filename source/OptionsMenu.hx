@@ -222,6 +222,6 @@ class MiddleScroll extends Option
 
 	private override function updateDisplay():String
 	{
-		return !FlxG.save.data.middlescroll ? "Middlescroll On" : "Middlescroll Off";
+		return !FlxG.save.data.middlescroll ? "Middlescroll Off" : "Middlescroll On";
 	}
 }

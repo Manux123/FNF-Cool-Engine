@@ -1065,7 +1065,6 @@ class PlayState extends states.MusicBeatState
 								go.destroy();
 							}
 						});
-						FlxG.camera.flash(FlxColor.WHITE, 1);
 						FlxG.sound.play(Paths.sound('introGo'), 0.6);
 					case 4:
 			}

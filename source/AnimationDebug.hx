@@ -36,7 +36,7 @@ class AnimationDebug extends FlxState
 	{
 		FlxG.sound.playMusic(Paths.music('configurator'));
 
-		var gridBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
+		var gridBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 		gridBG.scrollFactor.set(0.5, 0.5);
 		add(gridBG);
 

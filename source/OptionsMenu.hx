@@ -24,6 +24,7 @@ class OptionsMenu extends states.MusicBeatState
 		new NewInputOption(),
 		new DownscrollOption(),
 		new MiddleScroll(),
+		new Fullscreen(),
 		new AccuracyOption()
 	];
 
@@ -223,5 +224,20 @@ class MiddleScroll extends Option
 	private override function updateDisplay():String
 	{
 		return !FlxG.save.data.middlescroll ? "Middlescroll Off" : "Middlescroll On";
+	}
+}
+
+class Fullscreen extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.fullscreen = !FlxG.fullscreen;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return !FlxG.fullscreen ? "Fullscreen Off" : "Fullscreen On";
 	}
 }

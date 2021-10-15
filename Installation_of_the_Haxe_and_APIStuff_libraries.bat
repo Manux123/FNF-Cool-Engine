@@ -21,12 +21,6 @@ cls
 haxelib run flixel-tools setup
 cls
 echo Make sure you have git installed. You can download it at https://git-scm.com/downloads
-echo Presiona cualquier tecla para instalar PolyMod.
-pause >nul
-title FNF Setup - Installation of libraries
-haxelib remove polymod
-haxelib git polymod https://github.com/PabloelproxD210/Polymod
-cls
 echo Press any key to install Discord_RPC
 pause >nul
 title FNF Setup - Installation of libraries

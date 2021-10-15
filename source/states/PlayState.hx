@@ -94,6 +94,8 @@ class PlayState extends states.MusicBeatState
 	private var playerStrums:FlxTypedGroup<FlxSprite>;
 	public static var cpuStrums:FlxTypedGroup<FlxSprite> = null;
 
+	var camPos:FlxPoint;
+
 	private var camZooming:Bool = false;
 	private var curSong:String = "";
 	private var splashNotes:FlxTypedGroup<NoteSplash>; // God Bv
@@ -164,6 +166,8 @@ class PlayState extends states.MusicBeatState
 		theFunne = FlxG.save.data.newInput;
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
+
+		camPos = new FlxPoint(dad.getGraphicMidpoint().x, dad.getGraphicMidpoint().y);
 
 		sicks = 0;
 		bads = 0;
@@ -610,8 +614,6 @@ class PlayState extends states.MusicBeatState
 
 		dad = new Character(100, 100, SONG.player2);
 
-		var camPos:FlxPoint = new FlxPoint(dad.getGraphicMidpoint().x, dad.getGraphicMidpoint().y);
-
 		switch (SONG.player2)
 		{
 			case 'gf':
@@ -1039,6 +1041,8 @@ class PlayState extends states.MusicBeatState
 				
 
 				if(FlxG.keys.justPressed.ENTER) {
+					switch (swagCounter)
+					{
 						case 2:
 							var set:FlxSprite = new FlxSprite().loadGraphic(Paths.image(introAlts[1]));
 							set.scrollFactor.set();
@@ -1084,7 +1088,7 @@ class PlayState extends states.MusicBeatState
 							FlxG.camera.flash(FlxColor.WHITE, 1);
 							FlxG.sound.play(Paths.sound('introGo'), 0.6);
 						case 4:
-
+					}
 				}
 			}
 
@@ -1707,13 +1711,17 @@ class PlayState extends states.MusicBeatState
 						switch (Math.abs(daNote.noteData))
 						{
 							case 2:
-								dad.playAnim('singUP' + altAnim, true) = camPos.y -= 40;
+								dad.playAnim('singUP' + altAnim, true);
+								camPos.y -= 40;
 							case 3:
-								dad.playAnim('singRIGHT' + altAnim, true) = camPos.x += 40;
+								dad.playAnim('singRIGHT' + altAnim, true);
+								camPos.y -= 40;
 							case 1:
-								dad.playAnim('singDOWN' + altAnim, true) = camPos.y += 40;
+								dad.playAnim('singDOWN' + altAnim, true);
+								camPos.y -= 40;
 							case 0:
-								dad.playAnim('singLEFT' + altAnim, true) = camPos.x -= 40;
+								dad.playAnim('singLEFT' + altAnim, true);
+								camPos.y -= 40;
 						}
 
 						
@@ -2523,13 +2531,13 @@ class PlayState extends states.MusicBeatState
 					switch (note.noteData)
 					{
 						case 2:
-							boyfriend.playAnim('singUP', true) = camPos.y -= 40;
+							boyfriend.playAnim('singUP', true); camPos.y -= 40;
 						case 3:
-							boyfriend.playAnim('singRIGHT', true) = camPos.x += 40;
+							boyfriend.playAnim('singRIGHT', true); camPos.x += 40;
 						case 1:
-							boyfriend.playAnim('singDOWN', true) = camPos.y += 40;
+							boyfriend.playAnim('singDOWN', true); camPos.y += 40;
 						case 0:
-							boyfriend.playAnim('singLEFT', true) = camPos.x -= 40;
+							boyfriend.playAnim('singLEFT', true); camPos.x -= 40;
 					}
 		
 					playerStrums.forEach(function(spr:FlxSprite)

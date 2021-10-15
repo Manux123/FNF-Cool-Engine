@@ -1012,14 +1012,6 @@ class PlayState extends states.MusicBeatState
 			{
 				case 0:
 					FlxG.sound.play(Paths.sound('intro3'), 0.6);
-
-					remove(strumLineNotes);
-					remove(strumLine);
-					remove(healthBarBG);
-					remove(healthBar);
-					remove(scoreTxt);
-					remove(iconP1);
-					remove(iconP2);
 				case 1:
 					var ready:FlxSprite = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
 					ready.scrollFactor.set();
@@ -1038,58 +1030,45 @@ class PlayState extends states.MusicBeatState
 						}
 					});
 					FlxG.sound.play(Paths.sound('intro2'), 0.6);
-				
 
-				if(FlxG.keys.justPressed.ENTER) {
-					switch (swagCounter)
-					{
-						case 2:
-							var set:FlxSprite = new FlxSprite().loadGraphic(Paths.image(introAlts[1]));
-							set.scrollFactor.set();
+					case 2:
+						var set:FlxSprite = new FlxSprite().loadGraphic(Paths.image(introAlts[1]));
+						set.scrollFactor.set();
 
-							if (curStage.startsWith('school'))
-								set.setGraphicSize(Std.int(set.width * daPixelZoom));
+						if (curStage.startsWith('school'))
+							set.setGraphicSize(Std.int(set.width * daPixelZoom));
 
-							set.screenCenter();
-							add(set);
-							FlxTween.tween(set, {y: set.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-								ease: FlxEase.cubeInOut,
-								onComplete: function(twn:FlxTween)
-								{
-									set.destroy();
-								}
-							});
-							FlxG.sound.play(Paths.sound('intro1'), 0.6);
-						case 3:
-							var go:FlxSprite = new FlxSprite().loadGraphic(Paths.image(introAlts[2]));
-							go.scrollFactor.set();
+						set.screenCenter();
+						add(set);
+						FlxTween.tween(set, {y: set.y += 100, alpha: 0}, Conductor.crochet / 1000, {
+							ease: FlxEase.cubeInOut,
+							onComplete: function(twn:FlxTween)
+							{
+								set.destroy();
+							}
+						});
+						FlxG.sound.play(Paths.sound('intro1'), 0.6);
+					case 3:
+						var go:FlxSprite = new FlxSprite().loadGraphic(Paths.image(introAlts[2]));
+						go.scrollFactor.set();
 
-							if (curStage.startsWith('school'))
-								go.setGraphicSize(Std.int(go.width * daPixelZoom));
+						if (curStage.startsWith('school'))
+							go.setGraphicSize(Std.int(go.width * daPixelZoom));
 
-							go.updateHitbox();
-							add(strumLineNotes);
-							add(strumLine);
-							add(healthBarBG);
-							add(healthBar);
-							add(scoreTxt);
-							add(iconP1);
-							add(iconP2);
+						go.updateHitbox();
 
-							go.screenCenter();
-							add(go);
-							FlxTween.tween(go, {y: go.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-								ease: FlxEase.cubeInOut,
-								onComplete: function(twn:FlxTween)
-								{
-									go.destroy();
-								}
-							});
-							FlxG.camera.flash(FlxColor.WHITE, 1);
-							FlxG.sound.play(Paths.sound('introGo'), 0.6);
-						case 4:
-					}
-				}
+						go.screenCenter();
+						add(go);
+						FlxTween.tween(go, {y: go.y += 100, alpha: 0}, Conductor.crochet / 1000, {
+							ease: FlxEase.cubeInOut,
+							onComplete: function(twn:FlxTween)
+							{
+								go.destroy();
+							}
+						});
+						FlxG.camera.flash(FlxColor.WHITE, 1);
+						FlxG.sound.play(Paths.sound('introGo'), 0.6);
+					case 4:
 			}
 
 			swagCounter += 1;

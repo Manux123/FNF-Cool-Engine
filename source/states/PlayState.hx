@@ -312,8 +312,7 @@ class PlayState extends states.MusicBeatState
 					light.setGraphicSize(Std.int(light.width * 0.85));
 					light.updateHitbox();
 					light.antialiasing = true;
-					if (FlxG.save.data.graphics)
-						phillyCityLights.add(light);
+					phillyCityLights.add(light);
 				}
 
 				var streetBehind:FlxSprite = new FlxSprite(-40, 50).loadGraphic(Paths.image('philly/behindTrain'));

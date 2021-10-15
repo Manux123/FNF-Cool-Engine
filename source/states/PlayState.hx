@@ -167,8 +167,6 @@ class PlayState extends states.MusicBeatState
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
 
-		camPos = new FlxPoint(dad.getGraphicMidpoint().x, dad.getGraphicMidpoint().y);
-
 		sicks = 0;
 		bads = 0;
 		shits = 0;
@@ -613,6 +611,8 @@ class PlayState extends states.MusicBeatState
 		gf.scrollFactor.set(0.95, 0.95);
 
 		dad = new Character(100, 100, SONG.player2);
+
+		camPos = new FlxPoint(dad.getGraphicMidpoint().x, dad.getGraphicMidpoint().y);
 
 		switch (SONG.player2)
 		{
@@ -1711,17 +1711,13 @@ class PlayState extends states.MusicBeatState
 						switch (Math.abs(daNote.noteData))
 						{
 							case 2:
-								dad.playAnim('singUP' + altAnim, true);
-								camPos.y -= 40;
+								dad.playAnim('singUP' + altAnim, true); camPos.y -= 40;
 							case 3:
-								dad.playAnim('singRIGHT' + altAnim, true);
-								camPos.y -= 40;
+								dad.playAnim('singRIGHT' + altAnim, true); camPos.x += 40;
 							case 1:
-								dad.playAnim('singDOWN' + altAnim, true);
-								camPos.y -= 40;
+								dad.playAnim('singDOWN' + altAnim, true); camPos.y += 40;
 							case 0:
-								dad.playAnim('singLEFT' + altAnim, true);
-								camPos.y -= 40;
+								dad.playAnim('singLEFT' + altAnim, true); camPos.x -= 40;
 						}
 
 						

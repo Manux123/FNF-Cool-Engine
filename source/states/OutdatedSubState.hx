@@ -18,7 +18,7 @@ class OutdatedSubState extends states.MusicBeatState
 		super.create();
 		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		add(bg);
-		var ver = "v" + Application.current.meta.get('version');
+		var ver = Application.current.meta.get('version');
 		var txt:FlxText = new FlxText(0, 0, FlxG.width,
 			"HEY! You're running an outdated version of the Cool Engine!\nYour current version is "
 			+ ver

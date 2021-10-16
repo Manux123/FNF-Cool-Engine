@@ -274,13 +274,13 @@ class TitleState extends states.MusicBeatState
 			{
 				// Check if version is outdated
 
-				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/version.downloadMe");
+				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/ver.thing");
 
-				var version:String = "v" + Application.current.meta.get('version');
+				var version:String = Application.current.meta.get('version');
 
 				http.onData = function (data:String) {
 				  
-				if (version.contains(data.trim()) && !OutdatedSubState.leftState)
+				if (!version.contains(data.trim()) && !OutdatedSubState.leftState)
 				{
 					trace('Poor guy, he is outdated');
 					OutdatedSubState.daVersionNeeded = data;

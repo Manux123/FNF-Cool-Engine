@@ -274,16 +274,30 @@ class TitleState extends states.MusicBeatState
 			{
 				// Check if version is outdated
 
+				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/version.downloadMe");
+
 				var version:String = "v" + Application.current.meta.get('version');
 
-				if (version.trim() != NGio.GAME_VER_NUMS.trim() && !OutdatedSubState.leftState)
+				http.onData = function (data:String) {
+				  
+				if (version.contains(data.trim()) && !OutdatedSubState.leftState)
 				{
-					FlxG.switchState(new states.MainMenuState());
+					trace('Poor guy, he is outdated');
+					OutdatedSubState.daVersionNeeded = data;
+					FlxG.switchState(new OutdatedSubState());
 				}
 				else
 				{
-					FlxG.switchState(new states.MainMenuState());
+				  	FlxG.switchState(new MainMenuState());
 				}
+			  }
+			  
+			  http.onError = function (error) {
+				trace('error: $error');
+				FlxG.switchState(new MainMenuState()); // fail but we go anyway
+			  }
+			  
+			  http.request();
 			});
 			// FlxG.sound.play(Paths.music('titleShoot'), 0.7);
 		}

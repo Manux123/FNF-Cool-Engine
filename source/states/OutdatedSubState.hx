@@ -11,6 +11,8 @@ class OutdatedSubState extends states.MusicBeatState
 {
 	public static var leftState:Bool = false;
 
+	public static var daVersionNeeded:String = "If i knew the lastest version i'll say it, i promess (idk how to spell that)";
+
 	override function create()
 	{
 		super.create();
@@ -18,11 +20,11 @@ class OutdatedSubState extends states.MusicBeatState
 		add(bg);
 		var ver = "v" + Application.current.meta.get('version');
 		var txt:FlxText = new FlxText(0, 0, FlxG.width,
-			"HEY! You're running an outdated version of the game!\nCurrent version is "
+			"HEY! You're running an outdated version of the Cool Engine!\nYour current version is "
 			+ ver
 			+ " while the most recent version is "
-			+ NGio.GAME_VER
-			+ "! Press Space to go to itch.io, or ESCAPE to ignore this!!",
+			+ daVersionNeeded
+			+ "! Press Space to go the Gamebanana page, or ESCAPE to ignore this.",
 			32);
 		txt.setFormat("VCR OSD Mono", 32, FlxColor.WHITE, CENTER);
 		txt.screenCenter();

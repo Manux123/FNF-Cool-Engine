@@ -3,7 +3,7 @@ import states.PlayState;
 
 class Rank
 {
-    public static var ranking:String = "NA";
+    public static var ranking:String = "N/A";
     public static function generateLetterRank() // generate a letter ranking
     {
         // WIFE TIME :)))) (based on Wife3)
@@ -44,8 +44,10 @@ class Rank
             }
         }
 
-        if (PlayState.accuracy == 0)
+        if (PlayState.accuracy == 0 && PlayState.startingSong)
             ranking = "N/A";
+        else if (PlayState.accuracy == 0 && !PlayState.startingSong)
+            ranking = "F";
 
         return ranking;
     }

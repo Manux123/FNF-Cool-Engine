@@ -114,7 +114,7 @@ class PlayState extends states.MusicBeatState
 	private var songPositionBar:Float = 0;
 	
 	private var generatedMusic:Bool = false;
-	private var startingSong:Bool = false;
+	public static var startingSong:Bool = false;
 
 	private var iconP1:HealthIcon;
 	private var iconP2:HealthIcon;

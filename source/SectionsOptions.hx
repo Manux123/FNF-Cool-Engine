@@ -52,14 +52,23 @@ class SectionsOptions extends states.MusicBeatState
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
 
-		for (i in 0...controlsStrings.length)
-		{
-			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 30, controlsStrings[i], true, false);
-			controlLabel.isMenuItem = true;
-			controlLabel.targetY = i;
+			var controlLabel:Alphabet = new Alphabet(0, 0, controlsStrings[0], true, false);
+			controlLabel.isMenuItem = false;
+			controlLabel.targetY = 0;
 			grpControls.add(controlLabel);
-		}
 
+			var controlLabel:Alphabet = new Alphabet(0, 0, controlsStrings[1], true, false);
+			controlLabel.isMenuItem = false;
+			controlLabel.targetY = 1;
+			controlLabel.x += 525;
+			grpControls.add(controlLabel);
+
+			
+			var controlLabel:Alphabet = new Alphabet(0, 650, controlsStrings[2], true, false);
+			controlLabel.isMenuItem = false;
+			controlLabel.targetY = 2;
+			controlLabel.x += 1050;
+			grpControls.add(controlLabel);
 		super.create();
 	}
 

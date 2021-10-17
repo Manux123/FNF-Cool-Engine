@@ -208,10 +208,11 @@ class MainMenuState extends states.MusicBeatState
 
 		super.update(elapsed);
 
+		/*
 		menuItems.forEach(function(spr:FlxSprite)
 		{
-			spr.screenCenter(X);
-		});
+			spr.screenCenter(X); no
+		}); */
 	}
 
 	function changeItem(huh:Int = 0)

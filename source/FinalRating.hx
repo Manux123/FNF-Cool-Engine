@@ -35,7 +35,7 @@ class FinalRating extends FlxSubState
 		bf.antialiasing = true;
 		add(bf);
 
-        comboText = new FlxText(0,0,'Score: ${PlayState.songScore}\nSicks: ${PlayState.sicks}\nGoods: ${PlayState.goods}\nBads: ${PlayState.bads}\nShits: ${PlayState.shits}\nMisses: ${PlayState.missess}
+        comboText = new FlxText(0,0,'Score: ${PlayState.songScore}\nSicks: ${PlayState.sicks}\nGoods: ${PlayState.goods}\nBads: ${PlayState.bads}\nShits: ${PlayState.shits}\nMisses: ${PlayState.misses}
         ');
         comboText.size = 28;
         comboText.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);

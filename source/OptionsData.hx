@@ -23,9 +23,6 @@ class OptionsData
 
 			if (FlxG.save.data.notesplashes == null)
 				FlxG.save.data.notesplashes = true;
-
-			if (FlxG.save.data.middlescroll == null)
-				FlxG.save.data.middlescroll = false;
 	
 			if (FlxG.save.data.offset == null)
 				FlxG.save.data.offset = 0;

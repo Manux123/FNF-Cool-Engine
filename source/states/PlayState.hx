@@ -1294,19 +1294,21 @@ class PlayState extends states.MusicBeatState
 				FlxTween.tween(babyArrow, {y: babyArrow.y + 10, alpha: 1}, 1, {ease: FlxEase.circOut, startDelay: 0.5 + (0.2 * i)});
 			}
 
-
-			if(!FlxG.save.data.middlescroll){
-				babyArrow.x -= 275;
-			}
-
 			babyArrow.ID = i;
 
 			switch (player)
 			{
 				case 0:
 					cpuStrums.add(babyArrow);
+					if(FlxG.save.data.middlescroll){
+						cpuStrums.remove(babyArrow);
+					}
 				case 1:
 					playerStrums.add(babyArrow);
+					if(FlxG.save.data.middlescroll){
+						playerStrums.add(babyArrow);
+						babyArrow.x -= 250;
+					}
 			}
 
 			babyArrow.animation.play('static');
@@ -1326,6 +1328,7 @@ class PlayState extends states.MusicBeatState
 	{
 		FlxTween.tween(FlxG.camera, {zoom: 1.3}, (Conductor.stepCrochet * 4 / 1000), {ease: FlxEase.elasticInOut});
 	}
+	
 
 	override function openSubState(SubState:FlxSubState)
 	{
@@ -1725,9 +1728,10 @@ class PlayState extends states.MusicBeatState
 						notes.remove(daNote, true);
 						daNote.destroy();
 					}
-	
+
 					if (FlxG.save.data.downscroll){
-						daNote.y = (strumLine.y + (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)));	
+						daNote.y = (strumLine.y + (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)));
+					
 
 						if(daNote.isSustainNote){
 

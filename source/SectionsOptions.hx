@@ -42,8 +42,6 @@ class SectionsOptions extends states.MusicBeatState
 		DiscordClient.changePresence("In the Sections", null);
 		#end
 
-		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
-		menuBG.updateHitbox();
 		menuBG.screenCenter();
 		menuBG.antialiasing = true;
 		menuBG.color = 0xFF453F3F;

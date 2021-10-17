@@ -84,7 +84,7 @@ class MainMenuState extends states.MusicBeatState
 
 		for (i in 0...optionShit.length)
 		{
-			var menuItem:FlxSprite = new FlxSprite(800 , 8 + (i * -175));
+			var menuItem:FlxSprite = new FlxSprite(900 , 8 + (i * -175));
 			menuItem.frames = tex;
 			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);

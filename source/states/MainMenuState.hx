@@ -35,6 +35,9 @@ class MainMenuState extends states.MusicBeatState
 	var canSnap:Array<Float> = [];
 	var camFollow:FlxObject;
 	var newInput:Bool = true;
+	public static var firstStart:Bool = true;
+
+	public static var finishedFunnyMove:Bool = false;
 
 	override function create()
 	{
@@ -56,34 +59,21 @@ class MainMenuState extends states.MusicBeatState
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBG'));
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0.18;
-		bg.setGraphicSize(Std.int(bg.width * 1.1));
-		bg.updateHitbox();
 		bg.screenCenter();
 		bg.antialiasing = true;
 		add(bg);
-
-		var light:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/light_menu'));
-		light.scrollFactor.x = 0;
-		light.scrollFactor.y = 0.18;
-		light.setGraphicSize(Std.int(light.width * 1.1));
-		light.updateHitbox();
-		light.screenCenter();
-		light.antialiasing = true;
-		add(light);
 
 		camFollow = new FlxObject(0, 0, 1, 1);
 		add(camFollow);
 
 		magenta = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGMagenta'));
-		magenta.setGraphicSize(Std.int(magenta.width * 1.1));
-		magenta.updateHitbox();
 		magenta.screenCenter();
 		magenta.visible = false;
 		magenta.antialiasing = true;
 		magenta.color = 0xFFfd719b;
 		add(magenta);
 
-		bg = new FlxSprite().loadGraphic(Paths.image('menu/menufront'));
+		bg = new FlxSprite().loadGraphic(Paths.image('menu/bg'));
 		bg.antialiasing = true;
 		add(bg);
 
@@ -94,25 +84,25 @@ class MainMenuState extends states.MusicBeatState
 
 		for (i in 0...optionShit.length)
 		{
-			var menuItem:FlxSprite = new FlxSprite(0, 80 + (i * 200));
+			var menuItem:FlxSprite = new FlxSprite(800 , 8 + (i * -175));
 			menuItem.frames = tex;
 			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
 			menuItem.animation.play('idle');
-			menuItem.x += 300;
-			canSnap[i] = -1;
 			menuItem.ID = i;
-			
-			if (menuItem.ID % 2 == 0)
-				menuItem.x += 1000;
-			else
-				menuItem.x -= 1000;
-
-			// actually add the item
+			// menuItem.screenCenter(X);
 			menuItems.add(menuItem);
 			menuItem.scrollFactor.set();
 			menuItem.antialiasing = true;
+			menuItem.setGraphicSize(Std.int(menuItem.width * 0.8));
 			menuItem.updateHitbox();
+			if (firstStart)
+				FlxTween.tween(menuItem,{y: 60 + (i * 200)},1 + (i * 0.25) ,{ease: FlxEase.expoInOut, onComplete: function(flxTween:FlxTween) 
+					{ 
+						finishedFunnyMove = true; 
+					}});
+			else
+				menuItem.y = 60 + (i * 200);
 		}
 
 		//FlxG.camera.follow(camFollow, null, 0.06);
@@ -163,8 +153,13 @@ class MainMenuState extends states.MusicBeatState
 
 			if (controls.ACCEPT)
 			{
-				if (optionShit[curSelected] == '')
+				if (optionShit[curSelected] == 'donate')
 				{
+					#if linux
+					Sys.command('/usr/bin/xdg-open', ["https://www.kickstarter.com/projects/funkin/friday-night-funkin-the-full-ass-game", "&"]);
+					#else
+					FlxG.openURL('https://www.kickstarter.com/projects/funkin/friday-night-funkin-the-full-ass-game');
+					#end
 				}
 				else
 				{
@@ -221,18 +216,21 @@ class MainMenuState extends states.MusicBeatState
 
 	function changeItem(huh:Int = 0)
 	{
-		curSelected += huh;
+		if (finishedFunnyMove)
+		{
+			curSelected += huh;
 
-		if (curSelected >= menuItems.length)
-			curSelected = 0;
-		if (curSelected < 0)
-			curSelected = menuItems.length - 1;
+			if (curSelected >= menuItems.length)
+				curSelected = 0;
+			if (curSelected < 0)
+				curSelected = menuItems.length - 1;
+		}
 
 		menuItems.forEach(function(spr:FlxSprite)
 		{
 			spr.animation.play('idle');
 
-			if (spr.ID == curSelected)
+			if (spr.ID == curSelected && finishedFunnyMove)
 			{
 				spr.animation.play('selected');
 				camFollow.setPosition(spr.getGraphicMidpoint().x, spr.getGraphicMidpoint().y);

@@ -76,9 +76,9 @@ class SectionsOptions extends states.MusicBeatState
 	{
 		super.update(elapsed);
 
-			if (controls.UP_P)
+			if (controls.LEFT_P)
 				changeSelection(-1);
-			if (controls.DOWN_P)
+			if (controls.RIGHT_P)
 				changeSelection(1);
 
 			if (controls.ACCEPT)

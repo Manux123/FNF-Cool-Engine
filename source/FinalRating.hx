@@ -69,11 +69,11 @@ class FinalRating extends FlxSubState
     {
         super.update(elapsed);
 
-        bf.animation.play('idle');
+        //bf.animation.play('idle', false);
 
         if (FlxG.keys.justPressed.ENTER)
             {   
-                bf.animation.stop();
+                //bf.animation.stop();
                 bf.animation.play('hey', true);
 
                 FlxG.camera.flash(FlxColor.WHITE, 2.5);

@@ -162,7 +162,7 @@ class PlayState extends states.MusicBeatState
 
 	override public function create()
 	{
-
+		FlxG.save.data.middlescroll = false;
 		theFunne = FlxG.save.data.newInput;
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();

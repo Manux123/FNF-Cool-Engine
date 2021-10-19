@@ -35,7 +35,7 @@ class SectionsOptions extends states.MusicBeatState
 			("\n" + 'Controls') +
 			("\n" + 'Exit'));
 		
-		trace(controlsStrings);
+		//trace(controlsStrings);
 
 		#if desktop
 		// Updating Discord Rich Presence
@@ -81,8 +81,9 @@ class SectionsOptions extends states.MusicBeatState
 
 			if (controls.ACCEPT)
 			{
-				if (curSelected != 5)
-					grpControls.remove(grpControls.members[curSelected]);
+				/*
+				if (curSelected != 5) Useless
+					grpControls.remove(grpControls.members[curSelected]);*/
 				switch(curSelected)
 				{
 					case 0:

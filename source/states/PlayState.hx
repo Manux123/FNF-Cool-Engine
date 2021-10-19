@@ -130,6 +130,9 @@ class PlayState extends states.MusicBeatState
 	var phillyTrain:FlxSprite;
 	var trainSound:FlxSound;
 
+	var daRating:String = "sick";
+	var daNote:Note;
+
 	var limo:FlxSprite;
 	var grpLimoDancers:FlxTypedGroup<BackgroundDancer>;
 	var fastCar:FlxSprite;
@@ -1904,8 +1907,6 @@ class PlayState extends states.MusicBeatState
 	
 			var rating:FlxSprite = new FlxSprite();
 			var score:Int = 350;
-	
-			var daRating:String = "sick";
 				
 			if (noteDiff > Conductor.safeZoneOffset * 3)
 				{
@@ -2384,7 +2385,52 @@ class PlayState extends states.MusicBeatState
 			}
 			combo = 0;
 			misses++;
-			
+
+			//Start of Miss Sprite thing (i know is an unpractical way and some will do it better, but it works so i don't care)
+			var placement:String = Std.string(combo);
+	
+			var coolText:FlxText = new FlxText(0, 0, 0, placement, 32);
+			coolText.screenCenter();
+			coolText.x = FlxG.width * 0.55;
+
+			var rating:FlxSprite = new FlxSprite();
+			rating.loadGraphic(Paths.image('miss'));
+			rating.screenCenter();
+			rating.y += 200;
+			rating.x = coolText.x - 40;
+			rating.y -= 60;
+			rating.acceleration.y = 550;
+			rating.velocity.y -= FlxG.random.int(140, 175);
+			rating.velocity.x -= FlxG.random.int(0, 10);
+			add(rating);
+
+			if (!curStage.startsWith('school'))
+				{
+					rating.setGraphicSize(Std.int(rating.width * 0.7));
+					rating.antialiasing = true;
+				}
+			else
+				{
+					rating.setGraphicSize(Std.int(rating.width * daPixelZoom * 0.7));
+				}
+
+				rating.updateHitbox();
+
+			FlxTween.tween(rating, {alpha: 0}, 0.2, {
+				startDelay: Conductor.crochet * 0.001
+			});
+	
+			FlxTween.tween(rating, {alpha: 0}, 0.2, {
+				onComplete: function(tween:FlxTween)
+				{
+					coolText.destroy();
+	
+					rating.destroy();
+				},
+				startDelay: Conductor.crochet * 0.001
+			});	
+	//End of Miss Sprite thing
+
 			songScore -= 10;
 
 			FlxG.sound.play(Paths.soundRandom('missnote', 1, 3), FlxG.random.float(0.1, 0.2));

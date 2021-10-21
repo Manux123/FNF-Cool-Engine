@@ -388,6 +388,26 @@ class Character extends FlxSprite
 				loadOffsetFile(curCharacter);
 
 				playAnim('idle');
+			case 'bf-pixel-enemy':
+				frames = Paths.getSparrowAtlas('weeb/bfPixel', 'week6');
+				animation.addByPrefix('idle', 'BF IDLE', 24, false);
+				animation.addByPrefix('singUP', 'BF UP NOTE', 24, false);
+				animation.addByPrefix('singLEFT', 'BF RIGHT NOTE', 24, false);
+				animation.addByPrefix('singRIGHT', 'BF LEFT NOTE', 24, false);
+				animation.addByPrefix('singDOWN', 'BF DOWN NOTE', 24, false);
+				loadOffsetFile(curCharacter);
+	
+				setGraphicSize(Std.int(width * 6));
+				updateHitbox();
+	
+				playAnim('idle');
+	
+				width -= 100;
+				height -= 100;
+	
+				antialiasing = false;
+	
+				flipX = true;
 		}
 
 		dance();

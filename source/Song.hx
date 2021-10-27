@@ -15,6 +15,8 @@ typedef SwagSong =
 	var needsVoices:Bool;
 	var speed:Float;
 
+	var modchart:Bool;
+
 	var player1:String;
 	var player2:String;
 	var validScore:Bool;
@@ -32,7 +34,7 @@ class Song
 	public var player1:String = 'bf';
 	public var player2:String = 'dad';
 
-	public function new(song, notes, bpm)
+	public function new(song, notes, bpm, modchart)
 	{
 		this.song = song;
 		this.notes = notes;

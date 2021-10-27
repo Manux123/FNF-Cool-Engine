@@ -129,6 +129,7 @@ class ChartingState extends states.MusicBeatState
 				player1: 'bf',
 				player2: 'dad',
 				speed: 1,
+				modchart: false,
 				validScore: false
 			};
 		}
@@ -274,7 +275,7 @@ class ChartingState extends states.MusicBeatState
 	var check_changeBPM:FlxUICheckBox;
 	var stepperSectionBPM:FlxUINumericStepper;
 	var check_altAnim:FlxUICheckBox;
-	var check_modchart:FlxUICheckBox<MiddleScroll>;
+	var check_modchart:FlxUICheckBox;
 
 	function addSectionUI():Void
 	{
@@ -339,7 +340,7 @@ class ChartingState extends states.MusicBeatState
 		tab_group_section.name = 'ModCharts';
 
 		check_modchart = new FlxUICheckBox(10, 400, null, null, "Flip Arrows", 100);
-		check_modchart.value = _song.modchart;
+		//check_modchart = _song.modchart;
 		check_modchart.name = 'check_modchart';
 
 
@@ -431,8 +432,6 @@ class ChartingState extends states.MusicBeatState
 					FlxG.log.add('changed bpm shit');
 				case "Alt Animation":
 					_song.notes[curSection].altAnim = check.checked;
-				case "MiddleScroll_sec":
-					_modcharts.flip_arrows[curSection].altAnim = check.checked;
 			}
 		}
 		else if (id == FlxUINumericStepper.CHANGE_EVENT && (sender is FlxUINumericStepper))

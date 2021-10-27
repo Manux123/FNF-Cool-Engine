@@ -161,6 +161,7 @@ class ChartingState extends states.MusicBeatState
 		var tabs = [
 			{name: "Song", label: 'Song'},
 			{name: "Section", label: 'Section'},
+			{name: "ModCharts", label: 'ModCharts'},
 			{name: "Note", label: 'Note'}
 		];
 
@@ -273,6 +274,7 @@ class ChartingState extends states.MusicBeatState
 	var check_changeBPM:FlxUICheckBox;
 	var stepperSectionBPM:FlxUINumericStepper;
 	var check_altAnim:FlxUICheckBox;
+	var check_modchart:FlxUICheckBox<MiddleScroll>;
 
 	function addSectionUI():Void
 	{
@@ -330,6 +332,21 @@ class ChartingState extends states.MusicBeatState
 
 		UI_box.addGroup(tab_group_section);
 	}
+
+	function addModChartUI():Void
+	{
+		var tab_group_section = new FlxUI(null, UI_box);
+		tab_group_section.name = 'ModCharts';
+
+		check_modchart = new FlxUICheckBox(10, 400, null, null, "Flip Arrows", 100);
+		check_modchart.value = _song.modchart;
+		check_modchart.name = 'check_modchart';
+
+
+		tab_group_section.add(check_modchart);
+		tab_group_section.add(stepperSectionBPM);
+	}
+
 
 	var stepperSusLength:FlxUINumericStepper;
 
@@ -414,6 +431,8 @@ class ChartingState extends states.MusicBeatState
 					FlxG.log.add('changed bpm shit');
 				case "Alt Animation":
 					_song.notes[curSection].altAnim = check.checked;
+				case "MiddleScroll_sec":
+					_modcharts.flip_arrows[curSection].altAnim = check.checked;
 			}
 		}
 		else if (id == FlxUINumericStepper.CHANGE_EVENT && (sender is FlxUINumericStepper))
@@ -421,6 +440,11 @@ class ChartingState extends states.MusicBeatState
 			var nums:FlxUINumericStepper = cast sender;
 			var wname = nums.name;
 			FlxG.log.add(wname);
+			if (wname == 'section_length')
+			{
+				_song.notes[curSection].lengthInSteps = Std.int(nums.value);
+				updateGrid();
+			}
 			if (wname == 'section_length')
 			{
 				_song.notes[curSection].lengthInSteps = Std.int(nums.value);
@@ -792,6 +816,7 @@ class ChartingState extends states.MusicBeatState
 		check_altAnim.checked = sec.altAnim;
 		check_changeBPM.checked = sec.changeBPM;
 		stepperSectionBPM.value = sec.bpm;
+		check_modchart.checked = sec.modchart;
 
 		updateHeads();
 	}
@@ -892,7 +917,8 @@ class ChartingState extends states.MusicBeatState
 			mustHitSection: true,
 			sectionNotes: [],
 			typeOfSection: 0,
-			altAnim: false
+			altAnim: false,
+			modchart: false
 		};
 
 		_song.notes.push(sec);

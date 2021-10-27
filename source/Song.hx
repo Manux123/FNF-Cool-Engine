@@ -25,6 +25,7 @@ class Song
 	public var song:String;
 	public var notes:Array<SwagSection>;
 	public var bpm:Int;
+	public var modchart:Array<SwagSection>;
 	public var needsVoices:Bool = true;
 	public var speed:Float = 1;
 
@@ -36,6 +37,7 @@ class Song
 		this.song = song;
 		this.notes = notes;
 		this.bpm = bpm;
+		this.modchart = modchart;
 	}
 
 	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong

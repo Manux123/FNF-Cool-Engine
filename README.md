@@ -17,6 +17,9 @@ Funkin Original
 - [ninjamuffin99](https://twitter.com/ninja_muffin99) - Programmer Friday Night Funkin Original
 - [PhantomArcade3K](https://twitter.com/phantomarcade3k) and [Evilsk8r](https://twitter.com/evilsk8r) - Artists Friday Night Funkin Original
 
+Specials Thanks
+- [PolybiusProxy](https://twitter.com/polybiusproxy) - MP4 Extension Loader
+
 ----------------------------------------------
 
 ADDITIONS IN 0.1.6 (FINAL!!)

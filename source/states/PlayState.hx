@@ -1908,49 +1908,21 @@ class PlayState extends states.MusicBeatState
 			var rating:FlxSprite = new FlxSprite();
 			var score:Int = 350;
 				
-			if (noteDiff > Conductor.safeZoneOffset * 3)
-				{
-					daRating = 'miss';
-					totalNotesHit -= 3;
-					ss = false;
-					if (theFunne)
-					{
-						score = -3000;
-						combo = 0;
-						missess++;
-						health -= 0.2;
-					}
-					missess++;
-				}
-				else if (noteDiff < Conductor.safeZoneOffset * -3)
-				{
-					daRating = 'miss';
-					totalNotesHit -= 3;
-					if (theFunne)
-					{
-						score = -3000;
-						combo = 0;
-						missess++;
-						health -= 0.2;
-					}
-					ss = false;
-					missess++;
-				}
-				else if (noteDiff > Conductor.safeZoneOffset * 1)
+			if (noteDiff > Conductor.safeZoneOffset * 2)
 				{
 					daRating = 'shit';
 					totalNotesHit -= 2;
 					ss = false;
 					if (theFunne)
-					{
-						score = -3000;
-						combo = 0;
-						misses++;
-						health -= 0.2;
-					}
+						{
+							score = -3000;
+							combo = 0;
+							misses++;
+							health -= 0.2;
+						}
 					shits++;
 				}
-				else if (noteDiff < Conductor.safeZoneOffset * -1)
+				else if (noteDiff < Conductor.safeZoneOffset * -2)
 				{
 					daRating = 'shit';
 					totalNotesHit -= 2;
@@ -1963,6 +1935,21 @@ class PlayState extends states.MusicBeatState
 					}
 					ss = false;
 					shits++;
+				}
+				else if (noteDiff < Conductor.safeZoneOffset * -0.45)
+				{
+					daRating = 'bad';
+					totalNotesHit += 0.2;
+					if (theFunne)
+					{
+						score = -1000;
+						health -= 0.03;
+						combo = 0;
+					}
+					else
+						score = 100;
+					ss = false;
+					bads++;
 				}
 				else if (noteDiff > Conductor.safeZoneOffset * 0.45)
 				{
@@ -1972,13 +1959,28 @@ class PlayState extends states.MusicBeatState
 						{
 							score = -1000;
 							health -= 0.03;
+							combo = 0;
 						}
 						else
 							score = 100;
 					ss = false;
 					bads++;
 				}
-				else if (noteDiff > Conductor.safeZoneOffset * 0.25)
+				else if (noteDiff < Conductor.safeZoneOffset * -0.25)
+				{
+					daRating = 'good';
+					totalNotesHit += 0.65;
+					if (theFunne)
+					{
+						score = 200;
+						//health -= 0.01;
+					}
+					else
+						score = 200;
+					ss = false;
+					goods++;
+				}
+				else if (noteDiff > Conductor.safeZoneOffset * 0.35)
 				{
 					daRating = 'good';
 					totalNotesHit += 0.65;

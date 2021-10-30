@@ -1936,7 +1936,7 @@ class PlayState extends states.MusicBeatState
 					ss = false;
 					missess++;
 				}
-				else if (noteDiff > Conductor.safeZoneOffset * 0.75)
+				else if (noteDiff > Conductor.safeZoneOffset * 1)
 				{
 					daRating = 'shit';
 					totalNotesHit -= 2;
@@ -1950,7 +1950,7 @@ class PlayState extends states.MusicBeatState
 					}
 					shits++;
 				}
-				else if (noteDiff < Conductor.safeZoneOffset * -0.75)
+				else if (noteDiff < Conductor.safeZoneOffset * -1)
 				{
 					daRating = 'shit';
 					totalNotesHit -= 2;
@@ -1964,21 +1964,7 @@ class PlayState extends states.MusicBeatState
 					ss = false;
 					shits++;
 				}
-				else if (noteDiff < Conductor.safeZoneOffset * -0.5)
-				{
-					daRating = 'bad';
-					totalNotesHit += 0.2;
-					if (theFunne)
-					{
-						score = -1000;
-						health -= 0.03;
-					}
-					else
-						score = 100;
-					ss = false;
-					bads++;
-				}
-				else if (noteDiff > Conductor.safeZoneOffset * 0.5)
+				else if (noteDiff > Conductor.safeZoneOffset * 0.45)
 				{
 					daRating = 'bad';
 					totalNotesHit += 0.2;
@@ -1991,20 +1977,6 @@ class PlayState extends states.MusicBeatState
 							score = 100;
 					ss = false;
 					bads++;
-				}
-				else if (noteDiff < Conductor.safeZoneOffset * -0.25)
-				{
-					daRating = 'good';
-					totalNotesHit += 0.65;
-					if (theFunne)
-					{
-						score = 200;
-						//health -= 0.01;
-					}
-					else
-						score = 200;
-					ss = false;
-					goods++;
 				}
 				else if (noteDiff > Conductor.safeZoneOffset * 0.25)
 				{

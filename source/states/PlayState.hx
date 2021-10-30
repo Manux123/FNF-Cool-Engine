@@ -1908,7 +1908,7 @@ class PlayState extends states.MusicBeatState
 			var rating:FlxSprite = new FlxSprite();
 			var score:Int = 350;
 				
-			if (noteDiff > Conductor.safeZoneOffset * 2)
+			if (noteDiff > Conductor.safeZoneOffset * 0.9)
 				{
 					daRating = 'shit';
 					totalNotesHit -= 2;
@@ -1922,7 +1922,7 @@ class PlayState extends states.MusicBeatState
 						}
 					shits++;
 				}
-				else if (noteDiff < Conductor.safeZoneOffset * -2)
+				else if (noteDiff < Conductor.safeZoneOffset * -0.9)
 				{
 					daRating = 'shit';
 					totalNotesHit -= 2;
@@ -1966,7 +1966,7 @@ class PlayState extends states.MusicBeatState
 					ss = false;
 					bads++;
 				}
-				else if (noteDiff < Conductor.safeZoneOffset * -0.25)
+				else if (noteDiff < Conductor.safeZoneOffset * -0.2)
 				{
 					daRating = 'good';
 					totalNotesHit += 0.65;
@@ -1980,7 +1980,7 @@ class PlayState extends states.MusicBeatState
 					ss = false;
 					goods++;
 				}
-				else if (noteDiff > Conductor.safeZoneOffset * 0.35)
+				else if (noteDiff > Conductor.safeZoneOffset * 0.2)
 				{
 					daRating = 'good';
 					totalNotesHit += 0.65;
@@ -1994,12 +1994,15 @@ class PlayState extends states.MusicBeatState
 					ss = false;
 					goods++;
 				}
-			if (daRating == 'sick')
+				else if (noteDiff > Conductor.safeZoneOffset * 0.1) //since sick is kinda stuck, now it works like 'good', 'bad and 'shit'
+				{
+					daRating = 'sick';
+					totalNotesHit += 1;
+					sicks++;
+				}
+			if(daRating == 'sick')
 			{
-				totalNotesHit += 1;
-				if (health < 2)
-					health += 0.1;
-				sicks++;
+				health += 0.1;
 			}
 	
 			if (daRating != 'shit' || daRating != 'bad')

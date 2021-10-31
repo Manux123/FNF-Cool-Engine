@@ -2027,12 +2027,12 @@ class PlayState extends states.MusicBeatState
 				else if (noteDiff > Conductor.safeZoneOffset * 0.1) //since sick is kinda stuck, now it works like 'good', 'bad and 'shit'
 				{
 					daRating = 'sick';
-					totalNotesHit += 1;
 					sicks++;
 				}
 			if(daRating == 'sick')
 			{
 				health += 0.1;
+				totalNotesHit += 1;
 			}
 	
 			if (daRating != 'shit' || daRating != 'bad')

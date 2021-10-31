@@ -336,16 +336,15 @@ class ChartingState extends states.MusicBeatState
 
 	function addModChartUI():Void
 	{
-		var tab_group_section = new FlxUI(null, UI_box);
-		tab_group_section.name = 'ModCharts';
+		var tab_group_modchart = new FlxUI(null, UI_box);
+		tab_group_modchart.name = 'ModCharts';
 
-		check_modchart = new FlxUICheckBox(10, 400, null, null, "Flip Arrows", 100);
-		//check_modchart = _song.modchart;
+		check_modchart = new FlxUICheckBox(10, 30, null, null, "Flip Arrows", 100);
 		check_modchart.name = 'check_modchart';
 
-
-		tab_group_section.add(check_modchart);
-		tab_group_section.add(stepperSectionBPM);
+		tab_group_modchart.add(check_modchart);
+	//	tab_group_modchart.add(stepperSectionBPM); wtf even is this
+		UI_box.addGroup(tab_group_modchart);
 	}
 
 
@@ -815,7 +814,7 @@ class ChartingState extends states.MusicBeatState
 		check_altAnim.checked = sec.altAnim;
 		check_changeBPM.checked = sec.changeBPM;
 		stepperSectionBPM.value = sec.bpm;
-		check_modchart.checked = sec.modchart;
+		//check_modchart.checked = sec.modchart; fuck
 
 		updateHeads();
 	}

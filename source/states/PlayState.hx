@@ -991,6 +991,9 @@ class PlayState extends states.MusicBeatState
 
 	var startTimer:FlxTimer;
 	var perfectMode:Bool = false;
+	var ready:FlxSprite;
+	var set:FlxSprite;
+	var go:FlxSprite;
 
 	function startCountdown():Void
 	{
@@ -1038,12 +1041,11 @@ class PlayState extends states.MusicBeatState
 			}
 
 			switch (swagCounter)
-
 			{
 				case 0:
 					FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
 				case 1:
-					var ready:FlxSprite = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
+					ready = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
 					ready.scrollFactor.set();
 					ready.updateHitbox();
 
@@ -1061,7 +1063,7 @@ class PlayState extends states.MusicBeatState
 					});
 					FlxG.sound.play(Paths.sound('intro2' + altSuffix), 0.6);
 				case 2:
-					var set:FlxSprite = new FlxSprite().loadGraphic(Paths.image(introAlts[1]));
+					set = new FlxSprite().loadGraphic(Paths.image(introAlts[1]));
 					set.scrollFactor.set();
 
 					if (curStage.startsWith('school'))
@@ -1078,7 +1080,7 @@ class PlayState extends states.MusicBeatState
 					});
 					FlxG.sound.play(Paths.sound('intro1' + altSuffix), 0.6);
 				case 3:
-					var go:FlxSprite = new FlxSprite().loadGraphic(Paths.image(introAlts[2]));
+					go = new FlxSprite().loadGraphic(Paths.image(introAlts[2]));
 					go.scrollFactor.set();
 
 					if (curStage.startsWith('school'))
@@ -1097,6 +1099,7 @@ class PlayState extends states.MusicBeatState
 					});
 					FlxG.sound.play(Paths.sound('introGo' + altSuffix), 0.6);
 					boyfriend.playAnim('hey', false);
+					gf.playAnim('cheer', false);
 					FlxG.camera.flash(FlxColor.WHITE, 1);
 			}
 			swagCounter += 1;

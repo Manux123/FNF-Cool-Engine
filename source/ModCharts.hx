@@ -4,15 +4,17 @@ import flixel.FlxG;
 import states.PlayState;
 import flixel.tweens.FlxTween;
 
-class ModCharts
-{
+class ModCharts {
+	private function update() {
+		// is very cool modcharts lol
 
+		trace('modcharts on yeah');
+	}
 }
 
-class MiddleScroll
+class MiddleScroll extends ModCharts
 {
-	public function new()
-	{
+	public function new() {
 
 		for (i in 0...3) {
 			  switch (playerStrums.members)
@@ -33,6 +35,6 @@ class MiddleScroll
 					  FlxTween.tween(playerStrums, {x:     
 					  playerStrums.x +749}, 0.5, {type:PINGPONG});
 			}
-			}
+		}
 	}
 }

@@ -97,7 +97,7 @@ class Character extends FlxSprite
 				antialiasing = false;
 
 			case 'dad':
-				// DAD ANIMATION LOADING CODE
+				// DAD ANIMATION?
 				tex = Paths.getSparrowAtlas('characters/week1/DADDY_DEAREST');
 				frames = tex;
 				animation.addByPrefix('idle', 'Dad idle dance', 24);
@@ -111,6 +111,7 @@ class Character extends FlxSprite
 				playAnim('idle');
 
 			case 'spooky':
+				// SPOOKY MONTH!
 				tex = Paths.getSparrowAtlas('spooky_kids_assets');
 				frames = tex;
 				animation.addByPrefix('singUP', 'spooky UP NOTE', 24, false);

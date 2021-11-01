@@ -25,7 +25,7 @@ class NoteSkinState extends states.MusicBeatState
 	override function create()
 	{
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
-		controlsStrings = CoolUtil.coolStringFile((FlxG.save.data.noteSkin ? 'Arrows' : 'Circles'));
+		controlsStrings = CoolUtil.coolStringFile((FlxG.save.data.noteSkin = 'Arrows'));
 		
 		trace(controlsStrings);
 
@@ -64,7 +64,15 @@ class NoteSkinState extends states.MusicBeatState
 			if (controls.BACK)
 				FlxG.switchState(new OptionsMenu());
 			if (controls.UP_P)
-				changeSelection(-1);
+			{
+				grpControls.remove(grpControls.members[curSelected]);
+                FlxG.save.data.noteSkin = 'Arrows';
+                var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.noteSkin), true, false);
+				ctrl.isMenuItem = true;
+				ctrl.targetY = curSelected;
+				grpControls.add(ctrl);
+				FlxG.save.flush();
+			}
 			if (controls.DOWN_P)
 				changeSelection(1);
 	
@@ -96,8 +104,8 @@ class NoteSkinState extends states.MusicBeatState
 				switch(curSelected)
 				{
 					case 0:
-						FlxG.save.data.noteSkin = !FlxG.save.data.noteSkin;
-						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.noteSkin ? 'Arrows' : 'Circles'), true, false);
+						FlxG.save.data.noteSkin = 'Circles';
+						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.noteSkin), true, false);
 						ctrl.isMenuItem = true;
 						ctrl.targetY = curSelected;
 						grpControls.add(ctrl);

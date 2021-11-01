@@ -78,7 +78,7 @@ class Note extends FlxSprite
 				updateHitbox();
 
 			default:
-				if (FlxG.save.data.noteSkin)
+				if (FlxG.save.data.noteSkin == 'Arrows')
 				{
 					frames = Paths.getSparrowAtlas('UI/NOTE_assets');
 
@@ -101,7 +101,7 @@ class Note extends FlxSprite
 					updateHitbox();
 					antialiasing = true;
 				}
-				else if(!FlxG.save.data.noteSkin)
+				else if(FlxG.save.data.noteSkin == 'Circles')
 				{
 					frames = Paths.getSparrowAtlas('UI/Circles');
 

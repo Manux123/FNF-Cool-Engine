@@ -1284,11 +1284,11 @@ class PlayState extends states.MusicBeatState
 					}
 
 				default:
-					if(FlxG.save.data.noteSkin)
+					if(FlxG.save.data.noteSkin == 'Arrows')
 					{
 						noteSkinTex = Paths.getSparrowAtlas('UI/NOTE_assets');
 					}
-					else if(!FlxG.save.data.noteSkin)
+					else if(FlxG.save.data.noteSkin == 'Circles')
 					{
 						noteSkinTex = Paths.getSparrowAtlas('UI/Circles');
 					}
@@ -2417,7 +2417,7 @@ class PlayState extends states.MusicBeatState
 						}
 				}
 
-				if (spr.animation.curAnim.name == 'confirm' && !curStage.startsWith('school'))
+				if (FlxG.save.data.noteSkin == 'Arrows' && spr.animation.curAnim.name == 'confirm' && !curStage.startsWith('school'))
 				{
 					spr.centerOffsets();
 					spr.offset.x -= 13;

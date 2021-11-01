@@ -81,6 +81,10 @@ class MenuGameOptions extends states.MusicBeatState
 			if (controls.DOWN_P)
 				changeSelection(1);
 
+			if(curSelected == 0)
+			{
+				versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset + ' - Perfect Mode: You need to do full combo or else you die';
+			}
 
 			if (controls.RIGHT_R)
 			{
@@ -167,7 +171,6 @@ class PerfectModeOption extends Option2
 {
 	public override function press():Bool
 	{
-		MenuGameOptions.versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset + ' - Perfect Mode: You need to do full combo or else you die';
 		FlxG.save.data.perfectmode = !FlxG.save.data.perfectmode;
 		display = updateDisplay();
 		return true;

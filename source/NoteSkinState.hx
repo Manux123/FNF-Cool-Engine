@@ -1,4 +1,4 @@
-package;
+package states;
 
 import Controls.KeyboardScheme;
 import Controls.Control;
@@ -46,7 +46,7 @@ class NoteSkinState extends states.MusicBeatState
 		circleSkinTex = Paths.getSparrowAtlas('UI/Circles', 'shared');
 		quaverSkinTex = Paths.getSparrowAtlas('UI/QUAVER_assets', 'shared');
 
-		previewSkins = new FlxSprite(1000, 0);
+		previewSkins = new FlxSprite(1000, 450);
 		previewSkins.frames = noteSkinTex;
 		previewSkins.animation.addByPrefix('green', 'arrowUP');
 		previewSkins.animation.addByPrefix('blue', 'arrowDOWN');

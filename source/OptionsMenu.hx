@@ -28,7 +28,6 @@ class OptionsMenu extends states.MusicBeatState
 		new DownscrollOption(),
 		// new MiddleScroll(),
 		new Fullscreen(),
-		//new NoteSkin(), me dumb
 		new AccuracyOption()
 	];
 
@@ -183,20 +182,6 @@ class DownscrollOption extends Option
 	private override function updateDisplay():String
 	{
 		return FlxG.save.data.downscroll ? "Downscroll" : "Upscroll";
-	}
-}
-
-class NoteSkin extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.switchState(new NoteSkinState());
-		return false;
-	}
-
-	private override function updateDisplay():String
-	{
-		return "Note Skins";
 	}
 }
 

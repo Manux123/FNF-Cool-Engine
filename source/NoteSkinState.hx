@@ -62,7 +62,7 @@ class NoteSkinState extends states.MusicBeatState
 		super.update(elapsed);
 
 			if (controls.BACK)
-				FlxG.switchState(new OptionsMenu());
+				FlxG.switchState(new SectionsOptions());
 			if (controls.UP_P)
 			{
 				grpControls.remove(grpControls.members[curSelected]);

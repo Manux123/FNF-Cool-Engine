@@ -28,7 +28,7 @@ class OptionsMenu extends states.MusicBeatState
 		new DownscrollOption(),
 		// new MiddleScroll(),
 		new Fullscreen(),
-		new NoteSkin(),
+		//new NoteSkin(), me dumb
 		new AccuracyOption()
 	];
 
@@ -186,7 +186,7 @@ class DownscrollOption extends Option
 	}
 }
 
-class NoteSkin extends Option // Still in Beta
+class NoteSkin extends Option
 {
 	public override function press():Bool
 	{

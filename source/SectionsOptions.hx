@@ -32,7 +32,8 @@ class SectionsOptions extends states.MusicBeatState
 		menuBG = new FlxSprite().loadGraphic(Paths.image('menu/menuBG'));
 		controlsStrings = CoolUtil.coolStringFile(
 			("\n" + 'Preferences') +
-			("\n" + 'GameOptions') +
+			("\n" + 'Game Options') +
+			("\n" + 'Note Skin') +
 			("\n" + 'Controls') +
 			("\n" + 'Exit'));
 		
@@ -51,27 +52,31 @@ class SectionsOptions extends states.MusicBeatState
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
 
-			var controlLabel:Alphabet = new Alphabet(0, 0, controlsStrings[0], true, false);
-			controlLabel.isMenuItem = false;
-			controlLabel.targetY = 0;
-			grpControls.add(controlLabel);
+		var controlLabel:Alphabet = new Alphabet(0, 0, controlsStrings[0], true, false);
+		controlLabel.isMenuItem = false;
+		controlLabel.targetY = 0;
+		grpControls.add(controlLabel);
 
-			var controlLabel:Alphabet = new Alphabet(0, 200, controlsStrings[1], true, false);
-			controlLabel.isMenuItem = false;
-			controlLabel.targetY = 1;
-			grpControls.add(controlLabel);
+		var controlLabel:Alphabet = new Alphabet(0, 200, controlsStrings[1], true, false);
+		controlLabel.isMenuItem = false;
+		controlLabel.targetY = 1;
+		grpControls.add(controlLabel);
 
-			var controlLabel:Alphabet = new Alphabet(0, 400, controlsStrings[2], true, false);
-			controlLabel.isMenuItem = false;
-			controlLabel.targetY = 2;
-			grpControls.add(controlLabel);
+		var controlLabel:Alphabet = new Alphabet(0, 400, controlsStrings[2], true, false);
+		controlLabel.isMenuItem = false;
+		controlLabel.targetY = 2;
+		grpControls.add(controlLabel);
 
-			
-			var controlLabel:Alphabet = new Alphabet(0, 650, controlsStrings[3], true, false);
-			controlLabel.isMenuItem = false;
-			controlLabel.targetY = 3;
-			controlLabel.x += 1050;
-			grpControls.add(controlLabel);
+		var controlLabel:Alphabet = new Alphabet(0, 600, controlsStrings[3], true, false);
+		controlLabel.isMenuItem = false;
+		controlLabel.targetY = 2;
+		grpControls.add(controlLabel);
+		
+		var controlLabel:Alphabet = new Alphabet(0, 650, controlsStrings[4], true, false);
+		controlLabel.isMenuItem = false;
+		controlLabel.targetY = 3;
+		controlLabel.x += 1050;
+		grpControls.add(controlLabel);
 		super.create();
 	}
 
@@ -96,8 +101,10 @@ class SectionsOptions extends states.MusicBeatState
 					case 1:
 						FlxG.switchState(new MenuGameOptions());
 					case 2:
-						FlxG.switchState(new KeyBindMenu());
+						FlxG.switchState(new NoteSkinState());
 					case 3:
+						FlxG.switchState(new KeyBindMenu());
+					case 4:
 						FlxG.switchState(new states.MainMenuState());
 				}
 			}

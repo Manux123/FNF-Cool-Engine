@@ -52,30 +52,34 @@ class SectionsOptions extends states.MusicBeatState
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
 
-		var controlLabel:Alphabet = new Alphabet(0, 0, controlsStrings[0], true, false);
+		var controlLabel:Alphabet = new Alphabet(0, 100, controlsStrings[0], true, false);
 		controlLabel.isMenuItem = false;
 		controlLabel.targetY = 0;
+		controlLabel.screenCenter(X);
 		grpControls.add(controlLabel);
 
 		var controlLabel:Alphabet = new Alphabet(0, 200, controlsStrings[1], true, false);
 		controlLabel.isMenuItem = false;
 		controlLabel.targetY = 1;
+		controlLabel.screenCenter(X);
 		grpControls.add(controlLabel);
 
-		var controlLabel:Alphabet = new Alphabet(0, 400, controlsStrings[2], true, false);
+		var controlLabel:Alphabet = new Alphabet(0, 300, controlsStrings[2], true, false);
 		controlLabel.isMenuItem = false;
 		controlLabel.targetY = 2;
+		controlLabel.screenCenter(X);
 		grpControls.add(controlLabel);
 
-		var controlLabel:Alphabet = new Alphabet(0, 600, controlsStrings[3], true, false);
+		var controlLabel:Alphabet = new Alphabet(0, 400, controlsStrings[3], true, false);
 		controlLabel.isMenuItem = false;
 		controlLabel.targetY = 2;
+		controlLabel.screenCenter(X);
 		grpControls.add(controlLabel);
 		
-		var controlLabel:Alphabet = new Alphabet(0, 650, controlsStrings[4], true, false);
+		var controlLabel:Alphabet = new Alphabet(0, 500, controlsStrings[4], true, false);
 		controlLabel.isMenuItem = false;
 		controlLabel.targetY = 3;
-		controlLabel.x += 1050;
+		controlLabel.screenCenter(X);
 		grpControls.add(controlLabel);
 		super.create();
 	}

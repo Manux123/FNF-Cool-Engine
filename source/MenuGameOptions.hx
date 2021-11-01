@@ -84,7 +84,7 @@ class MenuGameOptions extends states.MusicBeatState
 
 			if(curSelected == 0)
 			{
-				versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset + ' - Perfect Mode: You need to do full combo or else you die';
+				versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset + ' - Full Combo Mode: You need to do full combo or else you die' + ' - Only Sick Mode: You need to do sicks, not goods, or shits';
 			}
 
 			if (controls.RIGHT_R)

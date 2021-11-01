@@ -75,7 +75,11 @@ class MenuGameOptions extends states.MusicBeatState
 
 			if(curSelected == 0)
 			{
-				versionShit.text = 'Full Combo Mode: You need to do full combo or else you die' + ' - Only Sick Mode: You need to do sicks, not goods, or shits';
+				versionShit.text = 'Full Combo Mode: You need to do full combo or else you die';
+			}
+			else if(curSelected == 1)
+			{
+				versionShit.text = 'Only Sick Mode: You need to do sicks, not goods, or shits';
 			}
 
 			if (controls.RIGHT_R)

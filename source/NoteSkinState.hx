@@ -7,6 +7,8 @@ import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
 import flixel.group.FlxGroup.FlxTypedGroup;
+import flixel.graphics.atlas.FlxAtlas;
+import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.input.keyboard.FlxKey;
 import flixel.math.FlxMath;
 import flixel.text.FlxText;
@@ -20,14 +22,18 @@ class NoteSkinState extends states.MusicBeatState
 
 	var controlsStrings:Array<String> = [];
 
+	var previewSkins:FlxSprite;
+
+	var noteSkinTex:FlxAtlasFrames;
+	var circleSkinTex:FlxAtlasFrames;
+	var quaverSkinTex:FlxAtlasFrames;
+
 	private var grpControls:FlxTypedGroup<Alphabet>;
 	var versionShit:FlxText;
 	override function create()
 	{
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
-		controlsStrings = CoolUtil.coolStringFile((FlxG.save.data.noteSkin = 'Arrows'));
-		
-		trace(controlsStrings);
+		controlsStrings = ['Arrows', 'Circles', 'Quaver Skin'];
 
 		menuBG.color = 0xFFea71fd;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
@@ -35,6 +41,18 @@ class NoteSkinState extends states.MusicBeatState
 		menuBG.screenCenter();
 		menuBG.antialiasing = true;
 		add(menuBG);
+
+		noteSkinTex = Paths.getSparrowAtlas('UI/NOTE_assets', 'shared');
+		circleSkinTex = Paths.getSparrowAtlas('UI/Circles', 'shared');
+		quaverSkinTex = Paths.getSparrowAtlas('UI/QUAVER_assets', 'shared');
+
+		previewSkins = new FlxSprite(1000, 0);
+		previewSkins.frames = noteSkinTex;
+		previewSkins.animation.addByPrefix('green', 'arrowUP');
+		previewSkins.animation.addByPrefix('blue', 'arrowDOWN');
+		previewSkins.animation.addByPrefix('purple', 'arrowLEFT');
+		previewSkins.animation.addByPrefix('red', 'arrowRIGHT');
+		add(previewSkins);
 
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
@@ -61,56 +79,35 @@ class NoteSkinState extends states.MusicBeatState
 	{
 		super.update(elapsed);
 
-			if (controls.BACK)
-				FlxG.switchState(new SectionsOptions());
-			if (controls.UP_P)
-			{
-				grpControls.remove(grpControls.members[curSelected]);
-                FlxG.save.data.noteSkin = 'Arrows';
-                var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.noteSkin), true, false);
-				ctrl.isMenuItem = true;
-				ctrl.targetY = curSelected;
-				grpControls.add(ctrl);
-				FlxG.save.flush();
-			}
-			if (controls.DOWN_P)
-				changeSelection(1);
-	
-            if(controls.LEFT_P)
-            {
-                grpControls.remove(grpControls.members[curSelected]);
-                FlxG.save.data.noteSkin = 'Quaver Skin';
-                var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.noteSkin), true, false);
-				ctrl.isMenuItem = true;
-				ctrl.targetY = curSelected;
-				grpControls.add(ctrl);
-				FlxG.save.flush();
-            }
+		switch (FlxG.save.data.noteSkin)
+		{
+			case 'Arrows':
+				previewSkins.frames = Paths.getSparrowAtlas('UI/NOTE_assets', 'shared');
+			case 'Circles':
+				previewSkins.frames = Paths.getSparrowAtlas('UI/Circles', 'shared');
+			case 'Quaver Skin':
+				previewSkins.frames = Paths.getSparrowAtlas('UI/QUAVER_assets', 'shared');
+		}
 
-            if(controls.RIGHT_P)
-            {
-                grpControls.remove(grpControls.members[curSelected]);
-                FlxG.save.data.noteSkin = 'Osu Skin';
-                var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.noteSkin), true, false);
-				ctrl.isMenuItem = true;
-				ctrl.targetY = curSelected;
-				grpControls.add(ctrl);
-				FlxG.save.flush();
-            }
+		if(controls.BACK)
+			FlxG.switchState(new SectionsOptions());
+		if (controls.UP_P)
+			changeSelection(-1);
+		if (controls.DOWN_P)
+			changeSelection(1);
 
-			if (controls.ACCEPT)
+		if(controls.ACCEPT)
+		{
+			switch(curSelected)
 			{
-				grpControls.remove(grpControls.members[curSelected]);
-				switch(curSelected)
-				{
-					case 0:
-						FlxG.save.data.noteSkin = 'Circles';
-						var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.noteSkin), true, false);
-						ctrl.isMenuItem = true;
-						ctrl.targetY = curSelected;
-						grpControls.add(ctrl);
-				}
+				case 0:
+					FlxG.save.data.noteSkin = 'Arrows';
+				case 1:
+					FlxG.save.data.noteSkin = 'Circles';
+				case 2:
+					FlxG.save.data.noteSkin = 'Quaver Skin';
 			}
+		}
 	}
 
 	var isSettingControl:Bool = false;

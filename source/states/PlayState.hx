@@ -1292,6 +1292,10 @@ class PlayState extends states.MusicBeatState
 					{
 						noteSkinTex = Paths.getSparrowAtlas('UI/Circles');
 					}
+					else if(FlxG.save.data.noteSkin == 'Quaver Skin')
+					{
+						noteSkinTex = Paths.getSparrowAtlas('UI/QUAVER_assets');
+					}
 						babyArrow.frames = noteSkinTex;
 						babyArrow.animation.addByPrefix('green', 'arrowUP');
 						babyArrow.animation.addByPrefix('blue', 'arrowDOWN');

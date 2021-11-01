@@ -71,11 +71,12 @@ class NoteSkinState extends states.MusicBeatState
             if(controls.LEFT_P)
             {
                 grpControls.remove(grpControls.members[curSelected]);
-                FlxG.save.data.noteSkin = 'Tarco Bel';
+                FlxG.save.data.noteSkin = 'Quaver Skin';
                 var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, (FlxG.save.data.noteSkin), true, false);
 				ctrl.isMenuItem = true;
 				ctrl.targetY = curSelected;
 				grpControls.add(ctrl);
+				FlxG.save.flush();
             }
 
             if(controls.RIGHT_P)
@@ -86,6 +87,7 @@ class NoteSkinState extends states.MusicBeatState
 				ctrl.isMenuItem = true;
 				ctrl.targetY = curSelected;
 				grpControls.add(ctrl);
+				FlxG.save.flush();
             }
 
 			if (controls.ACCEPT)

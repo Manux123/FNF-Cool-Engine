@@ -124,6 +124,29 @@ class Note extends FlxSprite
 					updateHitbox();
 					antialiasing = true;
 				}
+				else if(FlxG.save.data.noteskin == 'Quaver Skin')
+				{
+					frames = Paths.getSparrowAtlas('UI/QUAVER_assets');
+
+					animation.addByPrefix('greenScroll', 'green alone');
+					animation.addByPrefix('redScroll', 'red alone');
+					animation.addByPrefix('blueScroll', 'blue alone');
+					animation.addByPrefix('purpleScroll', 'purple alone');
+
+					animation.addByPrefix('purpleholdend', 'purple tail');
+					animation.addByPrefix('greenholdend', 'green tail');
+					animation.addByPrefix('redholdend', 'red tail');
+					animation.addByPrefix('blueholdend', 'blue tail');
+
+					animation.addByPrefix('purplehold', 'purple hold');
+					animation.addByPrefix('greenhold', 'green hold');
+					animation.addByPrefix('redhold', 'red hold');
+					animation.addByPrefix('bluehold', 'blue hold');
+
+					setGraphicSize(Std.int(width * 0.7));
+					updateHitbox();
+					antialiasing = true;
+				}
 		}
 
 		switch (noteData)

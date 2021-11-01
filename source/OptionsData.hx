@@ -26,5 +26,8 @@ class OptionsData
 	
 			if (FlxG.save.data.offset == null)
 				FlxG.save.data.offset = 0;
+			
+			if(FlxG.save.data.perfectmode = null)
+				FlxG.save.data.perfectmode = false;
 		}
 }

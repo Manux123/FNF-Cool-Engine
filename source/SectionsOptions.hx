@@ -32,6 +32,7 @@ class SectionsOptions extends states.MusicBeatState
 		menuBG = new FlxSprite().loadGraphic(Paths.image('menu/menuBG'));
 		controlsStrings = CoolUtil.coolStringFile(
 			("\n" + 'Preferences') +
+			("\n" + 'GameOptions') +
 			("\n" + 'Controls') +
 			("\n" + 'Exit'));
 		
@@ -55,16 +56,20 @@ class SectionsOptions extends states.MusicBeatState
 			controlLabel.targetY = 0;
 			grpControls.add(controlLabel);
 
-			var controlLabel:Alphabet = new Alphabet(0, 0, controlsStrings[1], true, false);
+			var controlLabel:Alphabet = new Alphabet(0, 200, controlsStrings[1], true, false);
 			controlLabel.isMenuItem = false;
 			controlLabel.targetY = 1;
-			controlLabel.x += 525;
+			grpControls.add(controlLabel);
+
+			var controlLabel:Alphabet = new Alphabet(0, 400, controlsStrings[2], true, false);
+			controlLabel.isMenuItem = false;
+			controlLabel.targetY = 2;
 			grpControls.add(controlLabel);
 
 			
-			var controlLabel:Alphabet = new Alphabet(0, 650, controlsStrings[2], true, false);
+			var controlLabel:Alphabet = new Alphabet(0, 650, controlsStrings[3], true, false);
 			controlLabel.isMenuItem = false;
-			controlLabel.targetY = 2;
+			controlLabel.targetY = 3;
 			controlLabel.x += 1050;
 			grpControls.add(controlLabel);
 		super.create();
@@ -74,9 +79,9 @@ class SectionsOptions extends states.MusicBeatState
 	{
 		super.update(elapsed);
 
-			if (controls.LEFT_P)
+			if (controls.UP_P)
 				changeSelection(-1);
-			if (controls.RIGHT_P)
+			if (controls.DOWN_P)
 				changeSelection(1);
 
 			if (controls.ACCEPT)
@@ -89,8 +94,10 @@ class SectionsOptions extends states.MusicBeatState
 					case 0:
 						FlxG.switchState(new OptionsMenu());
 					case 1:
-						FlxG.switchState(new KeyBindMenu());
+						FlxG.switchState(new MenuGameOptions());
 					case 2:
+						FlxG.switchState(new KeyBindMenu());
+					case 3:
 						FlxG.switchState(new states.MainMenuState());
 				}
 			}

@@ -29,9 +29,8 @@ class MenuGameOptions extends states.MusicBeatState
 	public static var versionShit:FlxText;
 	override function create()
 	{
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
+		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGBlue'));
 
-		menuBG.color = 0xFF453F3F;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
 		menuBG.updateHitbox();
 		menuBG.screenCenter();
@@ -55,14 +54,6 @@ class MenuGameOptions extends states.MusicBeatState
 			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
 		}
 
-		var optionsBG:FlxSprite = new FlxSprite();
-		optionsBG.frames = Paths.getSparrowAtlas('menu/menuoptions');
-	    optionsBG.animation.addByPrefix('idle', 'options basic', 24, false);
-	    optionsBG.animation.play('idle');
-	    optionsBG.antialiasing = true;
-		optionsBG.screenCenter(X);
-	    add(optionsBG);
-
 		versionShit = new FlxText(5, FlxG.height - 18, 0, "Offset (Left, Right): " + FlxG.save.data.offset, 12);
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -84,7 +75,7 @@ class MenuGameOptions extends states.MusicBeatState
 
 			if(curSelected == 0)
 			{
-				versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset + ' - Full Combo Mode: You need to do full combo or else you die' + ' - Only Sick Mode: You need to do sicks, not goods, or shits';
+				versionShit.text = 'Full Combo Mode: You need to do full combo or else you die' + ' - Only Sick Mode: You need to do sicks, not goods, or shits';
 			}
 
 			if (controls.RIGHT_R)

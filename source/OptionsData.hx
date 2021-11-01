@@ -29,5 +29,8 @@ class OptionsData
 			
 			if(FlxG.save.data.perfectmode = null)
 				FlxG.save.data.perfectmode = false;
+
+			if(FlxG.save.data.sickmode = null)
+				FlxG.save.data.sickmode = false;
 		}
 }

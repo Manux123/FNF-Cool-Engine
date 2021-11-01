@@ -1642,8 +1642,29 @@ class PlayState extends states.MusicBeatState
 		FlxG.watch.addQuick("beatShit", curBeat);
 		FlxG.watch.addQuick("stepShit", curStep);
 
-		if(FlxG.save.data.perfectmode) {
+		if(FlxG.save.data.perfectmode) { //Perfect Mode
 			if(misses == 1)
+			{
+				boyfriend.stunned = true;
+
+				persistentUpdate = false;
+				persistentDraw = false;
+				paused = true;
+
+				vocals.stop();
+				FlxG.sound.music.stop();
+
+				openSubState(new GameOverSubstate(boyfriend.getScreenPosition().x, boyfriend.getScreenPosition().y));
+
+				#if desktop
+				// Game Over doesn't get his own variable because it's only used here
+				DiscordClient.changePresence(detailsText, "GAME OVER -- " + SONG.song + " (" + storyDifficultyText + ")\nAcc: " + truncateFloat(accuracy, 2) + "% | Score: " + songScore + " | Misses: " + misses  , iconRPC);
+				#end
+			}
+		}
+
+		if(FlxG.save.data.sickmode) { //Sicks Mode
+			if(misses == 1 || goods == 1 || bads == 1 || shits == 1)
 			{
 				boyfriend.stunned = true;
 

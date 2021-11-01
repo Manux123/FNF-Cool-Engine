@@ -21,7 +21,8 @@ class MenuGameOptions extends states.MusicBeatState
 	var curSelected:Int = 0;
 
 	var options:Array<Option2> = [
-		new PerfectModeOption()
+		new PerfectModeOption(),
+		new SickModeOption()
 	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
@@ -178,6 +179,21 @@ class PerfectModeOption extends Option2
 
 	private override function updateDisplay():String
 	{
-		return FlxG.save.data.perfectmode ? "Perfect Mode" : "Normal Mode";
+		return FlxG.save.data.perfectmode ? "Full Combo Mode" : "Normal Mode";
+	}
+}
+
+class SickModeOption extends Option2
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.sickmode = !FlxG.save.data.sickmode;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return FlxG.save.data.sickmode ? "Only Sick Mode" : "SGB Mode";
 	}
 }

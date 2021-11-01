@@ -107,7 +107,7 @@ class StoryMenuState extends states.MusicBeatState
 		rankText.screenCenter(X);
 
 		var ui_tex = Paths.getSparrowAtlas('storymenu/campaign_menu/campaign_menu_UI_assets');
-		yellowBG = new FlxSprite(0, 56).makeGraphic(FlxG.width, 404, 0xFFFCFCFC);
+		yellowBG = new FlxSprite(0, 56).makeGraphic(FlxG.width, 404, 0xFFF9CF51);
 		inverted = new FlxSprite(0, 56).makeGraphic(FlxG.width, 400, 0xFFF9CF51);
 
 		blackBarThingie = new FlxSprite().makeGraphic(FlxG.width, 56, FlxColor.BLACK);

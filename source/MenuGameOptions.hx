@@ -25,7 +25,7 @@ class MenuGameOptions extends states.MusicBeatState
 	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
-	var versionShit:FlxText;
+	public static var versionShit:FlxText;
 	override function create()
 	{
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
@@ -167,6 +167,7 @@ class PerfectModeOption extends Option2
 {
 	public override function press():Bool
 	{
+		MenuGameOptions.versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset + ' - Perfect Mode: You need to do full combo or else you die';
 		FlxG.save.data.perfectmode = !FlxG.save.data.perfectmode;
 		display = updateDisplay();
 		return true;

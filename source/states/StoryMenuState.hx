@@ -199,7 +199,7 @@ class StoryMenuState extends states.MusicBeatState
 		trace("Line 150");
 
 		add(yellowBG);
-		add(inverted);
+		//add(inverted);
 		add(grpWeekCharacters);
 
 

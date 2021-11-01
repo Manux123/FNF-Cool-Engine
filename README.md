@@ -10,7 +10,7 @@
 - [Manux (me)](https://twitter.com/ActionsAnimati1) - Programmer Friday Night Funkin: Cool Engine
 - [Jloor](https://twitter.com/GamerJloor) - Programmer Friday Night Funkin: Cool Engine
 - [Chasetodie](https://twitter.com/GamerJloor) - Programmer Friday Night Funkin: Cool Engine
-- [PabloelproxD210](https://twitter.com/PabloElMsProv1) - Port an Android
+- [PabloelproxD210](https://twitter.com/PabloElMsProv1) - Android Port
 - [FairyBoy](https://twitter.com/JulianSamwise?s=09) and [Zero Artist](https://twitter.com/zero_artist02) - Artists Friday Night Funkin: Cool Engine
 
 Funkin Original

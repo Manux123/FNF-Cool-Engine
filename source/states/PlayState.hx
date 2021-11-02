@@ -132,7 +132,7 @@ class PlayState extends states.MusicBeatState
 	var phillyTrain:FlxSprite;
 	var trainSound:FlxSound;
 
-	var daRating:String = "sick";
+	var RatingType:String = "sick";
 	var daNote:Note;
 
 	var limo:FlxSprite;
@@ -1980,7 +1980,7 @@ class PlayState extends states.MusicBeatState
 
 	private function popUpScore(strumtime:Float):Void
 		{
-			var noteDiff:Float = Math.abs(strumtime - Conductor.songPosition);
+			var noteInput:Float = Math.abs(strumtime - Conductor.songPosition + 8);
 			// boyfriend.playAnim('hey');
 			vocals.volume = 1;
 	
@@ -1993,58 +1993,28 @@ class PlayState extends states.MusicBeatState
 
 			var rating:FlxSprite = new FlxSprite();
 			var score:Int = 350;
-				
-			if (noteDiff > Conductor.safeZoneOffset * 0.9)
+			
+			if (noteInput > Conductor.safeZoneOffset * 0.75 || noteInput < Conductor.safeZoneOffset * -0.75)
 				{
-					daRating = 'shit';
-					totalNotesHit -= 2;
+					RatingType = 'shit';
 					ss = false;
 					if (theFunne)
 						{
-							score = -3000;
+							score = 2000;
 							combo = 0;
 							misses++;
 							health -= 0.2;
 						}
 					shits++;
 				}
-				else if (noteDiff < Conductor.safeZoneOffset * -0.9)
+				else if (noteInput > Conductor.safeZoneOffset * 0.5 || noteInput < Conductor.safeZoneOffset * -0.5)
 				{
-					daRating = 'shit';
-					totalNotesHit -= 2;
-					if (theFunne)
-					{
-						score = -3000;
-						combo = 0;
-						misses++;
-						health -= 0.2;
-					}
-					ss = false;
-					shits++;
-				}
-				else if (noteDiff < Conductor.safeZoneOffset * -0.45)
-				{
-					daRating = 'bad';
-					totalNotesHit += 0.2;
-					if (theFunne)
-					{
-						score = -1000;
-						health -= 0.03;
-						combo = 0;
-					}
-					else
-						score = 100;
-					ss = false;
-					bads++;
-				}
-				else if (noteDiff > Conductor.safeZoneOffset * 0.45)
-				{
-					daRating = 'bad';
-					totalNotesHit += 0.2;
+					RatingType = 'bad';
+					totalNotesHit += 0.25;
 					if (theFunne)
 						{
-							score = -1000;
-							health -= 0.03;
+							score = 1000;
+							health -= 0.05;
 							combo = 0;
 						}
 						else
@@ -2052,58 +2022,42 @@ class PlayState extends states.MusicBeatState
 					ss = false;
 					bads++;
 				}
-				else if (noteDiff < Conductor.safeZoneOffset * -0.2)
+				else if (noteInput > Conductor.safeZoneOffset * 0.28 || noteInput < Conductor.safeZoneOffset * -0.28)
 				{
-					daRating = 'good';
+					RatingType = 'good';
 					totalNotesHit += 0.65;
 					if (theFunne)
 					{
 						score = 200;
-						//health -= 0.01;
+
 					}
 					else
 						score = 200;
 					ss = false;
 					goods++;
 				}
-				else if (noteDiff > Conductor.safeZoneOffset * 0.2)
+				else if (noteInput > Conductor.safeZoneOffset * 0.2 || noteInput > Conductor.safeZoneOffset * 0.1)  //well, sick are stuck and then now works how the RatingType good, bad, shit.
 				{
-					daRating = 'good';
-					totalNotesHit += 0.65;
-					if (theFunne)
-						{
-							score = 200;
-							//health -= 0.01;
-						}
-						else
-							score = 200;
-					ss = false;
-					goods++;
-				}
-				else if (noteDiff > Conductor.safeZoneOffset * 0.1) //since sick is kinda stuck, now it works like 'good', 'bad and 'shit'
-				{
-					daRating = 'sick';
+					RatingType = 'sick';
 					sicks++;
+					health += 0.1;
+					totalNotesHit += 1;
 				}
-			if(daRating == 'sick')
+	
+		if (RatingType != 'bad' && theFunne || RatingType != 'shit' && theFunne ) 
 			{
-				health += 0.1;
-				totalNotesHit += 1;
+	
+				songScore += score;
+			
+			}
+			
+		if (RatingType == 'bad' && theFunne || RatingType == 'shit' && theFunne) 
+			{
+	
+				songScore -= score;
+			
 			}
 	
-			if (daRating != 'shit' || daRating != 'bad')
-				{
-	
-	
-			songScore += score;
-	
-			/* if (combo > 60)
-					daRating = 'sick';
-				else if (combo > 12)
-					daRating = 'good'
-				else if (combo > 4)
-					daRating = 'bad';
-			 */
 	
 			var pixelShitPart1:String = "";
 			var pixelShitPart2:String = '';
@@ -2114,7 +2068,7 @@ class PlayState extends states.MusicBeatState
 				pixelShitPart2 = '-pixel';
 			}
 	
-			rating.loadGraphic(Paths.image(pixelShitPart1 + daRating + pixelShitPart2));
+			rating.loadGraphic(Paths.image(pixelShitPart1 + RatingType + pixelShitPart2));
 			rating.screenCenter();
 			rating.y += 200;
 			rating.x = coolText.x - 40;
@@ -2232,16 +2186,14 @@ class PlayState extends states.MusicBeatState
 				},
 				startDelay: Conductor.crochet * 0.001
 			});
-	
 			curSection += 1;
-			}
 		}
 
 		
 	public function NearlyEquals(value1:Float, value2:Float, unimportantDifference:Float = 10):Bool
-		{
-			return Math.abs(FlxMath.roundDecimal(value1, 1) - FlxMath.roundDecimal(value2, 1)) < unimportantDifference;
-		}
+	{
+		return Math.abs(FlxMath.roundDecimal(value1, 1) - FlxMath.roundDecimal(value2, 1)) < unimportantDifference;
+	}
 
 		var upHold:Bool = false;
 		var downHold:Bool = false;

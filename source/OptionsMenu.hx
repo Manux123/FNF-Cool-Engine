@@ -211,7 +211,7 @@ class NewInputOption extends Option
 
 	private override function updateDisplay():String
 	{
-		return !FlxG.save.data.newInput ? "Traditional Input" : "Kade Engine Input";
+		return !FlxG.save.data.newInput ? "Traditional Input" : "New Input";
 	}
 }
 

@@ -2047,13 +2047,7 @@ class PlayState extends states.MusicBeatState
 				{
 					RatingType = 'good';
 					totalNotesHit += 0.65;
-					if (theFunne)
-					{
-						score = 200;
-
-					}
-					else
-						score = 200;
+					score = 200;
 					ss = false;
 					goods++;
 				}
@@ -2063,6 +2057,7 @@ class PlayState extends states.MusicBeatState
 					sicks++;
 					health += 0.1;
 					totalNotesHit += 1;
+					score = 350;
 					if (noteSplashOp)
 					{
 						var recycledNote = grpNoteSplashes.recycle(NoteSplash);

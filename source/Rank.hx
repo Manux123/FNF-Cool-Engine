@@ -4,11 +4,9 @@ import states.PlayState;
 class Rank
 {
     public static var ranking:String = "N/A";
-    public static function generateLetterRank() // generate a letter ranking
+    public static function generateLetterRank()
     {
-        // WIFE TIME :)))) (based on Wife3)
-
-        var wifeConditions:Array<Bool> = [
+        var accuracy:Array<Bool> = [
             PlayState.accuracy >= 99.99, //S
             PlayState.accuracy >= 89.99, //A
             PlayState.accuracy >= 69.99, //B
@@ -18,10 +16,10 @@ class Rank
             PlayState.accuracy <= 49 //F
         ];
 
-        for(i in 0...wifeConditions.length)
+        for(i in 0...accuracy.length)
         {
-            var b = wifeConditions[i];
-            if (b)
+            var lyrics = accuracy[i];
+            if (lyrics)
             {
                 switch(i)
                 {

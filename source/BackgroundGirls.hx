@@ -26,11 +26,6 @@ class BackgroundGirls extends FlxSprite
 		animation.addByIndices('danceLeft', 'BG fangirls dissuaded', CoolUtil.numberArray(14), "", 24, false);
 		animation.addByIndices('danceRight', 'BG fangirls dissuaded', CoolUtil.numberArray(30, 15), "", 24, false);
 		dance();
-
-		if (FlxG.save.data.graphics)
-			animation.addByIndices('danceLeft', 'BG fangirls dissuaded', CoolUtil.numberArray(14), "", 24, false);
-			animation.addByIndices('danceRight', 'BG fangirls dissuaded', CoolUtil.numberArray(14), "", 24, false);
-			dance();
 	}
 
 	public function dance():Void

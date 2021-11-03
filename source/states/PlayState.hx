@@ -7,6 +7,7 @@ import shaders.WiggleEffect.WiggleEffectType;
 import flixel.FlxBasic;
 import flixel.FlxCamera;
 import flixel.FlxG;
+import lime.app.Application;
 import flixel.FlxGame;
 import flixel.FlxObject;
 import flixel.FlxSprite;
@@ -55,7 +56,7 @@ class PlayState extends states.MusicBeatState
 	public static var storyPlaylist:Array<String> = [];
 	public static var storyDifficulty:Int = 1;
 	public static var weekSong:Int = 0;
-	public static var missess:Int = 0;
+	public static var misses:Int = 0;
 	public static var shits:Int = 0;
 	public static var bads:Int = 0;
 	public static var goods:Int = 0;
@@ -99,13 +100,11 @@ class PlayState extends states.MusicBeatState
 
 	private var camZooming:Bool = false;
 	private var curSong:String = "";
-	private var splashNotes:FlxTypedGroup<NoteSplash>; // God Bv
 
 	private var gfSpeed:Int = 1;
 	var noteSkinTex:FlxAtlasFrames;
 	private var health:Float = 1;
 	private var combo:Int = 0;
-	public static var misses:Int = 0;
 	public static var accuracy:Float = 0.00;
 	private var totalNotesHit:Float = 0;
 	private var totalPlayed:Int = 0;
@@ -149,6 +148,8 @@ class PlayState extends states.MusicBeatState
 	var wiggleShit:shaders.WiggleEffect = new shaders.WiggleEffect();
 
 	var talking:Bool = true;
+	var grpNoteSplashes:FlxTypedGroup<NoteSplash>;
+	var noteSplashOp:Bool; //cool
 	public static var songScore:Int = 0;
 	var scoreTxt:FlxText;
 	
@@ -173,14 +174,12 @@ class PlayState extends states.MusicBeatState
 			FlxG.sound.music.stop();
 
 		sicks = 0;
+		misses = 0;
 		bads = 0;
 		shits = 0;
-		missess = 0;
 		goods = 0;
 
 		accuracy = 0;
-
-		misses = 0;
 
 		songScore = 0; //LOL
 
@@ -242,6 +241,11 @@ class PlayState extends states.MusicBeatState
 
 		if (SONG == null)
 			SONG = Song.loadFromJson('tutorial');
+
+		grpNoteSplashes = new FlxTypedGroup<NoteSplash>();
+		var sploosh = new NoteSplash(100, 100, 0);
+		sploosh.alpha = 0.6;
+		grpNoteSplashes.add(sploosh);
 
 		Conductor.mapBPMChanges(SONG);
 		Conductor.changeBPM(SONG.bpm);
@@ -748,9 +752,7 @@ class PlayState extends states.MusicBeatState
 
 		strumLineNotes = new FlxTypedGroup<FlxSprite>();
 		add(strumLineNotes);
-
-		splashNotes = new FlxTypedGroup<NoteSplash>();
-		add(splashNotes);
+		add(grpNoteSplashes);
 
 		playerStrums = new FlxTypedGroup<FlxSprite>();
 		cpuStrums = new FlxTypedGroup<FlxSprite>();
@@ -829,6 +831,23 @@ class PlayState extends states.MusicBeatState
 		scoreTxt.scrollFactor.set();
 		add(scoreTxt);
 
+		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "FNF Cool Engine BETA - v" + Application.current.meta.get('version'), 12);
+		versionShit.scrollFactor.set();
+		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		add(versionShit);
+
+		if(FlxG.save.data.perfectmode) {
+			var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 24, "Full Combo Mode", 12);
+			versionShit.scrollFactor.set();
+			versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			add(versionShit); }
+		
+		if(FlxG.save.data.sickmode) {
+			var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 24, "Sick Mode", 12);
+			versionShit.scrollFactor.set();
+			versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			add(versionShit); }
+
 		iconP1 = new HealthIcon(SONG.player1, true);
 		iconP1.y = healthBar.y - (iconP1.height / 2);
 		add(iconP1);
@@ -838,8 +857,8 @@ class PlayState extends states.MusicBeatState
 		add(iconP2);
 
 		strumLineNotes.cameras = [camHUD];
-		splashNotes.cameras = [camHUD];
 		notes.cameras = [camHUD];
+		grpNoteSplashes.cameras = [camHUD];
 		healthBar.cameras = [camHUD];
 		healthBarBG.cameras = [camHUD];
 		iconP1.cameras = [camHUD];
@@ -1486,7 +1505,9 @@ class PlayState extends states.MusicBeatState
 
 		if (FlxG.save.data.accuracyDisplay)
 		{
-			scoreTxt.text = "Score:" + songScore + " | Misses:" + misses + " | Rank: " + Rank.generateLetterRank() + " ( " + reduceFloat(accuracy, 2) + "% ) ";
+			scoreTxt.text = "Score:" + songScore + 
+							" | Misses:" + misses + 
+							" | Rank: " + Rank.generateLetterRank() + " ( " + reduceFloat(accuracy, 2) + "% ) ";
 		}
 		else
 		{
@@ -2042,6 +2063,12 @@ class PlayState extends states.MusicBeatState
 					sicks++;
 					health += 0.1;
 					totalNotesHit += 1;
+					if (noteSplashOp)
+					{
+						var recycledNote = grpNoteSplashes.recycle(NoteSplash);
+						recycledNote.setupNoteSplash(daNote.x, daNote.y, daNote.noteData);
+						grpNoteSplashes.add(recycledNote);
+					}
 				}
 	
 		if (RatingType != 'bad' && theFunne || RatingType != 'shit' && theFunne ) 
@@ -2083,17 +2110,6 @@ class PlayState extends states.MusicBeatState
 			comboSpr.y += 200;
 			comboSpr.acceleration.y = 600;
 			comboSpr.velocity.y -= 150;
-
-			//if(sicks > 1)
-			//{
-				//comboFull = new FlxSprite(Paths.image('combo'));
-				//comboFull.screenCenter();
-				//comboFull.x = coolText.x;
-				//comboFull.y += 200;
-				//comboFull.acceleration.y = 600;
-				//comboFull.velocity.y -= 150;
-				//add(comboFull);
-			//}
 	
 			comboSpr.velocity.x += FlxG.random.int(1, 10);
 			add(rating);
@@ -2438,7 +2454,7 @@ class PlayState extends states.MusicBeatState
 				}
 			else
 				{
-					rating.setGraphicSize(Std.int(rating.width * daPixelZoom * 0.7));
+					rating.setGraphicSize(Std.int(rating.width * 0.7));
 				}
 
 				rating.updateHitbox();

@@ -24,7 +24,7 @@ class OutdatedSubState extends states.MusicBeatState
 			+ ver
 			+ " while the most recent version is "
 			+ daVersionNeeded
-			+ "! Press Space to go the Gamebanana page, or ESCAPE to ignore this.",
+			+ "! Press Space to go the GitHub page, or ESCAPE to ignore this.",
 			32);
 		txt.setFormat("VCR OSD Mono", 32, FlxColor.WHITE, CENTER);
 		txt.screenCenter();
@@ -35,7 +35,7 @@ class OutdatedSubState extends states.MusicBeatState
 	{
 		if (controls.ACCEPT)
 		{
-			FlxG.openURL("https://gamebanana.com/mods/326036");
+			FlxG.openURL("https://github.com/Manux123/FNF-Cool-Engine");
 		}
 		if (controls.BACK)
 		{

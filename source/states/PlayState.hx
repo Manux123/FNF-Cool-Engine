@@ -2051,7 +2051,7 @@ class PlayState extends states.MusicBeatState
 					ss = false;
 					goods++;
 				}
-				else if (noteInput > Conductor.safeZoneOffset * 0.2 || noteInput > Conductor.safeZoneOffset * 0.1)  //well, sick are stuck and then now works how the RatingType good, bad, shit.
+				else if (noteInput > Conductor.safeZoneOffset * 0.2 || noteInput > Conductor.safeZoneOffset * 0.1)  //well, sick are stuck and then now works like the RatingType good, bad, shit.
 				{
 					RatingType = 'sick';
 					sicks++;

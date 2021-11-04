@@ -7,14 +7,15 @@ class Rank
     public static function generateLetterRank()
     {
         var accuracy:Array<Bool> = [
-            PlayState.accuracy >= 99.99, //S
+            PlayState.accuracy >= 99.99, //SS
+            PlayState.accuracy >= 94.99, //S
             PlayState.accuracy >= 89.99, //A
-            PlayState.accuracy >= 69.99, //B
-            PlayState.accuracy >= 64.99, //C
+            PlayState.accuracy >= 79.99, //B
+            PlayState.accuracy >= 69.99, //C
             PlayState.accuracy >= 59.99, //D
-            PlayState.accuracy >= 54.99, //E
-            PlayState.accuracy <= 49 //F
         ];
+
+        //Osu!Mania Ranking System
 
         for(i in 0...accuracy.length)
         {
@@ -24,19 +25,17 @@ class Rank
                 switch(i)
                 {
                     case 0:
-						ranking = "S";
+						ranking = "SS";
 					case 1:
-						ranking = "A";
+						ranking = "S";
 					case 2:
-						ranking = "B";
+						ranking = "A";
 					case 3:
-						ranking = "C";
+						ranking = "B";
                     case 4:
-                        ranking = "D";
+                        ranking = "C";
                     case 5:
-                        ranking = "E";
-                    case 6:
-                        ranking = "F";
+                        ranking = "D";
                 }
                 break;
             }

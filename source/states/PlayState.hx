@@ -159,6 +159,13 @@ class PlayState extends states.MusicBeatState
 
 	public static var daPixelZoom:Float = 6;
 
+	//Movent Camera
+	public static var dadnoteMovementXoffset:Int = 0;
+	public static var dadnoteMovementYoffset:Int = 0;
+
+	public static var bfnoteMovementXoffset:Int = 0;
+	public static var bfnoteMovementYoffset:Int = 0;
+
 	public static var theFunne:Bool = true;
 	var funneEffect:FlxSprite;
 	var inCutscene:Bool = false;
@@ -182,6 +189,12 @@ class PlayState extends states.MusicBeatState
 		accuracy = 0;
 
 		songScore = 0; //LOL
+
+		dadnoteMovementXoffset = 0;
+		dadnoteMovementYoffset = 0;
+
+		bfnoteMovementXoffset = 0;
+		bfnoteMovementYoffset = 0;
 
 		#if desktop
 		// Making difficulty text for Discord Rich Presence.
@@ -1611,7 +1624,7 @@ class PlayState extends states.MusicBeatState
 
 			if (camFollow.x != dad.getMidpoint().x + 150 && !PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection)
 			{
-				camFollow.setPosition(dad.getMidpoint().x + 150, dad.getMidpoint().y - 100);
+				camFollow.setPosition(dad.getMidpoint().x + 150 + dadnoteMovementXoffset, dad.getMidpoint().y - 100 + dadnoteMovementYoffset);
 				// camFollow.setPosition(lucky.getMidpoint().x - 120, lucky.getMidpoint().y + 210);
 
 				switch (dad.curCharacter)
@@ -1634,17 +1647,22 @@ class PlayState extends states.MusicBeatState
 
 			if (PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection && camFollow.x != boyfriend.getMidpoint().x - 100)
 			{
-				camFollow.setPosition(boyfriend.getMidpoint().x - 100, boyfriend.getMidpoint().y - 100);
+				camFollow.setPosition(boyfriend.getMidpoint().x - 100 + bfnoteMovementXoffset, boyfriend.getMidpoint().y - 100 + bfnoteMovementYoffset);
 
 				switch (curStage)
 				{
 					case 'limo':
-						camFollow.x = boyfriend.getMidpoint().x - 300;
+						camFollow.x = boyfriend.getMidpoint().x - 300 + bfnoteMovementXoffset;
 					case 'mall':
-						camFollow.y = boyfriend.getMidpoint().y - 200;
+						camFollow.y = boyfriend.getMidpoint().y - 200 + bfnoteMovementXoffset;
 					case 'school' | 'schoolEvil':
-						camFollow.x = boyfriend.getMidpoint().x - 200;
-						camFollow.y = boyfriend.getMidpoint().y - 200;
+						camFollow.x = boyfriend.getMidpoint().x - 200 + bfnoteMovementXoffset;
+						camFollow.y = boyfriend.getMidpoint().y - 200 + bfnoteMovementXoffset;
+				}
+
+				if (boyfriend.animation.curAnim.name.startsWith('idle')) {
+					bfnoteMovementYoffset = 0;
+					bfnoteMovementXoffset = 0;
 				}
 
 				if (SONG.song.toLowerCase() == 'tutorial')
@@ -1768,6 +1786,11 @@ class PlayState extends states.MusicBeatState
 			}
 		}
 
+		if (dad.animation.curAnim.name.startsWith('idle')) {
+			dadnoteMovementYoffset = 0;
+			dadnoteMovementXoffset = 0;
+		}
+
 		if (generatedMusic)
 			{
 				notes.forEachAlive(function(daNote:Note)
@@ -1796,19 +1819,28 @@ class PlayState extends states.MusicBeatState
 								altAnim = '-alt';
 						}
 	
+					if (dad.canSing){
 						switch (Math.abs(daNote.noteData))
 						{
 							case 2:
 								dad.playAnim('singUP' + altAnim, true);
+								dadnoteMovementYoffset = -30;
+								dadnoteMovementXoffset = 0;
 							case 3:
 								dad.playAnim('singRIGHT' + altAnim, true);
+								dadnoteMovementXoffset = 30;
+								dadnoteMovementYoffset = 0;
 							case 1:
 								dad.playAnim('singDOWN' + altAnim, true);
+								dadnoteMovementYoffset = 30;
+								dadnoteMovementXoffset = 0;
 							case 0:
 								dad.playAnim('singLEFT' + altAnim, true);
+								dadnoteMovementXoffset = -30;
+								dadnoteMovementYoffset = 0;
 						}
-
-						
+					}
+				
 						cpuStrums.forEach(function(spr:FlxSprite)
 							{
 								if (Math.abs(daNote.noteData) == spr.ID)
@@ -2587,18 +2619,36 @@ class PlayState extends states.MusicBeatState
 					else
 						totalNotesHit += 1;
 	
-
-					switch (note.noteData)
-					{
-						case 2:
-							boyfriend.playAnim('singUP', true); camPos.y -= 40;
-						case 3:
-							boyfriend.playAnim('singRIGHT', true);
-						case 1:
-							boyfriend.playAnim('singDOWN', true);
-						case 0:
-							boyfriend.playAnim('singLEFT', true);
+					if (boyfriend.canSing){
+						switch (note.noteData)
+						{
+							case 2:
+								boyfriend.playAnim('singUP', true);
+							case 3:
+								boyfriend.playAnim('singRIGHT', true);
+							case 1:
+								boyfriend.playAnim('singDOWN', true);
+							case 0:
+								boyfriend.playAnim('singLEFT', true);
+						}
+					if (!curStage.startsWith('school')){
+						switch (note.noteData)
+						{
+							case 2:
+								bfnoteMovementYoffset = -30;
+								bfnoteMovementXoffset = 0;
+							case 3:
+								bfnoteMovementXoffset = 30;
+								bfnoteMovementYoffset = 0;
+							case 1:
+								bfnoteMovementYoffset = 30;
+								bfnoteMovementXoffset = 0;
+							case 0:
+								bfnoteMovementXoffset = -30;
+								bfnoteMovementYoffset = 0;
+						}
 					}
+				}
 		
 					playerStrums.forEach(function(spr:FlxSprite)
 					{

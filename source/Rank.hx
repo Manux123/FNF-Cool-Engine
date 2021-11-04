@@ -43,7 +43,7 @@ class Rank
 
         if (PlayState.accuracy == 0 && PlayState.startingSong)
             ranking = "N/A";
-        else if (PlayState.accuracy == 0 && !PlayState.startingSong)
+        else if (PlayState.accuracy <= 59.99 && !PlayState.startingSong)
             ranking = "F";
 
         return ranking;

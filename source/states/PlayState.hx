@@ -1642,13 +1642,18 @@ class PlayState extends states.MusicBeatState
 						camFollow.x = boyfriend.getMidpoint().x - 300;
 					case 'mall':
 						camFollow.y = boyfriend.getMidpoint().y - 200;
-					case 'school' | 'schoolEvil':
+					case 'spooky':
+						camFollow.y = boyfriend.getMidpoint().y - 100;
+				}
+
+				switch (boyfriend.curCharacter)
+				{
+					case 'bf-pixel':
 						camFollow.x = boyfriend.getMidpoint().x - 200;
 						camFollow.y = boyfriend.getMidpoint().y - 200;
 				}
 
-				if (SONG.song.toLowerCase() == 'tutorial')
-				{
+				if (SONG.song.toLowerCase() == 'tutorial') {
 					FlxTween.tween(FlxG.camera, {zoom: 1}, (Conductor.stepCrochet * 4 / 1000), {ease: FlxEase.elasticInOut});
 				}
 			}
@@ -2004,66 +2009,31 @@ class PlayState extends states.MusicBeatState
 			var noteInput:Float = Math.abs(strumtime - Conductor.songPosition + 8);
 			// boyfriend.playAnim('hey');
 			vocals.volume = 1;
+			var score:Int = 350;
 	
 			var placement:String = Std.string(combo);
 	
 			var coolText:FlxText = new FlxText(0, 0, 0, placement, 32);
 			coolText.screenCenter();
 			coolText.x = FlxG.width * 0.55;
-			//
 
 			var rating:FlxSprite = new FlxSprite();
-			var score:Int = 350;
 			
 			if (noteInput > Conductor.safeZoneOffset * 0.75 || noteInput < Conductor.safeZoneOffset * -0.75)
 				{
-					RatingType = 'shit';
-					ss = false;
-					if (theFunne)
-						{
-							score = 2000;
-							combo = 0;
-							misses++;
-							health -= 0.2;
-						}
-					shits++;
+					popShit();
 				}
 				else if (noteInput > Conductor.safeZoneOffset * 0.5 || noteInput < Conductor.safeZoneOffset * -0.5)
 				{
-					RatingType = 'bad';
-					totalNotesHit += 0.25;
-					if (theFunne)
-						{
-							score = 1000;
-							health -= 0.05;
-							combo = 0;
-						}
-						else
-							score = 100;
-					ss = false;
-					bads++;
+					popBad();
 				}
 				else if (noteInput > Conductor.safeZoneOffset * 0.28 || noteInput < Conductor.safeZoneOffset * -0.28)
 				{
-					RatingType = 'good';
-					totalNotesHit += 0.65;
-					score = 200;
-					ss = false;
-					goods++;
+					popGood();
 				}
 				else if (noteInput > Conductor.safeZoneOffset * 0.2 || noteInput > Conductor.safeZoneOffset * 0.1)  //well, sick are stuck and then now works like the RatingType good, bad, shit.
 				{
-					RatingType = 'sick';
-					sicks++;
-					health += 0.1;
-					totalNotesHit += 1;
-					score = 350;
-					if (noteSplashOp)
-					{
-						var recycledNote = grpNoteSplashes.recycle(NoteSplash);
-						recycledNote.setupNoteSplash(daNote.x, daNote.y, daNote.noteData);
-						grpNoteSplashes.add(recycledNote);
-					}
+					popSick();
 				}
 	
 		if (RatingType != 'bad' && theFunne || RatingType != 'shit' && theFunne ) 
@@ -2200,7 +2170,60 @@ class PlayState extends states.MusicBeatState
 			curSection += 1;
 		}
 
-		
+	public function popSick():Void {
+		var score:Int = 350;
+		RatingType = 'sick';
+		sicks++;
+		health += 0.1;
+		totalNotesHit += 1;
+		score = 350;
+		if (noteSplashOp)
+		{
+			var recycledNote = grpNoteSplashes.recycle(NoteSplash);
+			recycledNote.setupNoteSplash(daNote.x, daNote.y, daNote.noteData);
+			grpNoteSplashes.add(recycledNote);
+		}
+	}
+
+	public function popGood():Void {
+		var score:Int = 350;
+		RatingType = 'good';
+		totalNotesHit += 0.65;
+		score = 200;
+		ss = false;
+		goods++;
+	}
+
+	public function popBad():Void {
+		var score:Int = 350;
+		RatingType = 'bad';
+		totalNotesHit += 0.25;
+		if (theFunne)
+		{
+			score = 1000;
+			health -= 0.05;
+			combo = 0;
+		}
+		else
+			score = 100;
+			ss = false;
+			bads++;
+	}
+
+	public function popShit():Void {
+		var score:Int = 350;
+		RatingType = 'shit';
+		ss = false;
+		if (theFunne)
+		{
+			score = 2000;
+			combo = 0;
+			misses++;
+			health -= 0.2;
+		}
+		shits++;
+	}
+	
 	public function NearlyEquals(value1:Float, value2:Float, unimportantDifference:Float = 10):Bool
 	{
 		return Math.abs(FlxMath.roundDecimal(value1, 1) - FlxMath.roundDecimal(value2, 1)) < unimportantDifference;

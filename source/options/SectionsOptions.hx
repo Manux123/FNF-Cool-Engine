@@ -113,7 +113,7 @@ class SectionsOptions extends states.MusicBeatState
 					case 1:
 						FlxG.switchState(new MenuGameOptions());
 					case 2:
-						FlxG.switchState(new OptimizationOptions());
+						FlxG.switchState(new options.OptimizationOptions());
 					case 3:
 						FlxG.switchState(new states.NoteSkinState());
 					case 4:

@@ -52,7 +52,13 @@ class Note extends FlxSprite
 		switch (daStage)
 		{
 			case 'school' | 'schoolEvil':
-				loadGraphic(Paths.image('weeb/pixelUI/arrows-pixels'), true, 17, 17);
+				switch(FlxG.save.data.noteSkin)
+					{
+						case 'Arrows':
+							loadGraphic(Paths.image('weeb/pixelUI/arrows-pixels'), true, 17, 17);
+						case 'Circles':
+							loadGraphic(Paths.image('UI/Circles-pixel', 'shared'), true, 17, 17);
+					}
 
 				animation.add('greenScroll', [6]);
 				animation.add('redScroll', [7]);

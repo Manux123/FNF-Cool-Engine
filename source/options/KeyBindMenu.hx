@@ -1,4 +1,4 @@
-package;
+package options;
 
 /// Code created by Rozebud for FPS Plus (thanks rozebud)
 // modified by KadeDev for use in Kade Engine/Tricky (thanks KadeDev)

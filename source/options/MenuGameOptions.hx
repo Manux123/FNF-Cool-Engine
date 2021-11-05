@@ -1,4 +1,4 @@
-package;
+package options;
 
 #if desktop
 import Discord.DiscordClient;
@@ -15,27 +15,22 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import lime.utils.Assets;
 
-class OptimizationOptions extends states.MusicBeatState
+class MenuGameOptions extends states.MusicBeatState
 {
 	var selector:FlxText;
 	var curSelected:Int = 0;
 
-	public static var canDoRight:Bool = false;
-	public static var canDoLeft:Bool = false;
-
-	var options:Array<Option3> = [
-		new StaticStageOption(),
-    new ByeGF(),
-    new ByePeople()
+	var options:Array<Option2> = [
+		new PerfectModeOption(),
+		new SickModeOption()
 	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
-	var versionShit:FlxText;
+	public static var versionShit:FlxText;
 	override function create()
 	{
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
+		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGBlue'));
 
-		menuBG.color = 0xFF453F3F;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
 		menuBG.updateHitbox();
 		menuBG.screenCenter();
@@ -59,14 +54,6 @@ class OptimizationOptions extends states.MusicBeatState
 			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
 		}
 
-		var optionsBG:FlxSprite = new FlxSprite();
-		optionsBG.frames = Paths.getSparrowAtlas('menu/menuoptions');
-	    optionsBG.animation.addByPrefix('idle', 'options basic', 24, false);
-	    optionsBG.animation.play('idle');
-	    optionsBG.antialiasing = true;
-		optionsBG.screenCenter(X);
-	    add(optionsBG);
-
 		versionShit = new FlxText(5, FlxG.height - 18, 0, "Offset (Left, Right): " + FlxG.save.data.offset, 12);
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -86,6 +73,14 @@ class OptimizationOptions extends states.MusicBeatState
 			if (controls.DOWN_P)
 				changeSelection(1);
 
+			if(curSelected == 0)
+			{
+				versionShit.text = 'Full Combo Mode: You need to do full combo or else you die';
+			}
+			else if(curSelected == 1)
+			{
+				versionShit.text = 'Only Sick Mode: You need to do sicks, not goods, or shits';
+			}
 
 			if (controls.RIGHT_R)
 			{
@@ -150,7 +145,7 @@ class OptimizationOptions extends states.MusicBeatState
 	}
 }
 
-class Option3
+class Option2
 {
 	public function new()
 	{
@@ -168,47 +163,32 @@ class Option3
 	private function updateDisplay():String { return throw "stub!"; }
 }
 
-class StaticStageOption extends Option3
+class PerfectModeOption extends Option2
 {
 	public override function press():Bool
 	{
-		FlxG.save.data.animatedstage = !FlxG.save.data.animatedstage;
+		FlxG.save.data.perfectmode = !FlxG.save.data.perfectmode;
 		display = updateDisplay();
 		return true;
 	}
 
 	private override function updateDisplay():String
 	{
-		return FlxG.save.data.animatedstage ? "Static Stage" : "Normal Stage";
+		return FlxG.save.data.perfectmode ? "Full Combo Mode" : "Normal Mode";
 	}
 }
 
-class ByeGF extends Option3
+class SickModeOption extends Option2
 {
 	public override function press():Bool
 	{
-		FlxG.save.data.gfbye = !FlxG.save.data.gfbye;
+		FlxG.save.data.sickmode = !FlxG.save.data.sickmode;
 		display = updateDisplay();
 		return true;
 	}
 
 	private override function updateDisplay():String
 	{
-		return FlxG.save.data.gfbye ? "Add GF" : "Remove GF";
-	}
-}
-
-class ByePeople extends Option3
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.byebg = !FlxG.save.data.byebg;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.byebg ? "Add BG Stuff" : "Remove BG Stuff";
+		return FlxG.save.data.sickmode ? "Only Sick Mode" : "SGB Mode";
 	}
 }

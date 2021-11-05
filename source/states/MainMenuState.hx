@@ -197,7 +197,7 @@ class MainMenuState extends states.MusicBeatState
 										trace("Freeplay Menu Selected");
 
 									case 'options':
-										FlxG.switchState(new SectionsOptions());
+										FlxG.switchState(new options.SectionsOptions());
 								}
 							});
 						}

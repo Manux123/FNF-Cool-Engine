@@ -1,4 +1,4 @@
-package;
+package options;
 
 #if desktop
 import Discord.DiscordClient;
@@ -15,7 +15,7 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import lime.utils.Assets;
 
-class OptionsMenu extends states.MusicBeatState
+class OptimizationOptions extends states.MusicBeatState
 {
 	var selector:FlxText;
 	var curSelected:Int = 0;
@@ -23,12 +23,10 @@ class OptionsMenu extends states.MusicBeatState
 	public static var canDoRight:Bool = false;
 	public static var canDoLeft:Bool = false;
 
-	var options:Array<Option> = [
-		new NewInputOption(),
-		new DownscrollOption(),
-		// new MiddleScroll(),
-		new Fullscreen(),
-		new AccuracyOption()
+	var options:Array<Option3> = [
+		new StaticStageOption(),
+   		new ByeGF(),
+    	new ByePeople()
 	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
@@ -152,7 +150,7 @@ class OptionsMenu extends states.MusicBeatState
 	}
 }
 
-class Option
+class Option3
 {
 	public function new()
 	{
@@ -170,62 +168,47 @@ class Option
 	private function updateDisplay():String { return throw "stub!"; }
 }
 
-class DownscrollOption extends Option
+class StaticStageOption extends Option3
 {
 	public override function press():Bool
 	{
-		FlxG.save.data.downscroll = !FlxG.save.data.downscroll;
+		FlxG.save.data.animatedstage = !FlxG.save.data.animatedstage;
 		display = updateDisplay();
 		return true;
 	}
 
 	private override function updateDisplay():String
 	{
-		return FlxG.save.data.downscroll ? "Downscroll" : "Upscroll";
+		return FlxG.save.data.animatedstage ? "Static Stage" : "Normal Stage";
 	}
 }
 
-class AccuracyOption extends Option
+class ByeGF extends Option3
 {
 	public override function press():Bool
 	{
-		FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay;
+		FlxG.save.data.gfbye = !FlxG.save.data.gfbye;
 		display = updateDisplay();
 		return true;
 	}
 
 	private override function updateDisplay():String
 	{
-		return "Accuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on");
+		return FlxG.save.data.gfbye ? "Add GF" : "Remove GF";
 	}
 }
 
-class NewInputOption extends Option
+class ByePeople extends Option3
 {
 	public override function press():Bool
 	{
-		FlxG.save.data.newInput = !FlxG.save.data.newInput;
+		FlxG.save.data.byebg = !FlxG.save.data.byebg;
 		display = updateDisplay();
 		return true;
 	}
 
 	private override function updateDisplay():String
 	{
-		return !FlxG.save.data.newInput ? "Traditional Input" : "New Input";
-	}
-}
-
-class Fullscreen extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.fullscreen = !FlxG.fullscreen;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return !FlxG.fullscreen ? "Fullscreen Off" : "Fullscreen On";
+		return FlxG.save.data.byebg ? "Add BG Stuff" : "Remove BG Stuff";
 	}
 }

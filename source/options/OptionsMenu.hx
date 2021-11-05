@@ -1,4 +1,4 @@
-package;
+package options;
 
 #if desktop
 import Discord.DiscordClient;
@@ -15,22 +15,29 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import lime.utils.Assets;
 
-class MenuGameOptions extends states.MusicBeatState
+class OptionsMenu extends states.MusicBeatState
 {
 	var selector:FlxText;
 	var curSelected:Int = 0;
 
-	var options:Array<Option2> = [
-		new PerfectModeOption(),
-		new SickModeOption()
+	public static var canDoRight:Bool = false;
+	public static var canDoLeft:Bool = false;
+
+	var options:Array<Option> = [
+		new NewInputOption(),
+		new DownscrollOption(),
+		// new MiddleScroll(),
+		new Fullscreen(),
+		new AccuracyOption()
 	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
-	public static var versionShit:FlxText;
+	var versionShit:FlxText;
 	override function create()
 	{
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGBlue'));
+		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 
+		menuBG.color = 0xFF453F3F;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
 		menuBG.updateHitbox();
 		menuBG.screenCenter();
@@ -54,6 +61,14 @@ class MenuGameOptions extends states.MusicBeatState
 			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
 		}
 
+		var optionsBG:FlxSprite = new FlxSprite();
+		optionsBG.frames = Paths.getSparrowAtlas('menu/menuoptions');
+	    optionsBG.animation.addByPrefix('idle', 'options basic', 24, false);
+	    optionsBG.animation.play('idle');
+	    optionsBG.antialiasing = true;
+		optionsBG.screenCenter(X);
+	    add(optionsBG);
+
 		versionShit = new FlxText(5, FlxG.height - 18, 0, "Offset (Left, Right): " + FlxG.save.data.offset, 12);
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -73,14 +88,6 @@ class MenuGameOptions extends states.MusicBeatState
 			if (controls.DOWN_P)
 				changeSelection(1);
 
-			if(curSelected == 0)
-			{
-				versionShit.text = 'Full Combo Mode: You need to do full combo or else you die';
-			}
-			else if(curSelected == 1)
-			{
-				versionShit.text = 'Only Sick Mode: You need to do sicks, not goods, or shits';
-			}
 
 			if (controls.RIGHT_R)
 			{
@@ -145,7 +152,7 @@ class MenuGameOptions extends states.MusicBeatState
 	}
 }
 
-class Option2
+class Option
 {
 	public function new()
 	{
@@ -163,32 +170,62 @@ class Option2
 	private function updateDisplay():String { return throw "stub!"; }
 }
 
-class PerfectModeOption extends Option2
+class DownscrollOption extends Option
 {
 	public override function press():Bool
 	{
-		FlxG.save.data.perfectmode = !FlxG.save.data.perfectmode;
+		FlxG.save.data.downscroll = !FlxG.save.data.downscroll;
 		display = updateDisplay();
 		return true;
 	}
 
 	private override function updateDisplay():String
 	{
-		return FlxG.save.data.perfectmode ? "Full Combo Mode" : "Normal Mode";
+		return FlxG.save.data.downscroll ? "Downscroll" : "Upscroll";
 	}
 }
 
-class SickModeOption extends Option2
+class AccuracyOption extends Option
 {
 	public override function press():Bool
 	{
-		FlxG.save.data.sickmode = !FlxG.save.data.sickmode;
+		FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay;
 		display = updateDisplay();
 		return true;
 	}
 
 	private override function updateDisplay():String
 	{
-		return FlxG.save.data.sickmode ? "Only Sick Mode" : "SGB Mode";
+		return "Accuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on");
+	}
+}
+
+class NewInputOption extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.newInput = !FlxG.save.data.newInput;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return !FlxG.save.data.newInput ? "Traditional Input" : "New Input";
+	}
+}
+
+class Fullscreen extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.fullscreen = !FlxG.fullscreen;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return !FlxG.fullscreen ? "Fullscreen Off" : "Fullscreen On";
 	}
 }

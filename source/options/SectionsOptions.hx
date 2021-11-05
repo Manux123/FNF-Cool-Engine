@@ -1,4 +1,4 @@
-package;
+package options;
 
 #if desktop
 import Discord.DiscordClient;
@@ -73,20 +73,20 @@ class SectionsOptions extends states.MusicBeatState
 
 		var controlLabel:Alphabet = new Alphabet(0, 400, controlsStrings[3], true, false);
 		controlLabel.isMenuItem = false;
-		controlLabel.targetY = 2;
+		controlLabel.targetY = 3;
 		controlLabel.screenCenter(X);
 		grpControls.add(controlLabel);
 		
 		var controlLabel:Alphabet = new Alphabet(0, 500, controlsStrings[4], true, false);
 		controlLabel.isMenuItem = false;
-		controlLabel.targetY = 3;
+		controlLabel.targetY = 4;
 		controlLabel.screenCenter(X);
 		grpControls.add(controlLabel);
 		super.create();
 
 		var controlLabel:Alphabet = new Alphabet(0, 600, controlsStrings[5], true, false);
 		controlLabel.isMenuItem = false;
-		controlLabel.targetY = 4;
+		controlLabel.targetY = 5;
 		controlLabel.screenCenter(X);
 		grpControls.add(controlLabel);
 		super.create();
@@ -111,9 +111,9 @@ class SectionsOptions extends states.MusicBeatState
 					case 0:
 						FlxG.switchState(new OptionsMenu());
 					case 1:
-						FlxG.switchState(new OptimizationOptions());
-					case 1:
 						FlxG.switchState(new MenuGameOptions());
+					case 2:
+						FlxG.switchState(new OptimizationOptions());
 					case 3:
 						FlxG.switchState(new states.NoteSkinState());
 					case 4:

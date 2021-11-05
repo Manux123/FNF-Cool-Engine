@@ -2288,7 +2288,7 @@ class PlayState extends states.MusicBeatState
 	}
 
 	public function popGood():Void {
-
+		var score:Int = 350;
 		RatingType = 'good';
 		totalNotesHit += 0.65;
 		score = 200;

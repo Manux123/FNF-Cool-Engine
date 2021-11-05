@@ -25,6 +25,7 @@ class OptimizationOptions extends states.MusicBeatState
 
 	var options:Array<Option3> = [
 		new StaticStageOption(),
+		new ByePeople(),
         new ByeGF()
 	];
 

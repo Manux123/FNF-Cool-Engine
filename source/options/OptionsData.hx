@@ -33,13 +33,13 @@ class OptionsData
 			if(FlxG.save.data.sickmode = null)
 				FlxG.save.data.sickmode = false;
 
-			if(FlxG.save.data.animatedstage = null)
-				FlxG.save.data.animatedstage = true;
+			if(FlxG.save.data.staticstage = null)
+				FlxG.save.data.staticstage = false;
 
 			if(FlxG.save.data.gfbye = null)
-				FlxG.save.data.gfbye = true;
+				FlxG.save.data.gfbye = false;
 
 			if(FlxG.save.data.byebg = null)
-				FlxG.save.data.byebg = true;
+				FlxG.save.data.byebg = false;
 		}
 }

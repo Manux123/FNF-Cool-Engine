@@ -1349,7 +1349,13 @@ class PlayState extends states.MusicBeatState
 			switch (curStage)
 			{
 				case 'school' | 'schoolEvil':
-					babyArrow.loadGraphic(Paths.image('weeb/pixelUI/arrows-pixels'), true, 17, 17);
+					switch(FlxG.save.data.noteSkin)
+					{
+						case 'Arrows':
+							babyArrow.loadGraphic(Paths.image('weeb/pixelUI/arrows-pixels'), true, 17, 17);
+						case 'Circles':
+							babyArrow.loadGraphic(Paths.image('UI/Circles-pixel', 'shared'), true, 17, 17);
+					}
 					babyArrow.animation.add('green', [6]);
 					babyArrow.animation.add('red', [7]);
 					babyArrow.animation.add('blue', [5]);

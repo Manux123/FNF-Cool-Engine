@@ -33,6 +33,7 @@ class SectionsOptions extends states.MusicBeatState
 		controlsStrings = CoolUtil.coolStringFile(
 			("\n" + 'Preferences') +
 			("\n" + 'Game Options') +
+			("\n" + 'Optimizations') +
 			("\n" + 'Note Skin') +
 			("\n" + 'Controls') +
 			("\n" + 'Exit'));
@@ -82,6 +83,13 @@ class SectionsOptions extends states.MusicBeatState
 		controlLabel.screenCenter(X);
 		grpControls.add(controlLabel);
 		super.create();
+
+		var controlLabel:Alphabet = new Alphabet(0, 600, controlsStrings[5], true, false);
+		controlLabel.isMenuItem = false;
+		controlLabel.targetY = 4;
+		controlLabel.screenCenter(X);
+		grpControls.add(controlLabel);
+		super.create();
 	}
 
 	override function update(elapsed:Float)
@@ -103,12 +111,14 @@ class SectionsOptions extends states.MusicBeatState
 					case 0:
 						FlxG.switchState(new OptionsMenu());
 					case 1:
+						FlxG.switchState(new OptimizationOptions());
+					case 1:
 						FlxG.switchState(new MenuGameOptions());
-					case 2:
-						FlxG.switchState(new states.NoteSkinState());
 					case 3:
-						FlxG.switchState(new KeyBindMenu());
+						FlxG.switchState(new states.NoteSkinState());
 					case 4:
+						FlxG.switchState(new KeyBindMenu());
+					case 5:
 						FlxG.switchState(new states.MainMenuState());
 				}
 			}

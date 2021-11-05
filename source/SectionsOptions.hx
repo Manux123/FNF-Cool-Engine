@@ -33,7 +33,7 @@ class SectionsOptions extends states.MusicBeatState
 		controlsStrings = CoolUtil.coolStringFile(
 			("\n" + 'Preferences') +
 			("\n" + 'Game Options') +
-			("\n" + 'Optimizations') +
+			("\n" + 'Optimization') +
 			("\n" + 'Note Skin') +
 			("\n" + 'Controls') +
 			("\n" + 'Exit'));

@@ -179,7 +179,7 @@ class PlayState extends states.MusicBeatState
 	{
 		FlxG.mouse.visible = false;
 		playstategaming = this;
-		FlxG.save.data.middlescroll = false;
+	//	FlxG.save.data.middlescroll = false; hardcoded so it doesn't activates lmao
 		theFunne = FlxG.save.data.newInput;
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
@@ -1454,13 +1454,13 @@ class PlayState extends states.MusicBeatState
 				case 0:
 					cpuStrums.add(babyArrow);
 					if(FlxG.save.data.middlescroll){
-						cpuStrums.remove(babyArrow);
+						cpuStrums.members[i].visible = false;
 					}
 				case 1:
 					playerStrums.add(babyArrow);
 					if(FlxG.save.data.middlescroll){
-						playerStrums.add(babyArrow);
-						babyArrow.x -= 250;
+					//	playerStrums.add(babyArrow); Wtf
+						playerStrums.members[i].x -= 250;
 					}
 			}
 

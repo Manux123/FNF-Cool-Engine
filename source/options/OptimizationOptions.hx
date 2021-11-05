@@ -194,7 +194,7 @@ class ByeGF extends Option3
 
 	private override function updateDisplay():String
 	{
-		return FlxG.save.data.gfbye ? "Add GF" : "Remove GF";
+		return FlxG.save.data.gfbye ? "Remove GF" : "Add GF";
 	}
 }
 
@@ -209,6 +209,6 @@ class ByePeople extends Option3
 
 	private override function updateDisplay():String
 	{
-		return FlxG.save.data.byebg ? "Add BG Stuff" : "Remove BG Stuff";
+		return FlxG.save.data.byebg ? "Remove BG Stuff" : "Add BG Stuff";
 	}
 }

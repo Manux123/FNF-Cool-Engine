@@ -177,6 +177,7 @@ class PlayState extends states.MusicBeatState
 
 	override public function create()
 	{
+		FlxG.mouse.visible = false;
 		playstategaming = this;
 		FlxG.save.data.middlescroll = false;
 		theFunne = FlxG.save.data.newInput;
@@ -725,7 +726,7 @@ class PlayState extends states.MusicBeatState
 				boyfriend.x += 260;
 
 				resetFastCar();
-				if (!FlxG.save.data.byebg || !FlxG.save.data.staticstage)
+				if (!FlxG.save.data.staticstage)
 					{
 						add(fastCar);
 					}
@@ -2774,27 +2775,27 @@ class PlayState extends states.MusicBeatState
 
 	function resetFastCar():Void
 	{
-		if (!FlxG.save.data.staticstage || FlxG.save.data.byebg)
+		if (!FlxG.save.data.staticstage)
 		{
-		fastCar.x = -12600;
-		fastCar.y = FlxG.random.int(140, 250);
-		fastCar.velocity.x = 0;
-		fastCarCanDrive = true;
+			fastCar.x = -12600;
+			fastCar.y = FlxG.random.int(140, 250);
+			fastCar.velocity.x = 0;
+			fastCarCanDrive = true;
 		}
 	}
 
 	function fastCarDrive()
 	{
-		if (!FlxG.save.data.staticstage || !FlxG.save.data.byebg)
-			{
-		FlxG.sound.play(Paths.soundRandom('carPass', 0, 1), 0.7);
-
-		fastCar.velocity.x = (FlxG.random.int(170, 220) / FlxG.elapsed) * 3;
-		fastCarCanDrive = false;
-		new FlxTimer().start(2, function(tmr:FlxTimer)
+		if (!FlxG.save.data.staticstage)
 		{
-			resetFastCar();
-		});
+			FlxG.sound.play(Paths.soundRandom('carPass', 0, 1), 0.7);
+
+			fastCar.velocity.x = (FlxG.random.int(170, 220) / FlxG.elapsed) * 3;
+			fastCarCanDrive = false;
+			new FlxTimer().start(2, function(tmr:FlxTimer)
+			{
+				resetFastCar();
+			});
 
 		}
 	}

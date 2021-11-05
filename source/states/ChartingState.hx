@@ -163,7 +163,7 @@ class ChartingState extends states.MusicBeatState
 		var tabs = [
 			{name: "Song", label: 'Song'},
 			{name: "Section", label: 'Section'},
-			{name: "ModCharts", label: 'ModCharts'},
+			//{name: "ModCharts", label: 'ModCharts'},
 			{name: "Note", label: 'Note'}
 		];
 

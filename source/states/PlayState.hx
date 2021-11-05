@@ -67,6 +67,8 @@ class PlayState extends states.MusicBeatState
 
 	var halloweenLevel:Bool = false;
 
+	public static var playstategaming:PlayState = null; //lol
+
 	#if desktop
 	// Discord RPC variables
 	var storyDifficultyText:String = "";
@@ -175,6 +177,7 @@ class PlayState extends states.MusicBeatState
 
 	override public function create()
 	{
+		playstategaming = this;
 		FlxG.save.data.middlescroll = false;
 		theFunne = FlxG.save.data.newInput;
 		if (FlxG.sound.music != null)
@@ -850,15 +853,17 @@ class PlayState extends states.MusicBeatState
 		add(versionShit);
 
 		if(FlxG.save.data.perfectmode) {
-			var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 24, "Full Combo Mode", 12);
+			var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Full Combo Mode", 12);
 			versionShit.scrollFactor.set();
 			versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			versionShit.y -= 20;
 			add(versionShit); }
 		
 		if(FlxG.save.data.sickmode) {
-			var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 24, "Sick Mode", 12);
+			var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Sick Mode", 12);
 			versionShit.scrollFactor.set();
 			versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			versionShit.y -= 20;
 			add(versionShit); }
 
 		iconP1 = new HealthIcon(SONG.player1, true);
@@ -1029,6 +1034,8 @@ class PlayState extends states.MusicBeatState
 	var set:FlxSprite;
 	var go:FlxSprite;
 
+	var introAssets:Map<String, Array<String>> = new Map<String, Array<String>>();
+
 	function startCountdown():Void
 	{
 		inCutscene = false;
@@ -1049,7 +1056,7 @@ class PlayState extends states.MusicBeatState
 			gf.dance();
 			boyfriend.playAnim('idle');
 
-			var introAssets:Map<String, Array<String>> = new Map<String, Array<String>>();
+			introAssets = new Map<String, Array<String>>();
 			introAssets.set('default', ['ready', "set", "go"]);
 			introAssets.set('school', [
 				'weeb/pixelUI/ready-pixel',
@@ -1079,62 +1086,11 @@ class PlayState extends states.MusicBeatState
 				case 0:
 					FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
 				case 1:
-					ready = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
-					ready.scrollFactor.set();
-					ready.updateHitbox();
-
-					if (curStage.startsWith('school'))
-						ready.setGraphicSize(Std.int(ready.width * daPixelZoom));
-
-					ready.screenCenter();
-					add(ready);
-					FlxTween.tween(ready, {y: ready.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-						ease: FlxEase.cubeInOut,
-						onComplete: function(twn:FlxTween)
-						{
-							ready.destroy();
-						}
-					});
-					FlxG.sound.play(Paths.sound('intro2' + altSuffix), 0.6);
+					initready();
 				case 2:
-					set = new FlxSprite().loadGraphic(Paths.image(introAlts[1]));
-					set.scrollFactor.set();
-
-					if (curStage.startsWith('school'))
-						set.setGraphicSize(Std.int(set.width * daPixelZoom));
-
-					set.screenCenter();
-					add(set);
-					FlxTween.tween(set, {y: set.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-						ease: FlxEase.cubeInOut,
-						onComplete: function(twn:FlxTween)
-						{
-							set.destroy();
-						}
-					});
-					FlxG.sound.play(Paths.sound('intro1' + altSuffix), 0.6);
+					initset();
 				case 3:
-					go = new FlxSprite().loadGraphic(Paths.image(introAlts[2]));
-					go.scrollFactor.set();
-
-					if (curStage.startsWith('school'))
-						go.setGraphicSize(Std.int(go.width * daPixelZoom));
-
-					go.updateHitbox();
-
-					go.screenCenter();
-					add(go);
-					FlxTween.tween(go, {y: go.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-						ease: FlxEase.cubeInOut,
-						onComplete: function(twn:FlxTween)
-						{
-							go.destroy();
-						}
-					});
-					FlxG.sound.play(Paths.sound('introGo' + altSuffix), 0.6);
-					boyfriend.playAnim('hey', false);
-					gf.playAnim('cheer', false);
-					FlxG.camera.flash(FlxColor.WHITE, 1);
+					initgo();
 			}
 			swagCounter += 1;
 			// generateSong('fresh');
@@ -1144,6 +1100,97 @@ class PlayState extends states.MusicBeatState
 	var previousFrameTime:Int = 0;
 	var lastReportedPlayheadPosition:Int = 0;
 	var songTime:Float = 0;
+
+	function initready():Void {
+		var introAlts:Array<String> = introAssets.get('default');
+		var altSuffix:String = "";
+
+		for (value in introAssets.keys())
+		{
+			if (value == curStage)
+			{
+				introAlts = introAssets.get(value);
+				altSuffix = '-pixel';
+			}
+		}
+		ready = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
+		ready.scrollFactor.set();
+		ready.updateHitbox();
+
+		if (curStage.startsWith('school'))
+			ready.setGraphicSize(Std.int(ready.width * daPixelZoom));
+
+		ready.screenCenter();
+		add(ready);
+		FlxTween.tween(ready, {y: ready.y += 100, alpha: 0}, Conductor.crochet / 1000, {
+		ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween)
+			{
+				ready.destroy();
+			}
+		});
+		FlxG.sound.play(Paths.sound('intro2' + altSuffix), 0.6);
+	}
+
+	function initset():Void {
+		var introAlts:Array<String> = introAssets.get('default');
+		var altSuffix:String = "";
+
+		for (value in introAssets.keys())
+		{
+			if (value == curStage)
+			{
+				introAlts = introAssets.get(value);
+				altSuffix = '-pixel';
+			}
+		}
+		set = new FlxSprite().loadGraphic(Paths.image(introAlts[1]));
+		set.scrollFactor.set();
+
+		if (curStage.startsWith('school'))
+			set.setGraphicSize(Std.int(set.width * daPixelZoom));
+
+		set.screenCenter();
+		add(set);
+		FlxTween.tween(set, {y: set.y += 100, alpha: 0}, Conductor.crochet / 1000, {
+		ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween)
+			{
+				set.destroy();
+			}
+		});
+		FlxG.sound.play(Paths.sound('intro1' + altSuffix), 0.6);
+	}
+
+	function initgo():Void {
+		var introAlts:Array<String> = introAssets.get('default');
+		var altSuffix:String = "";
+
+		for (value in introAssets.keys())
+		{
+			if (value == curStage)
+			{
+				introAlts = introAssets.get(value);
+				altSuffix = '-pixel';
+			}
+		}
+		go = new FlxSprite().loadGraphic(Paths.image(introAlts[2]));
+		go.scrollFactor.set();
+
+		if (curStage.startsWith('school'))
+			go.setGraphicSize(Std.int(go.width * daPixelZoom));
+
+		go.updateHitbox();
+
+		go.screenCenter();
+		add(go);
+		FlxTween.tween(go, {y: go.y += 100, alpha: 0}, Conductor.crochet / 1000, {
+		ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween) {
+			go.destroy(); }
+		});
+		FlxG.sound.play(Paths.sound('introGo' + altSuffix), 0.6);
+		boyfriend.playAnim('hey', false);
+		gf.playAnim('cheer', false);
+		FlxG.camera.flash(FlxColor.WHITE, 1);
+	}
 
 	function startSong():Void
 	{
@@ -1944,7 +1991,7 @@ class PlayState extends states.MusicBeatState
 		#end
 	}
 
-	function endSong():Void
+	public function endSong():Void
 	{
 		canPause = false;
 		FlxG.sound.music.volume = 0;

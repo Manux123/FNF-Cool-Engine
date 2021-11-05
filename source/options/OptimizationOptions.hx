@@ -1,4 +1,4 @@
-package options;
+package;
 
 #if desktop
 import Discord.DiscordClient;
@@ -25,8 +25,7 @@ class OptimizationOptions extends states.MusicBeatState
 
 	var options:Array<Option3> = [
 		new StaticStageOption(),
-   		new ByeGF(),
-    	new ByePeople()
+        new ByeGF()
 	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
@@ -172,14 +171,14 @@ class StaticStageOption extends Option3
 {
 	public override function press():Bool
 	{
-		FlxG.save.data.animatedstage = !FlxG.save.data.animatedstage;
+		FlxG.save.data.staticstage = !FlxG.save.data.staticstage;
 		display = updateDisplay();
 		return true;
 	}
 
 	private override function updateDisplay():String
 	{
-		return FlxG.save.data.animatedstage ? "Static Stage" : "Normal Stage";
+		return FlxG.save.data.staticstage ? "Static Stage" : "Normal Stage";
 	}
 }
 

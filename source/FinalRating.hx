@@ -80,7 +80,8 @@ class FinalRating extends FlxSubState
 
                 new FlxTimer().start(2, function(tmr:FlxTimer)
                     {
-                    //Strexx estuvo aca
+                    //Strexx was here - Strexx
+                    //Its not like u did something incredibly important - Juanen100
         
                         if (PlayState.isStoryMode)
                         {

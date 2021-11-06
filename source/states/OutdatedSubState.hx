@@ -11,7 +11,7 @@ class OutdatedSubState extends states.MusicBeatState
 {
 	public static var leftState:Bool = false;
 
-	public static var daVersionNeeded:String = "If i knew the lastest version i'll say it, i promess (idk how to spell that)";
+	public static var daVersionNeeded:String = "If i knew the lastest version i'll say it, i promise";
 
 	override function create()
 	{

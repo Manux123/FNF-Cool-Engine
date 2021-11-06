@@ -25,9 +25,7 @@ import flixel.util.FlxColor;
 import flixel.ui.FlxButton;
 import flixel.ui.FlxSpriteButton;
 using StringTools;
-/**
-	*DEBUG MODE
- */
+
 class AnimationDebug extends FlxState
 {
 	var UI_box:FlxUITabMenu;

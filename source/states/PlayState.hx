@@ -179,7 +179,6 @@ class PlayState extends states.MusicBeatState
 	{
 		FlxG.mouse.visible = false;
 		playstategaming = this;
-	//	FlxG.save.data.middlescroll = false; hardcoded so it doesn't activates lmao
 		theFunne = FlxG.save.data.newInput;
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
@@ -1459,7 +1458,7 @@ class PlayState extends states.MusicBeatState
 				case 1:
 					playerStrums.add(babyArrow);
 					if(FlxG.save.data.middlescroll){
-					//	playerStrums.add(babyArrow); Wtf
+					//	playerStrums.add(babyArrow); U are literally adding the strums twice, thats weird
 						playerStrums.members[i].x -= 250;
 					}
 			}
@@ -1969,6 +1968,9 @@ class PlayState extends states.MusicBeatState
 					}
 					else
 						daNote.y = (strumLine.y - (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)));
+
+					if (!daNote.mustPress && FlxG.save.data.middlescroll)
+						daNote.alpha = 0;
 					
 					//trace(daNote.y);
 					// WIP interpolation shit? Need to fix the pause issue

@@ -130,7 +130,7 @@ class ChartingState extends states.MusicBeatState
 				player1: 'bf',
 				player2: 'dad',
 				speed: 1,
-				modchart: false,
+				//modchart: false,
 				validScore: false
 			};
 		}
@@ -276,7 +276,7 @@ class ChartingState extends states.MusicBeatState
 	var check_changeBPM:FlxUICheckBox;
 	var stepperSectionBPM:FlxUINumericStepper;
 	var check_altAnim:FlxUICheckBox;
-	var check_modchart:FlxUICheckBox;
+	//var check_modchart:FlxUICheckBox;
 
 	function addSectionUI():Void
 	{
@@ -334,7 +334,7 @@ class ChartingState extends states.MusicBeatState
 
 		UI_box.addGroup(tab_group_section);
 	}
-
+/*
 	function addModChartUI():Void
 	{
 		var tab_group_modchart = new FlxUI(null, UI_box);
@@ -347,7 +347,7 @@ class ChartingState extends states.MusicBeatState
 	//	tab_group_modchart.add(stepperSectionBPM); wtf even is this
 		UI_box.addGroup(tab_group_modchart);
 	}
-
+*/
 
 	var stepperSusLength:FlxUINumericStepper;
 
@@ -917,7 +917,7 @@ class ChartingState extends states.MusicBeatState
 			sectionNotes: [],
 			typeOfSection: 0,
 			altAnim: false,
-			modchart: false
+			//modchart: false
 		};
 
 		_song.notes.push(sec);

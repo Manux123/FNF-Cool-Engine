@@ -2059,6 +2059,19 @@ class PlayState extends states.MusicBeatState
 					Highscore.saveWeekScore(storyWeek, campaignScore, storyDifficulty);
 				}
 
+				switch(StoryMenuState.curWeek)
+				{
+					case 1:
+						FlxG.save.data.weekUnlockedSpooky = true;
+					case 2:
+						FlxG.save.data.weekUnlockedPico = true;
+					case 3:
+						FlxG.save.data.weekUnlockedMom = true;
+					case 4:
+						FlxG.save.data.weekUnlockedMomDud = true;
+					case 5:
+						FlxG.save.data.weekUnlockedSNEPAI = true;
+				}
 				FlxG.save.data.weekUnlocked = StoryMenuState.weekUnlocked;
 				FlxG.save.flush();
 			}

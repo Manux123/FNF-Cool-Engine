@@ -35,7 +35,7 @@ class StoryMenuState extends states.MusicBeatState
 	];
 	var curDifficulty:Int = 1;
 
-	public static var weekUnlocked:Array<Bool> = [true, true, true, true, true, true, true];
+	public static var weekUnlocked:Array<Bool> = [true];
 
 	var weekCharacters:Array<Dynamic> = [
 		['dad', 'bf', 'gf'],
@@ -48,7 +48,7 @@ class StoryMenuState extends states.MusicBeatState
 	];
 
 	var weekNames:Array<String> = [
-		"Go to Funk!!",
+		"How to Funk!!",
 		"Daddy Dearest",
 		"Spooky Month",
 		"PICO",
@@ -59,7 +59,7 @@ class StoryMenuState extends states.MusicBeatState
 
 	var txtWeekTitle:FlxText;
 
-	var curWeek:Int = 0;
+	public static var curWeek:Int = 0;
 	var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 	
 	public static var bgcol:FlxColor = 0xFF0A0A0A;
@@ -241,6 +241,17 @@ class StoryMenuState extends states.MusicBeatState
 		{
 			lock.y = grpWeekText.members[lock.ID].y;
 		});
+
+		if(FlxG.save.data.weekUnlockedSNEPAI)
+			weekUnlocked[6] = true;
+		else if(FlxG.save.data.weekUnlockedSpooky)
+			weekUnlocked[2] = true;
+		else if(FlxG.save.data.weekUnlockedPico)
+			weekUnlocked[3] = true;
+		else if(FlxG.save.data.weekUnlockedMom)
+			weekUnlocked[4] = true;
+		else if(FlxG.save.data.weekUnlockedMomDud)
+			weekUnlocked[5] = true;
 
 		if (!movedBack)
 		{

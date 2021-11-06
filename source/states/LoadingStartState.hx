@@ -83,12 +83,8 @@ class LoadingStartState extends MusicBeatState
 
         if (musicloading && charactersloading)
         {
-            loading.text = "Finished. Press Enter To Continue";
-            if (FlxG.keys.justPressed.ENTER)
-            {   
-                FlxG.switchState(new states.TitleState());
-                FlxG.camera.fade(FlxColor.BLACK, 0.8, false);
-            }
+            FlxG.switchState(new states.TitleState());
+            FlxG.camera.fade(FlxColor.BLACK, 0.8, false);
         }
 	}
 

@@ -871,7 +871,6 @@ class PlayState extends states.MusicBeatState
 		scoreTxt.x -= 40;
 		scoreTxt.y -= 20;
 		scoreTxt.scrollFactor.set();
-		add(scoreTxt);
 
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "FNF Cool Engine BETA - v" + Application.current.meta.get('version'), 12);
 		versionShit.scrollFactor.set();
@@ -899,6 +898,7 @@ class PlayState extends states.MusicBeatState
 		iconP2 = new HealthIcon(SONG.player2, false);
 		iconP2.y = healthBar.y - (iconP2.height / 2);
 		add(iconP2);
+		add(scoreTxt);
 
 		strumLineNotes.cameras = [camHUD];
 		notes.cameras = [camHUD];

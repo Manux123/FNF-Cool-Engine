@@ -90,7 +90,7 @@ class StoryMenuState extends states.MusicBeatState
 			if (!FlxG.sound.music.playing)
 				FlxG.sound.playMusic(Paths.music('freakyMenu'));
 		}
-
+		
 		persistentUpdate = persistentDraw = true;
 
 		scoreText = new FlxText(10, 10, 0, "WEEK SCORE: 49324858", 36);
@@ -241,17 +241,6 @@ class StoryMenuState extends states.MusicBeatState
 		{
 			lock.y = grpWeekText.members[lock.ID].y;
 		});
-
-		if(FlxG.save.data.weekUnlockedSNEPAI)
-			weekUnlocked[6] = true;
-		else if(FlxG.save.data.weekUnlockedSpooky)
-			weekUnlocked[2] = true;
-		else if(FlxG.save.data.weekUnlockedPico)
-			weekUnlocked[3] = true;
-		else if(FlxG.save.data.weekUnlockedMom)
-			weekUnlocked[4] = true;
-		else if(FlxG.save.data.weekUnlockedMomDud)
-			weekUnlocked[5] = true;
 
 		if (!movedBack)
 		{

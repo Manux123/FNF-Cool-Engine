@@ -2048,8 +2048,6 @@ class PlayState extends states.MusicBeatState
 				transIn = FlxTransitionableState.defaultTransIn;
 				transOut = FlxTransitionableState.defaultTransOut;
 
-				FlxG.switchState(new FinalRating());
-
 				// if ()
 				StoryMenuState.weekUnlocked[Std.int(Math.min(storyWeek + 1, StoryMenuState.weekUnlocked.length - 1))] = true;
 
@@ -2058,22 +2056,28 @@ class PlayState extends states.MusicBeatState
 					NGio.unlockMedal(60961);
 					Highscore.saveWeekScore(storyWeek, campaignScore, storyDifficulty);
 				}
-
 				switch(StoryMenuState.curWeek)
 				{
 					case 1:
-						FlxG.save.data.weekUnlockedSpooky = true;
+						StoryMenuState.weekUnlocked[2] = true;
+						trace("week 2 unlocked BOIIIIIIII");
 					case 2:
-						FlxG.save.data.weekUnlockedPico = true;
+						StoryMenuState.weekUnlocked[3] = true;
+						trace("week 3 unlocked BOIIIIIIII");
 					case 3:
-						FlxG.save.data.weekUnlockedMom = true;
+						StoryMenuState.weekUnlocked[4] = true;
+						trace("week 4 unlocked BOIIIIIIII");
 					case 4:
-						FlxG.save.data.weekUnlockedMomDud = true;
+						StoryMenuState.weekUnlocked[5] = true;
+						trace("week 5 unlocked BOIIIIIIII");
 					case 5:
-						FlxG.save.data.weekUnlockedSNEPAI = true;
+						StoryMenuState.weekUnlocked[6] = true;
+						trace("week 6 unlocked BOIIIIIIII");
 				}
 				FlxG.save.data.weekUnlocked = StoryMenuState.weekUnlocked;
 				FlxG.save.flush();
+
+				FlxG.switchState(new FinalRating());
 			}
 			else
 			{

@@ -115,6 +115,9 @@ class PlayState extends states.MusicBeatState
 	private var healthBarBG:FlxSprite;
 	private var healthBar:FlxBar;
 	private var songPositionBar:Float = 0;
+
+	var fullCombo:FlxText;
+	var sickMode:FlxText;
 	
 	private var generatedMusic:Bool = false;
 	public static var startingSong:Bool = false;
@@ -876,18 +879,18 @@ class PlayState extends states.MusicBeatState
 		add(versionShit);
 
 		if(FlxG.save.data.perfectmode) {
-			var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Full Combo Mode", 12);
-			versionShit.scrollFactor.set();
-			versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-			versionShit.y -= 20;
-			add(versionShit); }
+			fullCombo = new FlxText(5, FlxG.height - 19, 0, "Full Combo Mode", 12);
+			fullCombo.scrollFactor.set();
+			fullCombo.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			fullCombo.y -= 20;
+			add(fullCombo); }
 		
 		if(FlxG.save.data.sickmode) {
-			var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Sick Mode", 12);
-			versionShit.scrollFactor.set();
-			versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-			versionShit.y -= 20;
-			add(versionShit); }
+			sickMode = new FlxText(5, FlxG.height - 19, 0, "Sick Mode", 12);
+			sickMode.scrollFactor.set();
+			sickMode.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			sickMode.y -= 20;
+			add(sickMode); }
 
 		iconP1 = new HealthIcon(SONG.player1, true);
 		iconP1.y = healthBar.y - (iconP1.height / 2);
@@ -907,6 +910,10 @@ class PlayState extends states.MusicBeatState
 		scoreTxt.cameras = [camHUD];
 		doof.cameras = [camHUD];
 		versionShit.cameras = [camHUD];
+		if(FlxG.save.data.perfectmode)
+			fullCombo.cameras = [camHUD];
+		if(FlxG.save.data.sickmode)
+			sickMode.cameras = [camHUD];
 
 		// if (SONG.song == 'South')
 		// FlxG.camera.alpha = 0.7;
@@ -1566,14 +1573,6 @@ class PlayState extends states.MusicBeatState
 		#end
 
 		songPositionBar = Conductor.songPosition;
-
-		if (FlxG.keys.justPressed.NINE)
-		{
-			if (iconP1.animation.curAnim.name == 'bf-old')
-				iconP1.animation.play(SONG.player1);
-			else
-				iconP1.animation.play('bf-old');
-		}
 
 		switch (curStage)
 		{

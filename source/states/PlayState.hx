@@ -1183,13 +1183,9 @@ class PlayState extends states.MusicBeatState
 		set.screenCenter();
 		add(set);
 		FlxTween.tween(set, {y: set.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-		ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween)
-			{
-				set.destroy();
-			}
-		});
-		FlxG.sound.play(Paths.sound('intro1' + altSuffix), 0.6);
-	}
+		ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween) {
+				set.destroy(); }});
+		FlxG.sound.play(Paths.sound('intro1' + altSuffix), 0.6); }
 
 	function initgo():Void {
 		var introAlts:Array<String> = introAssets.get('default');
@@ -1400,18 +1396,14 @@ class PlayState extends states.MusicBeatState
 					}
 
 				default:
-					if(FlxG.save.data.noteSkin == 'Arrows')
-					{
-						noteSkinTex = Paths.getSparrowAtlas('UI/NOTE_assets');
-					}
-					else if(FlxG.save.data.noteSkin == 'Circles')
-					{
-						noteSkinTex = Paths.getSparrowAtlas('UI/Circles');
-					}
-					else if(FlxG.save.data.noteSkin == 'Quaver Skin')
-					{
-						noteSkinTex = Paths.getSparrowAtlas('UI/QUAVER_assets');
-					}
+					switch(FlxG.save.data.noteSkin) {
+						case 'Arrows':
+							noteSkinTex = Paths.getSparrowAtlas('UI/NOTE_assets');
+						case 'Circles':
+							noteSkinTex = Paths.getSparrowAtlas('UI/Circles');
+						case 'Quaver Skin':
+							noteSkinTex = Paths.getSparrowAtlas('UI/QUAVER_assets'); }
+
 						babyArrow.frames = noteSkinTex;
 						babyArrow.animation.addByPrefix('green', 'arrowUP');
 						babyArrow.animation.addByPrefix('blue', 'arrowDOWN');

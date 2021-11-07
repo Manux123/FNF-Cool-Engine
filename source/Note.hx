@@ -40,7 +40,7 @@ class Note extends FlxSprite
 		this.prevNote = prevNote;
 		isSustainNote = sustainNote;
 
-		x += (FlxG.save.data.middlescroll ? -250 : 42) + 50;
+		x += (FlxG.save.data.middlescroll ? -250 : 0) + 50;
 		// MAKE SURE ITS DEFINITELY OFF SCREEN?
 		y -= 2000;
 		this.strumTime = strumTime + FlxG.save.data.offset;
@@ -175,8 +175,10 @@ class Note extends FlxSprite
 			noteScore * 0.2;
 			alpha = 0.6;
 
-			if(FlxG.save.data.downscroll)
+			if(FlxG.save.data.downscroll){
 				flipY = true;
+				flipX = true;
+			}
 
 			x += width / 2;
 

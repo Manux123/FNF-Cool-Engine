@@ -6,6 +6,8 @@ import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
 import lime.utils.Assets;
 import flixel.graphics.FlxGraphic;
+import sys.FileSystem;
+import sys.io.File;
 import Note;
 
 class NoteSkinDetectorState extends states.MusicBeatState

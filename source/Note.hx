@@ -47,110 +47,114 @@ class Note extends FlxSprite
 
 		this.noteData = noteData;
 
+		//var noteSkin:String = states.NoteSkinDetectorState.noteskindetector;
 		var daStage:String = states.PlayState.curStage;
 
-		switch (daStage)
-		{
-			case 'school' | 'schoolEvil':
-				switch(FlxG.save.data.noteSkin)
+
+		//if (noteSkin) {
+			switch (daStage)
+			{
+				case 'school' | 'schoolEvil':
+					switch(FlxG.save.data.noteSkin)
+						{
+							case 'Arrows':
+								loadGraphic(Paths.image('weeb/pixelUI/arrows-pixels'), true, 17, 17);
+							case 'Circles':
+								loadGraphic(Paths.image('UI/Circles-pixel', 'shared'), true, 17, 17);
+						}
+
+					animation.add('greenScroll', [6]);
+					animation.add('redScroll', [7]);
+					animation.add('blueScroll', [5]);
+					animation.add('purpleScroll', [4]);
+
+					if (isSustainNote)
 					{
-						case 'Arrows':
-							loadGraphic(Paths.image('weeb/pixelUI/arrows-pixels'), true, 17, 17);
-						case 'Circles':
-							loadGraphic(Paths.image('UI/Circles-pixel', 'shared'), true, 17, 17);
+						loadGraphic(Paths.image('weeb/pixelUI/arrowEnds'), true, 7, 6);
+
+						animation.add('purpleholdend', [4]);
+						animation.add('greenholdend', [6]);
+						animation.add('redholdend', [7]);
+						animation.add('blueholdend', [5]);
+
+						animation.add('purplehold', [0]);
+						animation.add('greenhold', [2]);
+						animation.add('redhold', [3]);
+						animation.add('bluehold', [1]);
 					}
 
-				animation.add('greenScroll', [6]);
-				animation.add('redScroll', [7]);
-				animation.add('blueScroll', [5]);
-				animation.add('purpleScroll', [4]);
+					setGraphicSize(Std.int(width * states.PlayState.daPixelZoom));
+					updateHitbox();
 
-				if (isSustainNote)
-				{
-					loadGraphic(Paths.image('weeb/pixelUI/arrowEnds'), true, 7, 6);
+				default:
+					switch(FlxG.save.data.noteSkin)
+					{
+						case 'Arrows':
+							frames = Paths.getSparrowAtlas('UI/NOTE_assets');
 
-					animation.add('purpleholdend', [4]);
-					animation.add('greenholdend', [6]);
-					animation.add('redholdend', [7]);
-					animation.add('blueholdend', [5]);
+							animation.addByPrefix('greenScroll', 'green0');
+							animation.addByPrefix('redScroll', 'red0');
+							animation.addByPrefix('blueScroll', 'blue0');
+							animation.addByPrefix('purpleScroll', 'purple0');
 
-					animation.add('purplehold', [0]);
-					animation.add('greenhold', [2]);
-					animation.add('redhold', [3]);
-					animation.add('bluehold', [1]);
-				}
+							animation.addByPrefix('purpleholdend', 'pruple end hold');
+							animation.addByPrefix('greenholdend', 'green hold end');
+							animation.addByPrefix('redholdend', 'red hold end');
+							animation.addByPrefix('blueholdend', 'blue hold end');
 
-				setGraphicSize(Std.int(width * states.PlayState.daPixelZoom));
-				updateHitbox();
+							animation.addByPrefix('purplehold', 'purple hold piece');
+							animation.addByPrefix('greenhold', 'green hold piece');
+							animation.addByPrefix('redhold', 'red hold piece');
+							animation.addByPrefix('bluehold', 'blue hold piece');
 
-			default:
-				switch(FlxG.save.data.noteSkin)
-				{
-					case 'Arrows':
-						frames = Paths.getSparrowAtlas('UI/NOTE_assets');
+							setGraphicSize(Std.int(width * 0.7));
+							updateHitbox();
+							antialiasing = true;
+						case 'Circles':
+							frames = Paths.getSparrowAtlas('UI/Circles');
 
-						animation.addByPrefix('greenScroll', 'green0');
-						animation.addByPrefix('redScroll', 'red0');
-						animation.addByPrefix('blueScroll', 'blue0');
-						animation.addByPrefix('purpleScroll', 'purple0');
+							animation.addByPrefix('greenScroll', 'green alone');
+							animation.addByPrefix('redScroll', 'red alone');
+							animation.addByPrefix('blueScroll', 'blue alone');
+							animation.addByPrefix('purpleScroll', 'purple alone');
 
-						animation.addByPrefix('purpleholdend', 'pruple end hold');
-						animation.addByPrefix('greenholdend', 'green hold end');
-						animation.addByPrefix('redholdend', 'red hold end');
-						animation.addByPrefix('blueholdend', 'blue hold end');
+							animation.addByPrefix('purpleholdend', 'purple tail');
+							animation.addByPrefix('greenholdend', 'green tail');
+							animation.addByPrefix('redholdend', 'red tail');
+							animation.addByPrefix('blueholdend', 'blue tail');
 
-						animation.addByPrefix('purplehold', 'purple hold piece');
-						animation.addByPrefix('greenhold', 'green hold piece');
-						animation.addByPrefix('redhold', 'red hold piece');
-						animation.addByPrefix('bluehold', 'blue hold piece');
+							animation.addByPrefix('purplehold', 'purple hold');
+							animation.addByPrefix('greenhold', 'green hold');
+							animation.addByPrefix('redhold', 'red hold');
+							animation.addByPrefix('bluehold', 'blue hold');
 
-						setGraphicSize(Std.int(width * 0.7));
-						updateHitbox();
-						antialiasing = true;
-					case 'Circles':
-						frames = Paths.getSparrowAtlas('UI/Circles');
+							setGraphicSize(Std.int(width * 0.7));
+							updateHitbox();
+							antialiasing = true;
+						case 'Quaver Skin':
+							frames = Paths.getSparrowAtlas('UI/QUAVER_assets');
 
-						animation.addByPrefix('greenScroll', 'green alone');
-						animation.addByPrefix('redScroll', 'red alone');
-						animation.addByPrefix('blueScroll', 'blue alone');
-						animation.addByPrefix('purpleScroll', 'purple alone');
+							animation.addByPrefix('greenScroll', 'green alone');
+							animation.addByPrefix('redScroll', 'red alone');
+							animation.addByPrefix('blueScroll', 'blue alone');
+							animation.addByPrefix('purpleScroll', 'purple alone');
 
-						animation.addByPrefix('purpleholdend', 'purple tail');
-						animation.addByPrefix('greenholdend', 'green tail');
-						animation.addByPrefix('redholdend', 'red tail');
-						animation.addByPrefix('blueholdend', 'blue tail');
+							animation.addByPrefix('purpleholdend', 'purple tail');
+							animation.addByPrefix('greenholdend', 'green tail');
+							animation.addByPrefix('redholdend', 'red tail');
+							animation.addByPrefix('blueholdend', 'blue tail');
 
-						animation.addByPrefix('purplehold', 'purple hold');
-						animation.addByPrefix('greenhold', 'green hold');
-						animation.addByPrefix('redhold', 'red hold');
-						animation.addByPrefix('bluehold', 'blue hold');
+							animation.addByPrefix('purplehold', 'purple hold');
+							animation.addByPrefix('greenhold', 'green hold');
+							animation.addByPrefix('redhold', 'red hold');
+							animation.addByPrefix('bluehold', 'blue hold');
 
-						setGraphicSize(Std.int(width * 0.7));
-						updateHitbox();
-						antialiasing = true;
-					case 'Quaver Skin':
-						frames = Paths.getSparrowAtlas('UI/QUAVER_assets');
-
-						animation.addByPrefix('greenScroll', 'green alone');
-						animation.addByPrefix('redScroll', 'red alone');
-						animation.addByPrefix('blueScroll', 'blue alone');
-						animation.addByPrefix('purpleScroll', 'purple alone');
-
-						animation.addByPrefix('purpleholdend', 'purple tail');
-						animation.addByPrefix('greenholdend', 'green tail');
-						animation.addByPrefix('redholdend', 'red tail');
-						animation.addByPrefix('blueholdend', 'blue tail');
-
-						animation.addByPrefix('purplehold', 'purple hold');
-						animation.addByPrefix('greenhold', 'green hold');
-						animation.addByPrefix('redhold', 'red hold');
-						animation.addByPrefix('bluehold', 'blue hold');
-
-						setGraphicSize(Std.int(width * 0.7));
-						updateHitbox();
-						antialiasing = true;
-				}	
-		}
+							setGraphicSize(Std.int(width * 0.7));
+							updateHitbox();
+							antialiasing = true;
+					}	
+			}
+		//}
 
 		switch (noteData)
 		{

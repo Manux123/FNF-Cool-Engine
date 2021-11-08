@@ -52,6 +52,9 @@ class LoadingStartState extends MusicBeatState
 									"characters/christmas/mom_dad_christmas_assets", 
 									"characters/christmas/monsterChristmas",
 									"characters/weeb/senpai", "characters/weeb/spirit", "characters/weeb/senpaiCrazy"];
+    
+    var objectsloading:Bool = false;
+    var objects:Array<String> = ["freeplay/record player freeplay"];
 
 	var loadingStart:Bool = false;
 
@@ -62,7 +65,7 @@ class LoadingStartState extends MusicBeatState
 		KeyBinds.keyCheck();
 		PlayerSettings.init();
 
-        toBeFinished = Lambda.count(characters) + Lambda.count(musicgame);
+        toBeFinished = Lambda.count(characters) + Lambda.count(musicgame) + Lambda.count(objects);
 
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGloading'));
 		add(bg);
@@ -81,7 +84,7 @@ class LoadingStartState extends MusicBeatState
     {
         super.update(elapsed);
 
-        if (musicloading && charactersloading)
+        if (musicloading && charactersloading && objectsloading)
         {
             FlxG.switchState(new states.TitleState());
             FlxG.camera.fade(FlxColor.BLACK, 0.8, false);
@@ -103,6 +106,12 @@ class LoadingStartState extends MusicBeatState
                 preloadMusic();
             #if sys }); #end
         }
+
+        if(!objectsloading){
+            #if sys sys.thread.Thread.create(() -> { #end
+                objectsAssets();
+            #if sys }); #end
+        }
     }
 
     function preloadMusic(){
@@ -120,13 +129,24 @@ class LoadingStartState extends MusicBeatState
 
     function preloadAssets(){
         for(x in characters){
-            loading.text = "Assets Loaded (" + finished + "/" + toBeFinished + ")";
+            loading.text = "Characters Loaded (" + finished + "/" + toBeFinished + ")";
             ImageCache.add(Paths.image(x));
             trace("Chached " + x);
             finished++;
         }
-        loading.text = "Assets Loaded";
+        loading.text = "Characters Loaded";
         charactersloading = true;
+    }
+
+    function objectsAssets(){
+        for(x in objects){
+            loading.text = "Objects Loaded (" + finished + "/" + toBeFinished + ")";
+            ImageCache.add(Paths.image(x));
+            trace("Chached " + x);
+            finished++;
+        }
+        loading.text = "Objects Loaded";
+        objectsloading = true;
     }
 
 }

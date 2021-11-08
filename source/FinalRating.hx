@@ -21,8 +21,8 @@ class FinalRating extends FlxSubState
         var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGBlue'));
 		add(bg);
 
-        var daLights:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/light_menu'));
-        add(daLights);
+        var bg2:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/blackslines_finalrating'));
+		add(bg2);
 
         FlxG.sound.playMusic(Paths.music('configurator'));
 
@@ -44,6 +44,8 @@ class FinalRating extends FlxSubState
         add(comboText);
 
         var helpText:FlxText = new FlxText(0,650,'Press Enter To Continue');
+        helpText.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);
+        helpText.color = FlxColor.WHITE;
         helpText.size = 28;
         add(helpText);
 
@@ -77,6 +79,8 @@ class FinalRating extends FlxSubState
                 bf.animation.play('hey', true);
 
                 FlxG.camera.flash(FlxColor.WHITE, 2.5);
+                FlxG.sound.playMusic(Paths.music('freakyMenu'));
+                FlxG.sound.music.stop();
 
                 new FlxTimer().start(2, function(tmr:FlxTimer)
                     {

@@ -184,12 +184,14 @@ class FreeplayState extends states.MusicBeatState
 		var textBG:FlxSprite = new FlxSprite(0, FlxG.height - 26).makeGraphic(FlxG.width, 26, 0xFF000000);
 		textBG.alpha = 0.6;
 		add(textBG);
-		#if PRELOAD_ALL
-		var leText:String = "Press SPACE to listen to this Song";
-		#else
-		var leText:String = "";
-		#end
-		var text:FlxText = new FlxText(textBG.x, textBG.y + 4, FlxG.width, leText, 18);
+
+		var leText:FlxText = new FlxText(5, FlxG.height - 19, 0, "Press SPACE to listen to this Song / ESC to exit", 12);
+		leText.scrollFactor.set();
+		leText.screenCenter(X);
+		leText.setFormat('VCR OSD Mono', 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		add(leText);
+		
+		var text:FlxText = new FlxText(textBG.x, textBG.y + 4, FlxG.width, 18);
 		text.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, RIGHT);
 		text.scrollFactor.set();
 		add(text);
@@ -243,7 +245,7 @@ class FreeplayState extends states.MusicBeatState
 		if (Math.abs(lerpRating - intendedRating) <= 0.01)
 			lerpRating = intendedRating;
 
-		scoreText.text = 'PERSONAL BEST: ' + lerpScore + ' (' + Math.floor(lerpRating * 100) + '%)';
+		scoreText.text = 'PERSONAL BEST: ' + lerpScore;
 		positionHighscore();
 
 		var upP = controls.UP_P;
@@ -293,18 +295,19 @@ class FreeplayState extends states.MusicBeatState
 			vocals.volume = 0.7;
 			instPlaying = curSelected;
 
-			disc = new FlxSprite();
+			disc = new FlxSprite(750, 280);
 			disc.frames = Paths.getSparrowAtlas('freeplay/record player freeplay'); // made by zero B) is very cool.
 			disc.antialiasing = true;
 			disc.animation.addByPrefix('idle', 'disco', 24);
 			disc.animation.play('idle');
 			disc.x += 750;
-			disc.y += 280;
+
+			//disc.y += 880;
 			disc.setGraphicSize(Std.int(disc.width * 0.5));
 			disc.updateHitbox();
 			add(disc);
-
-				// FlxTween.tween(disc, {y: disc.y + 170}, 2.9, {ease: FlxEase.quadInOut, type: PINGPONG});
+				
+			//FlxTween.tween(disc, {y: disc.y - 770}, 1.5, {ease: FlxEase.quadInOut, type: ONESHOT});
 
 			// I speak spanish ._.XD
 			// code made by Manux Bv

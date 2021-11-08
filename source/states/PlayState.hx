@@ -2048,7 +2048,8 @@ class PlayState extends states.MusicBeatState
 					NGio.unlockMedal(60961);
 					Highscore.saveWeekScore(storyWeek, campaignScore, storyDifficulty);
 				}
-				switch(StoryMenuState.curWeek)
+				/* remove the / * if you want the progressive lockable weeks again
+				switch(StoryMenuState.curWeek) 
 				{
 					case 1:
 						StoryMenuState.weekUnlocked[2] = true;
@@ -2067,6 +2068,7 @@ class PlayState extends states.MusicBeatState
 						trace("week 6 unlocked BOIIIIIIII");
 				}
 				FlxG.save.data.weekUnlocked = StoryMenuState.weekUnlocked;
+				*/
 				FlxG.save.flush();
 
 				FlxG.switchState(new FinalRating());

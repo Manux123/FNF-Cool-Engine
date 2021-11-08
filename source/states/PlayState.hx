@@ -1699,6 +1699,8 @@ class PlayState extends states.MusicBeatState
 					case 'senpai' | 'senpai-angry':
 						camFollow.y = dad.getMidpoint().y - 430;
 						camFollow.x = dad.getMidpoint().x - 100;
+					case 'bf-pixel-enemy':
+						camFollow.y = dad.getMidpoint().y - 150;
 				}
 
 				if (dad.curCharacter == 'mom')

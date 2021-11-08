@@ -9,7 +9,7 @@ import flixel.util.FlxColor;
 
 using StringTools;
 
-class LoadingStartState extends MusicBeatState
+class CacheState extends MusicBeatState
 {
     var toBeFinished = 0;
 	var finished = 0;
@@ -54,7 +54,17 @@ class LoadingStartState extends MusicBeatState
 									"characters/weeb/senpai", "characters/weeb/spirit", "characters/weeb/senpaiCrazy"];
     
     var objectsloading:Bool = false;
-    var objects:Array<String> = ["freeplay/record player freeplay"];
+    var objects:Array<String> = ["freeplay/record player freeplay", 
+                                "menu/bg", "menu/blackslines_finalrating", 
+                                'menu/FNF_main_menu_assets', "menu/menuBG", 
+                                'menu/menuBGBlue', 'menu/menuBGMagenta', 
+                                'menu/menuChartingBG', 'menu/menuDesat',
+                                "menu/menuoptions", "menu/BOYFRIEND", 
+                                "ratings/A", 'ratings/B', 'ratings/C', 
+                                'ratings/D', 'ratings/F', 'ratings/S', 'ratings/SS', 
+                                'ratings/BOYFRIEND_RATING', 'titlestate/gfDanceTitle', 
+                                'titlestate/logoBumpin', 'titlestate/newgrounds_logo', 
+                                'titlestate/titleEnter', 'titlestate/titlestateBG' ];
 
 	var loadingStart:Bool = false;
 

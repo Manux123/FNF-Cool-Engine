@@ -1361,7 +1361,15 @@ class PlayState extends states.MusicBeatState
 			switch (curStage)
 			{
 				case 'school' | 'schoolEvil':
-					babyArrow.loadGraphic(noteSkinPixelTex, true, 17, 17);
+					switch(FlxG.save.data.noteSkin)
+					{
+						case 'NOTE_assets':
+							babyArrow.loadGraphic(Paths.image('weeb/pixelUI/arrows-pixels'), true, 17, 17);
+						case 'Circles':
+							babyArrow.loadGraphic(Paths.image('UI/Circles-pixel', 'shared'), true, 17, 17);
+						default:
+							babyArrow.loadGraphic(Paths.image('weeb/pixelUI/arrows-pixels'), true, 17, 17);
+					}
 
 					babyArrow.animation.add('green', [6]);
 					babyArrow.animation.add('red', [7]);
@@ -1397,7 +1405,16 @@ class PlayState extends states.MusicBeatState
 					}
 
 				default:
-						babyArrow.frames = noteSkinTex;
+					switch(FlxG.save.data.noteSkin) {
+						case 'NOTE_assets':
+							noteSkinTex = Paths.getSparrowAtlas('UI/NOTE_assets');
+						case 'Circles':
+							noteSkinTex = Paths.getSparrowAtlas('UI/Circles');
+						case 'Quaver Skin':
+							noteSkinTex = Paths.getSparrowAtlas('UI/QUAVER_assets'); 
+						default:
+							noteSkinTex = Paths.getSparrowAtlas('UI/NOTE_assets');
+					}
 						babyArrow.animation.addByPrefix('green', 'arrowUP');
 						babyArrow.animation.addByPrefix('blue', 'arrowDOWN');
 						babyArrow.animation.addByPrefix('purple', 'arrowLEFT');

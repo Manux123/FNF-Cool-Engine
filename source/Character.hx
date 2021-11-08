@@ -217,22 +217,7 @@ class Character extends FlxSprite
 			case 'bf':
 				var tex = Paths.getSparrowAtlas('characters/BOYFRIEND');
 				frames = tex;
-				animation.addByPrefix('idle', 'BF idle dance', 24, false);
-				animation.addByPrefix('singUP', 'BF NOTE UP0', 24, false);
-				animation.addByPrefix('singLEFT', 'BF NOTE LEFT0', 24, false);
-				animation.addByPrefix('singRIGHT', 'BF NOTE RIGHT0', 24, false);
-				animation.addByPrefix('singDOWN', 'BF NOTE DOWN0', 24, false);
-				animation.addByPrefix('singUPmiss', 'BF NOTE UP MISS', 24, false);
-				animation.addByPrefix('singLEFTmiss', 'BF NOTE LEFT MISS', 24, false);
-				animation.addByPrefix('singRIGHTmiss', 'BF NOTE RIGHT MISS', 24, false);
-				animation.addByPrefix('singDOWNmiss', 'BF NOTE DOWN MISS', 24, false);
-				animation.addByPrefix('hey', 'BF HEY', 24, false);
-
-				animation.addByPrefix('firstDeath', "BF dies", 24, false);
-				animation.addByPrefix('deathLoop', "BF Dead Loop", 24, true);
-				animation.addByPrefix('deathConfirm', "BF Dead confirm", 24, false);
-
-				animation.addByPrefix('scared', 'BF idle shaking', 24);
+				boyfriendAnimation();
 
 				loadOffsetFile(curCharacter);
 
@@ -243,16 +228,7 @@ class Character extends FlxSprite
 			case 'bf-christmas':
 				var tex = Paths.getSparrowAtlas('christmas/bfChristmas');
 				frames = tex;
-				animation.addByPrefix('idle', 'BF idle dance', 24, false);
-				animation.addByPrefix('singUP', 'BF NOTE UP0', 24, false);
-				animation.addByPrefix('singLEFT', 'BF NOTE LEFT0', 24, false);
-				animation.addByPrefix('singRIGHT', 'BF NOTE RIGHT0', 24, false);
-				animation.addByPrefix('singDOWN', 'BF NOTE DOWN0', 24, false);
-				animation.addByPrefix('singUPmiss', 'BF NOTE UP MISS', 24, false);
-				animation.addByPrefix('singLEFTmiss', 'BF NOTE LEFT MISS', 24, false);
-				animation.addByPrefix('singRIGHTmiss', 'BF NOTE RIGHT MISS', 24, false);
-				animation.addByPrefix('singDOWNmiss', 'BF NOTE DOWN MISS', 24, false);
-				animation.addByPrefix('hey', 'BF HEY', 24, false);
+				boyfriendAnimation();
 
 				loadOffsetFile(curCharacter);
 
@@ -263,15 +239,7 @@ class Character extends FlxSprite
 			case 'bf-car':
 				var tex = Paths.getSparrowAtlas('characters/week4/bfCar');
 				frames = tex;
-				animation.addByPrefix('idle', 'BF idle dance', 24, false);
-				animation.addByPrefix('singUP', 'BF NOTE UP0', 24, false);
-				animation.addByPrefix('singLEFT', 'BF NOTE LEFT0', 24, false);
-				animation.addByPrefix('singRIGHT', 'BF NOTE RIGHT0', 24, false);
-				animation.addByPrefix('singDOWN', 'BF NOTE DOWN0', 24, false);
-				animation.addByPrefix('singUPmiss', 'BF NOTE UP MISS', 24, false);
-				animation.addByPrefix('singLEFTmiss', 'BF NOTE LEFT MISS', 24, false);
-				animation.addByPrefix('singRIGHTmiss', 'BF NOTE RIGHT MISS', 24, false);
-				animation.addByPrefix('singDOWNmiss', 'BF NOTE DOWN MISS', 24, false);
+				boyfriendAnimation();
 
 				loadOffsetFile(curCharacter);
 
@@ -553,6 +521,24 @@ class Character extends FlxSprite
 			}
 		}
 	}
+
+	public function boyfriendAnimation():Void {
+	animation.addByPrefix('idle', 'BF idle dance', 24, false);
+	animation.addByPrefix('singUP', 'BF NOTE UP0', 24, false);
+	animation.addByPrefix('singLEFT', 'BF NOTE LEFT0', 24, false);
+	animation.addByPrefix('singRIGHT', 'BF NOTE RIGHT0', 24, false);
+	animation.addByPrefix('singDOWN', 'BF NOTE DOWN0', 24, false);
+	animation.addByPrefix('singUPmiss', 'BF NOTE UP MISS', 24, false);
+	animation.addByPrefix('singLEFTmiss', 'BF NOTE LEFT MISS', 24, false);
+	animation.addByPrefix('singRIGHTmiss', 'BF NOTE RIGHT MISS', 24, false);
+	animation.addByPrefix('singDOWNmiss', 'BF NOTE DOWN MISS', 24, false);
+	animation.addByPrefix('hey', 'BF HEY', 24, false);
+
+	animation.addByPrefix('firstDeath', "BF dies", 24, false);
+	animation.addByPrefix('deathLoop', "BF Dead Loop", 24, true);
+	animation.addByPrefix('deathConfirm', "BF Dead confirm", 24, false);
+
+	animation.addByPrefix('scared', 'BF idle shaking', 24); }
 
 	public function addOffset(name:String, x:Float = 0, y:Float = 0)
 	{

@@ -1724,7 +1724,7 @@ class PlayState extends states.MusicBeatState
 					case 'mall':
 						camFollow.y = boyfriend.getMidpoint().y - 200;
 					case 'spooky':
-						camFollow.y = boyfriend.getMidpoint().y - 100;
+						camFollow.y = boyfriend.getMidpoint().y - 150;
 				}
 
 				switch (boyfriend.curCharacter)

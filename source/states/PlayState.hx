@@ -1612,9 +1612,6 @@ class PlayState extends states.MusicBeatState
 
 		if (FlxG.keys.justPressed.SEVEN)
 		{
-			#if desktop
-			DiscordClient.changePresence("Chart Editor", null, null, true);
-			#end
 			FlxG.switchState(new ChartingState());
 		}
 

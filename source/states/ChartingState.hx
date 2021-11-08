@@ -35,10 +35,15 @@ import openfl.net.FileReference;
 import openfl.utils.ByteArray;
 import states.PlayState.SONG;
 
+#if desktop
+import Discord.DiscordClient;
+#end
+
 using StringTools;
 
 class ChartingState extends states.MusicBeatState
 {
+
 	var _file:FileReference;
 
 	var UI_box:FlxUITabMenu;
@@ -87,6 +92,10 @@ class ChartingState extends states.MusicBeatState
 
 	override function create()
 	{
+		#if desktop
+		DiscordClient.changePresence("Chart Editor", null, null, true);
+		#end
+		
 		curSection = lastSection;
 
 		bg = new FlxSprite().loadGraphic(Paths.image('menu/menuChartingBG'));

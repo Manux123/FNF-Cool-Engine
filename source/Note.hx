@@ -1,5 +1,7 @@
 package;
 
+import states.PlayState;
+import states.NoteSkinDetectorState;
 import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.math.FlxMath;
@@ -55,14 +57,8 @@ class Note extends FlxSprite
 			switch (daStage)
 			{
 				case 'school' | 'schoolEvil':
-					switch(FlxG.save.data.noteSkin)
-						{
-							case 'Arrows':
-								loadGraphic(Paths.image('weeb/pixelUI/arrows-pixels'), true, 17, 17);
-							case 'Circles':
-								loadGraphic(Paths.image('UI/Circles-pixel', 'shared'), true, 17, 17);
-						}
-
+					loadGraphic(states.PlayState.noteSkinPixelTex, true, 17, 17);
+			
 					animation.add('greenScroll', [6]);
 					animation.add('redScroll', [7]);
 					animation.add('blueScroll', [5]);

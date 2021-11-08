@@ -6,42 +6,21 @@ import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
 import lime.utils.Assets;
 import flixel.graphics.FlxGraphic;
-import sys.FileSystem;
-import sys.io.File;
 import Note;
 
 class NoteSkinDetectorState extends states.MusicBeatState
 {
-	public static function noteskindetector()
-	{
-		var noteskinsfile:String;
-		var noteskinspixel:String;
-		var xml:String;
-		var skins:Bool = false;
-		var notesArray:Array;
-
-		if(FileSystem.exists(Paths.getPreloadPath('assets/preload/images/skins_arrows'))) {
-				(noteskinsfile.exists) = '.png';
-				(xml.content) = '.xml';
-
-				noteskinsfile = Paths.file('assets/preload/images/skins_arrows');
-				skins = true;
-			} 
-
-		if(FileSystem.exists(Paths.getPreloadPath('assets/preload/images/skins_arrows'))) {
-				(noteskinspixel.exists) = '-pixel.png';
-
-				noteskinspixel = Paths.file('assets/preload/images/skins_arrows');
-				skins = true;
-			}
-
-			if(skins) {
-				notesArray.push(new NoteSkinDetectorState(noteskinsfile + noteskinspixel));
-			}
+	inline static public function noteSkinPixel(patho:String) {
+		if(FlxG.save.data.noteSkin == null)
+			return BitmapData.fromFile(Paths.image('weeb/pixelUI/arrows-pixels', 'week6'));
+		else
+			return BitmapData.fromFile(Paths.image('weeb/pixelUI/${patho}-pixels', 'week6'));
 	}
 
-	override function update() {
-		//messi
-
+	inline static public function noteSkinNormal(path:String) {
+		if(FlxG.save.data.noteSkin == null)
+			return Paths.getSparrowAtlas('UI/NOTE_assets', "shared");
+		else
+			return Paths.getSparrowAtlas('UI/${path}', "shared");
 	}
 }

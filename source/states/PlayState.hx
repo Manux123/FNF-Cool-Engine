@@ -1,5 +1,6 @@
 package states;
 
+import flixel.util.FlxSpriteUtil;
 import flixel.input.FlxAccelerometer;
 import Section.SwagSection;
 import Song.SwagSong;
@@ -12,6 +13,7 @@ import flixel.FlxGame;
 import flixel.FlxObject;
 import flixel.FlxSprite;
 import flixel.FlxState;
+import openfl.display.BitmapData;
 import flixel.FlxSubState;
 import flixel.addons.display.FlxGridOverlay;
 import flixel.addons.effects.FlxTrail;
@@ -104,7 +106,8 @@ class PlayState extends states.MusicBeatState
 	private var curSong:String = "";
 
 	private var gfSpeed:Int = 1;
-	var noteSkinTex:FlxAtlasFrames;
+	public static var noteSkinTex:FlxAtlasFrames;
+	public static var noteSkinPixelTex:BitmapData;
 	private var health:Float = 1;
 	private var combo:Int = 0;
 	public static var accuracy:Float = 0.00;
@@ -185,6 +188,9 @@ class PlayState extends states.MusicBeatState
 		theFunne = FlxG.save.data.newInput;
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
+
+		noteSkinTex = NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin);
+		noteSkinPixelTex = NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin);
 
 		sicks = 0;
 		misses = 0;
@@ -1355,13 +1361,8 @@ class PlayState extends states.MusicBeatState
 			switch (curStage)
 			{
 				case 'school' | 'schoolEvil':
-					switch(FlxG.save.data.noteSkin)
-					{
-						case 'Arrows':
-							babyArrow.loadGraphic(Paths.image('weeb/pixelUI/arrows-pixels'), true, 17, 17);
-						case 'Circles':
-							babyArrow.loadGraphic(Paths.image('UI/Circles-pixel', 'shared'), true, 17, 17);
-					}
+					babyArrow.loadGraphic(noteSkinPixelTex, true, 17, 17);
+
 					babyArrow.animation.add('green', [6]);
 					babyArrow.animation.add('red', [7]);
 					babyArrow.animation.add('blue', [5]);
@@ -1396,14 +1397,6 @@ class PlayState extends states.MusicBeatState
 					}
 
 				default:
-					switch(FlxG.save.data.noteSkin) {
-						case 'Arrows':
-							noteSkinTex = Paths.getSparrowAtlas('UI/NOTE_assets');
-						case 'Circles':
-							noteSkinTex = Paths.getSparrowAtlas('UI/Circles');
-						case 'Quaver Skin':
-							noteSkinTex = Paths.getSparrowAtlas('UI/QUAVER_assets'); }
-
 						babyArrow.frames = noteSkinTex;
 						babyArrow.animation.addByPrefix('green', 'arrowUP');
 						babyArrow.animation.addByPrefix('blue', 'arrowDOWN');

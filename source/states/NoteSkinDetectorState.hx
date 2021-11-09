@@ -14,13 +14,13 @@ class NoteSkinDetectorState extends states.MusicBeatState
 		if(FlxG.save.data.noteSkin == null)
 			return BitmapData.fromFile(Paths.image('weeb/pixelUI/arrows-pixels', 'week6'));
 		else
-			return BitmapData.fromFile(Paths.image('skins_arrows/${patho}-pixels', "shared"));
+			return BitmapData.fromFile(Paths.image('weeb/pixelUI/${patho}-pixels', 'week6'));
 	}
 
 	inline static public function noteSkinNormal(path:String) {
 		if(FlxG.save.data.noteSkin == null)
 			return Paths.getSparrowAtlas('UI/NOTE_assets', "shared");
 		else
-			return Paths.getSparrowAtlas('skins_arrows/${path}', "shared");
+			return Paths.getSparrowAtlas('UI/${path}', "shared");
 	}
 }

@@ -13,6 +13,7 @@ class CacheState extends MusicBeatState
 {
     var toBeFinished = 0;
 	var finished = 0;
+    var loadingbar:FlxSprite;
 
 	var loading:FlxText;
 	var musicloading:Bool = false;
@@ -81,7 +82,8 @@ class CacheState extends MusicBeatState
 		add(bg);
 
         loading = new FlxText(0, 680);
-        loading.size = 24;
+        loading.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
+        loading.size = 20;
         add(loading);
 
 		preload();
@@ -98,6 +100,8 @@ class CacheState extends MusicBeatState
         {
             FlxG.switchState(new states.TitleState());
             FlxG.camera.fade(FlxColor.BLACK, 0.8, false);
+            loadingbar = new FlxSprite().loadGraphic(Paths.image('menu/bar'));
+            add(loadingbar);
         }
 	}
 

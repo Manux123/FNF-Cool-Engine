@@ -42,9 +42,9 @@ class NoteSkinState extends states.MusicBeatState
 		menuBG.antialiasing = true;
 		add(menuBG);
 
-		noteSkinTex = Paths.getSparrowAtlas('UI/NOTE_assets', 'shared');
-		circleSkinTex = Paths.getSparrowAtlas('UI/Circles', 'shared');
-		quaverSkinTex = Paths.getSparrowAtlas('UI/QUAVER_assets', 'shared');
+		noteSkinTex = Paths.getSparrowAtlas('UI/NOTE_assets');
+		circleSkinTex = Paths.getSparrowAtlas('UI/Circles');
+		quaverSkinTex = Paths.getSparrowAtlas('UI/QUAVER_assets');
 
 		previewSkins = new FlxSprite(1000, 450);
 		previewSkins.frames = noteSkinTex;
@@ -81,7 +81,7 @@ class NoteSkinState extends states.MusicBeatState
 
 		switch (FlxG.save.data.noteSkin)
 		{
-			case 'NOTE_assets':
+			case 'Arrows':
 				previewSkins.frames = Paths.getSparrowAtlas('UI/NOTE_assets', 'shared');
 			case 'Circles':
 				previewSkins.frames = Paths.getSparrowAtlas('UI/Circles', 'shared');
@@ -101,7 +101,7 @@ class NoteSkinState extends states.MusicBeatState
 			switch(curSelected)
 			{
 				case 0:
-					FlxG.save.data.noteSkin = 'NOTE_assets';
+					FlxG.save.data.noteSkin = 'Arrows';
 				case 1:
 					FlxG.save.data.noteSkin = 'Circles';
 				case 2:

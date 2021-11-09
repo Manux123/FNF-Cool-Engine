@@ -59,12 +59,10 @@ class Note extends FlxSprite
 				case 'school' | 'schoolEvil':
 					switch(FlxG.save.data.noteSkin)
 						{
-							case 'NOTE_assets':
+							case 'Arrows':
 								loadGraphic(Paths.image('weeb/pixelUI/arrows-pixels'), true, 17, 17);
 							case 'Circles':
-								loadGraphic(Paths.image('UI/Circles-pixel', 'shared'), true, 17, 17);
-							default:
-								loadGraphic(Paths.image('weeb/pixelUI/arrows-pixels'), true, 17, 17);
+								loadGraphic(Paths.image('weeb/pixelUI/Circles-pixels'), true, 17, 17);
 						}
 			
 					animation.add('greenScroll', [6]);
@@ -93,7 +91,7 @@ class Note extends FlxSprite
 				default:
 					switch(FlxG.save.data.noteSkin)
 					{
-						case 'NOTE_assets':
+						case 'Arrows':
 							frames = Paths.getSparrowAtlas('UI/NOTE_assets');
 
 							animation.addByPrefix('greenScroll', 'green0');
@@ -156,27 +154,6 @@ class Note extends FlxSprite
 							setGraphicSize(Std.int(width * 0.7));
 							updateHitbox();
 							antialiasing = true;
-						default:
-							frames = Paths.getSparrowAtlas('UI/NOTE_assets');
-
-							animation.addByPrefix('greenScroll', 'green0');
-							animation.addByPrefix('redScroll', 'red0');
-							animation.addByPrefix('blueScroll', 'blue0');
-							animation.addByPrefix('purpleScroll', 'purple0');
-
-							animation.addByPrefix('purpleholdend', 'pruple end hold');
-							animation.addByPrefix('greenholdend', 'green hold end');
-							animation.addByPrefix('redholdend', 'red hold end');
-							animation.addByPrefix('blueholdend', 'blue hold end');
-
-							animation.addByPrefix('purplehold', 'purple hold piece');
-							animation.addByPrefix('greenhold', 'green hold piece');
-							animation.addByPrefix('redhold', 'red hold piece');
-							animation.addByPrefix('bluehold', 'blue hold piece');
-
-							setGraphicSize(Std.int(width * 0.7));
-							updateHitbox();
-							antialiasing = true;
 					}	
 			}
 		//}
@@ -192,6 +169,7 @@ class Note extends FlxSprite
 			case 2:
 				x += swagWidth * 2;
 				animation.play('greenScroll');
+				alpha = 0.6;
 			case 3:
 				x += swagWidth * 3;
 				animation.play('redScroll');

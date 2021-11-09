@@ -184,7 +184,6 @@ class Note extends FlxSprite
 			case 2:
 				x += swagWidth * 2;
 				animation.play('greenScroll');
-				alpha = 0.6;
 			case 3:
 				x += swagWidth * 3;
 				animation.play('redScroll');

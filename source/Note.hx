@@ -6,6 +6,7 @@ import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.math.FlxMath;
 import flixel.util.FlxColor;
+import openfl.display.BitmapData;
 import flixel.FlxG;
 
 using StringTools;
@@ -57,13 +58,7 @@ class Note extends FlxSprite
 			switch (daStage)
 			{
 				case 'school' | 'schoolEvil':
-					switch(FlxG.save.data.noteSkin)
-						{
-							case 'Arrows':
-								loadGraphic(Paths.image('weeb/pixelUI/arrows-pixels'), true, 17, 17);
-							case 'Circles':
-								loadGraphic(Paths.image('weeb/pixelUI/Circles-pixels'), true, 17, 17);
-						}
+					loadGraphic(PlayState.noteSkinPixelTex, true, 17, 17);
 			
 					animation.add('greenScroll', [6]);
 					animation.add('redScroll', [7]);
@@ -92,7 +87,7 @@ class Note extends FlxSprite
 					switch(FlxG.save.data.noteSkin)
 					{
 						case 'Arrows':
-							frames = Paths.getSparrowAtlas('UI/NOTE_assets');
+							frames = NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin);
 
 							animation.addByPrefix('greenScroll', 'green0');
 							animation.addByPrefix('redScroll', 'red0');
@@ -113,7 +108,7 @@ class Note extends FlxSprite
 							updateHitbox();
 							antialiasing = true;
 						case 'Circles':
-							frames = Paths.getSparrowAtlas('UI/Circles');
+							frames = NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin);
 
 							animation.addByPrefix('greenScroll', 'green alone');
 							animation.addByPrefix('redScroll', 'red alone');
@@ -134,7 +129,7 @@ class Note extends FlxSprite
 							updateHitbox();
 							antialiasing = true;
 						case 'Quaver Skin':
-							frames = Paths.getSparrowAtlas('UI/QUAVER_assets');
+							frames = NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin);
 
 							animation.addByPrefix('greenScroll', 'green alone');
 							animation.addByPrefix('redScroll', 'red alone');

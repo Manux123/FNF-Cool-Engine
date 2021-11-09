@@ -42,9 +42,9 @@ class NoteSkinState extends states.MusicBeatState
 		menuBG.antialiasing = true;
 		add(menuBG);
 
-		noteSkinTex = Paths.getSparrowAtlas('UI/NOTE_assets');
-		circleSkinTex = Paths.getSparrowAtlas('UI/Circles');
-		quaverSkinTex = Paths.getSparrowAtlas('UI/QUAVER_assets');
+		noteSkinTex = Paths.getSparrowAtlas('skins_arrows/normals/NOTE_assets', 'shared');
+		circleSkinTex = Paths.getSparrowAtlas('skins_arrows/normals/Circles', 'shared');
+		quaverSkinTex = Paths.getSparrowAtlas('skins_arrows/normals/QUAVER_assets', 'shared');
 
 		previewSkins = new FlxSprite(1000, 450);
 		previewSkins.frames = noteSkinTex;
@@ -82,11 +82,11 @@ class NoteSkinState extends states.MusicBeatState
 		switch (FlxG.save.data.noteSkin)
 		{
 			case 'Arrows':
-				previewSkins.frames = Paths.getSparrowAtlas('UI/NOTE_assets', 'shared');
+				previewSkins.frames = Paths.getSparrowAtlas('skins_arrows/normals/NOTE_assets', 'shared');
 			case 'Circles':
-				previewSkins.frames = Paths.getSparrowAtlas('UI/Circles', 'shared');
+				previewSkins.frames = Paths.getSparrowAtlas('skins_arrows/normals/Circles', 'shared');
 			case 'Quaver Skin':
-				previewSkins.frames = Paths.getSparrowAtlas('UI/QUAVER_assets', 'shared');
+				previewSkins.frames = Paths.getSparrowAtlas('skins_arrows/normals/QUAVER_assets', 'shared');
 		}
 
 		if(controls.BACK)

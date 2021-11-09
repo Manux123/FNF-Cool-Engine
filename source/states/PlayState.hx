@@ -173,6 +173,9 @@ class PlayState extends states.MusicBeatState
 
 	public static var bfnoteMovementXoffset:Int = 0;
 	public static var bfnoteMovementYoffset:Int = 0;
+	/*public static var noteSkinTex:FlxAtlasFrames;
+	public static var noteSkinPixelTex:BitmapData;*/
+
 
 	public static var theFunne:Bool = true;
 	var funneEffect:FlxSprite;
@@ -188,9 +191,6 @@ class PlayState extends states.MusicBeatState
 		theFunne = FlxG.save.data.newInput;
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
-
-		noteSkinTex = NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin);
-		noteSkinPixelTex = NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin);
 
 		sicks = 0;
 		misses = 0;

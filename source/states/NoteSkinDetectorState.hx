@@ -9,7 +9,7 @@ import flixel.graphics.FlxGraphic;
 import Note;
 
 class NoteSkinDetectorState extends states.MusicBeatState
-{
+{ /*
 	inline static public function noteSkinPixel(patho:String) {
 		if(FlxG.save.data.noteSkin == null)
 			return BitmapData.fromFile(Paths.image('weeb/pixelUI/arrows-pixels', 'week6'));
@@ -22,5 +22,5 @@ class NoteSkinDetectorState extends states.MusicBeatState
 			return Paths.getSparrowAtlas('UI/NOTE_assets', "shared");
 		else
 			return Paths.getSparrowAtlas('UI/${path}', "shared");
-	}
+	}*/
 }

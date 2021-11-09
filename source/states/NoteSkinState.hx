@@ -3,6 +3,7 @@ package states;
 import Controls.KeyboardScheme;
 import Controls.Control;
 import flash.text.TextField;
+import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
@@ -23,13 +24,15 @@ class NoteSkinState extends states.MusicBeatState
 	var previewSkins:FlxSprite;
 	
 	var noteSkinTex:FlxAtlasFrames;
-	var circleSkinTex:FlxAtlasFrames;
-	var quaverSkinTex:FlxAtlasFrames;
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
+	var camGame:FlxCamera;
 	var versionShit:FlxText;
 	override function create()
 	{
+		camGame = new FlxCamera();
+		FlxG.cameras.add(camGame);
+		FlxCamera.defaultCameras = [camGame];
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 		var daNoteSkins = CoolUtil.coolTextFile(Paths.txt('noteSkinList'));
 
@@ -40,9 +43,7 @@ class NoteSkinState extends states.MusicBeatState
 		menuBG.antialiasing = true;
 		add(menuBG);
 
-		noteSkinTex = Paths.getSparrowAtlas('skins_arrows/normals/NOTE_assets', 'shared');
-		circleSkinTex = Paths.getSparrowAtlas('skins_arrows/normals/Circles', 'shared');
-		quaverSkinTex = Paths.getSparrowAtlas('skins_arrows/normals/QUAVER_assets', 'shared');
+		noteSkinTex = Paths.getSparrowAtlas('UI/NOTE_assets', 'shared');
 
 		previewSkins = new FlxSprite(1000, 450);
 		previewSkins.frames = noteSkinTex;
@@ -77,16 +78,18 @@ class NoteSkinState extends states.MusicBeatState
 	{
 		super.update(elapsed);
 
+		var noteName = CoolUtil.coolTextFile(Paths.txt('noteName'));
+
 		switch (FlxG.save.data.noteSkin)
 		{
 			case 'Arrows':
-				previewSkins.frames = Paths.getSparrowAtlas('skins_arrows/normals/NOTE_assets', 'shared');
+				previewSkins.frames = Paths.getSparrowAtlas('UI/NOTE_assets', 'shared');
 			case 'Circles':
-				previewSkins.frames = Paths.getSparrowAtlas('skins_arrows/normals/Circles', 'shared');
+				previewSkins.frames = Paths.getSparrowAtlas('UI/Circles', 'shared');
 			case 'Quaver Skin':
-				previewSkins.frames = Paths.getSparrowAtlas('skins_arrows/normals/QUAVER_assets', 'shared');
-			case 'CUSTOM_assets':
-				previewSkins.frames = Paths.getSparrowAtlas('skins_arrows/normals/CUSTOM_assets', 'shared');
+				previewSkins.frames = Paths.getSparrowAtlas('UI/QUAVER_assets', 'shared');
+			case noteName:
+				previewSkins.frames = Paths.getSparrowAtlas('skins_arrows/normals/${noteName}', 'shared');
 		}
 
 		if(controls.BACK)
@@ -107,7 +110,7 @@ class NoteSkinState extends states.MusicBeatState
 				case 2:
 					FlxG.save.data.noteSkin = 'Quaver Skin';
 				case 3:
-					FlxG.save.data.noteSkin = 'CUSTOM_assets';
+					FlxG.save.data.noteSkin = noteName;
 			}
 		}
 	}

@@ -1,5 +1,6 @@
 package;
 
+import states.NoteSkinState;
 import states.PlayState;
 import states.NoteSkinDetectorState;
 import flixel.FlxSprite;
@@ -52,8 +53,6 @@ class Note extends FlxSprite
 
 		//var noteSkin:String = states.NoteSkinDetectorState.noteskindetector;
 		var daStage:String = states.PlayState.curStage;
-
-
 		//if (noteSkin) {
 			switch (daStage)
 			{
@@ -145,6 +144,27 @@ class Note extends FlxSprite
 							animation.addByPrefix('greenhold', 'green hold');
 							animation.addByPrefix('redhold', 'red hold');
 							animation.addByPrefix('bluehold', 'blue hold');
+
+							setGraphicSize(Std.int(width * 0.7));
+							updateHitbox();
+							antialiasing = true;
+						case 'CUSTOM_assets':
+							frames = NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin);
+
+							animation.addByPrefix('greenScroll', 'green0');
+							animation.addByPrefix('redScroll', 'red0');
+							animation.addByPrefix('blueScroll', 'blue0');
+							animation.addByPrefix('purpleScroll', 'purple0');
+
+							animation.addByPrefix('purpleholdend', 'pruple end hold');
+							animation.addByPrefix('greenholdend', 'green hold end');
+							animation.addByPrefix('redholdend', 'red hold end');
+							animation.addByPrefix('blueholdend', 'blue hold end');
+
+							animation.addByPrefix('purplehold', 'purple hold piece');
+							animation.addByPrefix('greenhold', 'green hold piece');
+							animation.addByPrefix('redhold', 'red hold piece');
+							animation.addByPrefix('bluehold', 'blue hold piece');
 
 							setGraphicSize(Std.int(width * 0.7));
 							updateHitbox();

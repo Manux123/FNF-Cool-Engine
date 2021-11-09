@@ -20,10 +20,8 @@ class NoteSkinState extends states.MusicBeatState
 	var selector:FlxText;
 	var curSelected:Int = 0;
 
-	var controlsStrings:Array<String> = [];
-
 	var previewSkins:FlxSprite;
-
+	
 	var noteSkinTex:FlxAtlasFrames;
 	var circleSkinTex:FlxAtlasFrames;
 	var quaverSkinTex:FlxAtlasFrames;
@@ -33,7 +31,7 @@ class NoteSkinState extends states.MusicBeatState
 	override function create()
 	{
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
-		controlsStrings = ['Arrows', 'Circles', 'Quaver Skin'];
+		var daNoteSkins = CoolUtil.coolTextFile(Paths.txt('noteSkinList'));
 
 		menuBG.color = 0xFFea71fd;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
@@ -57,9 +55,9 @@ class NoteSkinState extends states.MusicBeatState
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
 
-		for (i in 0...controlsStrings.length)
+		for (i in 0...daNoteSkins.length)
 		{
-				var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 30, controlsStrings[i], true, false);
+				var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 30, daNoteSkins[i], true, false);
 				controlLabel.isMenuItem = true;
 				controlLabel.targetY = i;
 				grpControls.add(controlLabel);
@@ -87,6 +85,8 @@ class NoteSkinState extends states.MusicBeatState
 				previewSkins.frames = Paths.getSparrowAtlas('skins_arrows/normals/Circles', 'shared');
 			case 'Quaver Skin':
 				previewSkins.frames = Paths.getSparrowAtlas('skins_arrows/normals/QUAVER_assets', 'shared');
+			case 'CUSTOM_assets':
+				previewSkins.frames = Paths.getSparrowAtlas('skins_arrows/normals/CUSTOM_assets', 'shared');
 		}
 
 		if(controls.BACK)
@@ -106,6 +106,8 @@ class NoteSkinState extends states.MusicBeatState
 					FlxG.save.data.noteSkin = 'Circles';
 				case 2:
 					FlxG.save.data.noteSkin = 'Quaver Skin';
+				case 3:
+					FlxG.save.data.noteSkin = 'CUSTOM_assets';
 			}
 		}
 	}

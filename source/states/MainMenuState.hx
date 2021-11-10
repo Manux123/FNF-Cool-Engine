@@ -49,9 +49,11 @@ class MainMenuState extends states.MusicBeatState
 		transIn = FlxTransitionableState.defaultTransIn;
 		transOut = FlxTransitionableState.defaultTransOut;
 
+		#if !MAINMENU
 		if (!FlxG.sound.music.playing){
 			FlxG.sound.playMusic(Paths.music('freakyMenu'));
 		}
+		#end
 
 		persistentUpdate = persistentDraw = true;
 
@@ -126,10 +128,12 @@ class MainMenuState extends states.MusicBeatState
 
 	override function update(elapsed:Float)
 	{
+		#if !MAINMENU
 		if (FlxG.sound.music.volume < 0.8)
 		{
 			FlxG.sound.music.volume += 0.5 * FlxG.elapsed;
 		}
+		#end
 
 		if (!selectedSomethin)
 		{

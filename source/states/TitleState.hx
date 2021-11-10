@@ -82,6 +82,8 @@ class TitleState extends states.MusicBeatState
 		FlxG.switchState(new states.FreeplayState());
 		#elseif CHARTING
 		FlxG.switchState(new states.ChartingState());
+		#elseif MAINMENU
+		FlxG.switchState(new MainMenuState());
 		#else
 		new FlxTimer().start(1, function(tmr:FlxTimer)
 		{

@@ -11,10 +11,6 @@ import Note;
 
 class NoteSkinDetectorState extends states.MusicBeatState
 {
-	public static var noteName:Array<String>;
-	override function create() {
-	 	noteName = CoolUtil.coolTextFile(Paths.txt('Fraking'));
-	}
 	inline static public function noteSkinPixel(patho:String) {
 		if(FlxG.save.data.noteSkin == null)
 			return BitmapData.fromFile(Paths.image('skins_arrows/pixels/arrows-pixels', 'shared'));
@@ -29,7 +25,7 @@ class NoteSkinDetectorState extends states.MusicBeatState
 			return Paths.getSparrowAtlas('UI/NOTE_assets', "shared");
 		else if(FlxG.save.data.noteSkin == 'Quaver Skin')
 			return Paths.getSparrowAtlas('UI/QUAVER_assets', "shared");
-		else if(FlxG.save.data.noteSkin == noteName)
+		else if(FlxG.save.data.noteSkin == 'Custom_Note')
 			return Paths.getSparrowAtlas('skins_arrows/normals/${path}', "shared");
 		else
 			return Paths.getSparrowAtlas('UI/${path}', "shared");

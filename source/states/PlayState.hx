@@ -1398,10 +1398,8 @@ class PlayState extends states.MusicBeatState
 
 				default:
 						babyArrow.frames = NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin);
-					/*
-						babyArrow.frames = NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin);
-						if(FlxG.save.data.noteSkin == noteName)
-							babyArrow.frames = NoteSkinDetectorState.noteSkinNormal(Paths.txt('noteName'));*/
+						if(FlxG.save.data.noteSkin == 'Custom_Note')
+							babyArrow.frames = NoteSkinDetectorState.noteSkinNormal('NOTE_Custom');
 						babyArrow.animation.addByPrefix('green', 'arrowUP');
 						babyArrow.animation.addByPrefix('blue', 'arrowDOWN');
 						babyArrow.animation.addByPrefix('purple', 'arrowLEFT');

@@ -25,6 +25,8 @@ class NoteSkinState extends states.MusicBeatState
 	
 	var noteSkinTex:FlxAtlasFrames;
 
+	//var noteName = CoolUtil.coolTextFile(Paths.txt('noteName'));
+
 	private var grpControls:FlxTypedGroup<Alphabet>;
 	var camGame:FlxCamera;
 	var versionShit:FlxText;
@@ -78,8 +80,6 @@ class NoteSkinState extends states.MusicBeatState
 	{
 		super.update(elapsed);
 
-		var noteName = CoolUtil.coolTextFile(Paths.txt('noteName'));
-
 		switch (FlxG.save.data.noteSkin)
 		{
 			case 'Arrows':
@@ -88,8 +88,8 @@ class NoteSkinState extends states.MusicBeatState
 				previewSkins.frames = Paths.getSparrowAtlas('UI/Circles', 'shared');
 			case 'Quaver Skin':
 				previewSkins.frames = Paths.getSparrowAtlas('UI/QUAVER_assets', 'shared');
-			case noteName:
-				previewSkins.frames = Paths.getSparrowAtlas('skins_arrows/normals/${noteName}', 'shared');
+			case 'Custom_Note':
+				previewSkins.frames = Paths.getSparrowAtlas('UI/NOTE_assets', 'shared');
 		}
 
 		if(controls.BACK)
@@ -110,7 +110,7 @@ class NoteSkinState extends states.MusicBeatState
 				case 2:
 					FlxG.save.data.noteSkin = 'Quaver Skin';
 				case 3:
-					FlxG.save.data.noteSkin = noteName;
+					FlxG.save.data.noteSkin = 'Custom_Note';
 			}
 		}
 	}

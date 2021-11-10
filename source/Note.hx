@@ -88,20 +88,20 @@ class Note extends FlxSprite
 						case 'Arrows':
 							frames = NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin);
 
-							animation.addByPrefix('greenScroll', 'green0');
-							animation.addByPrefix('redScroll', 'red0');
-							animation.addByPrefix('blueScroll', 'blue0');
-							animation.addByPrefix('purpleScroll', 'purple0');
+							animation.addByPrefix('greenScroll', 'green alone');
+							animation.addByPrefix('redScroll', 'red alone');
+							animation.addByPrefix('blueScroll', 'blue alone');
+							animation.addByPrefix('purpleScroll', 'purple alone');
 
-							animation.addByPrefix('purpleholdend', 'pruple end hold');
-							animation.addByPrefix('greenholdend', 'green hold end');
-							animation.addByPrefix('redholdend', 'red hold end');
-							animation.addByPrefix('blueholdend', 'blue hold end');
+							animation.addByPrefix('purpleholdend', 'purple tail');
+							animation.addByPrefix('greenholdend', 'green tail');
+							animation.addByPrefix('redholdend', 'red tail');
+							animation.addByPrefix('blueholdend', 'blue tail');
 
-							animation.addByPrefix('purplehold', 'purple hold piece');
-							animation.addByPrefix('greenhold', 'green hold piece');
-							animation.addByPrefix('redhold', 'red hold piece');
-							animation.addByPrefix('bluehold', 'blue hold piece');
+							animation.addByPrefix('purplehold', 'purple hold');
+							animation.addByPrefix('greenhold', 'green hold');
+							animation.addByPrefix('redhold', 'red hold');
+							animation.addByPrefix('bluehold', 'blue hold');
 
 							setGraphicSize(Std.int(width * 0.7));
 							updateHitbox();

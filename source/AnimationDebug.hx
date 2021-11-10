@@ -167,6 +167,7 @@ class AnimationDebug extends FlxState
 		textAnim.scrollFactor.set();
 		add(textAnim);
 
+
 		camFollow = new FlxObject(0, 0, 2, 2);
 		camFollow.screenCenter();
 		add(camFollow);

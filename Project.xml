@@ -120,7 +120,6 @@
 	<haxelib name="newgrounds"/>
 	<haxelib name="faxe" if='switch'/>
 	<haxelib name="actuate" />
-	<haxelib name="extension-webm" if="desktop"/>
 	<haxelib name="discord_rpc" if="desktop"/>
 	<haxelib name="linc_luajit" if="windows"/>
 	<!-- <haxelib name="hxcpp-debug-server" if="desktop"/> -->

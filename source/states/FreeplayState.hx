@@ -24,6 +24,8 @@ using StringTools;
 
 class FreeplayState extends states.MusicBeatState
 {
+	var toBeFinished = 0;
+	var finished = 0;
 	//Character head icons for your songs
 	static var songsHeads:Array<Dynamic> = [
 		['dad'],							
@@ -31,8 +33,7 @@ class FreeplayState extends states.MusicBeatState
 		['pico'],							
 		['mom'],							
 		['parents', 'parents', 'monster'],	
-		['senpai', 'senpai', 'spirit'],
-		['bf-pixel']
+		['senpai', 'senpai', 'spirit']
 	];
 
 	var weekData:Array<Dynamic> = [
@@ -42,9 +43,37 @@ class FreeplayState extends states.MusicBeatState
 		['Pico', 'Philly', "Blammed"],
 		['Satin-Panties', "High", "Milf"],
 		['Cocoa', 'Eggnog', 'Winter-Horrorland'],
-		['Senpai', 'Roses', 'Thorns'],
-		['Test']
+		['Senpai', 'Roses', 'Thorns']
 	];
+
+	var musicloading:Bool = false;
+	var musicgame:Array<String> = [
+		"Tutorial", 
+		"Boopebo", "Fresh", "Dadbattle", 
+		"Spookeez", "South", "Monster",
+		"Pico", "Philly", "Blammed", 
+		"Satin-Panties", "High", "Milf",
+		"Cocoa", "Eggnog",
+		"Senpai", "Roses", "Thorns",
+		"Test"
+	];
+
+	function preloadMusic(){
+        for(x in musicgame){
+            FlxG.sound.cache(Paths.inst(x));
+            FlxG.sound.cache(Paths.voices(x));
+            trace("Chached " + x);
+            finished++;
+        }
+	}
+
+	function preload(){
+		if(!musicloading){ 
+            #if sys sys.thread.Thread.create(() -> { #end
+                preloadMusic();
+            #if sys }); #end
+        }
+	}
 
 	var songs:Array<SongMetadata> = [];
 
@@ -73,6 +102,7 @@ class FreeplayState extends states.MusicBeatState
 	var lerpRating:Float = 0;
 	var intendedScore:Int = 0;
 	var intendedRating:Float = 0;
+	var songText:Alphabet;
 
 	private var grpSongs:FlxTypedGroup<Alphabet>;
 	private var curPlaying:Bool = false;
@@ -86,6 +116,7 @@ class FreeplayState extends states.MusicBeatState
 
 	override function create()
 	{
+		preload();
 		transIn = FlxTransitionableState.defaultTransIn;
 		transOut = FlxTransitionableState.defaultTransOut;
 		var initSonglist = CoolUtil.coolTextFile(Paths.txt('freeplaySonglist'));
@@ -108,6 +139,8 @@ class FreeplayState extends states.MusicBeatState
 		DiscordClient.changePresence("In the FreePlay", null);
 		#end
 
+		addSong('Test', 7,'bf-pixel');
+
 		for (i in 1...weekData.length) {
 			#if !debug
 			if (StoryMenuState.weekUnlocked[i])
@@ -127,7 +160,7 @@ class FreeplayState extends states.MusicBeatState
 
 		for (i in 0...songs.length)
 		{
-			var songText:Alphabet = new Alphabet(0, (70 * i) + 30, songs[i].songName, true, false);
+			songText = new Alphabet(0, (70 * i) + 30, songs[i].songName, true, false);
 			songText.isMenuItem = true;
 			songText.targetY = i;
 			grpSongs.add(songText);
@@ -321,6 +354,8 @@ class FreeplayState extends states.MusicBeatState
 				curDifficulty = 1;
 				trace('Couldnt find file');
 			}
+
+			FlxTween.tween(songText, {y: 2000}, 0.2, {ease: FlxEase.quadIn});
 			trace(poop);
 
 			states.PlayState.SONG = Song.loadFromJson(poop, songLowercase);
@@ -335,6 +370,9 @@ class FreeplayState extends states.MusicBeatState
 			LoadingState.loadAndSwitchState(new states.PlayState());
 
 			FlxG.sound.music.volume = 0;
+
+			FlxG.camera.flash(FlxColor.WHITE, 1);
+			FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
 					
 			destroyFreeplayVocals();
 		}

@@ -16,24 +16,6 @@ class CacheState extends MusicBeatState
     var loadingbar:FlxSprite;
 
 	var loading:FlxText;
-	var musicloading:Bool = false;
-	var musicgame:Array<String> = [	"Tutorial", 
-									"Boopebo", 
-									"Fresh", 
-									"Dadbattle", 
-									"Spookeez", 
-									"South", 
-									"Pico", 
-									"Philly", 
-									"Blammed", 
-									"Satin-Panties", 
-									"High", 
-									"Milf",
-									"Cocoa", 
-									"Eggnog",
-									"Senpai",
-									"Roses",
-									"Thorns"];
 
 	var charactersloading:Bool = false;
 	var characters:Array<String> = ["characters/BOYFRIEND", 
@@ -76,7 +58,7 @@ class CacheState extends MusicBeatState
 		KeyBinds.keyCheck();
 		PlayerSettings.init();
 
-        toBeFinished = Lambda.count(characters) + Lambda.count(musicgame) + Lambda.count(objects);
+        toBeFinished = Lambda.count(characters) + Lambda.count(objects);
 
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGloading'));
 		add(bg);
@@ -96,7 +78,7 @@ class CacheState extends MusicBeatState
     {
         super.update(elapsed);
 
-        if (musicloading && charactersloading && objectsloading)
+        if (charactersloading && objectsloading)
         {
             FlxG.switchState(new states.TitleState());
             FlxG.camera.fade(FlxColor.BLACK, 0.8, false);
@@ -114,31 +96,12 @@ class CacheState extends MusicBeatState
                 preloadAssets();
             #if sys }); #end
         }
-        
-        if(!musicloading){ 
-            #if sys sys.thread.Thread.create(() -> { #end
-                preloadMusic();
-            #if sys }); #end
-        }
 
         if(!objectsloading){
             #if sys sys.thread.Thread.create(() -> { #end
                 objectsAssets();
             #if sys }); #end
         }
-    }
-
-    function preloadMusic(){
-        for(x in musicgame){
-            FlxG.sound.cache(Paths.inst(x));
-            FlxG.sound.cache(Paths.voices(x));
-            loading.text = "Music Loaded (" + finished + "/" + toBeFinished + ")";
-            trace("Chached " + x);
-            finished++;
-        }
-        
-        loading.text = "Songs loaded";
-        musicloading = true;
     }
 
     function preloadAssets(){

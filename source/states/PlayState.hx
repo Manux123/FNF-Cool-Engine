@@ -876,6 +876,7 @@ class PlayState extends states.MusicBeatState
 		scoreTxt.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
 		scoreTxt.x -= 40;
 		scoreTxt.y -= 20;
+		scoreTxt.alpha = 0.7;
 		scoreTxt.scrollFactor.set();
 
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "FNF Cool Engine BETA - v" + Application.current.meta.get('version'), 12);
@@ -2293,6 +2294,7 @@ class PlayState extends states.MusicBeatState
 		RatingType = 'sick';
 		sicks++;
 		health += 0.1;
+		scoreTxt.alpha = 1;
 		totalNotesHit += 1;
 		score = 350;
 		if (noteSplashOp)
@@ -2308,6 +2310,7 @@ class PlayState extends states.MusicBeatState
 		RatingType = 'good';
 		totalNotesHit += 0.65;
 		score = 200;
+		scoreTxt.alpha = 1;
 		ss = false;
 		goods++;
 	}
@@ -2316,6 +2319,7 @@ class PlayState extends states.MusicBeatState
 		var score:Int = 350;
 		RatingType = 'bad';
 		totalNotesHit += 0.25;
+		scoreTxt.alpha = 1;
 		if (theFunne)
 		{
 			score = 1000;
@@ -2332,6 +2336,7 @@ class PlayState extends states.MusicBeatState
 		var score:Int = 350;
 		RatingType = 'shit';
 		ss = false;
+		scoreTxt.alpha = 1;
 		if (theFunne)
 		{
 			score = 2000;

@@ -84,8 +84,6 @@ class Note extends FlxSprite
 
 				default:
 						frames = NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin);
-						if(FlxG.save.data.noteSkin == 'Custom_Note')
-							frames = NoteSkinDetectorState.noteSkinNormal('NOTE_Custom');
 
 						animation.addByPrefix('greenScroll', 'green alone');
 						animation.addByPrefix('redScroll', 'red alone');

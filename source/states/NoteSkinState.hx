@@ -22,8 +22,6 @@ class NoteSkinState extends states.MusicBeatState
 	var curSelected:Int = 0;
 
 	var previewSkins:FlxSprite;
-	
-	var noteSkinTex:FlxAtlasFrames;
 
 	//var noteName = CoolUtil.coolTextFile(Paths.txt('noteName'));
 
@@ -45,10 +43,8 @@ class NoteSkinState extends states.MusicBeatState
 		menuBG.antialiasing = true;
 		add(menuBG);
 
-		noteSkinTex = Paths.getSparrowAtlas('UI/NOTE_assets', 'shared');
-
 		previewSkins = new FlxSprite(1000, 450);
-		previewSkins.frames = noteSkinTex;
+		previewSkins.frames = Paths.getSparrowAtlas('UI/NOTE_assets', 'shared');
 		previewSkins.animation.addByPrefix('green', 'arrowUP');
 		previewSkins.animation.addByPrefix('blue', 'arrowDOWN');
 		previewSkins.animation.addByPrefix('purple', 'arrowLEFT');
@@ -78,6 +74,7 @@ class NoteSkinState extends states.MusicBeatState
 
 	override function update(elapsed:Float)
 	{
+		var noteSkinTex = CoolUtil.coolTextFile(Paths.txt('noteName'));
 		super.update(elapsed);
 
 		switch (FlxG.save.data.noteSkin)
@@ -88,8 +85,6 @@ class NoteSkinState extends states.MusicBeatState
 				previewSkins.frames = Paths.getSparrowAtlas('UI/Circles', 'shared');
 			case 'Quaver Skin':
 				previewSkins.frames = Paths.getSparrowAtlas('UI/QUAVER_assets', 'shared');
-			case 'Custom_Note':
-				previewSkins.frames = Paths.getSparrowAtlas('UI/NOTE_assets', 'shared');
 		}
 
 		if(controls.BACK)
@@ -110,7 +105,7 @@ class NoteSkinState extends states.MusicBeatState
 				case 2:
 					FlxG.save.data.noteSkin = 'Quaver Skin';
 				case 3:
-					FlxG.save.data.noteSkin = 'Custom_Note';
+					FlxG.save.data.noteSkin = noteSkinTex;
 			}
 		}
 	}

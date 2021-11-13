@@ -25,9 +25,7 @@ class NoteSkinDetectorState extends states.MusicBeatState
 			return Paths.getSparrowAtlas('UI/NOTE_assets', "shared");
 		else if(FlxG.save.data.noteSkin == 'Quaver Skin')
 			return Paths.getSparrowAtlas('UI/QUAVER_assets', "shared");
-		else if(FlxG.save.data.noteSkin == 'Custom_Note')
-			return Paths.getSparrowAtlas('skins_arrows/normals/${path}', "shared");
 		else
-			return Paths.getSparrowAtlas('UI/${path}', "shared");
+			return Paths.getSparrowAtlas('skins_arrows/normals/${path}', "shared");
 	}
 }

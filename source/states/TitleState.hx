@@ -55,7 +55,7 @@ class TitleState extends states.MusicBeatState
 
 		super.create();
 
-		NGio.noLogin(APIStuff.API);
+		//NGio.noLogin(APIStuff.API); useless
 
 		#if ng
 		var ng:NGio = new NGio(APIStuff.API, APIStuff.EncKey);

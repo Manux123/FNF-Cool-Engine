@@ -12,6 +12,8 @@ class OutdatedSubState extends states.MusicBeatState
 	public static var leftState:Bool = false;
 
 	public static var daVersionNeeded:String = "If i knew the lastest version i'll say it, i promise";
+	
+        public static var daChangelogNeeded:String = "If i knew the lastest feature i'll say it, i promise";
 
 	override function create()
 	{
@@ -24,6 +26,8 @@ class OutdatedSubState extends states.MusicBeatState
 			+ ver
 			+ " while the most recent version is "
 			+ daVersionNeeded
+			+ "here are the features youre missing on"
+			+ daChangelogNeeded		      
 			+ "! Press Space to go the GitHub page, or ESCAPE to ignore this.",
 			32);
 		txt.setFormat("VCR OSD Mono", 32, FlxColor.WHITE, CENTER);

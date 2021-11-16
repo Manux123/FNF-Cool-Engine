@@ -274,7 +274,7 @@ class TitleState extends states.MusicBeatState
 
 			new FlxTimer().start(2, function(tmr:FlxTimer)
 			{
-				// Check if version is outdated
+				// Check if version is outdated also changelog
 
 				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/ver.thing");
 
@@ -303,7 +303,32 @@ class TitleState extends states.MusicBeatState
 			});
 			// FlxG.sound.play(Paths.music('titleShoot'), 0.7);
 		}
+				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/ver.thing");
 
+				var version:String = Application.current.meta.get('version');
+
+				http.onData = function (data:String) {
+				  
+				if (!version.contains(data.trim()) && !OutdatedSubState.leftState)
+				{
+					trace('Poor guy, he is outdated');
+					OutdatedSubState.daVersionNeeded = data;
+					FlxG.switchState(new OutdatedSubState());
+				}
+				else
+				{
+				  	FlxG.switchState(new MainMenuState());
+				}
+			  }
+			  
+			  http.onError = function (error) {
+				trace('error: $error');
+				FlxG.switchState(new MainMenuState()); // fail but we go anyway
+			  }
+			  
+			  http.request();
+			});
+              }
 		if (pressedEnter && !skippedIntro)
 		{
 			skipIntro();

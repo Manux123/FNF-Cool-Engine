@@ -303,16 +303,16 @@ class TitleState extends states.MusicBeatState
 			});
 			// FlxG.sound.play(Paths.music('titleShoot'), 0.7);
 		}
-				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/ver.thing");
+				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/Changelog.thing");
 
-				var version:String = Application.current.meta.get('version');
+				var changelog:String = Application.current.meta.get('changelog');
 
 				http.onData = function (data:String) {
 				  
 				if (!version.contains(data.trim()) && !OutdatedSubState.leftState)
 				{
 					trace('Poor guy, he is outdated');
-					OutdatedSubState.daVersionNeeded = data;
+					OutdatedSubState.daChangelogNeeded = data;
 					FlxG.switchState(new OutdatedSubState());
 				}
 				else

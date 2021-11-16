@@ -21,6 +21,8 @@ using StringTools;
 
 class MainMenuState extends states.MusicBeatState
 {
+	var ChangelogKeyCombinationEnabled:Bool = true; //Disable this to disable the combination most likely for mods
+	var ChangelogKeyCombination:Array<FlxKey> = [FlxKey.B, FlxKey.B]; //bb is bbpanzu cuz bbpanzu = legend
 	var curSelected:Int = 0;
 
 	var menuItems:FlxTypedGroup<FlxSprite>;
@@ -116,6 +118,57 @@ class MainMenuState extends states.MusicBeatState
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
+		
+		else
+		
+		var ChangelogCodeShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Click B twice to see the changelog 12);
+		ChangelogCodeShit.scrollFactor.set();
+		ChangelogCodeShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		add(ChangelogCodeShit);
+                // can you move it idk math LOL -MrClogsWorthYT
+
+			else if(ChangelogKeyCombinationEnabled)
+			{
+				var finalKey:FlxKey = FlxG.keys.firstJustPressed();
+				if(finalKey != FlxKey.NONE) {
+					lastKeysPressed.push(finalKey); //Convert int to FlxKey
+					if(lastKeysPressed.length > ChangelogKeyCombination.length)
+					{
+						lastKeysPressed.shift();
+					}
+					
+					if(lastKeysPressed.length == ChangelogKeyCombination.length)
+					{
+						var isDifferent:Bool = false;
+						for (i in 0...lastKeysPressed.length) {
+							if(lastKeysPressed[i] != ChangelogKeyCombination[i]) {
+								isDifferent = true;
+								break;
+							}
+						}
+
+						if(!isDifferent) {
+							trace('changelog!');
+
+							var black:FlxSprite = new FlxSprite(0, 0).makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
+							black.alpha = 0;
+							add(black);
+
+							FlxTween.tween(black, {alpha: 1}, 1, {onComplete:
+								function(twn:FlxTween) {
+									FlxTransitionableState.skipNextTransIn = true;
+									FlxTransitionableState.skipNextTransOut = true;
+									MusicBeatState.switchState(new ChangelogState());
+								}
+							});
+							lastKeysPressed = [];
+							closedState = true;
+							transitioning = true;
+						}
+					}
+				}
+			}
+		}
 
 		// NG.core.calls.event.logEvent('swag').send();
 

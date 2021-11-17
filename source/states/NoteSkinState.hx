@@ -88,7 +88,7 @@ class NoteSkinState extends states.MusicBeatState
 		}
 
 		if(controls.BACK)
-			FlxG.switchState(new states.SectionsOptions());
+			FlxG.switchState(new states.OptionsMenuState());
 		if (controls.UP_P)
 			changeSelection(-1);
 		if (controls.DOWN_P)

@@ -64,7 +64,7 @@ class TitleState extends states.MusicBeatState
 
 		FlxG.save.bind('funkin', 'ninjamuffin99');
 
-		states.OptionsData.initSave();
+		//states.OptionsData.initSave();
 		KeyBinds.keyCheck();
 
 		Highscore.load();

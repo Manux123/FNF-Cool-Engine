@@ -6,6 +6,8 @@ import Discord.DiscordClient;
 import Controls.KeyboardScheme;
 import Controls.Control;
 import Section.SwagSection;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
 import Song.SwagSong;
 import flash.text.TextField;
 import flixel.FlxG;
@@ -13,6 +15,7 @@ import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.input.keyboard.FlxKey;
+import flixel.FlxSubState;
 import flixel.math.FlxMath;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
@@ -20,7 +23,7 @@ import lime.utils.Assets;
 
 using StringTools;
 
-class SectionsOptions extends states.MusicBeatState
+class OptionsMenuState extends states.MusicBeatState
 {
 	var selector:FlxText;
 	var curSelected:Int = 0;
@@ -232,7 +235,7 @@ class OptionsMenu extends states.MusicBeatState
 		super.update(elapsed);
 
 			if (controls.BACK)
-				FlxG.switchState(new SectionsOptions());
+				FlxG.switchState(new OptionsMenuState());
 			if (controls.UP_P)
 				changeSelection(-1);
 			if (controls.DOWN_P)
@@ -354,7 +357,7 @@ class MenuGameOptions extends states.MusicBeatState
 		super.update(elapsed);
 
 			if (controls.BACK)
-				FlxG.switchState(new SectionsOptions());
+				FlxG.switchState(new OptionsMenuState());
 			if (controls.UP_P)
 				changeSelection(-1);
 			if (controls.DOWN_P)
@@ -497,7 +500,7 @@ class OptimizationOptions extends states.MusicBeatState
 		super.update(elapsed);
 
 			if (controls.BACK)
-				FlxG.switchState(new SectionsOptions());
+				FlxG.switchState(new OptionsMenuState());
 			if (controls.UP_P)
 				changeSelection(-1);
 			if (controls.DOWN_P)
@@ -761,7 +764,7 @@ class KeyBindMenu extends FlxSubState
         FlxTween.tween(bg, {alpha: 0}, 1.1, {ease: FlxEase.expoInOut, onComplete: function(flx:FlxTween){close();}});
         FlxTween.tween(infoText, {alpha: 0}, 1, {ease: FlxEase.expoInOut});
 
-        FlxG.switchState(new SectionsOptions());
+        FlxG.switchState(new OptionsMenuState());
     }
 
 

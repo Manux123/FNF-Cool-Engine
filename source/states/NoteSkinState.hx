@@ -32,7 +32,7 @@ class NoteSkinState extends states.MusicBeatState
 	{
 		camGame = new FlxCamera();
 		FlxG.cameras.add(camGame);
-		FlxCamera.defaultCameras = [camGame];
+	//	FlxCamera.defaultCameras = [camGame]; no
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 		var daNoteSkins = CoolUtil.coolTextFile(Paths.txt('noteSkinList'));
 

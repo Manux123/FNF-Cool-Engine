@@ -259,7 +259,7 @@ class PlayState extends states.MusicBeatState
 		FlxG.cameras.reset(camGame);
 		FlxG.cameras.add(camHUD);
 
-		//FlxCamera.defaultCameras = [camGame];
+		FlxCamera.defaultCameras = [camGame];
 
 		persistentUpdate = true;
 		persistentDraw = true;
@@ -2177,6 +2177,15 @@ class PlayState extends states.MusicBeatState
 				pixelShitPart2 = '-pixel';
 			}
 	
+			rating.loadGraphic(Paths.image(pixelShitPart1 + RatingType + pixelShitPart2));
+			rating.screenCenter();
+			rating.y += 200;
+			rating.x = coolText.x - 40;
+			rating.y -= 60;
+			rating.acceleration.y = 550;
+			rating.velocity.y -= FlxG.random.int(140, 175);
+			rating.velocity.x -= FlxG.random.int(0, 10);
+
 			var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(pixelShitPart1 + 'combo' + pixelShitPart2));
 			comboSpr.screenCenter();
 			comboSpr.x = coolText.x;
@@ -2790,12 +2799,12 @@ class PlayState extends states.MusicBeatState
 
 				if (!curStage.startsWith('school'))
 					{
-						ratingf.setGraphicSize(Std.int(ratingf.width * 0.7));
+						ratingf.setGraphicSize(Std.int(ratingf.width * 0.4));
 						ratingf.antialiasing = true;
 					}
 				else
 					{
-						ratingf.setGraphicSize(Std.int(ratingf.width * 0.7));
+						ratingf.setGraphicSize(Std.int(ratingf.width * 0.4));
 					}
 	
 					ratingf.updateHitbox();

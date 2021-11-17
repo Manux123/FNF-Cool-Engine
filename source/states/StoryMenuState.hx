@@ -275,8 +275,6 @@ class StoryMenuState extends states.MusicBeatState
 			if (controls.ACCEPT)
 			{
 				selectWeek();
-				FlxG.camera.flash(FlxColor.WHITE, 1);
-				FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
 			}
 		}
 
@@ -301,6 +299,7 @@ class StoryMenuState extends states.MusicBeatState
 			if (stopspamming == false)
 			{
 				FlxG.sound.play(Paths.sound('confirmMenu'));
+				FlxG.camera.flash(FlxColor.WHITE, 1);
 
 				grpWeekText.members[curWeek].startFlashing();
 				grpWeekCharacters.members[1].animation.play('confirm');

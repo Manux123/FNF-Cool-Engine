@@ -363,13 +363,22 @@ class MenuGameOptions extends states.MusicBeatState
 			if (controls.DOWN_P)
 				changeSelection(1);
 
-			if(curSelected == 0)
+			/*if(curSelected == 0)
 			{
 				versionShit.text = 'Full Combo Mode: You need to do full combo or else you die';
 			}
 			else if(curSelected == 1)
 			{
 				versionShit.text = 'Only Sick Mode: You need to do sicks, not goods, or shits';
+			} 
+			Yandere Dev Moment
+			*/
+			switch(curSelected)
+			{
+				case 0:
+					versionShit.text = 'Full Combo Mode: You need to do full combo or else you die';
+				case 1:
+					versionShit.text = 'Only Sick Mode: You need to do sicks, not goods, or shits';
 			}
 
 			if (controls.RIGHT_R)

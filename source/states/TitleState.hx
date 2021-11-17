@@ -64,7 +64,7 @@ class TitleState extends states.MusicBeatState
 
 		FlxG.save.bind('funkin', 'ninjamuffin99');
 
-		options.OptionsData.initSave();
+		states.OptionsData.initSave();
 		KeyBinds.keyCheck();
 
 		Highscore.load();
@@ -105,7 +105,7 @@ class TitleState extends states.MusicBeatState
 	{
 		persistentUpdate = true;
 
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('titlestate/titlestateBG'));
+		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		// bg.antialiasing = true;
 		// bg.setGraphicSize(Std.int(bg.width * 0.6));
 		// bg.updateHitbox();

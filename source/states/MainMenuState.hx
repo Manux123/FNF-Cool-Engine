@@ -107,14 +107,16 @@ class MainMenuState extends states.MusicBeatState
 		}
 
 		//FlxG.camera.follow(camFollow, null, 0.06);
-
-		var textBG:FlxSprite = new FlxSprite(0, FlxG.height - 26).makeGraphic(FlxG.width, 26, 0xFF000000);
-		textBG.alpha = 0.6;
-		add(textBG);
 		
-		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "FNF Cool Engine BETA - v" + Application.current.meta.get('version'), 12);
+		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Friday Night Funkin v0.2.7", 12);
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		add(versionShit);
+
+		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Cool Engine BETA - v" + Application.current.meta.get('version'), 12);
+		versionShit.scrollFactor.set();
+		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionShit.y -= 20;
 		add(versionShit);
 
 		// NG.core.calls.event.logEvent('swag').send();
@@ -200,7 +202,7 @@ class MainMenuState extends states.MusicBeatState
 										trace("Freeplay Menu Selected");
 
 									case 'options':
-										FlxG.switchState(new options.SectionsOptions());
+										FlxG.switchState(new states.SectionsOptions());
 								}
 							});
 						}

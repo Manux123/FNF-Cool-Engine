@@ -104,6 +104,9 @@ class ChartingState extends states.MusicBeatState
 		bg.antialiasing = true;
 		add(bg);
 
+		FlxG.watch.addQuick("beats", curBeat);
+		FlxG.watch.addQuick("steps", curStep);
+
 		gridBG = FlxGridOverlay.create(GRID_SIZE, GRID_SIZE, GRID_SIZE * 8, GRID_SIZE * 16);
 		add(gridBG);
 

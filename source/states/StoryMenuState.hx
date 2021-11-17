@@ -48,7 +48,7 @@ class StoryMenuState extends states.MusicBeatState
 	];
 
 	var weekNames:Array<String> = [
-		"How to Funk!!",
+		"",
 		"Daddy Dearest",
 		"Spooky Month",
 		"PICO",
@@ -275,6 +275,8 @@ class StoryMenuState extends states.MusicBeatState
 			if (controls.ACCEPT)
 			{
 				selectWeek();
+				FlxG.camera.flash(FlxColor.WHITE, 1);
+				FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
 			}
 		}
 

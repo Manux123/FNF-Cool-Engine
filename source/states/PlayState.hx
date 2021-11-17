@@ -1739,8 +1739,8 @@ class PlayState extends states.MusicBeatState
 			camHUD.zoom = FlxMath.lerp(1, camHUD.zoom, 0.95);
 		}
 
-		FlxG.watch.addQuick("beatShit", curBeat);
-		FlxG.watch.addQuick("stepShit", curStep);
+		FlxG.watch.addQuick("beats", curBeat);
+		FlxG.watch.addQuick("steps", curStep);
 
 		if(FlxG.save.data.perfectmode) { //Perfect Mode
 			if(misses == 1)
@@ -2177,15 +2177,6 @@ class PlayState extends states.MusicBeatState
 				pixelShitPart2 = '-pixel';
 			}
 	
-			rating.loadGraphic(Paths.image(pixelShitPart1 + RatingType + pixelShitPart2));
-			rating.screenCenter();
-			rating.y += 200;
-			rating.x = coolText.x - 40;
-			rating.y -= 60;
-			rating.acceleration.y = 550;
-			rating.velocity.y -= FlxG.random.int(140, 175);
-			rating.velocity.x -= FlxG.random.int(0, 10);
-	
 			var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(pixelShitPart1 + 'combo' + pixelShitPart2));
 			comboSpr.screenCenter();
 			comboSpr.x = coolText.x;
@@ -2268,7 +2259,7 @@ class PlayState extends states.MusicBeatState
 	
 			coolText.text = Std.string(seperatedScore);
 			// add(coolText);
-	
+			
 			FlxTween.tween(rating, {alpha: 0}, 0.2, {
 				startDelay: Conductor.crochet * 0.001
 			});
@@ -2279,7 +2270,6 @@ class PlayState extends states.MusicBeatState
 					coolText.destroy();
 					comboSpr.destroy();
 					//comboFull.destroy();
-	
 					rating.destroy();
 				},
 				startDelay: Conductor.crochet * 0.001
@@ -2780,6 +2770,49 @@ class PlayState extends states.MusicBeatState
 					
 					updateAccuracy();
 				}
+
+				var placement:String = Std.string(combo);
+
+				var coolText:FlxText = new FlxText(0, 0, 0, placement, 32);
+				coolText.screenCenter();
+				coolText.x = FlxG.width * 0.55;
+
+				var ratingf:FlxSprite = new FlxSprite();
+				ratingf.loadGraphic(Paths.image('combo'));
+				ratingf.screenCenter();
+				ratingf.y += 200;
+				ratingf.x = coolText.x - 40;
+				ratingf.y -= 60;
+				ratingf.acceleration.y = 550;
+				ratingf.velocity.y -= FlxG.random.int(140, 175);
+				ratingf.velocity.x -= FlxG.random.int(0, 10);
+				add(ratingf);
+
+				if (!curStage.startsWith('school'))
+					{
+						ratingf.setGraphicSize(Std.int(ratingf.width * 0.7));
+						ratingf.antialiasing = true;
+					}
+				else
+					{
+						ratingf.setGraphicSize(Std.int(ratingf.width * 0.7));
+					}
+	
+					ratingf.updateHitbox();
+	
+				FlxTween.tween(ratingf, {alpha: 0}, 0.2, {
+					startDelay: Conductor.crochet * 0.001
+				});
+		
+				FlxTween.tween(ratingf, {alpha: 0}, 0.2, {
+					onComplete: function(tween:FlxTween)
+					{
+						coolText.destroy();
+		
+						ratingf.destroy();
+					},
+					startDelay: Conductor.crochet * 0.001
+				});	
 			}
 		
 

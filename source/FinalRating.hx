@@ -49,7 +49,7 @@ class FinalRating extends FlxSubState
         helpText.size = 28;
         add(helpText);
 
-        var daRank:FlxSprite = new FlxSprite(600, 400).loadGraphic(Paths.image('ratings/${Rank.generateLetterRank()}'));
+        var daRank:FlxSprite = new FlxSprite(600, 400).loadGraphic(Paths.image('ratings/${states.PlayState.generateLetterRank()}'));
         daRank.scale.x = 1.5; //I tried other method but this is the one it worked
         daRank.scale.y = 1.5;
         daRank.antialiasing = true;
@@ -80,7 +80,7 @@ class FinalRating extends FlxSubState
 
                 FlxG.camera.flash(FlxColor.WHITE, 2.5);
                 FlxG.sound.playMusic(Paths.music('freakyMenu'));
-                FlxG.sound.music.stop();
+                //FlxG.sound.music.stop();
 
                 new FlxTimer().start(2, function(tmr:FlxTimer)
                     {

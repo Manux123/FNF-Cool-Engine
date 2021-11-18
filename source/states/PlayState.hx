@@ -158,6 +158,7 @@ class PlayState extends states.MusicBeatState
 	var noteSplashOp:Bool; //cool
 	public static var songScore:Int = 0;
 	var scoreTxt:FlxText;
+	var scoreTxt2:FlxText;
 	
 	public static var campaignScore:Int = 0;
 
@@ -873,11 +874,20 @@ class PlayState extends states.MusicBeatState
 		scoreTxt = new FlxText(healthBarBG.x + healthBarBG.width / 2 - 150, healthBarBG.y + 50, 0, "", 20);
 		if (!FlxG.save.data.accuracyDisplay)
 			scoreTxt.x = healthBarBG.x + healthBarBG.width / 2;
-		scoreTxt.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
-		scoreTxt.x -= 40;
+		scoreTxt.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
+		scoreTxt.x += 210;
 		scoreTxt.y -= 20;
 		scoreTxt.alpha = 0.7;
 		scoreTxt.scrollFactor.set();
+
+		scoreTxt2 = new FlxText(healthBarBG.x + healthBarBG.width / 2 - 150, healthBarBG.y + 50, 0, "", 20);
+		if (!FlxG.save.data.accuracyDisplay)
+			scoreTxt2.x = healthBarBG.x + healthBarBG.width / 2;
+		scoreTxt2.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
+		scoreTxt2.x -= 120;
+		scoreTxt2.y -= 20;
+		scoreTxt2.alpha = 0.7;
+		scoreTxt2.scrollFactor.set();
 
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "FNF Cool Engine BETA - v" + Application.current.meta.get('version'), 12);
 		versionShit.scrollFactor.set();
@@ -906,6 +916,7 @@ class PlayState extends states.MusicBeatState
 		iconP2.y = healthBar.y - (iconP2.height / 2);
 		add(iconP2);
 		add(scoreTxt);
+		add(scoreTxt2);
 
 		strumLineNotes.cameras = [camHUD];
 		notes.cameras = [camHUD];
@@ -915,6 +926,7 @@ class PlayState extends states.MusicBeatState
 		iconP1.cameras = [camHUD];
 		iconP2.cameras = [camHUD];
 		scoreTxt.cameras = [camHUD];
+		scoreTxt2.cameras = [camHUD];
 		doof.cameras = [camHUD];
 		versionShit.cameras = [camHUD];
 		if(FlxG.save.data.perfectmode)
@@ -1527,6 +1539,52 @@ class PlayState extends states.MusicBeatState
 	}
 	
 
+	public static var ranking:String = "N/A";
+    public static function generateLetterRank()
+    {
+        var accuracy:Array<Bool> = [
+            PlayState.accuracy >= 99.99, //SS
+            PlayState.accuracy >= 94.99, //S
+            PlayState.accuracy >= 89.99, //A
+            PlayState.accuracy >= 79.99, //B
+            PlayState.accuracy >= 69.99, //C
+            PlayState.accuracy >= 59.99, //D
+        ];
+
+        //Osu!Mania Ranking System
+
+        for(i in 0...accuracy.length)
+        {
+            var lyrics = accuracy[i];
+            if (lyrics)
+            {
+                switch(i)
+                {
+                    case 0:
+						ranking = "SS";
+					case 1:
+						ranking = "S";
+					case 2:
+						ranking = "A";
+					case 3:
+						ranking = "B";
+                    case 4:
+                        ranking = "C";
+                    case 5:
+                        ranking = "D";
+                }
+                break;
+            }
+        }
+
+        if (PlayState.accuracy == 0 && PlayState.startingSong)
+            ranking = "N/A";
+        else if (PlayState.accuracy <= 59.99 && !PlayState.startingSong)
+            ranking = "F";
+
+        return ranking;
+    }
+
 	function resyncVocals():Void
 	{
 		vocals.pause();
@@ -1580,9 +1638,8 @@ class PlayState extends states.MusicBeatState
 
 		if (FlxG.save.data.accuracyDisplay)
 		{
-			scoreTxt.text = "Score:" + songScore + 
-							" | Misses:" + misses + 
-							" | Rank: " + Rank.generateLetterRank() + " ( " + reduceFloat(accuracy, 2) + "% ) ";
+			scoreTxt.text = "Score:" + songScore + " | Misses:" + misses;
+			scoreTxt2.text = "Accuracy: " + reduceFloat(accuracy, 2) + "% | Rank: " + generateLetterRank();
 		}
 		else
 		{
@@ -2292,6 +2349,7 @@ class PlayState extends states.MusicBeatState
 		sicks++;
 		health += 0.1;
 		scoreTxt.alpha = 1;
+		scoreTxt2.alpha = 1;
 		totalNotesHit += 1;
 		score = 350;
 		if (noteSplashOp)

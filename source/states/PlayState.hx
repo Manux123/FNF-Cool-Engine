@@ -154,6 +154,7 @@ class PlayState extends states.MusicBeatState
 	var wiggleShit:shaders.WiggleEffect = new shaders.WiggleEffect();
 
 	var talking:Bool = true;
+	private var SplashNote:NoteSplash;
 	var grpNoteSplashes:FlxTypedGroup<NoteSplash>;
 	var noteSplashOp:Bool; //cool
 	public static var songScore:Int = 0;
@@ -789,6 +790,7 @@ class PlayState extends states.MusicBeatState
 		doof.finishThing = startCountdown;
 
 		Conductor.songPosition = -5000;
+		//noteSplashOp = true;
 
 
 		strumLine = new FlxSprite(0, 50).makeGraphic(FlxG.width, 10);
@@ -799,7 +801,10 @@ class PlayState extends states.MusicBeatState
 
 		strumLineNotes = new FlxTypedGroup<FlxSprite>();
 		add(strumLineNotes);
-		add(grpNoteSplashes);
+		if (FlxG.save.data.notesplashes)	
+		{
+			add(grpNoteSplashes);
+		}
 
 		playerStrums = new FlxTypedGroup<FlxSprite>();
 		cpuStrums = new FlxTypedGroup<FlxSprite>();
@@ -2353,11 +2358,11 @@ class PlayState extends states.MusicBeatState
 		totalNotesHit += 1;
 		score = 350;
 		if (noteSplashOp)
-		{
-			var recycledNote = grpNoteSplashes.recycle(NoteSplash);
-			recycledNote.setupNoteSplash(daNote.x, daNote.y, daNote.noteData);
-			grpNoteSplashes.add(recycledNote);
-		}
+			{
+				var recycledNote = grpNoteSplashes.recycle(NoteSplash);
+				recycledNote.setupNoteSplash(daNote.x, daNote.y, daNote.noteData);
+				grpNoteSplashes.add(recycledNote);
+			}
 	}
 
 	public function popGood():Void {

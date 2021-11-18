@@ -178,6 +178,7 @@ class OptionsMenu extends states.MusicBeatState
 
 	var options:Array<Option> = [
 		new NewInputOption(),
+		//new NoteSplashesOption(),
 		new DownscrollOption(),
 		new MiddleScroll(),
 		new Fullscreen(),
@@ -986,6 +987,21 @@ class SickModeOption extends Option
 	private override function updateDisplay():String
 	{
 		return FlxG.save.data.sickmode ? "Only Sick Mode" : "SGB Mode";
+	}
+}
+
+class NoteSplashesOption extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.notesplashes = !FlxG.save.data.notesplashes;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return FlxG.save.data.notesplashes ? "Notes Splashes On" : "Notes Splashes Off";
 	}
 }
 

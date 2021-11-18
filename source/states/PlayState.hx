@@ -2791,7 +2791,6 @@ class PlayState extends states.MusicBeatState
 				ratingf.screenCenter();
 				ratingf.y += 200;
 				ratingf.x = coolText.x - 40;
-				ratingf.y -= 60;
 				ratingf.acceleration.y = 550;
 				ratingf.velocity.y -= FlxG.random.int(140, 175);
 				ratingf.velocity.x -= FlxG.random.int(0, 10);

@@ -26,9 +26,9 @@ class OutdatedSubState extends states.MusicBeatState
 			+ ver
 			+ " while the most recent version is "
 			+ daVersionNeeded
-			+ "here are the features youre missing on"
+			+ " here are the features youre missing on\n"
 			+ daChangelogNeeded		      
-			+ "! Press Space to go the GitHub page, or ESCAPE to ignore this.",
+			+ "\n Press Space to go the GitHub page, or ESCAPE to ignore this.",
 			32);
 		txt.setFormat("VCR OSD Mono", 32, FlxColor.WHITE, CENTER);
 		txt.screenCenter();

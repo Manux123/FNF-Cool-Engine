@@ -1617,7 +1617,7 @@ class PlayState extends states.MusicBeatState
 
 	override public function update(elapsed:Float)
 	{
-		if(FlxG.keys.justPressed.CTRL)
+		if(FlxG.keys.justPressed.CONTROL)
 			CPUvsCPUMode = false;
 		songPositionBar = Conductor.songPosition;
 

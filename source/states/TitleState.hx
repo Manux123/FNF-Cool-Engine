@@ -276,7 +276,7 @@ class TitleState extends states.MusicBeatState
 			{
 				// Check if version is outdated also changelog
 
-				var http = new haxe.Http("https://raw.githubusercontent.com/KadeDev/Kade-Engine/master/version.downloadMe");
+				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/ver.thing");
 				var returnedData:Array<String> = [];
 				var version:String = Application.current.meta.get('version');
 

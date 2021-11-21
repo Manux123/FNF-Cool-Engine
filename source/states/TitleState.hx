@@ -319,7 +319,8 @@ class TitleState extends states.MusicBeatState
 				{
 				  	FlxG.switchState(new MainMenuState());
 				}
-			  }
+		
+			}
 			  
 			  http.onError = function (error) {
 				trace('error: $error');
@@ -327,15 +328,14 @@ class TitleState extends states.MusicBeatState
 			  }
 			  
 			  http.request();
-			});
-              }
+            
 		if (pressedEnter && !skippedIntro)
 		{
 			skipIntro();
 		}
 
 		super.update(elapsed);
-	}
+	};
 
 	function createCoolText(textArray:Array<String>)
 	{

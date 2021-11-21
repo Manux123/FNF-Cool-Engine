@@ -7,7 +7,7 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import lime.app.Application;
 
-class ChangelogState extends states.MusicBeatState
+class Changelog extends states.MusicBeatState
 {
 	
   public static var daChangelogNeeded:String = "If i knew the lastest feature i'll say it, i promise";

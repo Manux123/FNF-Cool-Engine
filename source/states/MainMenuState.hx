@@ -121,15 +121,13 @@ class MainMenuState extends states.MusicBeatState
 		versionShit.y -= 20;
 		add(versionShit);
 		
-		else
-		
-		var ChangelogCodeShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Click B twice to see the changelog 12);
+		var ChangelogCodeShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Click B twice to see the changelog 12");
 		ChangelogCodeShit.scrollFactor.set();
 		ChangelogCodeShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(ChangelogCodeShit);
                 // can you move it idk math LOL -MrClogsWorthYT
 
-			else if(ChangelogKeyCombinationEnabled)
+			if(ChangelogKeyCombinationEnabled)
 			{
 				var finalKey:FlxKey = FlxG.keys.firstJustPressed();
 				if(finalKey != FlxKey.NONE) {
@@ -160,7 +158,7 @@ class MainMenuState extends states.MusicBeatState
 								function(twn:FlxTween) {
 									FlxTransitionableState.skipNextTransIn = true;
 									FlxTransitionableState.skipNextTransOut = true;
-									MusicBeatState.switchState(new ChangelogState());
+									MusicBeatState.switchState(new Changelog());
 								}
 							});
 							lastKeysPressed = [];
@@ -170,7 +168,6 @@ class MainMenuState extends states.MusicBeatState
 					}
 				}
 			}
-		}
 
 		// NG.core.calls.event.logEvent('swag').send();
 

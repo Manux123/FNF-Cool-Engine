@@ -1084,7 +1084,7 @@ class PlayState extends states.MusicBeatState
 	}
 
 	var startTimer:FlxTimer;
-	var perfectMode:Bool = false;
+	var CPUvsCPUMode:Bool = false;
 	var ready:FlxSprite;
 	var set:FlxSprite;
 	var go:FlxSprite;
@@ -1617,10 +1617,8 @@ class PlayState extends states.MusicBeatState
 
 	override public function update(elapsed:Float)
 	{
-		#if !debug
-		perfectMode = false;
-		#end
-
+		if(FlxG.keys.justPressed.CTRL)
+			CPUvsCPUMode = false;
 		songPositionBar = Conductor.songPosition;
 
 		switch (curStage)
@@ -2358,11 +2356,11 @@ class PlayState extends states.MusicBeatState
 		totalNotesHit += 1;
 		score = 350;
 		if (noteSplashOp)
-			{
-				var recycledNote = grpNoteSplashes.recycle(NoteSplash);
-				recycledNote.setupNoteSplash(daNote.x, daNote.y, daNote.noteData);
-				grpNoteSplashes.add(recycledNote);
-			}
+		{
+			var recycledNote = grpNoteSplashes.recycle(NoteSplash);
+			recycledNote.setupNoteSplash(daNote.x, daNote.y, daNote.noteData);
+			grpNoteSplashes.add(recycledNote);
+		}
 	}
 
 	public function popGood():Void {
@@ -2563,7 +2561,7 @@ class PlayState extends states.MusicBeatState
 				});
 			}
 	
-			if (boyfriend.holdTimer > Conductor.stepCrochet * 4 * 0.001 && !up && !down && !right && !left)
+			if (boyfriend.holdTimer > Conductor.stepCrochet * 4 * 0.005 && !up && !down && !right && !left)
 			{
 				if (boyfriend.animation.curAnim.name.startsWith('sing') && !boyfriend.animation.curAnim.name.endsWith('miss'))
 				{

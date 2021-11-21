@@ -13,7 +13,7 @@ class OutdatedSubState extends states.MusicBeatState
 
 	public static var daVersionNeeded:String = "If i knew the lastest version i'll say it, i promise";
 	
-        public static var daChangelogNeeded:String = "If i knew the lastest feature i'll say it, i promise";
+    public static var daChangelogNeeded:String = "If i knew the lastests features i'll say it, i promise";
 
 	override function create()
 	{

@@ -276,58 +276,37 @@ class TitleState extends states.MusicBeatState
 			{
 				// Check if version is outdated also changelog
 
-				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/ver.thing");
-
+				var http = new haxe.Http("https://raw.githubusercontent.com/KadeDev/Kade-Engine/master/version.downloadMe");
+				var returnedData:Array<String> = [];
 				var version:String = Application.current.meta.get('version');
 
-				http.onData = function (data:String) {
-				  
-				if (!version.contains(data.trim()) && !OutdatedSubState.leftState)
+				http.onData = function(data:String)
 				{
-					trace('Poor guy, he is outdated');
-					OutdatedSubState.daVersionNeeded = data;
-					FlxG.switchState(new OutdatedSubState());
+					returnedData[0] = data.substring(0, data.indexOf('-'));
+					returnedData[1] = data.substring(data.indexOf('+'), data.length);
+					if (!version.contains(returnedData[0].trim()) && !OutdatedSubState.leftState)
+					{
+						trace('Poor guy, he is outdated');
+						OutdatedSubState.daVersionNeeded = returnedData[0];
+						OutdatedSubState.daChangelogNeeded = returnedData[1];
+						FlxG.switchState(new OutdatedSubState());
+					}
+					else
+					{
+						FlxG.switchState(new MainMenuState());
+					}
 				}
-				else
+
+				http.onError = function(error)
 				{
-				  	FlxG.switchState(new MainMenuState());
+					trace('error: $error');
+					FlxG.switchState(new MainMenuState()); // fail but we go anyway
 				}
-			  }
-			  
-			  http.onError = function (error) {
-				trace('error: $error');
-				FlxG.switchState(new MainMenuState()); // fail but we go anyway
-			  }
-			  
-			  http.request();
+
+				http.request();
 			});
 			// FlxG.sound.play(Paths.music('titleShoot'), 0.7);
 		}
-				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/Changelog.thing");
-
-				var changelog:String = Application.current.meta.get('changelog');
-
-				http.onData = function (data:String) {
-				  
-				if (!version.contains(data.trim()) && !OutdatedSubState.leftState)
-				{
-					trace('Poor guy, he is outdated');
-					OutdatedSubState.daChangelogNeeded = data;
-					FlxG.switchState(new OutdatedSubState());
-				}
-				else
-				{
-				  	FlxG.switchState(new MainMenuState());
-				}
-		
-			}
-			  
-			  http.onError = function (error) {
-				trace('error: $error');
-				FlxG.switchState(new MainMenuState()); // fail but we go anyway
-			  }
-			  
-			  http.request();
             
 		if (pressedEnter && !skippedIntro)
 		{

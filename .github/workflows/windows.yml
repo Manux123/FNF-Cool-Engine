@@ -30,6 +30,7 @@ jobs:
           haxelib install newgrounds
           haxelib install polymod
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
+          haxelib install lime
           lime test windows -debug
           
       - uses: actions/upload-artifact@v2

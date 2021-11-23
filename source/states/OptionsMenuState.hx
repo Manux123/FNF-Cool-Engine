@@ -200,6 +200,11 @@ class OptionsMenu extends states.MusicBeatState
 		menuBG.antialiasing = true;
 		add(menuBG);
 
+		if(FlxG.save.data.FPSCap)
+			openfl.Lib.current.stage.frameRate = 144;
+		else
+			openfl.Lib.current.stage.frameRate = 999;
+
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
 		
@@ -243,13 +248,6 @@ class OptionsMenu extends states.MusicBeatState
 				changeSelection(-1);
 			if (controls.DOWN_P)
 				changeSelection(1);
-
-			if(FlxG.save.data.FPSCap)
-				openfl.Lib.current.stage.frameRate = 144;
-			else
-				openfl.Lib.current.stage.frameRate = 999;
-
-
 
 			if (controls.RIGHT_R)
 			{

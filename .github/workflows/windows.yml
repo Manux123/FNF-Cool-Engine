@@ -1,0 +1,38 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Windows Build CI
+
+# Controls when the workflow will run
+on: [push, pull_request]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: windows-latest
+    
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+      - uses: krdlab/setup-haxe@v1
+        with:
+          haxe-version: 4.1.5
+      # Runs a set of commands using the runners shell
+      - name: script run line haha
+        run: |
+          cinst haxe --version 4.1.5 -y
+          RefreshEnv
+          mkdir "%HAXELIB_ROOT%"
+          haxelib setup "%HAXELIB_ROOT%"
+          haxelib install hscript
+          haxelib install newgrounds
+          haxelib install polymod
+          haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
+          lime test windows -debug
+          
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Windows Build
+          path: export/release/windows/bin

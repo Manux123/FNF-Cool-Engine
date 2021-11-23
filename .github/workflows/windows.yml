@@ -29,7 +29,13 @@ jobs:
           haxelib install hscript
           haxelib install newgrounds
           haxelib install polymod
+          haxelib install openfl
+          haxelib install flixel
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
+          haxelib run lime setup flixel
+          haxelib run lime setup
+          haxelib install flixel-tools
+          haxelib run flixel-tools setup
           haxelib install lime
           lime test windows -debug
           

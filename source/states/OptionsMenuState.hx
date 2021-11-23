@@ -1,5 +1,6 @@
 package states;
 
+import openfl.display.FPS;
 #if desktop
 import Discord.DiscordClient;
 #end
@@ -180,6 +181,7 @@ class OptionsMenu extends states.MusicBeatState
 		new NewInputOption(),
 		//new NoteSplashesOption(),
 		new DownscrollOption(),
+		new FPSCap(),
 		new MiddleScroll(),
 		new Fullscreen(),
 		new AccuracyOption()
@@ -241,6 +243,12 @@ class OptionsMenu extends states.MusicBeatState
 				changeSelection(-1);
 			if (controls.DOWN_P)
 				changeSelection(1);
+
+			if(FlxG.save.data.FPSCap)
+				openfl.Lib.current.stage.frameRate = 144;
+			else
+				openfl.Lib.current.stage.frameRate = 999;
+
 
 
 			if (controls.RIGHT_R)
@@ -897,6 +905,21 @@ class DownscrollOption extends Option
 	private override function updateDisplay():String
 	{
 		return FlxG.save.data.downscroll ? "Downscroll" : "Upscroll";
+	}
+}
+
+class FPSCap extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.noFpsCap = !FlxG.save.data.noFpsCap;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return !FlxG.save.data.noFpsCap ? "FPS Capped" : "FPS Not Capped";
 	}
 }
 

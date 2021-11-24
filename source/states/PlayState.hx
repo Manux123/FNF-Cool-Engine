@@ -281,6 +281,11 @@ class PlayState extends states.MusicBeatState
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
 
+		if(FlxG.save.data.FPSCap)
+			openfl.Lib.current.stage.frameRate = 144;
+		else
+			openfl.Lib.current.stage.frameRate = 999;
+
 		noteSkinPixelTex = NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin);
 
 		sicks = 0;

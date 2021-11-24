@@ -38,6 +38,7 @@ class MainMenuState extends states.MusicBeatState
 	var canSnap:Array<Float> = [];
 	var camFollow:FlxObject;
 	var newInput:Bool = true;
+	var menuItem:FlxSprite;
 	public static var firstStart:Bool = true;
 
 	public static var finishedFunnyMove:Bool = false;
@@ -88,7 +89,7 @@ class MainMenuState extends states.MusicBeatState
 
 		for (i in 0...optionShit.length)
 		{
-			var menuItem:FlxSprite = new FlxSprite(900 , 8 + (i * -175));
+			menuItem = new FlxSprite(900 , 8 + (i * -175));
 			menuItem.frames = tex;
 			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
@@ -171,6 +172,7 @@ class MainMenuState extends states.MusicBeatState
 				}
 				else
 				{
+					FlxTween.tween(menuItem, {x: menuItem.x + 200}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
 					selectedSomethin = true;
 					FlxG.sound.play(Paths.sound('confirmMenu'));
 

@@ -49,6 +49,95 @@ import Discord.DiscordClient;
 
 using StringTools;
 
+class Modcharts{
+/*
+	inline public static var SOUND_EXT = #if web "mp3" #else "ogg" #end;
+	private var modcharts:Bool = false;
+	var si_song:SwagSong;
+	var si_time:String = time();
+
+	inline static private function json(key:String, ?library:String)
+	{
+		if(modcharts = true)
+			return getPath('modcharts/$key.json', TEXT, library);
+	}
+
+	/*
+	EXAMPLE:
+		"song":'Bopeebo'
+		{
+			"events":[{
+				{
+					changeDad = 'bf'
+				}
+				{
+					changeDad = 'pico'
+				}
+				{
+					changeDad = 'gf'
+				}
+			}],
+
+			"time":[{
+				curStep = 142,
+				curStep = 232,
+				curStep = 342
+			}]
+		}
+	*/
+		/*
+	function song():Void{
+		if (states.PlayState.SONG != null)
+			si_song = states.PlayState.SONG;
+		else
+		{
+			si_song = {
+				song: 'Bopeebo',
+				"events": [],
+
+				si_time:[],
+			};
+		}
+		events();
+	}
+
+	function events():Void{
+		changeDad();
+		changeBF();
+		songSpeedChange();
+	}
+
+	function changeBF():Void{
+		var P1:String;
+		var boyfriend:Character;
+		var add:PlayState;
+		var remove:PlayState;
+		remove(boyfriend);
+		boyfriend = new Character(boyfriend.x, boyfriend.y, P1);
+		add(boyfriend);
+	}
+
+	function changeDad():Void{
+		var P2:String;
+		var dad:Character;
+		var add:PlayState;
+		var remove:PlayState;
+		remove(dad);
+		dad = new Character(dad.x, dad.y, P2);
+		add(dad);
+	}
+
+	function time():Void{
+		var curStep:Int = MusicBeatState;
+		si_time = curStep;
+	}
+
+	function songSpeedChange():Void{
+		var SPEED:String;
+		var NUMBER:Int = states.PlayState.SONG.speed;
+		SPEED = NUMBER;
+	}*/
+}
 class PlayState extends states.MusicBeatState
 {
 	public static var curStage:String = '';

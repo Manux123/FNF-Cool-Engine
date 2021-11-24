@@ -355,7 +355,7 @@ class FreeplayState extends states.MusicBeatState
 				trace('Couldnt find file');
 			}
 
-			FlxTween.tween(songText, {y: 2000}, 0.2, {ease: FlxEase.quadIn});
+			//FlxTween.tween(songText.isMenuItem, {y: songText.y - 2000}, 0.6, {ease: FlxEase.quadIn, type: ONESHOT});
 			trace(poop);
 
 			states.PlayState.SONG = Song.loadFromJson(poop, songLowercase);

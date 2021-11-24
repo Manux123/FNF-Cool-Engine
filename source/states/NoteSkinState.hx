@@ -3,7 +3,6 @@ package states;
 import Controls.KeyboardScheme;
 import Controls.Control;
 import flash.text.TextField;
-import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
@@ -13,6 +12,8 @@ import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.input.keyboard.FlxKey;
 import flixel.math.FlxMath;
 import flixel.text.FlxText;
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
 import flixel.util.FlxColor;
 import lime.utils.Assets;
 
@@ -20,19 +21,16 @@ class NoteSkinState extends states.MusicBeatState
 {
 	var selector:FlxText;
 	var curSelected:Int = 0;
+	var controlLabel:Alphabet;
 
 	var previewSkins:FlxSprite;
 
 	//var noteName = CoolUtil.coolTextFile(Paths.txt('noteName'));
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
-	var camGame:FlxCamera;
 	var versionShit:FlxText;
 	override function create()
 	{
-		camGame = new FlxCamera();
-		FlxG.cameras.add(camGame);
-	//	FlxCamera.defaultCameras = [camGame]; no
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 		var daNoteSkins = CoolUtil.coolTextFile(Paths.txt('noteSkinList'));
 
@@ -56,18 +54,12 @@ class NoteSkinState extends states.MusicBeatState
 
 		for (i in 0...daNoteSkins.length)
 		{
-				var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 30, daNoteSkins[i], true, false);
+				controlLabel = new Alphabet(0, (70 * i) + 30, daNoteSkins[i], true, false);
 				controlLabel.isMenuItem = true;
 				controlLabel.targetY = i;
 				grpControls.add(controlLabel);
 			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
 		}
-
-
-		versionShit = new FlxText(5, FlxG.height - 18, 0, "Offset (Left, Right): " + FlxG.save.data.offset, 12);
-		versionShit.scrollFactor.set();
-		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		//add(versionShit);
 
 		super.create();
 	}
@@ -89,6 +81,7 @@ class NoteSkinState extends states.MusicBeatState
 
 		if(controls.BACK)
 			FlxG.switchState(new states.OptionsMenuState());
+			//FlxTween.tween(controlLabel, {x: controlLabel.x - 400}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
 		if (controls.UP_P)
 			changeSelection(-1);
 		if (controls.DOWN_P)

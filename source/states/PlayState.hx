@@ -1473,7 +1473,13 @@ class PlayState extends states.MusicBeatState
 			switch (curStage)
 			{
 				case 'school' | 'schoolEvil':
-					babyArrow.loadGraphic(noteSkinPixelTex, true, 17, 17);
+					switch(FlxG.save.data.noteSkin)
+					{
+						case 'Arrows':
+							babyArrow.loadGraphic(Paths.image('skins_arrows/pixels/arrows-pixels'), true, 17, 17);
+						case 'Circles':
+							babyArrow.loadGraphic(Paths.image('skins_arrows/pixels/Circles-pixels'), true, 17, 17);
+					}
 
 					babyArrow.animation.add('green', [6]);
 					babyArrow.animation.add('red', [7]);
@@ -2343,6 +2349,7 @@ class PlayState extends states.MusicBeatState
 			var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(pixelShitPart1 + 'combo' + pixelShitPart2));
 			comboSpr.screenCenter();
 			comboSpr.x = coolText.x;
+			comboSpr.alpha = 0;
 			comboSpr.y += 200;
 			comboSpr.acceleration.y = 600;
 			comboSpr.velocity.y -= 150;
@@ -2949,7 +2956,7 @@ class PlayState extends states.MusicBeatState
 				ratingf.acceleration.y = 550;
 				ratingf.velocity.y -= FlxG.random.int(140, 175);
 				ratingf.velocity.x -= FlxG.random.int(0, 10);
-				add(ratingf);
+				//add(ratingf);
 
 				if (!curStage.startsWith('school'))
 					{

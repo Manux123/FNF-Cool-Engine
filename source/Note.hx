@@ -57,7 +57,13 @@ class Note extends FlxSprite
 			switch (daStage)
 			{
 				case 'school' | 'schoolEvil':
-					loadGraphic(PlayState.noteSkinPixelTex, true, 17, 17);
+					switch(FlxG.save.data.noteSkin)
+					{
+						case 'Arrows':
+							loadGraphic(Paths.image('skins_arrows/pixels/arrows-pixels'), true, 17, 17);
+						case 'Circles':
+							loadGraphic(Paths.image('skins_arrows/pixels/Circles-pixels'), true, 17, 17);
+					}
 			
 					animation.add('greenScroll', [6]);
 					animation.add('redScroll', [7]);
@@ -66,7 +72,13 @@ class Note extends FlxSprite
 
 					if (isSustainNote)
 					{
-						loadGraphic(Paths.image('weeb/pixelUI/arrowEnds'), true, 7, 6);
+						switch(FlxG.save.data.noteSkin)
+						{
+							case 'Arrows':
+								loadGraphic(Paths.image('skins_arrows/pixels/arrowEnds'), true, 17, 17);
+							case 'Circles':
+								loadGraphic(Paths.image('skins_arrows/pixels/Circles-pixels-ends'), true, 17, 17);
+						}
 
 						animation.add('purpleholdend', [4]);
 						animation.add('greenholdend', [6]);

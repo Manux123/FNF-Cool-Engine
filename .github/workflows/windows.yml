@@ -26,17 +26,18 @@ jobs:
           RefreshEnv
           mkdir "%HAXELIB_ROOT%"
           haxelib setup "%HAXELIB_ROOT%"
-          haxelib install hscript
-          haxelib install newgrounds
-          haxelib install polymod
-          haxelib install openfl
-          haxelib install flixel
+          haxelib install hscript -quite
+          haxelib install newgrounds -quite
+          haxelib install polymod -quite
+          haxelib install openfl -quite
+          haxelib install flixel -quite
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
-          haxelib run lime setup flixel
-          haxelib run lime setup
-          haxelib install flixel-tools
-          haxelib run flixel-tools setup
-          haxelib install lime
+          haxelib install lime -quite
+          haxelib run lime setup flixel -quite
+          haxelib run lime setup -quite
+          haxelib install flixel-tools -quite
+          haxelib run flixel-tools setup -quite
+          haxelib install lime -quite
           lime test windows -debug
           
       - uses: actions/upload-artifact@v2

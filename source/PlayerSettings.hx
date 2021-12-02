@@ -13,6 +13,7 @@ class PlayerSettings
 	static public var numAvatars(default, null) = 0;
 	static public var player1(default, null):PlayerSettings;
 	static public var player2(default, null):PlayerSettings;
+	static public var player3(default, null):PlayerSettings;
 
 	#if (haxe >= "4.0.0")
 	static public final onAvatarAdd = new FlxTypedSignal<PlayerSettings->Void>();
@@ -76,6 +77,18 @@ class PlayerSettings
 				throw 'Unexpected null gamepad. id:0';
 
 			player2.controls.addDefaultGamepad(1);
+
+			if (player3 == null)
+			{
+				player3 = new PlayerSettings(2, None);
+				++numPlayers;
+			}
+
+			var gamepad = FlxG.gamepads.getByID(2);
+			if (gamepad == null)
+				throw 'Unexpected null gamepad. id:0';
+
+			player3.controls.addDefaultGamepad(2);
 		}
 
 		// DeviceManager.init();
@@ -85,6 +98,7 @@ class PlayerSettings
 	{
 		player1 = null;
 		player2 = null;
+		player3 = null;
 		numPlayers = 0;
 	}
 }

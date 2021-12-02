@@ -89,6 +89,7 @@ class ChartingState extends states.MusicBeatState
 
 	var leftIcon:HealthIcon;
 	var rightIcon:HealthIcon;
+	var middleIcon:HealthIcon;
 
 	override function create()
 	{
@@ -112,17 +113,22 @@ class ChartingState extends states.MusicBeatState
 
 		leftIcon = new HealthIcon(SONG.player1, true);
 		rightIcon = new HealthIcon(SONG.player2, false);
+		middleIcon = new HealthIcon(SONG.player3, false);
 		leftIcon.scrollFactor.set(1, 1);
 		rightIcon.scrollFactor.set(1, 1);
+		middleIcon.scrollFactor.set(1, 1);
 
 		leftIcon.setGraphicSize(0, 45);
 		rightIcon.setGraphicSize(0, 45);
+		middleIcon.setGraphicSize(0, 45);
 
 		add(leftIcon);
 		add(rightIcon);
+		add(middleIcon);
 
 		leftIcon.setPosition(0, -100);
-		rightIcon.setPosition(gridBG.width / 2, -100);
+		rightIcon.setPosition(gridBG.width / 3, -100);
+		middleIcon.setPosition(gridBG.width / 2, -100);
 
 		var gridBlackLine:FlxSprite = new FlxSprite(gridBG.x + gridBG.width / 2).makeGraphic(2, Std.int(gridBG.height), FlxColor.BLACK);
 		add(gridBlackLine);
@@ -141,6 +147,7 @@ class ChartingState extends states.MusicBeatState
 				needsVoices: true,
 				player1: 'bf',
 				player2: 'dad',
+				player3: 'gf',
 				speed: 1,
 				modchart: false,
 				validScore: false
@@ -249,18 +256,25 @@ class ChartingState extends states.MusicBeatState
 
 		var characters:Array<String> = CoolUtil.coolTextFile(Paths.txt('characterList'));
 
-		var player1DropDown = new FlxUIDropDownMenu(10, 100, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
+		var player1DropDown = new FlxUIDropDownMenu(0, 100, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
 		{
 			_song.player1 = characters[Std.parseInt(character)];
 		});
 		player1DropDown.selectedLabel = _song.player1;
 
-		var player2DropDown = new FlxUIDropDownMenu(140, 100, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
+		var player2DropDown = new FlxUIDropDownMenu(260, 100, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
 		{
 			_song.player2 = characters[Std.parseInt(character)];
 		});
 
+		var player3DropDown = new FlxUIDropDownMenu(130, 100, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
+		{
+			_song.player3 = characters[Std.parseInt(character)];
+		});
+		//player3DropDown.selectedLabel = _song.player3;
+
 		player2DropDown.selectedLabel = _song.player2;
+		player3DropDown.selectedLabel = _song.player3;
 
 		var tab_group_song = new FlxUI(null, UI_box);
 		tab_group_song.name = "Song";
@@ -276,6 +290,7 @@ class ChartingState extends states.MusicBeatState
 		tab_group_song.add(stepperSpeed);
 		tab_group_song.add(player1DropDown);
 		tab_group_song.add(player2DropDown);
+		tab_group_song.add(player3DropDown);
 
 		UI_box.addGroup(tab_group_song);
 		UI_box.scrollFactor.set();
@@ -838,11 +853,13 @@ class ChartingState extends states.MusicBeatState
 		{
 			leftIcon.animation.play(SONG.player1);
 			rightIcon.animation.play(SONG.player2);
+			middleIcon.animation.play(SONG.player3);
 		}
 		else
 		{
 			leftIcon.animation.play(SONG.player1);
 			rightIcon.animation.play(SONG.player2);
+			middleIcon.animation.play(SONG.player3);
 		}
 	}
 

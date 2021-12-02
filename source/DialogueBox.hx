@@ -183,6 +183,15 @@ class DialogueBox extends FlxSpriteGroup
 				
 			FlxG.sound.play(Paths.sound('clickText'), 0.8);
 
+			if(FlxG.keys.justPressed.SHIFT){
+				isEnding = true;
+				new FlxTimer().start(1.2, function(tmr:FlxTimer)
+					{
+						finishThing();
+						kill();
+					});
+				};
+
 			if (dialogueList[1] == null && dialogueList[0] != null)
 			{
 				if (!isEnding)

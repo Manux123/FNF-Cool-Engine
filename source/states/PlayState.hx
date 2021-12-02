@@ -49,95 +49,6 @@ import Discord.DiscordClient;
 
 using StringTools;
 
-class Modcharts{
-/*
-	inline public static var SOUND_EXT = #if web "mp3" #else "ogg" #end;
-	private var modcharts:Bool = false;
-	var si_song:SwagSong;
-	var si_time:String = time();
-
-	inline static private function json(key:String, ?library:String)
-	{
-		if(modcharts = true)
-			return getPath('modcharts/$key.json', TEXT, library);
-	}
-
-	/*
-	EXAMPLE:
-		"song":'Bopeebo'
-		{
-			"events":[{
-				{
-					changeDad = 'bf'
-				}
-				{
-					changeDad = 'pico'
-				}
-				{
-					changeDad = 'gf'
-				}
-			}],
-
-			"time":[{
-				curStep = 142,
-				curStep = 232,
-				curStep = 342
-			}]
-		}
-	*/
-		/*
-	function song():Void{
-		if (states.PlayState.SONG != null)
-			si_song = states.PlayState.SONG;
-		else
-		{
-			si_song = {
-				song: 'Bopeebo',
-				"events": [],
-
-				si_time:[],
-			};
-		}
-		events();
-	}
-
-	function events():Void{
-		changeDad();
-		changeBF();
-		songSpeedChange();
-	}
-
-	function changeBF():Void{
-		var P1:String;
-		var boyfriend:Character;
-		var add:PlayState;
-		var remove:PlayState;
-		remove(boyfriend);
-		boyfriend = new Character(boyfriend.x, boyfriend.y, P1);
-		add(boyfriend);
-	}
-
-	function changeDad():Void{
-		var P2:String;
-		var dad:Character;
-		var add:PlayState;
-		var remove:PlayState;
-		remove(dad);
-		dad = new Character(dad.x, dad.y, P2);
-		add(dad);
-	}
-
-	function time():Void{
-		var curStep:Int = MusicBeatState;
-		si_time = curStep;
-	}
-
-	function songSpeedChange():Void{
-		var SPEED:String;
-		var NUMBER:Int = states.PlayState.SONG.speed;
-		SPEED = NUMBER;
-	}*/
-}
 class PlayState extends states.MusicBeatState
 {
 	public static var curStage:String = '';
@@ -257,11 +168,6 @@ class PlayState extends states.MusicBeatState
 	public static var daPixelZoom:Float = 6;
 
 	//Movent Camera
-	public static var dadnoteMovementXoffset:Int = 0;
-	public static var dadnoteMovementYoffset:Int = 0;
-
-	public static var bfnoteMovementXoffset:Int = 0;
-	public static var bfnoteMovementYoffset:Int = 0;
 
 	//Notes handle stuff
 	public static var noteSkinPixelTex:BitmapData;
@@ -297,12 +203,6 @@ class PlayState extends states.MusicBeatState
 		accuracy = 0;
 
 		songScore = 0; //LOL
-
-		dadnoteMovementXoffset = 0;
-		dadnoteMovementYoffset = 0;
-
-		bfnoteMovementXoffset = 0;
-		bfnoteMovementYoffset = 0;
 
 		#if desktop
 		// Making difficulty text for Discord Rich Presence.
@@ -760,7 +660,8 @@ class PlayState extends states.MusicBeatState
 			}
 		}
 
-		var gfVersion:String = 'gf';
+		var gfVersion:String = SONG.player3;
+		//gfVersion.scrollFactor.set(0.95, 0.95);
 
 		switch (curStage)
 		{
@@ -772,20 +673,18 @@ class PlayState extends states.MusicBeatState
 				gfVersion = 'gf-pixel';
 			case 'schoolEvil':
 				gfVersion = 'gf-pixel';
+			default:
+				gfVersion = 'gf';
 		}
 
 		if (curStage == 'limo')
 			gfVersion = 'gf-car';
 
-		gf = new Character(400, 130, gfVersion);
-		gf.scrollFactor.set(0.95, 0.95);
-
 		dad = new Character(100, 100, SONG.player2);
 
 		camPos = new FlxPoint(dad.getGraphicMidpoint().x, dad.getGraphicMidpoint().y);
 
-		switch (SONG.player2)
-		{
+		switch (SONG.player3){
 			case 'gf':
 				dad.setPosition(gf.x, gf.y);
 				gf.visible = false;
@@ -794,7 +693,9 @@ class PlayState extends states.MusicBeatState
 					camPos.x += 600;
 					tweenCamIn();
 				}
-
+		}
+		switch (SONG.player2)
+		{
 			case "spooky":
 				dad.y += 200;
 			case "monster":
@@ -1799,6 +1700,9 @@ class PlayState extends states.MusicBeatState
 		/* if (FlxG.keys.justPressed.NINE)
 			FlxG.switchState(new Charting()); */
 
+		if (FlxG.keys.justPressed.SEVEN)
+			FlxG.switchState(new AnimationDebug(SONG.player3));
+
 		if (FlxG.keys.justPressed.EIGHT)
 			FlxG.switchState(new AnimationDebug(SONG.player2));
 
@@ -1843,7 +1747,9 @@ class PlayState extends states.MusicBeatState
 
 			if (camFollow.x != dad.getMidpoint().x + 150 && !PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection)
 			{
-				camFollow.setPosition(dad.getMidpoint().x + 150 + dadnoteMovementXoffset, dad.getMidpoint().y - 100 + dadnoteMovementYoffset);
+				var offsetX = 0;
+				var offsetY = 0;
+				camFollow.setPosition(dad.getMidpoint().x + 150 + offsetX, dad.getMidpoint().y - 100 + offsetY);
 				// camFollow.setPosition(lucky.getMidpoint().x - 120, lucky.getMidpoint().y + 210);
 
 				switch (dad.curCharacter)
@@ -1868,12 +1774,14 @@ class PlayState extends states.MusicBeatState
 
 			if (PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection && camFollow.x != boyfriend.getMidpoint().x - 100)
 			{
-				camFollow.setPosition(boyfriend.getMidpoint().x - 100 + bfnoteMovementXoffset, boyfriend.getMidpoint().y - 100 + bfnoteMovementYoffset);
+				var offsetX = 0;
+				var offsetY = 0;
+				camFollow.setPosition(boyfriend.getMidpoint().x - 100 + offsetX, boyfriend.getMidpoint().y - 100 + offsetY);
 
 				switch (curStage)
 				{
 					case 'limo':
-						camFollow.x = boyfriend.getMidpoint().x - 300 + bfnoteMovementXoffset;
+						camFollow.x = boyfriend.getMidpoint().x - 300;
 					case 'mall':
 						camFollow.y = boyfriend.getMidpoint().y - 200;
 					case 'spooky':
@@ -2007,11 +1915,6 @@ class PlayState extends states.MusicBeatState
 			}
 		}
 
-		if (dad.animation.curAnim.name.startsWith('idle')) {
-			dadnoteMovementYoffset = 0;
-			dadnoteMovementXoffset = 0;
-		}
-
 		if (generatedMusic)
 			{
 				notes.forEachAlive(function(daNote:Note)
@@ -2045,20 +1948,26 @@ class PlayState extends states.MusicBeatState
 						{
 							case 2:
 								dad.playAnim('singUP' + altAnim, true);
-								dadnoteMovementYoffset = -30;
-								dadnoteMovementXoffset = 0;
 							case 3:
 								dad.playAnim('singRIGHT' + altAnim, true);
-								dadnoteMovementXoffset = 30;
-								dadnoteMovementYoffset = 0;
 							case 1:
 								dad.playAnim('singDOWN' + altAnim, true);
-								dadnoteMovementYoffset = 30;
-								dadnoteMovementXoffset = 0;
 							case 0:
 								dad.playAnim('singLEFT' + altAnim, true);
-								dadnoteMovementXoffset = -30;
-								dadnoteMovementYoffset = 0;
+						}
+					}
+
+					if (gf.canSing){
+						switch (Math.abs(daNote.noteData))
+						{
+							case 2:
+								gf.playAnim('singUP' + altAnim, true);
+							case 3:
+								gf.playAnim('singRIGHT' + altAnim, true);
+							case 1:
+								gf.playAnim('singDOWN' + altAnim, true);
+							case 0:
+								gf.playAnim('singLEFT' + altAnim, true);
 						}
 					}
 				
@@ -2905,23 +2814,6 @@ class PlayState extends states.MusicBeatState
 							case 0:
 								boyfriend.playAnim('singLEFT', true);
 						}
-					if (!curStage.startsWith('school')){
-						switch (note.noteData)
-						{
-							case 2:
-								bfnoteMovementYoffset = -30;
-								bfnoteMovementXoffset = 0;
-							case 3:
-								bfnoteMovementXoffset = 30;
-								bfnoteMovementYoffset = 0;
-							case 1:
-								bfnoteMovementYoffset = 30;
-								bfnoteMovementXoffset = 0;
-							case 0:
-								bfnoteMovementXoffset = -30;
-								bfnoteMovementYoffset = 0;
-						}
-					}
 				}
 		
 					playerStrums.forEach(function(spr:FlxSprite)

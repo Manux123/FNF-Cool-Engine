@@ -31,6 +31,7 @@ class AnimationDebug extends FlxState
 	var UI_box:FlxUITabMenu;
 	var bf:Boyfriend;
 	var dad:Character;
+	var gf:Character;
 	var char:Character;
 	var textAnim:FlxText;
 	var textcontrols:FlxText;
@@ -39,6 +40,7 @@ class AnimationDebug extends FlxState
 	var animList:Array<String> = [];
 	var curAnim:Int = 0;
 	var isDad:Bool = true;
+	var isGF:Bool = true;
 	var daAnim:String = 'spooky';
 	var camFollow:FlxObject;
 	var camHUD:FlxCamera;
@@ -189,11 +191,19 @@ class AnimationDebug extends FlxState
 
 		if (daAnim == 'bf')
 			isDad = false;
-		else
+			isGF = false;
+		if(daAnim == 'gf')
+			isDad = false;
+			isGF = true;
+		if(daAnim == 'dad')
 			isDad = true;
+			isGF = false;
 
 		if(dad!=null)
 			layeringbullshit.remove(dad);
+
+		if(gf!=null)
+			layeringbullshit.remove(gf);
 
 		if(bf!=null)
 			layeringbullshit.remove(bf);
@@ -218,6 +228,17 @@ class AnimationDebug extends FlxState
 
 			char = dad;
 			dad.flipX = player.checked;
+		}
+		if (isGF)
+		{
+
+			gf = new Character(0, 0, daAnim);
+			gf.screenCenter();
+			gf.debugMode = true;
+			layeringbullshit.add(gf);
+
+			char = gf;
+			gf.flipX = player.checked;
 		}
 		else
 		{

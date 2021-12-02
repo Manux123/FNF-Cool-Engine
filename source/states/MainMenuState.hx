@@ -83,33 +83,22 @@ class MainMenuState extends states.MusicBeatState
 		add(bg);
 
 		menuItems = new FlxTypedGroup<FlxSprite>();
-		add(menuItems);
-
-		var tex = Paths.getSparrowAtlas('menu/FNF_main_menu_assets');
-
-		for (i in 0...optionShit.length)
-		{
-			menuItem = new FlxSprite(900 , 8 + (i * -175));
-			menuItem.frames = tex;
-			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
-			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
-			menuItem.animation.play('idle');
-			menuItem.ID = i;
-			// menuItem.screenCenter(X);
-			menuItems.add(menuItem);
-			menuItem.scrollFactor.set();
-			menuItem.antialiasing = true;
-			menuItem.setGraphicSize(Std.int(menuItem.width * 0.8));
-			menuItem.updateHitbox();
-			if (firstStart)
-				FlxTween.tween(menuItem,{y: 60 + (i * 200)},1 + (i * 0.25) ,{ease: FlxEase.expoInOut, onComplete: function(flxTween:FlxTween) 
-					{ 
-						finishedFunnyMove = true; 
-					}});
-			else
-				menuItem.y = 60 + (i * 200);
+		var offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;
+		var menuItem:FlxSprite = new FlxSprite(0, (i * 140)  + offset);
+		menuItem.frames = Paths.getSparrowAtlas('mainmenu/menu_' + optionShit[i]);
+		menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
+		menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
+		menuItem.animation.play('idle');
+		menuItem.ID = i;
+		menuItem.screenCenter(X);
+		menuItems.add(menuItem);
+		var scr:Float = (optionShit.length - 4) * 0.135;
+		if(optionShit.length < 6) scr = 0;
+		menuItem.scrollFactor.set(0, scr);
+		menuItem.antialiasing = ClientPrefs.globalAntialiasing;
+		//menuItem.setGraphicSize(Std.int(menuItem.width * 0.58));
+		menuItem.updateHitbox();
 		}
-
 		//FlxG.camera.follow(camFollow, null, 0.06);
 		
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Friday Night Funkin v0.2.7.1", 12);

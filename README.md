@@ -9,7 +9,7 @@
 ## Credits / shoutouts
 - [Manux (me)](https://twitter.com/ActionsAnimati1) - Programmer Friday Night Funkin: Cool Engine
 - [Jloor](https://twitter.com/GamerJloor) - Programmer Friday Night Funkin: Cool Engine
-- [Chasetodie](https://twitter.com/GamerJloor) - Programmer Friday Night Funkin: Cool Engine
+- [Chasetodie](https://twitter.com/Chasetodie10) - Programmer Friday Night Funkin: Cool Engine
 - [MrClogsworthYT](https://youtube.com/c/MrClogsworthYT) - New Freaky Menu remix and changelog code
 - [FairyBoy](https://twitter.com/JulianSamwise?s=09) and [Zero Artist](https://twitter.com/zero_artist02) - Artists Friday Night Funkin: Cool Engine
 

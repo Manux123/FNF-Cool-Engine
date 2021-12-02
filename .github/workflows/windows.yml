@@ -42,6 +42,7 @@ jobs:
           haxelib install flixel-addons
           haxelib install hscript
           haxelib install polymod
+          haxelib install newgrounds
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
           haxelib install hxcpp-debug-server
           haxelib list

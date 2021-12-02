@@ -229,6 +229,8 @@ class PlayState extends states.MusicBeatState
 				iconRPC = 'mom';
 		}
 
+
+
 		// String that contains the mode defined here so it isn't necessary to call changePresence for each mode
 		if (isStoryMode)
 		{
@@ -676,11 +678,14 @@ class PlayState extends states.MusicBeatState
 			}
 		}
 
+		gf = new Character(400, 130, gfVersion);
+		gf.scrollFactor.set(0.95, 0.95);
+
 		dad = new Character(100, 100, SONG.player2);
 
 		camPos = new FlxPoint(dad.getGraphicMidpoint().x, dad.getGraphicMidpoint().y);
 
-		switch (SONG.player3){
+		switch (SONG.player2){ //Its player2 cuz its used when gf is the enemy
 			case 'gf':
 				dad.setPosition(gf.x, gf.y);
 				gf.visible = false;

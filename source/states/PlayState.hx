@@ -661,24 +661,20 @@ class PlayState extends states.MusicBeatState
 		}
 
 		var gfVersion:String = SONG.player3;
-		//gfVersion.scrollFactor.set(0.95, 0.95);
 
-		switch (curStage)
-		{
-			case 'limo':
-				gfVersion = 'gf-car';
-			case 'mall' | 'mallEvil':
-				gfVersion = 'gf-christmas';
-			case 'school':
-				gfVersion = 'gf-pixel';
-			case 'schoolEvil':
-				gfVersion = 'gf-pixel';
-			default:
-				gfVersion = 'gf';
+		if(gfVersion == null || gfVersion.length < 1) {
+			switch (curStage)
+			{
+				case 'limo':
+					gfVersion = 'gf-car';
+				case 'mall' | 'mallEvil':
+					gfVersion = 'gf-christmas';
+				case 'school' | 'schoolEvil':
+					gfVersion = 'gf-pixel';
+				default:
+					gfVersion = 'gf';
+			}
 		}
-
-		if (curStage == 'limo')
-			gfVersion = 'gf-car';
 
 		dad = new Character(100, 100, SONG.player2);
 

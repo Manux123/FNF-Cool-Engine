@@ -388,12 +388,8 @@ class TitleState extends states.MusicBeatState
 			case 5:
 				createCoolText(['Cool Engine', 'by']);
 			case 7:
-				// NO, we aren't gonna put every single fucking person that helps on the engine here
+				// I can just put the original engine creator instead of every single fucking person that helps with it
 				addMoreText('Manux');
-				addMoreText('JLoor');
-				addMoreText('Chasetodie');
-				addMoreText('Juanen');
-				addMoreText('Strexx');
 			// credTextShit.text += '\nNewgrounds';
 			case 8:
 				deleteCoolText();

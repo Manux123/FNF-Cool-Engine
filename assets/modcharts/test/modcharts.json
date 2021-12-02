@@ -1,10 +1,10 @@
 {
 	"modchart":{
 			"events":[{
-				{"event": "changeDad", "value": "bf"},
+				"event": "changeDad", "value": "bf"},
 				{"event": "changeDad", "value": "pico"},
 				{"event": "changeBf", "value": "dad"}
-			}],
+			],
 			"steps":[{
 				"step": 45, "step": 142, "step": 234
 			}]

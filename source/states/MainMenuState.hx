@@ -82,6 +82,9 @@ class MainMenuState extends states.MusicBeatState
 		bg.antialiasing = true;
 		add(bg);
 
+		menuItems = new FlxTypedGroup<FlxSprite>();
+		add(menuItems);
+
 		for (i in 0...optionShit.length)
 		{
 			var offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;

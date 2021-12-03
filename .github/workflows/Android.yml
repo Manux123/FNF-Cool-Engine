@@ -60,6 +60,7 @@ jobs:
           haxelib install hscript --quiet
           haxelib git faxe https://github.com/uhrobots/faxe --quiet
           haxelib install Polymod --quiet
+          haxelib install actuate --quiet
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc --quiet
           haxelib install linc_luajit  --quiet  
           haxelib list

@@ -64,7 +64,7 @@ class CreditsState extends MusicBeatState
 			if(isSelectable) {
 				optionText.x -= 70;
 			}
-			optionText.forceX = optionText.x;
+			//optionText.forceX = optionText.x;
 			//optionText.yMult = 90;
 			optionText.targetY = i;
 			grpOptions.add(optionText);
@@ -99,8 +99,8 @@ class CreditsState extends MusicBeatState
 			FlxG.sound.music.volume += 0.5 * FlxG.elapsed;
 		}
 
-		var upP = controls.UI_UP_P;
-		var downP = controls.UI_DOWN_P;
+		var upP = controls.UP_P;
+		var downP = controls.DOWN_P;
 
 		if (upP)
 		{
@@ -117,10 +117,14 @@ class CreditsState extends MusicBeatState
 				colorTween.cancel();
 			}
 			FlxG.sound.play(Paths.sound('cancelMenu'));
-			MusicBeatState.switchState(new MainMenuState());
+			FlxG.switchState(new MainMenuState());
 		}
 		if(controls.ACCEPT) {
-			CoolUtil.browserLoad(creditsStuff[curSelected][3]);
+			#if linux
+			Sys.command('/usr/bin/xdg-open', (creditsStuff[curSelected][3])]);
+			#else
+			FlxG.openURL(creditsStuff[curSelected][3]);
+			#end
 		}
 		super.update(elapsed);
 	}

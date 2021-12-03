@@ -1,4 +1,4 @@
-package states;
+/*package states;
 
 #if desktop
 import Discord.DiscordClient;
@@ -26,9 +26,9 @@ class CreditsState extends MusicBeatState
 	private static var creditsStuff:Array<Dynamic> = [ //Name - Icon name - Description - Link - BG Color
 		['Cool engine'],
 		['Manux',		'manux',		'Main Programmer of cool Engine',					'https://twitter.com/Manux',	0xFFFFDD33],
-        [''],
+                [''],
 		['Engine Contributors'],
-        ['Clogsworth',  'clogsworth',		'Additional Programmer and Musician of cool Engine',				'https://twitter.com/Manux',	0xFFFFFFFF],
+                ['Clogsworth',  'clogsworth',		'Additional Programmer and Musician of cool Engine',				'https://twitter.com/Manux',	0xFFFFFFFF],
 		[''],
 		["Funkin' Crew"],
 		['ninjamuffin99',		'ninjamuffin99',	"Programmer of Friday Night Funkin'",				'https://twitter.com/ninja_muffin99',	0xFFF73838],
@@ -172,4 +172,4 @@ class CreditsState extends MusicBeatState
 	private function unselectableCheck(num:Int):Bool {
 		return creditsStuff[num].length <= 1;
 	}
-}
+}*\

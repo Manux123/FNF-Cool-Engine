@@ -98,7 +98,6 @@ class MainMenuState extends states.MusicBeatState
 		menuItem.antialiasing = ClientPrefs.globalAntialiasing;
 		//menuItem.setGraphicSize(Std.int(menuItem.width * 0.58));
 		menuItem.updateHitbox();
-		}
 		//FlxG.camera.follow(camFollow, null, 0.06);
 		
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Friday Night Funkin v0.2.7.1", 12);

@@ -462,7 +462,8 @@ class OptimizationOptions extends states.MusicBeatState
 	var options:Array<Option> = [
 		new StaticStageOption(),
 		new ByePeople(),
-        new ByeGF()
+        new ByeGF(),
+		//new EffectsOption()
 	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
@@ -1026,6 +1027,21 @@ class NoteSplashesOption extends Option
 	}
 }
 
+class EffectsOption extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.specialVisualEffects = !FlxG.save.data.specialVisualEffects;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return FlxG.save.data.specialVisualEffects ? "Visual Effects On" : "Visual Effects Off";
+	}
+}
+
 class OptionsData
 {
 	public static function initSave()
@@ -1062,6 +1078,9 @@ class OptionsData
 
 			if(FlxG.save.data.staticstage = null)
 				FlxG.save.data.staticstage = false;
+
+			if(FlxG.save.data.specialVisualEffects = null)
+				FlxG.save.data.specialVisualEffects = true;
 
 			if(FlxG.save.data.gfbye = null)
 				FlxG.save.data.gfbye = false;

@@ -139,6 +139,7 @@ class PlayState extends states.MusicBeatState
 
 	var RatingType:String = "sick";
 	var daNote:Note;
+	var specialAnim:Bool = false;
 
 	var limo:FlxSprite;
 	var grpLimoDancers:FlxTypedGroup<BackgroundDancer>;
@@ -178,6 +179,12 @@ class PlayState extends states.MusicBeatState
 
 	public static var timeCurrently:Float = 0;
 	public static var timeCurrentlyR:Float = 0;
+
+	public static var dadnoteMovementXoffset:Int = 0;
+	public static var dadnoteMovementYoffset:Int = 0;
+
+	public static var bfnoteMovementXoffset:Int = 0;
+	public static var bfnoteMovementYoffset:Int = 0;
 
 	override public function create()
 	{
@@ -262,6 +269,12 @@ class PlayState extends states.MusicBeatState
 		persistentUpdate = true;
 		persistentDraw = true;
 
+		dadnoteMovementXoffset = 0;
+		dadnoteMovementYoffset = 0;
+
+		bfnoteMovementXoffset = 0;
+		bfnoteMovementYoffset = 0;
+		
 		if (SONG == null)
 			SONG = Song.loadFromJson('tutorial');
 
@@ -713,11 +726,11 @@ class PlayState extends states.MusicBeatState
 			case 'senpai' | 'senpai-angry':
 				dad.x += 150;
 				dad.y += 360;
-				camPos.set(dad.getGraphicMidpoint().x + 300, dad.getGraphicMidpoint().y);
+				camPos.set(dad.getGraphicMidpoint().x + 300 + dadnoteMovementXoffset, dad.getGraphicMidpoint().y + dadnoteMovementYoffset);
 			case 'spirit':
 				dad.x -= 150;
 				dad.y += 100;
-				camPos.set(dad.getGraphicMidpoint().x + 300, dad.getGraphicMidpoint().y);
+				camPos.set(dad.getGraphicMidpoint().x + 300 + dadnoteMovementXoffset, dad.getGraphicMidpoint().y + dadnoteMovementYoffset);
 		}
 
 
@@ -1643,8 +1656,8 @@ class PlayState extends states.MusicBeatState
 
 		if (FlxG.save.data.accuracyDisplay)
 		{
-			scoreTxt.text = "Score:" + songScore + " | Misses:" + misses;
-			scoreTxt2.text = "Accuracy: " + reduceFloat(accuracy, 2) + "% | Rank: " + generateLetterRank();
+			scoreTxt.text = "Score:" + songScore + " // Misses:" + misses;
+			scoreTxt2.text = "Accuracy: " + reduceFloat(accuracy, 2) + "% // Rank: " + generateLetterRank();
 		}
 		else
 		{
@@ -1746,7 +1759,7 @@ class PlayState extends states.MusicBeatState
 				// trace(PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection);
 			}
 
-			if (camFollow.x != dad.getMidpoint().x + 150 && !PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection)
+			if (!PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection)
 			{
 				var offsetX = 0;
 				var offsetY = 0;
@@ -1756,12 +1769,12 @@ class PlayState extends states.MusicBeatState
 				switch (dad.curCharacter)
 				{
 					case 'mom':
-						camFollow.y = dad.getMidpoint().y;
+						camFollow.y = dad.getMidpoint().y + dadnoteMovementYoffset;
 					case 'senpai' | 'senpai-angry':
-						camFollow.y = dad.getMidpoint().y - 430;
-						camFollow.x = dad.getMidpoint().x - 100;
+						camFollow.y = dad.getMidpoint().y - 430 + dadnoteMovementYoffset;
+						camFollow.x = dad.getMidpoint().x - 100 + dadnoteMovementXoffset;
 					case 'bf-pixel-enemy':
-						camFollow.y = dad.getMidpoint().y - 150;
+						camFollow.y = dad.getMidpoint().y - 150 + dadnoteMovementXoffset;
 				}
 
 				if (dad.curCharacter == 'mom')
@@ -1773,7 +1786,7 @@ class PlayState extends states.MusicBeatState
 				}
 			}
 
-			if (PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection && camFollow.x != boyfriend.getMidpoint().x - 100)
+			if (PlayState.SONG.notes[Std.int(curStep / 16)].mustHitSection)
 			{
 				var offsetX = 0;
 				var offsetY = 0;
@@ -1782,24 +1795,25 @@ class PlayState extends states.MusicBeatState
 				switch (curStage)
 				{
 					case 'limo':
-						camFollow.x = boyfriend.getMidpoint().x - 300;
+						camFollow.x = boyfriend.getMidpoint().x - 300 + bfnoteMovementXoffset;
 					case 'mall':
-						camFollow.y = boyfriend.getMidpoint().y - 200;
+						camFollow.y = boyfriend.getMidpoint().y - 200 + bfnoteMovementYoffset;
 					case 'spooky':
 						camFollow.y = boyfriend.getMidpoint().y - 150;
-				}
-
-				switch (boyfriend.curCharacter)
-				{
-					case 'bf-pixel':
-						camFollow.x = boyfriend.getMidpoint().x - 200;
-						camFollow.y = boyfriend.getMidpoint().y - 200;
+					case 'school' | 'schoolEvil':
+						camFollow.x = boyfriend.getMidpoint().x - 200 + bfnoteMovementXoffset;
+						camFollow.y = boyfriend.getMidpoint().y - 200 + bfnoteMovementYoffset;
 				}
 
 				if (SONG.song.toLowerCase() == 'tutorial') {
 					FlxTween.tween(FlxG.camera, {zoom: 1}, (Conductor.stepCrochet * 4 / 1000), {ease: FlxEase.elasticInOut});
 				}
 			}
+		}
+
+		if (boyfriend.animation.curAnim.name.startsWith('idle')) {
+			bfnoteMovementYoffset = 0;
+			bfnoteMovementXoffset = 0;
 		}
 
 		if (camZooming)
@@ -1916,6 +1930,11 @@ class PlayState extends states.MusicBeatState
 			}
 		}
 
+		if (dad.animation.curAnim.name.startsWith('idle')) {
+			dadnoteMovementYoffset = 0;
+			dadnoteMovementXoffset = 0;
+		}
+		
 		if (generatedMusic)
 			{
 				notes.forEachAlive(function(daNote:Note)
@@ -2815,6 +2834,23 @@ class PlayState extends states.MusicBeatState
 							case 0:
 								boyfriend.playAnim('singLEFT', true);
 						}
+					if (!curStage.startsWith('schoolEvil')){
+						switch (note.noteData)
+						{
+							case 2:
+								bfnoteMovementYoffset = -50;
+								bfnoteMovementXoffset = 0;
+							case 3:
+								bfnoteMovementXoffset = 50;
+								bfnoteMovementYoffset = 0;
+							case 1:
+								bfnoteMovementYoffset = 50;
+								bfnoteMovementXoffset = 0;
+							case 0:
+								bfnoteMovementXoffset = -50;
+								bfnoteMovementYoffset = 0;
+						}
+					}
 				}
 		
 					playerStrums.forEach(function(spr:FlxSprite)
@@ -2849,7 +2885,7 @@ class PlayState extends states.MusicBeatState
 				ratingf.acceleration.y = 550;
 				ratingf.velocity.y -= FlxG.random.int(140, 175);
 				ratingf.velocity.x -= FlxG.random.int(0, 10);
-				//add(ratingf);
+				add(ratingf);
 
 				if (!curStage.startsWith('school'))
 					{
@@ -2998,6 +3034,7 @@ class PlayState extends states.MusicBeatState
 
 	var lightningStrikeBeat:Int = 0;
 	var lightningOffset:Int = 8;
+	var spookydance:Bool = false;
 
 	override function beatHit()
 	{
@@ -3011,17 +3048,25 @@ class PlayState extends states.MusicBeatState
 		if (SONG.notes[Math.floor(curStep / 16)] != null)
 		{
 			if (SONG.notes[Math.floor(curStep / 16)].changeBPM)
-			{
-				Conductor.changeBPM(SONG.notes[Math.floor(curStep / 16)].bpm);
-				FlxG.log.add('CHANGED BPM!');
-			}
-			// else
-			// Conductor.changeBPM(SONG.bpm);
-
-			// Dad doesnt interupt his own notes
-			if (SONG.notes[Math.floor(curStep / 16)].mustHitSection)
-				dad.dance();
-		}
+				{
+					Conductor.changeBPM(SONG.notes[Math.floor(curStep / 16)].bpm);
+					FlxG.log.add('CHANGED BPM!');
+				}
+		if (SONG.notes[Math.floor(curStep / 16)].mustHitSection){
+			switch(dad.curCharacter){
+				case 'spooky': 
+					if (spookydance == true){
+						spookydance = false;
+						dad.playAnim('danceRight');
+					}
+					else{
+						spookydance = true;
+						dad.playAnim('danceLeft');
+					}
+				default: 
+					dad.dance();
+				}
+		}}
 		// FlxG.log.add('change bpm' + SONG.notes[Std.int(curStep / 16)].changeBPM);
 		wiggleShit.update(Conductor.crochet);
 
@@ -3049,18 +3094,45 @@ class PlayState extends states.MusicBeatState
 			gf.dance();
 		}
 
-		if (!boyfriend.animation.curAnim.name.startsWith("sing"))
+		if (!boyfriend.animation.curAnim.name.startsWith("sing") && boyfriend.canSing == true)
 		{
 			boyfriend.playAnim('idle');
+			specialAnim = true;
 		}
+
+		if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing == true)
+			{
+				switch(dad.curCharacter){
+					case 'spooky': 
+						if (spookydance == true){
+							spookydance = false;
+							dad.playAnim('danceRight');
+						}
+						else{
+							spookydance = true;
+							dad.playAnim('danceLeft');
+						}
+					default: 
+						dad.dance();
+					}
+			}
 
 		if (curBeat % 8 == 7 && curSong == 'Bopeebo')
 		{
 			boyfriend.playAnim('hey', true);
-
+			specialAnim = true;
 			if (SONG.song == 'Tutorial' && dad.curCharacter == 'gf')
 			{
 				dad.playAnim('cheer', true);
+				specialAnim = true;
+			}
+		}
+
+		if(FlxG.save.data.specialVisualEffects){if(curBeat == 24 && curSong == 'Philly'){
+				FlxTween.tween(camHUD, {y: camHUD.y + 200}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
+			}
+			if(curBeat == 31 && curSong == 'Philly'){
+				FlxTween.tween(camHUD, {y: camHUD.y - 200}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
 			}
 		}
 

@@ -478,8 +478,8 @@ class Character extends FlxSprite
 			if (!AnimName.startsWith("sing") && AnimName != 'idle'){
 				canSing = true;
 					animation.finishCallback = function(lol:String)
-						{
-							canSing = true;
+					{
+						canSing = true;
 					}
 			}
 	

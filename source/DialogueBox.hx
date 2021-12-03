@@ -147,6 +147,7 @@ class DialogueBox extends FlxSpriteGroup
 
 	var dialogueOpened:Bool = false;
 	var dialogueStarted:Bool = false;
+	var textcontrols:FlxText;
 
 	override function update(elapsed:Float)
 	{
@@ -224,6 +225,14 @@ class DialogueBox extends FlxSpriteGroup
 				startDialogue();
 			}
 		}
+
+		textcontrols = new FlxText(0,50,'Press SHIFT for skip dialogue');
+        textcontrols.size = 28;
+		textcontrols.y += 100;
+        textcontrols.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);
+        textcontrols.color = FlxColor.WHITE;
+        textcontrols.scrollFactor.set();
+        add(textcontrols);
 		
 		super.update(elapsed);
 	}

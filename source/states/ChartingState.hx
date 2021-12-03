@@ -72,6 +72,7 @@ class ChartingState extends states.MusicBeatState
 
 	var curRenderedNotes:FlxTypedGroup<Note>;
 	var curRenderedSustains:FlxTypedGroup<FlxSprite>;
+	var curRenderedSustains2:FlxTypedGroup<FlxSprite>;
 
 	var gridBG:FlxSprite;
 
@@ -105,9 +106,6 @@ class ChartingState extends states.MusicBeatState
 		bg.antialiasing = true;
 		add(bg);
 
-		FlxG.watch.addQuick("beats", curBeat);
-		FlxG.watch.addQuick("steps", curStep);
-
 		gridBG = FlxGridOverlay.create(GRID_SIZE, GRID_SIZE, GRID_SIZE * 8, GRID_SIZE * 16);
 		add(gridBG);
 
@@ -135,6 +133,11 @@ class ChartingState extends states.MusicBeatState
 
 		curRenderedNotes = new FlxTypedGroup<Note>();
 		curRenderedSustains = new FlxTypedGroup<FlxSprite>();
+		curRenderedSustains2 = new FlxTypedGroup<FlxSprite>();
+
+		curStep = recalculateSteps();
+
+		curBeat = recalculateBeats();
 
 		if (states.PlayState.SONG != null)
 			_song = states.PlayState.SONG;
@@ -199,6 +202,7 @@ class ChartingState extends states.MusicBeatState
 
 		add(curRenderedNotes);
 		add(curRenderedSustains);
+		add(curRenderedSustains2);
 
 		super.create();
 	}
@@ -262,19 +266,18 @@ class ChartingState extends states.MusicBeatState
 		});
 		player1DropDown.selectedLabel = _song.player1;
 
-		var player2DropDown = new FlxUIDropDownMenu(260, 100, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
+		var player2DropDown = new FlxUIDropDownMenu(130, 100, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
 		{
 			_song.player2 = characters[Std.parseInt(character)];
 		});
 
-		var player3DropDown = new FlxUIDropDownMenu(130, 100, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
+		var player3DropDown = new FlxUIDropDownMenu(0, 140, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
 		{
 			_song.player3 = characters[Std.parseInt(character)];
 		});
-		//player3DropDown.selectedLabel = _song.player3;
+		player3DropDown.selectedLabel = _song.player3;
 
 		player2DropDown.selectedLabel = _song.player2;
-		player3DropDown.selectedLabel = _song.player3;
 
 		var tab_group_song = new FlxUI(null, UI_box);
 		tab_group_song.name = "Song";
@@ -488,7 +491,7 @@ class ChartingState extends states.MusicBeatState
 			}
 			else if (wname == 'note_susLength')
 			{
-				curSelectedNote[2] = nums.value;
+				curSelectedNote[3] = nums.value;
 				updateGrid();
 			}
 			else if (wname == 'section_bpm')
@@ -528,8 +531,6 @@ class ChartingState extends states.MusicBeatState
 
 	override function update(elapsed:Float)
 	{
-		curStep = recalculateSteps();
-
 		Conductor.songPosition = FlxG.sound.music.time;
 		_song.song = typingShit.text;
 
@@ -762,6 +763,13 @@ class ChartingState extends states.MusicBeatState
 		return curStep;
 	}
 
+	function recalculateBeats():Int
+	{
+		curBeat = Math.floor(curStep / 4);
+
+		return curBeat;
+	}
+
 	function resetSection(songBeginning:Bool = false):Void
 	{
 		updateGrid();
@@ -881,6 +889,11 @@ class ChartingState extends states.MusicBeatState
 			curRenderedSustains.remove(curRenderedSustains.members[0], true);
 		}
 
+		while (curRenderedSustains2.members.length > 0)
+		{
+			curRenderedSustains2.remove(curRenderedSustains2.members[0], true);
+		}
+
 		var sectionInfo:Array<Dynamic> = _song.notes[curSection].sectionNotes;
 
 		if (_song.notes[curSection].changeBPM && _song.notes[curSection].bpm > 0)
@@ -929,10 +942,17 @@ class ChartingState extends states.MusicBeatState
 
 			if (daSus > 0)
 			{
-				var sustainVis:FlxSprite = new FlxSprite(note.x + (GRID_SIZE / 2),
+				var sustainVis:FlxSprite = new FlxSprite(note.x + (GRID_SIZE / 3),
 					note.y + GRID_SIZE).makeGraphic(8, Math.floor(FlxMath.remapToRange(daSus, 0, Conductor.stepCrochet * 16, 0, gridBG.height)));
 				curRenderedSustains.add(sustainVis);
 			}
+/*
+			if (daSus2 > 0)
+			{
+				var sustainVis2:FlxSprite = new FlxSprite(note.x + (GRID_SIZE / 2),
+					note.y + GRID_SIZE).makeGraphic(8, Math.floor(FlxMath.remapToRange(daSus2, 0, Conductor.stepCrochet * 16, 0, gridBG.height)));
+				curRenderedSustains2.add(sustainVis2);
+			}*/
 		}
 	}
 

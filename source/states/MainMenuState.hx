@@ -29,10 +29,11 @@ class MainMenuState extends states.MusicBeatState
 	var menuItems:FlxTypedGroup<FlxSprite>;
 
 	#if !switch
-	var optionShit:Array<String> = ['story_mode', 'freeplay', 'options', 'credits'];
+	var optionShit:Array<String> = ['story_mode', 'freeplay', 'options'];
 	#else
-	var optionShit:Array<String> = ['story_mode', 'freeplay', 'credits'];
+	var optionShit:Array<String> = ['story_mode', 'freeplay'];
 	#end
+        //gotta add credits when it's finally fixed
 
 	var magenta:FlxSprite;
 	var canSnap:Array<Float> = [];

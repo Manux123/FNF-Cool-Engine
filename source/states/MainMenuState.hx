@@ -29,9 +29,9 @@ class MainMenuState extends states.MusicBeatState
 	var menuItems:FlxTypedGroup<FlxSprite>;
 
 	#if !switch
-	var optionShit:Array<String> = ['story mode', 'freeplay', 'options', 'credits'];
+	var optionShit:Array<String> = ['story_mode', 'freeplay', 'options', 'credits'];
 	#else
-	var optionShit:Array<String> = ['story mode', 'freeplay', 'credits'];
+	var optionShit:Array<String> = ['story_mode', 'freeplay', 'credits'];
 	#end
 
 	var magenta:FlxSprite;
@@ -165,7 +165,7 @@ class MainMenuState extends states.MusicBeatState
 				}
 				else
 				{
-					FlxTween.tween(menuItem, {x: menuItem.x + 200}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
+					//FlxTween.tween(menuItem, {x: menuItem.x + 200}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
 					selectedSomethin = true;
 					FlxG.sound.play(Paths.sound('confirmMenu'));
 
@@ -185,28 +185,38 @@ class MainMenuState extends states.MusicBeatState
 						}
 						else
 						{
-							FlxFlicker.flicker(spr, 1, 0.06, false, false, function(flick:FlxFlicker)
-							{
-								var daChoice:String = optionShit[curSelected];
-
-								switch (daChoice)
+							menuItems.forEach(function(spr:FlxSprite)
 								{
-									case 'story mode':
-										FlxG.switchState(new StoryMenuState());
-										trace("Story Menu Selected");
-									case 'freeplay':
-										FlxG.switchState(new FreeplayState());
-
-										trace("Freeplay Menu Selected");
-
-									case 'options':
-										FlxG.switchState(new states.OptionsMenuState());
-
-									case 'credits':
-
-										FlxG.switchState(new states.CreditsState());
-								}
-							});
+									if (curSelected != spr.ID)
+									{
+										FlxTween.tween(spr, {alpha: 0}, 0.4, {
+											ease: FlxEase.quadOut,
+											onComplete: function(twn:FlxTween)
+											{
+												spr.kill();
+											}
+										});
+									}
+									else
+									{
+										FlxFlicker.flicker(spr, 1, 0.06, false, false, function(flick:FlxFlicker)
+										{
+											var daChoice:String = optionShit[curSelected];
+			
+											switch (daChoice)
+											{
+												case 'story_mode':
+													FlxG.switchState(new StoryMenuState());
+												case 'freeplay':
+													FlxG.switchState(new FreeplayState());
+												case 'credits':
+													FlxG.switchState(new CreditsState());
+												case 'options':
+													FlxG.switchState(new OptionsMenuState());
+											}
+										});
+									}
+								});
 						}
 					});
 				}
@@ -224,28 +234,27 @@ class MainMenuState extends states.MusicBeatState
 
 	function changeItem(huh:Int = 0)
 	{
-		if (finishedFunnyMove)
-		{
-			curSelected += huh;
+		curSelected += huh;
 
-			if (curSelected >= menuItems.length)
-				curSelected = 0;
-			if (curSelected < 0)
-				curSelected = menuItems.length - 1;
-		}
+		if (curSelected >= menuItems.length)
+			curSelected = 0;
+		if (curSelected < 0)
+			curSelected = menuItems.length - 1;
 
 		menuItems.forEach(function(spr:FlxSprite)
 		{
 			spr.animation.play('idle');
+			spr.offset.y = 0;
+			spr.updateHitbox();
 
-			if (spr.ID == curSelected && finishedFunnyMove)
+			if (spr.ID == curSelected)
 			{
 				spr.animation.play('selected');
-				// camFollow.setPosition(spr.getGraphicMidpoint().x, spr.getGraphicMidpoint().y);
-
+				camFollow.setPosition(spr.getGraphicMidpoint().x, spr.getGraphicMidpoint().y);
+				spr.offset.x = 0.15 * (spr.frameWidth / 2 + 180);
+				spr.offset.y = 0.15 * spr.frameHeight;
+				FlxG.log.add(spr.frameWidth);
 			}
-
-			spr.updateHitbox();
 		});
 	}
 }

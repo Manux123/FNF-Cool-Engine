@@ -26,9 +26,9 @@ class CreditsState extends MusicBeatState
 	private static var creditsStuff:Array<Dynamic> = [ //Name - Icon name - Description - Link - BG Color
 		['Cool engine'],
 		['Manux',		'manux',		'Main Programmer of cool Engine',					'https://twitter.com/Manux',	0xFFFFDD33],
-                [''],
+        [''],
 		['Engine Contributors'],
-                // people who made merged prs 
+        ['Clogsworth',  'clogsworth',		'Additional Programmer and Musician of cool Engine',				'https://twitter.com/Manux',	0xFFFFFFFF],
 		[''],
 		["Funkin' Crew"],
 		['ninjamuffin99',		'ninjamuffin99',	"Programmer of Friday Night Funkin'",				'https://twitter.com/ninja_muffin99',	0xFFF73838],
@@ -46,10 +46,10 @@ class CreditsState extends MusicBeatState
 	{
 		#if desktop
 		// Updating Discord Rich Presence
-		DiscordClient.changePresence("In the Menus", null);
+		DiscordClient.changePresence("In the Credits", null);
 		#end
 
-		bg = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
+		bg = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 		add(bg);
 
 		grpOptions = new FlxTypedGroup<Alphabet>();
@@ -65,7 +65,6 @@ class CreditsState extends MusicBeatState
 				optionText.x -= 70;
 			}
 			//optionText.forceX = optionText.x;
-			//optionText.yMult = 90;
 			optionText.targetY = i;
 			grpOptions.add(optionText);
 

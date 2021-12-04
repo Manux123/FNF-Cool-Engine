@@ -1,4 +1,4 @@
-package states;
+/*package states;
 
 #if desktop
 import Discord.DiscordClient;
@@ -18,7 +18,7 @@ using StringTools;
 
 class CreditsState extends MusicBeatState
 {
-	/*var curSelected:Int = 1;
+	var curSelected:Int = 1;
 
 	private var grpOptions:FlxTypedGroup<Alphabet>;
 	private var iconArray:Array<AttachedSprite> = [];
@@ -172,4 +172,5 @@ class CreditsState extends MusicBeatState
 	private function unselectableCheck(num:Int):Bool {
 		return creditsStuff[num].length <= 1;
 	}
-}*\
+}
+*\

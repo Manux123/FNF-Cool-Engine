@@ -21,11 +21,18 @@ import flixel.system.FlxSound;
 import openfl.utils.Assets as OpenFlAssets;
 
 using StringTools;
+typedef GF BPM =
+{
+	bpm:Int
+}
+           // dont mind me just finna make gf beat her head at the bpm of a song
 
+	
 class FreeplayState extends states.MusicBeatState
 {
 	var toBeFinished = 0;
 	var finished = 0;
+	var gfJSON:GF BPM;
 	//Character head icons for your songs
 	static var songsHeads:Array<Dynamic> = [
 		['dad'],							
@@ -138,6 +145,19 @@ class FreeplayState extends states.MusicBeatState
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("In the FreePlay", null);
 		#end
+			
+		var path = "data/" + Paths.currentDirectory + "GF BPM.json;
+		trace(path, FileSystem.exists(path));
+		if (!FileSystem.exists(path)){
+			path = "data/null/GF BPM.json";
+		}
+		trace(path, FileSystem.exists(path));
+		if (!FileSystem.exists(path)){
+			path = "data/null/GF BPM.json"";
+		}
+		trace(path, FileSystem.exists(path));
+
+		GF BPM = Json.parse(File.getContent(path)); //finna do it l8r
 
 		addSong('Test', 7,'bf-pixel');
 

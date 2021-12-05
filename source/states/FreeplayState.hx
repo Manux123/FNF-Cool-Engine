@@ -149,11 +149,11 @@ class FreeplayState extends states.MusicBeatState
 		var path = "data/" + Paths.currentDirectory + "GFBPM.json;
 		trace(path, FileSystem.exists(path));
 		if (!FileSystem.exists(path)){
-			path = "data/null/GF BPM.json";
+			path = "data/null/GFBPM.json";
 		}
 		trace(path, FileSystem.exists(path));
 		if (!FileSystem.exists(path)){
-			path = "data/null/GF BPM.json"";
+			path = "data/null/GFBPM.json"";
 		}
 		trace(path, FileSystem.exists(path));
 

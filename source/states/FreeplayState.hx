@@ -21,7 +21,7 @@ import flixel.system.FlxSound;
 import openfl.utils.Assets as OpenFlAssets;
 
 using StringTools;
-typedef GF BPM =
+typedef GF-BPM =
 {
 	bpm:Int
 }
@@ -32,7 +32,7 @@ class FreeplayState extends states.MusicBeatState
 {
 	var toBeFinished = 0;
 	var finished = 0;
-	var gfJSON:GF BPM;
+	var gfJSON:GF-BPM;
 	//Character head icons for your songs
 	static var songsHeads:Array<Dynamic> = [
 		['dad'],							
@@ -146,7 +146,7 @@ class FreeplayState extends states.MusicBeatState
 		DiscordClient.changePresence("In the FreePlay", null);
 		#end
 			
-		var path = "data/" + Paths.currentDirectory + "GF BPM.json;
+		var path = "data/" + Paths.currentDirectory + "GF-BPM.json;
 		trace(path, FileSystem.exists(path));
 		if (!FileSystem.exists(path)){
 			path = "data/null/GF BPM.json";

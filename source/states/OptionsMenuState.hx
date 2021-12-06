@@ -37,12 +37,14 @@ class OptionsMenuState extends states.MusicBeatState
 	{
 		menuBG = new FlxSprite().loadGraphic(Paths.image('menu/menuBG'));
 		controlsStrings = CoolUtil.coolStringFile(
+			("\n" + 'GameJolt login') +
 			("\n" + 'Preferences') +
 			("\n" + 'Game Options') +
 			("\n" + 'Optimization') +
 			("\n" + 'Note Skin') +
 			("\n" + 'Controls') +
 			("\n" + 'Exit'));
+			
 		
 		//trace(controlsStrings);
 
@@ -132,7 +134,7 @@ class OptionsMenuState extends states.MusicBeatState
 						FlxG.switchState(new KeyBindMenu());
 						#end
 					case 5:
-						FlxG.switchState(new MainMenuState());
+						FlxG.switchState(new GameJoltLogin());
 				}
 			}
 		FlxG.save.flush();

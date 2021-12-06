@@ -29,6 +29,7 @@ Each trophy has an ID attached to it. Use that to give a trophy. It could be use
 Hope this helps! -tenta
 And yes, I run Mac. A fate worse than death.
 */
+package states;
 
 import flixel.ui.FlxButton;
 import flixel.text.FlxText;

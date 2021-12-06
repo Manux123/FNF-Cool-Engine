@@ -89,6 +89,9 @@ class CreditsState extends MusicBeatState
 		intendedColor = bg.color;
 		changeSelection();
 		super.create();
+		#if mobileC
+		addVirtualPad(UP_DOWN, A_B);
+		#end
 	}
 
 	override function update(elapsed:Float)

@@ -95,6 +95,9 @@ class OptionsMenuState extends states.MusicBeatState
 		controlLabel.targetY = 5;
 		controlLabel.screenCenter(X);
 		grpControls.add(controlLabel);
+		#if mobileC
+		addVirtualPad(UP_DOWN, A_B);
+		#end
 		super.create();
 	}
 
@@ -123,7 +126,11 @@ class OptionsMenuState extends states.MusicBeatState
 					case 3:
 						FlxG.switchState(new NoteSkinState());
 					case 4:
+						#if mobileC
+						FlxG.switchState(new options.CustomControlsState());
+						#else
 						FlxG.switchState(new KeyBindMenu());
+						#end
 					case 5:
 						FlxG.switchState(new MainMenuState());
 				}
@@ -179,11 +186,13 @@ class OptionsMenu extends states.MusicBeatState
 
 	var options:Array<Option> = [
 		new NewInputOption(),
-		//new NoteSplashesOption(),
+		new NoteSplashesOption(),
 		new DownscrollOption(),
-		new FPSCap(),
 		new MiddleScroll(),
+		#if desktop
+		new FPSCap(),
 		new Fullscreen(),
+		#end
 		new AccuracyOption()
 	];
 
@@ -234,6 +243,10 @@ class OptionsMenu extends states.MusicBeatState
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
+
+		#if mobileC
+		addVirtualPad(FULL, A_B);
+		#end
 
 		super.create();
 	}
@@ -356,6 +369,9 @@ class MenuGameOptions extends states.MusicBeatState
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 
+		#if mobileC
+		addVirtualPad(FULL, A_B);
+		#end
 		super.create();
 	}
 
@@ -509,6 +525,9 @@ class OptimizationOptions extends states.MusicBeatState
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 
+		#if mobileC
+		addVirtualPad(FULL, A_B);
+		#end
 		super.create();
 	}
 

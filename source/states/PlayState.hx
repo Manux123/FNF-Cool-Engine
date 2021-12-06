@@ -42,7 +42,9 @@ import lime.utils.Assets;
 import openfl.display.BlendMode;
 import openfl.display.StageQuality;
 import openfl.filters.ShaderFilter;
-
+#if mobileC
+import ui.Mobilecontrols;
+#end
 #if desktop
 import Discord.DiscordClient;
 #end
@@ -51,6 +53,9 @@ using StringTools;
 
 class PlayState extends states.MusicBeatState
 {
+	#if mobileC
+	var mcontrols:Mobilecontrols; 
+	#end
 	public static var curStage:String = '';
 	public static var SONG:SwagSong;
 	public static var isStoryMode:Bool = false;
@@ -799,7 +804,7 @@ class PlayState extends states.MusicBeatState
 		doof.finishThing = startCountdown;
 
 		Conductor.songPosition = -5000;
-		//noteSplashOp = true;
+		noteSplashOp = true;
 
 
 		strumLine = new FlxSprite(0, 50).makeGraphic(FlxG.width, 10);
@@ -948,6 +953,28 @@ class PlayState extends states.MusicBeatState
 		if(FlxG.save.data.sickmode)
 			sickMode.cameras = [camHUD];
 
+		#if mobileC
+		mcontrols = new Mobilecontrols();
+		switch (mcontrols.mode)
+		{
+			case VIRTUALPAD_RIGHT | VIRTUALPAD_LEFT | VIRTUALPAD_CUSTOM:
+				controls.setVirtualPad(mcontrols._virtualPad, FULL, NONE);
+			case HITBOX:
+				controls.setHitBox(mcontrols._hitbox);
+			default:
+		}
+		trackedinputs = controls.trackedinputs;
+		controls.trackedinputs = [];
+
+		var camcontrol = new FlxCamera();
+		FlxG.cameras.add(camcontrol);
+		camcontrol.bgColor.alpha = 0;
+		mcontrols.cameras = [camcontrol];
+
+		mcontrols.visible = false;
+
+		add(mcontrols);
+		#end
 		// if (SONG.song == 'South')
 		// FlxG.camera.alpha = 0.7;
 		// UI_camera.zoom = 1;
@@ -1102,6 +1129,10 @@ class PlayState extends states.MusicBeatState
 
 	function startCountdown():Void
 	{
+		#if mobileC
+		mcontrols.visible = true;
+		#end
+
 		inCutscene = false;
 
 		generateStaticArrows(0);
@@ -2127,7 +2158,6 @@ class PlayState extends states.MusicBeatState
 
 				if (SONG.validScore)
 				{
-					NGio.unlockMedal(60961);
 					Highscore.saveWeekScore(storyWeek, campaignScore, storyDifficulty);
 				}
 				/* remove the / * if you want the progressive lockable weeks again
@@ -2203,9 +2233,9 @@ class PlayState extends states.MusicBeatState
 	var endingSong:Bool = false;
 	var comboFull:FlxSprite;
 
-	private function popUpScore(strumtime:Float):Void
+	private function popUpScore(daNote:Note):Void
 		{
-			var noteInput:Float = Math.abs(strumtime - Conductor.songPosition + 8);
+			var noteInput:Float = Math.abs(Conductor.songPosition - Conductor.songPosition + 8);
 			// boyfriend.playAnim('hey');
 			vocals.volume = 1;
 			var score:Int = 350;
@@ -2232,7 +2262,7 @@ class PlayState extends states.MusicBeatState
 				}
 				else if (noteInput > Conductor.safeZoneOffset * -0.01 || noteInput > Conductor.safeZoneOffset * 0.01)  //well, sick are stuck and then now works like the RatingType good, bad, shit.
 				{
-					popSick();
+					popSick(daNote);
 				}
 	
 		if (RatingType != 'bad' && theFunne || RatingType != 'shit') 
@@ -2376,7 +2406,7 @@ class PlayState extends states.MusicBeatState
 			curSection += 1;
 		}
 
-	public function popSick():Void {
+	public function popSick(daNote:Note):Void {
 		var score:Int = 350;
 		RatingType = 'sick';
 		sicks++;
@@ -2816,7 +2846,7 @@ class PlayState extends states.MusicBeatState
 				{
 					if (!note.isSustainNote)
 					{
-						popUpScore(note.strumTime);
+						popUpScore(note);
 						combo += 1;
 					}
 					else

@@ -234,6 +234,11 @@ class FreeplayState extends states.MusicBeatState
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 		super.create();
+
+		#if mobileC
+		addVirtualPad(FULL, A_B);
+		#end
+		
 	}
 
 	override function closeSubState() {

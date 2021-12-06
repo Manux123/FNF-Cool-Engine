@@ -146,14 +146,14 @@ class FreeplayState extends states.MusicBeatState
 		DiscordClient.changePresence("In the FreePlay", null);
 		#end
 			
-		var path = "data/" + Paths.currentDirectory + "GFBPM.json;
+		var path = "data/" + Paths.currentDirectory + "GFBPM.json";
 		trace(path, FileSystem.exists(path));
 		if (!FileSystem.exists(path)){
-			path = "data/null/GFBPM.json";
+			path = "data/" + null + "GF BPM.json";
 		}
 		trace(path, FileSystem.exists(path));
 		if (!FileSystem.exists(path)){
-			path = "data/null/GFBPM.json"";
+			path = "data/" + null + "/GF BPM.json";
 		}
 		trace(path, FileSystem.exists(path));
 

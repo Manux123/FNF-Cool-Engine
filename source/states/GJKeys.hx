@@ -1,4 +1,4 @@
-package;
+package states;
 class GJKeys
 {
     public static var id:Int = ; // since the engine still isnt on game jolt idk the id

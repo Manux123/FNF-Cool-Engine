@@ -133,8 +133,8 @@ class OptionsMenuState extends states.MusicBeatState
 						#else
 						FlxG.switchState(new KeyBindMenu());
 						#end
-					case 5:
-						FlxG.switchState(new states.GameJolt());
+                                        case 5:
+                                                 FlxG.switchState(new GameJoltLogin());
 				}
 			}
 		FlxG.save.flush();

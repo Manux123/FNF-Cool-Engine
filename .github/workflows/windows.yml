@@ -42,6 +42,9 @@ jobs:
           haxelib install flixel-addons
           haxelib install hscript
           haxelib install polymod
+          haxelib git tentools https://github.com/TentaRJ/tentools.git
+          haxelib git systools https://github.com/haya3218/systools
+          haxelib run lime rebuild systools windows
           haxelib install newgrounds
           haxelib install linc_luajit
           haxelib install flixel-addons

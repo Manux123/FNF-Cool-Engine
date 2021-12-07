@@ -12,7 +12,7 @@ import openfl.events.Event;
 
 class Main extends Sprite
 {
-       // public static var gjToastManager:GJToastManager; 
+        public static var gjToastManager:GJToastManager; 
 	var gameWidth:Int = 1280; // Width of the game in pixels (might be less / more in actual pixels depending on your zoom).
 	var gameHeight:Int = 720; // Height of the game in pixels (might be less / more in actual pixels depending on your zoom).
 	var initialState:Class<FlxState> = states.CacheState; // The FlxState the game starts with.
@@ -54,8 +54,8 @@ class Main extends Sprite
 
 	private function setupGame():Void
 	{   
-               // gjToastManager = new GJToastManager();
-               // addChild(gjToastManager);
+                gjToastManager = new GJToastManager();
+                addChild(gjToastManager);
 		var stageWidth:Int = Lib.current.stage.stageWidth;
 		var stageHeight:Int = Lib.current.stage.stageHeight;
 

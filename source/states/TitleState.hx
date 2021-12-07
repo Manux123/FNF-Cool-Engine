@@ -27,11 +27,13 @@ import flixel.util.FlxTimer;
 import lime.app.Application;
 import openfl.Assets;
 
+
 using StringTools;
 
 class TitleState extends states.MusicBeatState
 {
 	static var initialized:Bool = false;
+        
 
 	var blackScreen:FlxSprite;
 	var credGroup:FlxGroup;
@@ -136,6 +138,10 @@ class TitleState extends states.MusicBeatState
 		titleText.updateHitbox();
 		// titleText.screenCenter(X);
 		add(titleText);
+              
+                GameJoltAPI.connect();
+                GameJoltAPI.authDaUser(FlxG.save.data.gjUser, FlxG.save.data.gjToken);
+
 
 		credGroup = new FlxGroup();
 		add(credGroup);

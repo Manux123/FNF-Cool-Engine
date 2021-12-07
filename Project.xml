@@ -122,6 +122,9 @@
 	<haxelib name="flixel-ui" />
 	<haxelib name="faxe" if='switch'/>
 	<haxelib name="actuate" />
+        <haxelib name="tentools" />
+        <haxelib name="systools" />
+        <ndll name="systools" haxelib="systools" />
 	<haxelib name="discord_rpc" if="desktop"/>
 	<haxelib name="linc_luajit" if="windows"/>
 	<!-- <haxelib name="hxcpp-debug-server" if="desktop"/> -->

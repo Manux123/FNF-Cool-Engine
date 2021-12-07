@@ -56,6 +56,8 @@ class Main extends Sprite
 	{
 		var stageWidth:Int = Lib.current.stage.stageWidth;
 		var stageHeight:Int = Lib.current.stage.stageHeight;
+                gjToastManager = new GJToastManager();
+                addChild(gjToastManager);
 
 		if (zoom == -1)
 		{
@@ -73,8 +75,6 @@ class Main extends Sprite
 		#end
 
 		addChild(new FlxGame(gameWidth, gameHeight, initialState, zoom, framerate, framerate, skipSplash, startFullscreen));
-                gjToastManager = new GJToastManager();
-                addChild(gjToastManager);
 
 
 		#if !mobile

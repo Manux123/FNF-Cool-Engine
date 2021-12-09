@@ -38,15 +38,21 @@ import flixel.util.FlxSort;
 import flixel.util.FlxStringUtil;
 import flixel.util.FlxTimer;
 import haxe.Json;
+import flixel.graphics.frames.FlxFramesCollection;
 import lime.utils.Assets;
 import openfl.display.BlendMode;
 import openfl.display.StageQuality;
 import openfl.filters.ShaderFilter;
+//import ModchartState;
+import FunkinLua;
 #if mobileC
 import ui.Mobilecontrols;
 #end
 #if desktop
 import Discord.DiscordClient;
+#end
+#if sys
+import sys.FileSystem;
 #end
 
 using StringTools;
@@ -56,6 +62,19 @@ class PlayState extends states.MusicBeatState
 	#if mobileC
 	var mcontrols:Mobilecontrols; 
 	#end
+
+	#if (haxe >= "4.0.0")
+	public var modchartTweens:Map<String, FlxTween> = new Map();
+	public var modchartSprites:Map<String, ModchartSprite> = new Map();
+	public var modchartTimers:Map<String, FlxTimer> = new Map();
+	public var modchartSounds:Map<String, FlxSound> = new Map();
+	#else
+	public var modchartTweens:Map<String, FlxTween> = new Map<String, FlxTween>();
+	public var modchartSprites:Map<String, ModchartSprite> = new Map<String, Dynamic>();
+	public var modchartTimers:Map<String, FlxTimer> = new Map<String, FlxTimer>();
+	public var modchartSounds:Map<String, FlxSound> = new Map<String, FlxSound>();
+	#end
+
 	public static var curStage:String = '';
 	public static var SONG:SwagSong;
 	public static var isStoryMode:Bool = false;
@@ -74,7 +93,7 @@ class PlayState extends states.MusicBeatState
 
 	var halloweenLevel:Bool = false;
 
-	public static var playstategaming:PlayState = null; //lol
+	public static var instance:PlayState = null; //lol
 
 	#if desktop
 	// Discord RPC variables
@@ -85,23 +104,25 @@ class PlayState extends states.MusicBeatState
 	var detailsPausedText:String = "";
 	#end
 
+	private var luaArray:Array<FunkinLua> = [];
+
 	private var vocals:FlxSound;
 
-	private var dad:Character;
-	private var gf:Character;
-	private var boyfriend:Boyfriend;
+	public var dad:Character;
+	public var gf:Character;
+	public var boyfriend:Boyfriend;
 
-	private var notes:FlxTypedGroup<Note>;
+	public var notes:FlxTypedGroup<Note>;
 	private var unspawnNotes:Array<Note> = [];
 
-	private var strumLine:FlxSprite;
+	public var strumLine:FlxSprite;
 	private var curSection:Int = 0;
 
 	private var camFollow:FlxObject;
 
 	private static var prevCamFollow:FlxObject;
 
-	private var strumLineNotes:FlxTypedGroup<FlxSprite>;
+	public var strumLineNotes:FlxTypedGroup<FlxSprite>;
 	private var playerStrums:FlxTypedGroup<FlxSprite>;
 	public static var cpuStrums:FlxTypedGroup<FlxSprite> = null;
 
@@ -111,7 +132,7 @@ class PlayState extends states.MusicBeatState
 	private var curSong:String = "";
 
 	private var gfSpeed:Int = 1;
-	private var health:Float = 1;
+	public var health:Float = 1;
 	private var combo:Int = 0;
 	public static var accuracy:Float = 0.00;
 	private var totalNotesHit:Float = 0;
@@ -128,10 +149,10 @@ class PlayState extends states.MusicBeatState
 	private var generatedMusic:Bool = false;
 	public static var startingSong:Bool = false;
 
-	private var iconP1:HealthIcon;
-	private var iconP2:HealthIcon;
-	private var camHUD:FlxCamera;
-	private var camGame:FlxCamera;
+	public var iconP1:HealthIcon;
+	public var iconP2:HealthIcon;
+	public var camHUD:FlxCamera;
+	public var camGame:FlxCamera;
 
 	var dialogue:Array<String> = ['blah blah blah', 'coolswag'];
 
@@ -189,7 +210,7 @@ class PlayState extends states.MusicBeatState
 	override public function create()
 	{
 		FlxG.mouse.visible = false;
-		playstategaming = this;
+		instance = this;
 		theFunne = FlxG.save.data.newInput;
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
@@ -680,6 +701,36 @@ class PlayState extends states.MusicBeatState
 			}
 		}
 
+		#if (MODS_ALLOWED && LUA_ALLOWED)
+		var doPush:Bool = false;
+		var luaFile2:String = 'data/' + Paths.formatToSongPath(SONG.song) + '/script.lua';
+		if(FileSystem.exists(Paths.modFolders(luaFile2))) {
+			luaFile2 = Paths.modFolders(luaFile2);
+			doPush = true;
+		} else {
+			luaFile2 = Paths.getPreloadPath(luaFile2);
+			if(FileSystem.exists(luaFile2)) {
+				doPush = true;
+			}
+		}
+
+		var luaFile:String = 'stages/' + curStage + '.lua';
+		if(FileSystem.exists(Paths.modFolders(luaFile))) {
+			luaFile = Paths.modFolders(luaFile);
+			doPush = true;
+		} 
+		else 
+		{
+			luaFile = Paths.getPreloadPath(luaFile);
+			if(FileSystem.exists(luaFile)) {
+				doPush = true;
+			}
+		}
+
+		if(doPush) 
+			luaArray.push(new FunkinLua(luaFile));
+		#end
+
 		var gfVersion:String = SONG.player3;
 
 		if(gfVersion == null || gfVersion.length < 1) {
@@ -1129,11 +1180,29 @@ class PlayState extends states.MusicBeatState
 
 	function startCountdown():Void
 	{
+		if(startedCountdown) {
+			callOnLuas('onStartCountdown', []);
+			return;
+		}
+
 		#if mobileC
 		mcontrols.visible = true;
 		#end
 
 		inCutscene = false;
+		var ret:Dynamic = callOnLuas('onStartCountdown', []);
+		if(ret != FunkinLua.Function_Stop) {
+			generateStaticArrows(0);
+			generateStaticArrows(1);
+		for (i in 0...playerStrums.length) {
+			setOnLuas('defaultPlayerStrumX' + i, playerStrums.members[i].x);
+			setOnLuas('defaultPlayerStrumY' + i, playerStrums.members[i].y);
+		}
+		for (i in 0...cpuStrums.length) {
+			setOnLuas('defaultOpponentStrumX' + i, cpuStrums.members[i].x);
+			setOnLuas('defaultOpponentStrumY' + i, cpuStrums.members[i].y);
+			if(FlxG.save.data.middlescroll) cpuStrums.members[i].visible = false;
+		}
 
 		generateStaticArrows(0);
 		generateStaticArrows(1);
@@ -1142,6 +1211,7 @@ class PlayState extends states.MusicBeatState
 		startedCountdown = true;
 		Conductor.songPosition = 0;
 		Conductor.songPosition -= Conductor.crochet * 5;
+		setOnLuas('startedCountdown', true);
 
 		var swagCounter:Int = 0;
 
@@ -1167,29 +1237,31 @@ class PlayState extends states.MusicBeatState
 			var introAlts:Array<String> = introAssets.get('default');
 			var altSuffix:String = "";
 
-			for (value in introAssets.keys())
-			{
-				if (value == curStage)
+				for (value in introAssets.keys())
 				{
-					introAlts = introAssets.get(value);
-					altSuffix = '-pixel';
+					if (value == curStage)
+					{
+						introAlts = introAssets.get(value);
+						altSuffix = '-pixel';
+					}
 				}
-			}
 
-			switch (swagCounter)
-			{
-				case 0:
-					FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
-				case 1:
-					initready();
-				case 2:
-					initset();
-				case 3:
-					initgo();
-			}
-			swagCounter += 1;
-			// generateSong('fresh');
-		}, 5);
+				switch (swagCounter)
+				{
+					case 0:
+						FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
+					case 1:
+						initready();
+					case 2:
+						initset();
+					case 3:
+						initgo();
+				}
+				callOnLuas('onCountdownTick', [swagCounter]);
+				swagCounter += 1;
+				// generateSong('fresh');
+			}, 5);
+		}
 	}
 
 	var previousFrameTime:Int = 0;
@@ -1311,7 +1383,6 @@ class PlayState extends states.MusicBeatState
 	}
 
 	var debugNum:Int = 0;
-
 	private function generateSong(dataPath:String):Void
 	{
 		// FlxG.log.add(ChartParser.parse());
@@ -2029,6 +2100,8 @@ class PlayState extends states.MusicBeatState
 								gf.playAnim('singLEFT' + altAnim, true);
 						}
 					}
+
+						callOnLuas('opponentNoteHit', [notes.members.indexOf(daNote), Math.abs(daNote.noteData), daNote.isSustainNote]);
 				
 						cpuStrums.forEach(function(spr:FlxSprite)
 							{
@@ -2132,7 +2205,32 @@ class PlayState extends states.MusicBeatState
 		#if debug
 		if (FlxG.keys.justPressed.ONE)
 			endSong();
+
+		setOnLuas('cameraX', camFollowPos.x);
+		setOnLuas('cameraY', camFollowPos.y);
+		callOnLuas('onUpdatePost', [elapsed]);
 		#end
+	}
+
+	public function setOnLuas(variable:String, arg:Dynamic) {
+		#if LUA_ALLOWED
+		for (i in 0...luaArray.length) {
+			luaArray[i].set(variable, arg);
+		}
+		#end
+	}
+
+	public function callOnLuas(event:String, args:Array<Dynamic>):Dynamic {
+		var returnVal:Dynamic = FunkinLua.Function_Continue;
+		#if LUA_ALLOWED
+		for (i in 0...luaArray.length) {
+			var ret:Dynamic = luaArray[i].call(event, args);
+			if(ret != FunkinLua.Function_Continue) {
+				returnVal = ret;
+			}
+		}
+		#end
+		return returnVal;
 	}
 
 	public function endSong():Void

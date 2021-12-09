@@ -87,7 +87,7 @@ class CacheState extends MusicBeatState
     {
         super.update(elapsed);
 
-        if (charactersloading && objectsloading)
+        if (charactersloading && objectsloading && soundsPreload)
         {
             FlxG.switchState(new states.TitleState());
             FlxG.camera.fade(FlxColor.BLACK, 0.8, false);

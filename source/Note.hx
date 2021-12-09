@@ -8,6 +8,7 @@ import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.math.FlxMath;
 import flixel.util.FlxColor;
+import flixel.graphics.frames.FlxFramesCollection;
 import openfl.display.BitmapData;
 import flixel.FlxG;
 

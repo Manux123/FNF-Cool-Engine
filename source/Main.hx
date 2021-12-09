@@ -12,9 +12,10 @@ import openfl.events.Event;
 
 class Main extends Sprite
 {
-        public static var gjToastManager:GJToastManager; 
+	public static var gjToastManager:GJToastManager; // Mmm crispy toast
 	var gameWidth:Int = 1280; // Width of the game in pixels (might be less / more in actual pixels depending on your zoom).
 	var gameHeight:Int = 720; // Height of the game in pixels (might be less / more in actual pixels depending on your zoom).
+// Other things below this
 	var initialState:Class<FlxState> = states.CacheState; // The FlxState the game starts with.
 	var zoom:Float = -1; // If -1, zoom is automatically calculated to fit the window dimensions.
 	var framerate:Int = 144; // How many frames per second the game should run at.

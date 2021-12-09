@@ -81,8 +81,6 @@ class NoteSkinState extends states.MusicBeatState
 				previewSkins.frames = Paths.getSparrowAtlas('UI/Circles', 'shared');
 			case 'Quaver Skin':
 				previewSkins.frames = Paths.getSparrowAtlas('UI/QUAVER_assets', 'shared');
-			case 'Camellia':
-				previewSkins.frames = Paths.getSparrowAtlas('UI/CAMELIANOTES_assets', 'shared');
 		}
 
 		if(controls.BACK)
@@ -104,8 +102,6 @@ class NoteSkinState extends states.MusicBeatState
 				case 2:
 					FlxG.save.data.noteSkin = 'Quaver Skin';
 				case 3:
-					FlxG.save.data.noteSkin = 'Camellia';
-				case 4:
 					FlxG.save.data.noteSkin = noteSkinTex;
 			}
 		}

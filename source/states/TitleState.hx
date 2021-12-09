@@ -50,6 +50,9 @@ class TitleState extends states.MusicBeatState
 
 		curWacky = FlxG.random.getObject(getIntroTextShit());
 
+		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGtitle'));
+		add(bg);
+
 		// DEBUG BULLSHIT
 
 		super.create();
@@ -97,25 +100,10 @@ class TitleState extends states.MusicBeatState
 	var gfDance:FlxSprite;
 	var danceLeft:Bool = false;
 	var titleText:FlxSprite;
-	var bg:FlxSprite;
-	var bg2:FlxSprite;
 
 	function startIntro()
 	{
 		persistentUpdate = true;
-
-		bg = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
-		// bg.antialiasing = true;
-		// bg.setGraphicSize(Std.int(bg.width * 0.6));
-		// bg.updateHitbox();
-		add(bg);
-
-		bg2 = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.YELLOW);
-		// bg.antialiasing = true;
-		// bg.setGraphicSize(Std.int(bg.width * 0.6));
-		// bg.updateHitbox();
-		add(bg2);
-		bg2.kill();
 
 		logoBl = new FlxSprite(-150, -100);
 		logoBl.frames = Paths.getSparrowAtlas('titlestate/logoBumpin');
@@ -266,11 +254,7 @@ class TitleState extends states.MusicBeatState
 
 			FlxG.camera.flash(FlxColor.WHITE, 1);
 			FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
-			FlxTween.tween(bg2, {alpha: 0}, 0.2, {
-				onComplete: function(tween:FlxTween){
-					bg2.revive();
-				},
-			});
+
 			transitioning = true;
 			// FlxG.sound.music.stop();
 

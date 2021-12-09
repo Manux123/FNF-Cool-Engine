@@ -91,6 +91,20 @@ class Character extends FlxSprite
 				loadOffsetFile(curCharacter);
 
 				playAnim('idle');
+			
+			case 'tiki':
+				// tiki animation?
+				tex = Paths.getSparrowAtlas('characters/madness/tiki_assets');
+				frames = tex;
+				animation.addByPrefix('idle', 'TIKI_Idle', 24);
+				animation.addByPrefix('singUP', 'TIKI_Up', 24);
+				animation.addByPrefix('singRIGHT', 'TIKI_Right', 24);
+				animation.addByPrefix('singDOWN', 'TIKI_Down', 24);
+				animation.addByPrefix('singLEFT', 'TIKI_Left', 24);
+
+				loadOffsetFile(curCharacter);
+
+				playAnim('idle');
 
 			case 'spooky':
 				// SPOOKY MONTH!

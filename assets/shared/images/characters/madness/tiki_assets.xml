@@ -1,0 +1,246 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="tiki_assets.png">
+	<!-- Created with Adobe Animate version 21.0.0.35450 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="TIKI_Down0000" x="0" y="1064" width="456" height="314" frameX="0" frameY="0" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0001" x="0" y="1064" width="456" height="314" frameX="0" frameY="0" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0002" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0003" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0004" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0005" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0006" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0007" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0008" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0009" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0010" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0011" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0012" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0013" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0014" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0015" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0016" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0017" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0018" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0019" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0020" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0021" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0022" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0023" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0024" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0025" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0026" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0027" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0028" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0029" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0030" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0031" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0032" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0033" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0034" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0035" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0036" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0037" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0038" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0039" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0040" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0041" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0042" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0043" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0044" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0045" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0046" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0047" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0048" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0049" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0050" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0051" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0052" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0053" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0054" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0055" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0056" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0057" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0058" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Down0059" x="456" y="1129" width="477" height="296" frameX="0" frameY="-18" frameWidth="477" frameHeight="314"/>
+	<SubTexture name="TIKI_Idle0000" x="521" y="777" width="416" height="352"/>
+	<SubTexture name="TIKI_Left0000" x="465" y="0" width="446" height="386" frameX="-18" frameY="-6" frameWidth="465" frameHeight="393"/>
+	<SubTexture name="TIKI_Left0001" x="465" y="0" width="446" height="386" frameX="-18" frameY="-6" frameWidth="465" frameHeight="393"/>
+	<SubTexture name="TIKI_Left0002" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0003" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0004" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0005" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0006" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0007" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0008" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0009" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0010" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0011" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0012" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0013" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0014" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0015" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0016" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0017" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0018" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0019" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0020" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0021" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0022" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0023" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0024" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0025" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0026" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0027" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0028" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0029" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0030" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0031" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0032" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0033" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0034" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0035" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0036" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0037" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0038" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0039" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0040" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0041" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0042" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0043" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0044" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0045" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0046" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0047" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0048" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0049" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0050" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0051" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0052" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0053" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0054" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0055" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0056" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0057" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0058" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Left0059" x="0" y="0" width="465" height="393"/>
+	<SubTexture name="TIKI_Right0000" x="0" y="1425" width="504" height="278" frameX="0" frameY="-9" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0001" x="0" y="1425" width="504" height="278" frameX="0" frameY="-9" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0002" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0003" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0004" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0005" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0006" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0007" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0008" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0009" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0010" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0011" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0012" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0013" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0014" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0015" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0016" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0017" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0018" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0019" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0020" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0021" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0022" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0023" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0024" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0025" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0026" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0027" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0028" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0029" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0030" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0031" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0032" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0033" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0034" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0035" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0036" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0037" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0038" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0039" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0040" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0041" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0042" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0043" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0044" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0045" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0046" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0047" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0048" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0049" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0050" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0051" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0052" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0053" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0054" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0055" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0056" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0057" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0058" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Right0059" x="0" y="777" width="521" height="287" frameX="-1" frameY="0" frameWidth="522" frameHeight="287"/>
+	<SubTexture name="TIKI_Up0000" x="0" y="393" width="414" height="372" frameX="-3" frameY="-19" frameWidth="418" frameHeight="391"/>
+	<SubTexture name="TIKI_Up0001" x="0" y="393" width="414" height="372" frameX="-3" frameY="-19" frameWidth="418" frameHeight="391"/>
+	<SubTexture name="TIKI_Up0002" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0003" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0004" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0005" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0006" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0007" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0008" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0009" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0010" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0011" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0012" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0013" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0014" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0015" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0016" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0017" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0018" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0019" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0020" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0021" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0022" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0023" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0024" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0025" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0026" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0027" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0028" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0029" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0030" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0031" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0032" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0033" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0034" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0035" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0036" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0037" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0038" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0039" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0040" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0041" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0042" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0043" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0044" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0045" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0046" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0047" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0048" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0049" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0050" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0051" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0052" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0053" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0054" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0055" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0056" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0057" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0058" x="465" y="386" width="418" height="391"/>
+	<SubTexture name="TIKI_Up0059" x="465" y="386" width="418" height="391"/>
+</TextureAtlas>

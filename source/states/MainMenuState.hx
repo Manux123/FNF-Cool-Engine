@@ -44,6 +44,9 @@ class MainMenuState extends states.MusicBeatState
 
 	override function create()
 	{
+		//LOAD CUZ THIS SHIT DONT DO IT SOME IN THE CACHESTATE.HX FUCK
+		PlayerSettings.player1.controls.loadKeyBinds();
+
 		#if desktop
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("In the Menu", null);

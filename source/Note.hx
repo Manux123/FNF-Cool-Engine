@@ -1,5 +1,6 @@
 package;
 
+import lime.utils.Assets;
 import states.NoteSkinState;
 import states.PlayState;
 import states.NoteSkinDetectorState;
@@ -34,6 +35,8 @@ class Note extends FlxSprite
 	public static var BLUE_NOTE:Int = 1;
 	public static var RED_NOTE:Int = 3;
 
+	public var noteRating:String = 'sick';
+
 	public function new(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false)
 	{
 		super();
@@ -57,12 +60,11 @@ class Note extends FlxSprite
 			switch (daStage)
 			{
 				case 'school' | 'schoolEvil':
-					switch(FlxG.save.data.noteSkin)
-					{
-						case 'Arrows':
-							loadGraphic(Paths.image('skins_arrows/pixels/arrows-pixels'), true, 17, 17);
-						case 'Circles':
-							loadGraphic(Paths.image('skins_arrows/pixels/Circles-pixels'), true, 17, 17);
+					if(Assets.exists(NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin)))
+						loadGraphic(NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin));
+					else{
+						loadGraphic(Paths.image('skins_arrows/pixels/arrows-pixels'));
+						trace('Assets Path: ' + NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin) + " Dosn't Exist");
 					}
 			
 					animation.add('greenScroll', [6]);
@@ -72,12 +74,11 @@ class Note extends FlxSprite
 
 					if (isSustainNote)
 					{
-						switch(FlxG.save.data.noteSkin)
-						{
-							case 'Arrows':
-								loadGraphic(Paths.image('skins_arrows/pixels/arrowEnds'), true, 17, 17);
-							case 'Circles':
-								loadGraphic(Paths.image('skins_arrows/pixels/Circles-pixels-ends'), true, 17, 17);
+						if(Assets.exists(NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin)))
+							loadGraphic(NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin));
+						else{
+							loadGraphic(Paths.image('skins_arrows/pixels/arrows-pixels'));
+							trace('Assets Path: ' + NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin) + " Dosn't Exist");
 						}
 
 						animation.add('purpleholdend', [4]);
@@ -95,7 +96,12 @@ class Note extends FlxSprite
 					updateHitbox();
 
 				default:
-						frames = NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin);
+					if(Assets.exists(NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin)))
+						frames = Paths.getSparrowAtlas(NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin));
+					else{
+						frames = Paths.getSparrowAtlas('UI/NOTE_assets');
+						trace('Assets Path: ' + NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin) + " Dosn't Exist");
+					}
 
 						animation.addByPrefix('greenScroll', 'green alone');
 						animation.addByPrefix('redScroll', 'red alone');

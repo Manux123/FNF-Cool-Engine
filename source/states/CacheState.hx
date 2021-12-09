@@ -1,5 +1,6 @@
 package states;
 
+import lime.utils.Assets;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.graphics.FlxGraphic;
@@ -48,23 +49,31 @@ class CacheState extends MusicBeatState
                                 'ratings/BOYFRIEND_RATING', 'titlestate/gfDanceTitle', 
                                 'titlestate/logoBumpin', 'titlestate/newgrounds_logo', 
                                 'titlestate/titleEnter', 'titlestate/titlestateBG' ];
+    var soundsloading:Bool = false;
+    var sounds:Array<String> =[
+        "confirmMenu","scrollMenu","cancelMenu",
+        "intro1","intro2","intro3","introGo"];
 
 	var loadingStart:Bool = false;
 
 	override function create()
 	{
-        FlxG.save.bind('data');
-		Highscore.load();
+        FlxG.mouse.visible = false;
+        FlxG.sound.muteKeys = null;
+        
+        Highscore.load();
 		KeyBinds.keyCheck();
 		PlayerSettings.init();
 
-        toBeFinished = Lambda.count(characters) + Lambda.count(objects);
+        PlayerSettings.player1.controls.loadKeyBinds();
 
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGloading'));
+        toBeFinished = Lambda.count(characters) + Lambda.count(objects) + Lambda.count(sounds);
+
+		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBG'));
 		add(bg);
 
         loading = new FlxText(0, 680);
-        loading.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
+        loading.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, RIGHT, OUTLINE,FlxColor.BLACK);
         loading.size = 20;
         add(loading);
 
@@ -102,30 +111,58 @@ class CacheState extends MusicBeatState
                 objectsAssets();
             #if sys }); #end
         }
+        if(!soundsloading){
+            #if sys sys.thread.Thread.create(() -> { #end
+                soundsAssets();
+            #if sys }); #end
+        }
     }
 
     function preloadAssets(){
         for(x in characters){
-            loading.text = "Characters Loaded (" + finished + "/" + toBeFinished + ")";
-            ImageCache.add(Paths.image(x));
+            if(#if sys sys.FileSystem.exists(Paths.image(x))
+                #else Assets.exists(Paths.image(x))#end){
+                loading.text = "Characters Loaded (" + finished + "/" + toBeFinished + ")";
+                ImageCache.add(Paths.image(x));
+            }
+            else
+                loading.text = "Error while loading\nImage in path " + Paths.image(x);
             trace("Chached " + x);
             finished++;
-        }
         loading.text = "Characters Loaded";
         charactersloading = true;
+        }
     }
 
     function objectsAssets(){
         for(x in objects){
-            loading.text = "Objects Loaded (" + finished + "/" + toBeFinished + ")";
-            ImageCache.add(Paths.image(x));
+            if(#if sys sys.FileSystem.exists(Paths.image(x))
+                #else Assets.exists(Paths.image(x))#end){
+                loading.text = "Objects Loaded (" + finished + "/" + toBeFinished + ")";
+                ImageCache.add(Paths.image(x));
+            }
+            else{
+                loading.text = "Error while loading\nImage in path " + Paths.image(x);
+            }
             trace("Chached " + x);
             finished++;
         }
         loading.text = "Objects Loaded";
         objectsloading = true;
     }
-
+    function soundsAssets(){
+        for(x in sounds){
+            if(#if sys sys.FileSystem.exists(Paths.sound(x))
+                #else Assets.exists(Paths.sound(x)) #end){
+                FlxG.sound.cache(Paths.sound(x));
+                loading.text = "Objects Loaded (" + finished + "/" + toBeFinished + ")";
+            }
+            else
+                loading.text = "Error while loading\nSound in path " + Paths.sound(x);
+        }
+        loading.text = "Objects Loaded";
+        soundsloading = true;
+    }
 }
 
 //End of Loading and Start of Image Caching

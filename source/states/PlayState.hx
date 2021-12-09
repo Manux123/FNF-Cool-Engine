@@ -142,7 +142,6 @@ class PlayState extends states.MusicBeatState
 	var phillyTrain:FlxSprite;
 	var trainSound:FlxSound;
 
-	var RatingType:String = "sick";
 	var daNote:Note;
 	var specialAnim:Bool = false;
 
@@ -174,10 +173,6 @@ class PlayState extends states.MusicBeatState
 	public static var daPixelZoom:Float = 6;
 
 	//Movent Camera
-
-	//Notes handle stuff
-	public static var noteSkinPixelTex:BitmapData;
-
 	public static var theFunne:Bool = true;
 	var funneEffect:FlxSprite;
 	var inCutscene:Bool = false;
@@ -200,11 +195,15 @@ class PlayState extends states.MusicBeatState
 			FlxG.sound.music.stop();
 
 		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 144;
+			#if desktop
+			openfl.Lib.current.stage.frameRate = 120;
+			#else
+			openfl.Lib.current.stage.frameRate = 60;
+			#end
 		else
+			#if !mobileC
 			openfl.Lib.current.stage.frameRate = 999;
-
-		noteSkinPixelTex = NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin);
+			#end
 
 		sicks = 0;
 		misses = 0;
@@ -267,9 +266,9 @@ class PlayState extends states.MusicBeatState
 		camHUD.bgColor.alpha = 0;
 
 		FlxG.cameras.reset(camGame);
-		FlxG.cameras.add(camHUD);
+		FlxG.cameras.add(camHUD,false);
 
-		FlxCamera.defaultCameras = [camGame];
+		//FlxCamera.defaultCameras = [camGame];
 
 		persistentUpdate = true;
 		persistentDraw = true;
@@ -286,6 +285,7 @@ class PlayState extends states.MusicBeatState
 		grpNoteSplashes = new FlxTypedGroup<NoteSplash>();
 		var sploosh = new NoteSplash(100, 100, 0);
 		sploosh.alpha = 0.6;
+		sploosh.visible = false;
 		grpNoteSplashes.add(sploosh);
 
 		Conductor.mapBPMChanges(SONG);
@@ -1279,6 +1279,9 @@ class PlayState extends states.MusicBeatState
 		});
 		FlxG.sound.play(Paths.sound('introGo' + altSuffix), 0.6);
 		boyfriend.playAnim('hey', false);
+		if(dad.curCharacter.startsWith('bf') || dad.curCharacter.startsWith('gf')){
+			dad.playAnim('hey', false);
+		}
 		gf.playAnim('cheer', false);
 		FlxG.camera.flash(FlxColor.WHITE, 1);
 	}
@@ -1419,12 +1422,11 @@ class PlayState extends states.MusicBeatState
 			switch (curStage)
 			{
 				case 'school' | 'schoolEvil':
-					switch(FlxG.save.data.noteSkin)
-					{
-						case 'Arrows':
-							babyArrow.loadGraphic(Paths.image('skins_arrows/pixels/arrows-pixels'), true, 17, 17);
-						case 'Circles':
-							babyArrow.loadGraphic(Paths.image('skins_arrows/pixels/Circles-pixels'), true, 17, 17);
+					if(Assets.exists(NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin)))
+						babyArrow.loadGraphic(NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin));
+					else{
+						babyArrow.loadGraphic(Paths.image('skins_arrows/pixels/arrows-pixels'));
+						trace('Assets Path: ' + NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin) + " Dosn't Exist");
 					}
 
 					babyArrow.animation.add('green', [6]);
@@ -1461,7 +1463,13 @@ class PlayState extends states.MusicBeatState
 					}
 
 				default:
-						babyArrow.frames = NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin);
+						if(Assets.exists(NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin)))
+							babyArrow.frames = Paths.getSparrowAtlas(NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin));
+						else{
+							babyArrow.frames = Paths.getSparrowAtlas('UI/NOTE_assets');
+							trace('Assets Path: ' + NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin) + " Dosn't Exist");
+						}
+
 						babyArrow.animation.addByPrefix('green', 'arrowUP');
 						babyArrow.animation.addByPrefix('blue', 'arrowDOWN');
 						babyArrow.animation.addByPrefix('purple', 'arrowLEFT');
@@ -1654,12 +1662,12 @@ class PlayState extends states.MusicBeatState
 	var startedCountdown:Bool = false;
 	var canPause:Bool = true;
 
-	function reduceFloat( number : Float, precision : Int): Float {
+	function reduceFloat( number : Float, precition : Int): Float {
 		var num = number;
-		num = num * Math.pow(10, precision);
-		num = Math.round( num ) / Math.pow(10, precision);
+		num = num * Math.pow(10, precition);
+		num = Math.round( num ) / Math.pow(10, precition);
 		return num;
-		}
+	}
 
 	override public function update(elapsed:Float)
 	{
@@ -1687,8 +1695,8 @@ class PlayState extends states.MusicBeatState
 
 		if (FlxG.save.data.accuracyDisplay)
 		{
-			scoreTxt.text = "Score:" + songScore + " | Misses:" + misses;
-			scoreTxt2.text = "Accuracy: " + reduceFloat(accuracy, 2) + "% | Rank: " + generateLetterRank();
+			scoreTxt.text = "Score:" + songScore + " // Misses:" + misses;
+			scoreTxt2.text = "Accuracy: " + reduceFloat(accuracy, 2) + "% // Rank: " + generateLetterRank();
 		}
 		else
 		{
@@ -1745,10 +1753,10 @@ class PlayState extends states.MusicBeatState
 		/* if (FlxG.keys.justPressed.NINE)
 			FlxG.switchState(new Charting()); */
 
-		if (FlxG.keys.justPressed.SEVEN)
+		if (FlxG.keys.justPressed.EIGHT)
 			FlxG.switchState(new AnimationDebug(SONG.player3));
 
-		if (FlxG.keys.justPressed.EIGHT)
+		if (FlxG.keys.justPressed.NINE)
 			FlxG.switchState(new AnimationDebug(SONG.player2));
 
 		if (startingSong)
@@ -2093,7 +2101,6 @@ class PlayState extends states.MusicBeatState
 						}
 						else
 						{
-							health -= 0.075;
 							vocals.volume = 0;
 							if (theFunne)
 								noteMiss(daNote.noteData);
@@ -2235,8 +2242,7 @@ class PlayState extends states.MusicBeatState
 
 	private function popUpScore(daNote:Note):Void
 		{
-			var noteInput:Float = Math.abs(Conductor.songPosition - Conductor.songPosition + 8);
-			// boyfriend.playAnim('hey');
+			var noteDiff:Float = Math.abs(Conductor.songPosition - daNote.strumTime + 8);
 			vocals.volume = 1;
 			var score:Int = 350;
 	
@@ -2247,46 +2253,63 @@ class PlayState extends states.MusicBeatState
 			coolText.x = FlxG.width * 0.55;
 
 			var rating:FlxSprite = new FlxSprite();
-			
-			if (noteInput > Conductor.safeZoneOffset * 0.75 || noteInput < Conductor.safeZoneOffset * -0.75)
-				{
-					popShit();
-				}
-				else if (noteInput > Conductor.safeZoneOffset * 0.5 || noteInput < Conductor.safeZoneOffset * -0.5)
-				{
-					popBad();
-				}
-				else if (noteInput > Conductor.safeZoneOffset * 0.28 || noteInput < Conductor.safeZoneOffset * -0.28)
-				{
-					popGood();
-				}
-				else if (noteInput > Conductor.safeZoneOffset * -0.01 || noteInput > Conductor.safeZoneOffset * 0.01)  //well, sick are stuck and then now works like the RatingType good, bad, shit.
-				{
-					popSick(daNote);
-				}
-	
-		if (RatingType != 'bad' && theFunne || RatingType != 'shit') 
-			{
-	
-				songScore += score;
-			
-			}
-		else if (RatingType == 'bad' && theFunne || RatingType == 'shit') 
-			{
-		
-				songScore -= score;
-				
-			}
 
-		if ( RatingType == 'bad' && !theFunne || RatingType == 'good' && !theFunne || RatingType == 'sick' && !theFunne) 
-			{
-		
-				songScore += score;
-				
+			daNote.noteRating = Ranking.GenerateRating(noteDiff); 
+
+			switch(daNote.noteRating){
+				case 'shit':
+					score = 350;
+					ss = false;
+					scoreTxt.alpha = 1;
+					misses++;
+					if (theFunne){
+						score = -2000;
+						combo = 0;
+						health -= 0.45;
+					}
+					else{
+						score = -1000;
+						combo = 0;
+						health -= 0.25;
+					}
+					score = -250;
+					shits++;
+					noteMiss(daNote.noteData);
+				case 'bad':
+					score = 350;
+					totalNotesHit += 0.05;
+					scoreTxt.alpha = 1;
+					misses++;
+					if (theFunne){
+						score = -1000;
+						health -= 0.05;
+						combo = 0;
+					}
+					else{
+						score = -100;
+						ss = false;
+						bads++;
+					}
+					noteMiss(daNote.noteData);
+				case 'good':
+					score = 350;
+					totalNotesHit += 0.3;
+					score = 200;
+					scoreTxt.alpha = 1;
+					ss = false;
+					goods++;
+				case 'sick':
+					sicks++;
+					health += 0.1;
+					scoreTxt.alpha = 1;
+					scoreTxt2.alpha = 1;
+					totalNotesHit += 1;
+					score = 350;
+					if(noteSplashOp)
+						spawnNoteSplashOnNote(daNote);
 			}
-		
-	
-	
+			songScore += score;
+
 			var pixelShitPart1:String = "";
 			var pixelShitPart2:String = '';
 	
@@ -2296,7 +2319,7 @@ class PlayState extends states.MusicBeatState
 				pixelShitPart2 = '-pixel';
 			}
 	
-			rating.loadGraphic(Paths.image(pixelShitPart1 + RatingType + pixelShitPart2));
+			rating.loadGraphic(Paths.image(pixelShitPart1 + daNote.noteRating + pixelShitPart2));
 			rating.screenCenter();
 			rating.y += 200;
 			rating.x = coolText.x - 40;
@@ -2406,64 +2429,21 @@ class PlayState extends states.MusicBeatState
 			curSection += 1;
 		}
 
-	public function popSick(daNote:Note):Void {
-		var score:Int = 350;
-		RatingType = 'sick';
-		sicks++;
-		health += 0.1;
-		scoreTxt.alpha = 1;
-		scoreTxt2.alpha = 1;
-		totalNotesHit += 1;
-		score = 350;
-		if (noteSplashOp)
-		{
-			var recycledNote = grpNoteSplashes.recycle(NoteSplash);
-			recycledNote.setupNoteSplash(daNote.x, daNote.y, daNote.noteData);
-			grpNoteSplashes.add(recycledNote);
+	function spawnNoteSplashOnNote(note:Note) {
+		if(note != null) {
+			var strum = playerStrums.members[note.noteData];
+			if(strum != null) {
+				spawnNoteSplash(strum.x, strum.y, note.noteData, note);
+			}
 		}
 	}
 
-	public function popGood():Void {
-		var score:Int = 350;
-		RatingType = 'good';
-		totalNotesHit += 0.65;
-		score = 200;
-		scoreTxt.alpha = 1;
-		ss = false;
-		goods++;
-	}
+	public function spawnNoteSplash(x:Float, y:Float, data:Int,n:Note) {
+		var skin:String = 'noteSplashes';
 
-	public function popBad():Void {
-		var score:Int = 350;
-		RatingType = 'bad';
-		totalNotesHit += 0.25;
-		scoreTxt.alpha = 1;
-		if (theFunne)
-		{
-			score = 1000;
-			health -= 0.05;
-			combo = 0;
-		}
-		else
-			score = 100;
-			ss = false;
-			bads++;
-	}
-
-	public function popShit():Void {
-		var score:Int = 350;
-		RatingType = 'shit';
-		ss = false;
-		scoreTxt.alpha = 1;
-		if (theFunne)
-		{
-			score = 2000;
-			combo = 0;
-			misses++;
-			health -= 0.2;
-		}
-		score = 250;
-		shits++;
+		var splash:NoteSplash = grpNoteSplashes.recycle(NoteSplash);
+		splash.setupNoteSplash(x, y, data);
+		grpNoteSplashes.add(splash);
 	}
 	
 	public function NearlyEquals(value1:Float, value2:Float, unimportantDifference:Float = 10):Bool

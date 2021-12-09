@@ -705,7 +705,7 @@ class PlayState extends states.MusicBeatState
 
 		#if (MODS_ALLOWED && LUA_ALLOWED)
 		var doPush:Bool = false;
-		var luaFile2:String = 'data/' + Paths.formatToSongPath(SONG.song) + '/script.lua';
+		var luaFile2:String = 'data/songs/' + Paths.formatToSongPath(SONG.song) + '/script.lua';
 		if(FileSystem.exists(Paths.modFolders(luaFile2))) {
 			luaFile2 = Paths.modFolders(luaFile2);
 			doPush = true;

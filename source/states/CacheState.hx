@@ -7,9 +7,9 @@ import flixel.graphics.FlxGraphic;
 import openfl.display.BitmapData;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
+import flash.display.BitmapData;
 
 using StringTools;
-
 class CacheState extends MusicBeatState
 {
     var toBeFinished = 0;
@@ -38,23 +38,27 @@ class CacheState extends MusicBeatState
 									"characters/weeb/senpai", "characters/weeb/spirit", "characters/weeb/senpaiCrazy"];
     
     var objectsloading:Bool = false;
-    var objects:Array<String> = ["freeplay/record player freeplay", 
-                                "menu/bg", "menu/blackslines_finalrating", 
-                                'menu/FNF_main_menu_assets', "menu/menuBG", 
-                                'menu/menuBGBlue', 'menu/menuBGMagenta', 
-                                'menu/menuChartingBG', 'menu/menuDesat',
-                                "menu/menuoptions", "menu/BOYFRIEND", 
-                                "ratings/A", 'ratings/B', 'ratings/C', 
-                                'ratings/D', 'ratings/F', 'ratings/S', 'ratings/SS', 
-                                'ratings/BOYFRIEND_RATING', 'titlestate/gfDanceTitle', 
-                                'titlestate/logoBumpin', 'titlestate/newgrounds_logo', 
-                                'titlestate/titleEnter', 'titlestate/titlestateBG' ];
+    var objects:Array<String> = [
+        "freeplay/record player freeplay", 
+        "menu/bg", "menu/blackslines_finalrating", 
+        'menu/FNF_main_menu_assets', "menu/menuBG", 
+        'menu/menuBGBlue', 'menu/menuBGMagenta', 
+        'menu/menuChartingBG', 'menu/menuDesat',
+        "menu/menuoptions", "menu/BOYFRIEND", 
+        "ratings/A", 'ratings/B', 'ratings/C', 
+        'ratings/D', 'ratings/F', 'ratings/S', 'ratings/SS', 
+        'ratings/BOYFRIEND_RATING', 'titlestate/gfDanceTitle', 
+        'titlestate/logoBumpin', 'titlestate/newgrounds_logo', 
+        'titlestate/titleEnter', 'titlestate/titlestateBG',
+        'UI/checkboxThingie'];
     var soundsloading:Bool = false;
     var sounds:Array<String> =[
         "confirmMenu","scrollMenu","cancelMenu",
         "intro1","intro2","intro3","introGo"];
 
 	var loadingStart:Bool = false;
+
+    var math:Float;
 
 	override function create()
 	{
@@ -69,8 +73,8 @@ class CacheState extends MusicBeatState
 
         toBeFinished = Lambda.count(characters) + Lambda.count(objects) + Lambda.count(sounds);
 
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBG'));
-		add(bg);
+        var bg:FlxSprite = new FlxSprite().loadGraphic(BitmapData.fromFile(Paths.image('menu/menuBG')));
+        add(bg);
 
         loading = new FlxText(0, 680);
         loading.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, RIGHT, OUTLINE,FlxColor.BLACK);
@@ -87,12 +91,12 @@ class CacheState extends MusicBeatState
     {
         super.update(elapsed);
 
-        if (charactersloading && objectsloading)
+        math = Mathf.getPercentage(finished,toBeFinished);
+
+        if (charactersloading && objectsloading && soundsloading)
         {
             FlxG.switchState(new states.TitleState());
             FlxG.camera.fade(FlxColor.BLACK, 0.8, false);
-            loadingbar = new FlxSprite().loadGraphic(Paths.image('menu/bar'));
-            add(loadingbar);
         }
 	}
 
@@ -122,7 +126,7 @@ class CacheState extends MusicBeatState
         for(x in characters){
             if(#if sys sys.FileSystem.exists(Paths.image(x))
                 #else Assets.exists(Paths.image(x))#end){
-                loading.text = "Characters Loaded (" + finished + "/" + toBeFinished + ")";
+                loading.text = "Loaded Objects: " + math;
                 ImageCache.add(Paths.image(x));
             }
             else
@@ -138,7 +142,7 @@ class CacheState extends MusicBeatState
         for(x in objects){
             if(#if sys sys.FileSystem.exists(Paths.image(x))
                 #else Assets.exists(Paths.image(x))#end){
-                loading.text = "Objects Loaded (" + finished + "/" + toBeFinished + ")";
+                loading.text = "Loaded Objects: " + math;
                 ImageCache.add(Paths.image(x));
             }
             else{
@@ -147,7 +151,7 @@ class CacheState extends MusicBeatState
             trace("Chached " + x);
             finished++;
         }
-        loading.text = "Objects Loaded";
+        loading.text = "Loaded Objects: " + math;
         objectsloading = true;
     }
     function soundsAssets(){
@@ -155,7 +159,7 @@ class CacheState extends MusicBeatState
             if(#if sys sys.FileSystem.exists(Paths.sound(x))
                 #else Assets.exists(Paths.sound(x)) #end){
                 FlxG.sound.cache(Paths.sound(x));
-                loading.text = "Objects Loaded (" + finished + "/" + toBeFinished + ")";
+                loading.text = "Loaded Objects: " + math;
             }
             else
                 loading.text = "Error while loading\nSound in path " + Paths.sound(x);

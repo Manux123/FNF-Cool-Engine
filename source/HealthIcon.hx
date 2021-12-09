@@ -13,10 +13,7 @@ class HealthIcon extends FlxSprite
 	public function new(char:String = 'bf', isPlayer:Bool = false)
 	{
 		super();
-		if(char != 'tiki')
-			updateIcon(char, isPlayer);
-		else
-			updateIcon('bf', isPlayer);
+		updateIcon(char, isPlayer);
 	}
 
 	public function updateIcon(char:String = 'bf', isPlayer:Bool = false)

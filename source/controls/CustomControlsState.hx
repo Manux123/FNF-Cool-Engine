@@ -1,4 +1,4 @@
-package options;
+package controls;
 
 import flixel.system.FlxAssets.VirtualInputData;
 import flixel.ui.FlxButton;

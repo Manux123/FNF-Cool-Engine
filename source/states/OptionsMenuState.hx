@@ -4,7 +4,8 @@ import openfl.display.FPS;
 #if desktop
 import Discord.DiscordClient;
 #end
-import options.substates.KeyBindMenu;
+import controls.KeyBindMenu;
+import controls.CustomControlsState;
 import Controls.KeyboardScheme;
 import Controls.Control;
 import Section.SwagSection;
@@ -129,7 +130,7 @@ class OptionsMenuState extends MusicBeatState
 						FlxG.switchState(new NoteSkinState());
 					case 4:
 						#if mobileC
-						FlxG.switchState(new options.CustomControlsState());
+						FlxG.switchState(new CustomControlsState());
 						#else
 						FlxG.state.openSubState(new KeyBindMenu());
 						#end

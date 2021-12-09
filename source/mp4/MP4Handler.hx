@@ -8,8 +8,8 @@ import flixel.util.FlxTimer;
 import openfl.events.Event;
 import vlc.VlcBitmap;
 
-// THIS IS FOR TESTING
-// DONT STEAL MY CODE >:(
+// "THIS IS FOR TESTING, DONT STEAL MY CODE >:("
+// -Random dumm guy
 class MP4Handler
 {
 	public var finishCallback:Void->Void;
@@ -112,7 +112,7 @@ class MP4Handler
 			}
 			else if (stateCallback != null)
 			{
-				LoadingState.loadAndSwitchState(stateCallback);
+				states.LoadingState.loadAndSwitchState(stateCallback);
 			}
 
 			bitmap.dispose();
@@ -144,7 +144,7 @@ class MP4Handler
 		}
 		else if (stateCallback != null)
 		{
-			LoadingState.loadAndSwitchState(stateCallback);
+			states.LoadingState.loadAndSwitchState(stateCallback);
 		}
 	}
 

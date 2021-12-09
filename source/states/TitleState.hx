@@ -279,7 +279,8 @@ class TitleState extends states.MusicBeatState
 					}
 					else
 					{
-						FlxG.switchState(new MainMenuState());
+						FlxG.switchState(new states.VideoState('test/sus',new states.PlayState()));
+						//FlxG.switchState(new MainMenuState());
 					}
 				}
 

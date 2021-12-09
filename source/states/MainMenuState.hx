@@ -15,6 +15,7 @@ import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 import lime.app.Application;
+import openfl.display.BitmapData as Bitmap;
 
 using StringTools;
 
@@ -63,7 +64,7 @@ class MainMenuState extends states.MusicBeatState
 
 		persistentUpdate = persistentDraw = true;
 
-		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBG'));
+		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBG')));
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0.18;
 		bg.screenCenter();
@@ -73,7 +74,7 @@ class MainMenuState extends states.MusicBeatState
 		camFollow = new FlxObject(0, 0, 1, 1);
 		add(camFollow);
 
-		magenta = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGMagenta'));
+		magenta = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGMagenta')));
 		magenta.screenCenter();
 		magenta.visible = false;
 		magenta.antialiasing = true;
@@ -112,11 +113,11 @@ class MainMenuState extends states.MusicBeatState
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 
-		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Cool Engine BETA - v" + Application.current.meta.get('version'), 12);
-		versionShit.scrollFactor.set();
-		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		versionShit.y -= 20;
-		add(versionShit);
+		var versionShit2:FlxText = new FlxText(5, FlxG.height - 19, 0, "Cool Engine BETA - v" + Application.current.meta.get('version'), 12);
+		versionShit2.scrollFactor.set();
+		versionShit2.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionShit2.y -= 20;
+		add(versionShit2);
 
 		// NG.core.calls.event.logEvent('swag').send();
 

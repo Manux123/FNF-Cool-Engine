@@ -108,7 +108,7 @@ class Character extends FlxSprite
 
 			case 'spooky':
 				// SPOOKY MONTH!
-				tex = Paths.getSparrowAtlas('spooky_kids_assets');
+				tex = Paths.getSparrowAtlas('week2/spooky_kids_assets');
 				frames = tex;
 				animation.addByPrefix('singUP', 'spooky UP NOTE', 24, false);
 				animation.addByPrefix('singDOWN', 'spooky DOWN note', 24, false);
@@ -152,7 +152,7 @@ class Character extends FlxSprite
 				playAnim('idle');
 
 			case 'monster':
-				tex = Paths.getSparrowAtlas('Monster_Assets');
+				tex = Paths.getSparrowAtlas('week2/Monster_Assets');
 				frames = tex;
 				animation.addByPrefix('idle', 'monster idle', 24, false);
 				animation.addByPrefix('singUP', 'monster up note', 24, false);
@@ -400,9 +400,9 @@ class Character extends FlxSprite
 		}
 	}
 
-	public function loadOffsetFile(character:String, library:String = 'shared')
+	public function loadOffsetFile(character:String)
 	{
-		var offset:Array<String> = CoolUtil.coolTextFile(Paths.txt('offsets/' + character + "Offsets", library));
+		var offset:Array<String> = CoolUtil.coolTextFile(Paths.txt('characters/offsets/' + character + "Offsets"));
 
 		for (i in 0...offset.length)
 		{

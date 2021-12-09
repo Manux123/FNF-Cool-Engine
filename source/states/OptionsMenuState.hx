@@ -213,9 +213,17 @@ class OptionsMenu extends MusicBeatState
 		add(menuBG);
 
 		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 144;
+			#if desktop
+			openfl.Lib.current.stage.frameRate = 120;
+			#else
+			openfl.Lib.current.stage.frameRate = 60;
+			#end
 		else
+			#if !androidC
 			openfl.Lib.current.stage.frameRate = 999;
+			#else
+			openfl.Lib.current.stage.frameRate = 240;
+			#end
 
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
@@ -692,6 +700,20 @@ class FPSCap extends Option
 	public override function press():Bool
 	{
 		FlxG.save.data.noFpsCap = !FlxG.save.data.noFpsCap;
+		
+		if(FlxG.save.data.FPSCap)
+			#if desktop
+			openfl.Lib.current.stage.frameRate = 120;
+			#else
+			openfl.Lib.current.stage.frameRate = 60;
+			#end
+		else
+			#if !androidC
+			openfl.Lib.current.stage.frameRate = 999;
+			#else
+			openfl.Lib.current.stage.frameRate = 240;
+			#end
+
 		display = updateDisplay();
 		return true;
 	}

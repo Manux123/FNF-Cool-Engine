@@ -111,9 +111,8 @@ class AnimationDebug extends FlxState
 		camHUD.bgColor.alpha = 0;
 		camGame = new FlxCamera();
 
-		FlxG.cameras.add(camGame);
-		FlxG.cameras.add(camHUD);
-		FlxCamera.defaultCameras = [camGame];
+		FlxG.cameras.reset(camGame);
+		FlxG.cameras.add(camHUD,false);
 
 		layeringbullshit = new FlxTypedGroup<FlxSprite>();
 		add(layeringbullshit);
@@ -128,7 +127,7 @@ class AnimationDebug extends FlxState
 		var characterTab = new FlxUI(null, UI_box);
 		characterTab.name = "Character";
 
-		var characters:Array<String> = CoolUtil.coolTextFile(Paths.txt('characterList'));
+		var characters:Array<String> = CoolUtil.coolTextFile(Paths.txt('characters/characterList'));
 
 		var cumfart = new FlxUIDropDownMenu(50, 50, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
 		{

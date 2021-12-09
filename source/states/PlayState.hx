@@ -222,8 +222,10 @@ class PlayState extends states.MusicBeatState
 			openfl.Lib.current.stage.frameRate = 60;
 			#end
 		else
-			#if !mobileC
+			#if !androidC
 			openfl.Lib.current.stage.frameRate = 999;
+			#else
+			openfl.Lib.current.stage.frameRate = 240;
 			#end
 
 		sicks = 0;
@@ -1756,6 +1758,10 @@ class PlayState extends states.MusicBeatState
 		}
 
 		super.update(elapsed);
+
+		if(dad.curCharacter == 'spirit'){
+			dad.y += Mathf.sineByTime(elapsed);
+		}
 
 		if (FlxG.save.data.accuracyDisplay)
 		{

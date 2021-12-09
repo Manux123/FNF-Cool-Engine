@@ -5,9 +5,7 @@ import llua.State;
 import llua.Convert;
 #end
 
-  //////////////////////////////////
- //////CREDITS PSYCH ENGINE////////
-//////////////////////////////////
+ //CREDITS PSYCH ENGINE DEVELOPERS
 
 import flixel.FlxG;
 import flixel.tweens.FlxTween;
@@ -138,10 +136,10 @@ class FunkinLua {
 		set('defaultGirlfriendY', lePlayState.GF_Y);
 
 		// Some settings, no jokes
-		set('downscroll', ClientPrefs.downScroll);
-		set('middlescroll', ClientPrefs.middleScroll);
+		set('downscroll', FlxG.save.data.isdownscroll);
+		set('middlescroll', FlxG.save.data.middlescroll);
 		set('framerate', ClientPrefs.framerate);
-		set('ghostTapping', ClientPrefs.ghostTapping);
+		set('ghostTapping', FlxG.save.data.newInput);
 		set('hideHud', ClientPrefs.hideHud);
 		set('hideTime', ClientPrefs.hideTime);
 		set('cameraZoomOnBeat', ClientPrefs.camZooms);

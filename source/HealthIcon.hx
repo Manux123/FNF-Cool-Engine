@@ -1,5 +1,6 @@
 package;
 
+import lime.utils.Assets;
 import flixel.FlxSprite;
 
 using StringTools;
@@ -13,15 +14,16 @@ class HealthIcon extends FlxSprite
 	public function new(char:String = 'bf', isPlayer:Bool = false)
 	{
 		super();
+		if(char == null || !Assets.exists(Paths.image('icons/icon-' + char)))
+			char = 'face';
+
 		updateIcon(char, isPlayer);
 	}
 
 	public function updateIcon(char:String = 'bf', isPlayer:Bool = false)
 	{
 		if ((!char.endsWith('pixel')) && (char.contains('-')))
-		{
 			char = char.substring(0, char.indexOf('-'));
-		}
 
 		antialiasing = true;
 		loadGraphic(Paths.image('icons/icon-' + char), true, 150, 150);

@@ -26,6 +26,7 @@ import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 import lime.app.Application;
 import openfl.Assets;
+import openfl.display.BitmapData as Bitmap;
 
 using StringTools;
 
@@ -45,12 +46,24 @@ class TitleState extends states.MusicBeatState
 
 	override public function create():Void
 	{
-
 		PlayerSettings.init();
+
+		if(FlxG.save.data.FPSCap)
+			#if desktop
+			openfl.Lib.current.stage.frameRate = 120;
+			#else
+			openfl.Lib.current.stage.frameRate = 60;
+			#end
+		else
+			#if !androidC
+			openfl.Lib.current.stage.frameRate = 999;
+			#else
+			openfl.Lib.current.stage.frameRate = 240;
+			#end
 
 		curWacky = FlxG.random.getObject(getIntroTextShit());
 
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGtitle'));
+		var bg:FlxSprite = new FlxSprite().loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGtitle')));
 		add(bg);
 
 		// DEBUG BULLSHIT
@@ -279,8 +292,8 @@ class TitleState extends states.MusicBeatState
 					}
 					else
 					{
-						FlxG.switchState(new states.VideoState('test/sus',new states.PlayState()));
-						//FlxG.switchState(new MainMenuState());
+						//FlxG.switchState(new states.VideoState('test/sus',new states.PlayState()));
+						FlxG.switchState(new MainMenuState());
 					}
 				}
 

@@ -64,6 +64,19 @@ class CacheState extends MusicBeatState
 	{
         FlxG.mouse.visible = false;
         FlxG.sound.muteKeys = null;
+
+        if(FlxG.save.data.FPSCap)
+			#if desktop
+			openfl.Lib.current.stage.frameRate = 120;
+			#else
+			openfl.Lib.current.stage.frameRate = 60;
+			#end
+		else
+			#if !androidC
+			openfl.Lib.current.stage.frameRate = 999;
+			#else
+			openfl.Lib.current.stage.frameRate = 240;
+			#end
         
         Highscore.load();
 		KeyBinds.keyCheck();

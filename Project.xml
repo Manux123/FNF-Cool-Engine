@@ -97,6 +97,7 @@
 	<assets if="windows" rename="" path="plugins/"/>
 	<assets if="windows" rename="" path="dlls/"/>
 	<assets path='art/readme.txt' rename='do NOT readme.txt' />
+	<assets path="mods" rename='example-mods'/>
 	<!-- <template path='mods' /> -->
 	
 	<assets path="CHANGELOG.md" rename='changelog.txt'/>

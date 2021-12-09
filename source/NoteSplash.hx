@@ -7,6 +7,20 @@ class NoteSplash extends FlxSprite
 {
 	public function new(x:Float = 0, y:Float = 0, ?note:Int = 0) {
 		super(x, y);
+	/*	switch(FlxG.save.data.noteSplashesSkins)
+		{
+			case 'Diamond':
+				frames = Paths.getSparrowAtlas('UI/noteSplashes_3');
+			case 'Skeleton':
+				frames = Paths.getSparrowAtlas('UI/noteSplashes_2');
+			case 'Splash Sonic':
+				frames = Paths(x, y, note).getSparrowAtlas('UI/BloodSplash');
+				animation.addByPrefix("note1-0", "Squirt", 24, false);
+			case 'Splash Default':
+				frames = Paths.getSparrowAtlas('UI/noteSplashes');
+			default:
+				frames = Paths.getSparrowAtlas('UI/noteSplashes');
+		}*/
 		frames = Paths.getSparrowAtlas('UI/noteSplashes');
 		animation.addByPrefix("note1-0", "note impact 1 blue", 24, false);
 		animation.addByPrefix("note2-0", "note impact 1 green", 24, false);

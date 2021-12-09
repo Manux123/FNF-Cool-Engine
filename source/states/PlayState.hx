@@ -1687,8 +1687,8 @@ class PlayState extends states.MusicBeatState
 
 		if (FlxG.save.data.accuracyDisplay)
 		{
-			scoreTxt.text = "Score:" + songScore + " // Misses:" + misses;
-			scoreTxt2.text = "Accuracy: " + reduceFloat(accuracy, 2) + "% // Rank: " + generateLetterRank();
+			scoreTxt.text = "Score:" + songScore + " | Misses:" + misses;
+			scoreTxt2.text = "Accuracy: " + reduceFloat(accuracy, 2) + "% | Rank: " + generateLetterRank();
 		}
 		else
 		{

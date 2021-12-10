@@ -198,13 +198,10 @@ class DialogueBox extends FlxSpriteGroup
 			FlxG.sound.play(Paths.sound('clickText'), 0.8);
 
 			if(FlxG.keys.justPressed.SHIFT){
-				isEnding = true;
-				new FlxTimer().start(1.2, function(tmr:FlxTimer)
-					{
-						finishThing();
-						kill();
-					});
-				};
+				finishThing();
+				kill();
+				trace('dialogue: SKIP!');
+			};
 
 			if (dialogueList[1] == null && dialogueList[0] != null)
 			{
@@ -241,7 +238,8 @@ class DialogueBox extends FlxSpriteGroup
 
 		textcontrols = new FlxText(0,50,'Press SHIFT for skip dialogue');
         textcontrols.size = 28;
-		textcontrols.y += 100;
+		textcontrols.x += 600;
+		textcontrols.y += 590;
         textcontrols.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);
         textcontrols.color = FlxColor.WHITE;
         textcontrols.scrollFactor.set();

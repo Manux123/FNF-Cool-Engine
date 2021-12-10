@@ -146,8 +146,8 @@ class CacheState extends MusicBeatState
                 loading.text = "Error while loading\nImage in path " + Paths.image(x);
             trace("Chached " + x);
             finished++;
-        loading.text = "Characters Loaded";
-        charactersloading = true;
+            loading.text = "Characters Loaded";
+            charactersloading = true;
         }
     }
 

@@ -334,11 +334,11 @@ class PlayState extends states.MusicBeatState
 					"Only then I will even CONSIDER letting you\ndate my daughter!"
 				];
 			case 'senpai':
-				dialogue = CoolUtil.coolTextFile(Paths.txt('senpai/senpaiDialogue'));
+				dialogue = CoolUtil.coolTextFile(Paths.txt('songs/senpai/senpaiDialogue'));
 			case 'roses':
-				dialogue = CoolUtil.coolTextFile(Paths.txt('roses/rosesDialogue'));
+				dialogue = CoolUtil.coolTextFile(Paths.txt('songs/roses/rosesDialogue'));
 			case 'thorns':
-				dialogue = CoolUtil.coolTextFile(Paths.txt('thorns/thornsDialogue'));
+				dialogue = CoolUtil.coolTextFile(Paths.txt('songs/thorns/thornsDialogue'));
 		}
 
 		switch (SONG.song.toLowerCase())
@@ -756,7 +756,8 @@ class PlayState extends states.MusicBeatState
 
 		camPos = new FlxPoint(dad.getGraphicMidpoint().x, dad.getGraphicMidpoint().y);
 
-		switch (SONG.player2){ //Its player2 cuz its used when gf is the enemy
+		switch (SONG.player2){
+
 			case 'gf':
 				dad.setPosition(gf.x, gf.y);
 				gf.visible = false;
@@ -765,9 +766,6 @@ class PlayState extends states.MusicBeatState
 					camPos.x += 600;
 					tweenCamIn();
 				}
-		}
-		switch (SONG.player2)
-		{
 			case "spooky":
 				dad.y += 200;
 			case "monster":
@@ -1765,8 +1763,8 @@ class PlayState extends states.MusicBeatState
 
 		if (FlxG.save.data.accuracyDisplay)
 		{
-			scoreTxt.text = "Score:" + songScore + " // Misses:" + misses;
-			scoreTxt2.text = "Accuracy: " + Mathf.getPercentage(accuracy, 2) + "% // Rank: " + generateLetterRank();
+			scoreTxt.text = "Score:" + songScore + " | Misses:" + misses;
+			scoreTxt2.text = "Accuracy: " + Mathf.getPercentage(accuracy, 2) + "% | Rank: " + generateLetterRank();
 		}
 		else
 		{

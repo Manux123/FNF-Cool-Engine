@@ -8,6 +8,7 @@ import openfl.display.BitmapData;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flash.display.BitmapData;
+import states.TitleState;
 
 using StringTools;
 class CacheState extends MusicBeatState
@@ -95,7 +96,7 @@ class CacheState extends MusicBeatState
 
         if (charactersloading && objectsloading && soundsloading)
         {
-            FlxG.switchState(new states.TitleState());
+            FlxG.switchState(new TitleState());
             FlxG.camera.fade(FlxColor.BLACK, 0.8, false);
         }
 	}
@@ -132,7 +133,7 @@ class CacheState extends MusicBeatState
                 loading.text = "Error while loading\nImage in path " + Paths.image(x);
             trace("Chached " + x);
             finished++;
-        charactersloading = true;
+            charactersloading = true;
         }
     }
 
@@ -165,7 +166,6 @@ class CacheState extends MusicBeatState
 }
 
 //End of Loading and Start of Image Caching
-
 
 class ImageCache{
 

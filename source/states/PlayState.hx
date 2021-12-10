@@ -2366,7 +2366,7 @@ class PlayState extends states.MusicBeatState
 					score = 350;
 					ss = false;
 					scoreTxt.alpha = 1;
-					misses++;
+					boyfriend.stunned = false;
 					if (theFunne){
 						score = -2000;
 						combo = 0;
@@ -2383,8 +2383,8 @@ class PlayState extends states.MusicBeatState
 				case 'bad':
 					score = 350;
 					totalNotesHit += 0.05;
+					boyfriend.stunned = false;
 					scoreTxt.alpha = 1;
-					misses++;
 					if (theFunne){
 						score = -1000;
 						health -= 0.05;

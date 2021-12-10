@@ -11,15 +11,41 @@ class Mathf {
     //use this instead XD
     public static function getPercentage2(number:Float,toGet:Float):Float{
         var num = number;
-		num = toGet / num;
-		num = Math.round( num ) * 100;
-        return num;
+		num = num / toGet;
+		num = num * 100;
+        return Math.round(num);
     }
     
+    //i dont even need to explain this
+    public static function clamp(value,min,max){
+        if(value > max)
+            value = max;
+        else if(value < min)
+            value = min;
+
+        return value;
+    }
+
+    //Returns the largest integer smaller to or equal to value
+    public static function floor2int(value){
+        return Std.int(Math.floor(Math.abs(value)));
+    }
+
     static var sineShit:Float;
 
-    public static function sineByTime(elapsed:Float, ?multi:Int = 1){
+    //just put this in on functions than are called per frame
+    //like override function update
+    public static function sineByTime(elapsed:Float, ?multi:Float = 1){
         sineShit+=elapsed;
         return Math.sin(Math.abs(sineShit * multi));
+    }
+
+    //this functions are for angles and rotations
+    public static function radiants2degrees(value:Float){
+        return value * (180/Math.PI);
+    }
+
+    public static function degrees2radiants(value:Float){
+        return value * (Math.PI/180);
     }
 }

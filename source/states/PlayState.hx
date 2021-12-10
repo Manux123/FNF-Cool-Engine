@@ -59,6 +59,8 @@ using StringTools;
 
 class PlayState extends states.MusicBeatState
 {
+	public static var instance:PlayState = null; //lol
+
 	#if mobileC
 	var mcontrols:Mobilecontrols; 
 	#end
@@ -93,8 +95,6 @@ class PlayState extends states.MusicBeatState
 
 	var halloweenLevel:Bool = false;
 
-	public static var instance:PlayState = null; //lol
-
 	#if desktop
 	// Discord RPC variables
 	var storyDifficultyText:String = "";
@@ -106,7 +106,7 @@ class PlayState extends states.MusicBeatState
 
 	private var luaArray:Array<FunkinLua> = [];
 
-	private var vocals:FlxSound;
+	public var vocals:FlxSound;
 
 	public var dad:Character;
 	public var gf:Character;
@@ -306,10 +306,6 @@ class PlayState extends states.MusicBeatState
 			SONG = Song.loadFromJson('tutorial');
 
 		grpNoteSplashes = new FlxTypedGroup<NoteSplash>();
-		var sploosh = new NoteSplash(100, 100, 0);
-		sploosh.alpha = 0.6;
-		sploosh.visible = false;
-		grpNoteSplashes.add(sploosh);
 
 		Conductor.mapBPMChanges(SONG);
 		Conductor.changeBPM(SONG.bpm);
@@ -871,6 +867,9 @@ class PlayState extends states.MusicBeatState
 		if (FlxG.save.data.notesplashes)	
 		{
 			add(grpNoteSplashes);
+			var sploosh = new NoteSplash(100, 100, 0);
+			grpNoteSplashes.add(sploosh);
+			sploosh.alpha = 0.0;
 		}
 
 		playerStrums = new FlxTypedGroup<FlxSprite>();
@@ -966,19 +965,34 @@ class PlayState extends states.MusicBeatState
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 
+		var grpDataShit:FlxTypedGroup<FlxText> = new FlxTypedGroup<FlxText>();
+
 		if(FlxG.save.data.perfectmode) {
 			fullCombo = new FlxText(5, FlxG.height - 19, 0, "Full Combo Mode", 12);
 			fullCombo.scrollFactor.set();
 			fullCombo.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			fullCombo.y -= 20;
-			add(fullCombo); }
+			fullCombo.visible = false;
+			fullCombo.ID = 0;
+			grpDataShit.add(fullCombo); }
 		
 		if(FlxG.save.data.sickmode) {
 			sickMode = new FlxText(5, FlxG.height - 19, 0, "Sick Mode", 12);
 			sickMode.scrollFactor.set();
 			sickMode.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			sickMode.y -= 20;
-			add(sickMode); }
+			sickMode.visible = false;
+			sickMode.ID = 1;
+			grpDataShit.add(sickMode); }
+
+		grpDataShit.forEach(function(spr:FlxText){
+			spr.visible = true;
+			add(spr);
+			spr.cameras = [camHUD];
+			if(spr.ID == 0 && FlxG.save.data.sickmode){
+				spr.y -= 20;
+			}
+		});
 
 		iconP1 = new HealthIcon(SONG.player1, true);
 		iconP1.y = healthBar.y - (iconP1.height / 2);
@@ -1001,10 +1015,6 @@ class PlayState extends states.MusicBeatState
 		scoreTxt2.cameras = [camHUD];
 		doof.cameras = [camHUD];
 		versionShit.cameras = [camHUD];
-		if(FlxG.save.data.perfectmode)
-			fullCombo.cameras = [camHUD];
-		if(FlxG.save.data.sickmode)
-			sickMode.cameras = [camHUD];
 
 		#if mobileC
 		mcontrols = new Mobilecontrols();

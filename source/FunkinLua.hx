@@ -134,7 +134,7 @@ class FunkinLua {
 		set('defaultOpponentY', lePlayState.DAD_Y);
 		set('defaultGirlfriendX', lePlayState.GF_X);
 		set('defaultGirlfriendY', lePlayState.GF_Y);
-
+		
 		// Some settings, no jokes
 		set('downscroll', FlxG.save.data.isdownscroll);
 		set('middlescroll', FlxG.save.data.middlescroll);

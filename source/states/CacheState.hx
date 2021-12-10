@@ -65,19 +65,6 @@ class CacheState extends MusicBeatState
         FlxG.mouse.visible = false;
         FlxG.sound.muteKeys = null;
 
-        if(FlxG.save.data.FPSCap)
-			#if desktop
-			openfl.Lib.current.stage.frameRate = 120;
-			#else
-			openfl.Lib.current.stage.frameRate = 60;
-			#end
-		else
-			#if !androidC
-			openfl.Lib.current.stage.frameRate = 999;
-			#else
-			openfl.Lib.current.stage.frameRate = 240;
-			#end
-        
         Highscore.load();
 		KeyBinds.keyCheck();
 		PlayerSettings.init();
@@ -104,7 +91,7 @@ class CacheState extends MusicBeatState
     {
         super.update(elapsed);
 
-        math = Mathf.getPercentage(finished,toBeFinished);
+        math = Mathf.getPercentage2(finished,toBeFinished);
 
         if (charactersloading && objectsloading && soundsloading)
         {
@@ -115,7 +102,7 @@ class CacheState extends MusicBeatState
 
     function preload(){
 
-        loading.text = "Loading Assets";
+        loading.text = "Loaded Objects: " + math;
 
         if(!charactersloading){
             #if sys sys.thread.Thread.create(() -> { #end
@@ -139,14 +126,12 @@ class CacheState extends MusicBeatState
         for(x in characters){
             if(#if sys sys.FileSystem.exists(Paths.image(x))
                 #else Assets.exists(Paths.image(x))#end){
-                loading.text = "Loaded Objects: " + math;
                 ImageCache.add(Paths.image(x));
             }
             else
                 loading.text = "Error while loading\nImage in path " + Paths.image(x);
             trace("Chached " + x);
             finished++;
-        loading.text = "Characters Loaded";
         charactersloading = true;
         }
     }
@@ -164,7 +149,6 @@ class CacheState extends MusicBeatState
             trace("Chached " + x);
             finished++;
         }
-        loading.text = "Loaded Objects: " + math;
         objectsloading = true;
     }
     function soundsAssets(){
@@ -172,12 +156,10 @@ class CacheState extends MusicBeatState
             if(#if sys sys.FileSystem.exists(Paths.sound(x))
                 #else Assets.exists(Paths.sound(x)) #end){
                 FlxG.sound.cache(Paths.sound(x));
-                loading.text = "Loaded Objects: " + math;
             }
             else
                 loading.text = "Error while loading\nSound in path " + Paths.sound(x);
         }
-        loading.text = "Objects Loaded";
         soundsloading = true;
     }
 }

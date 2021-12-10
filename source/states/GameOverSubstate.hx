@@ -7,6 +7,8 @@ import flixel.math.FlxPoint;
 import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 
+import states.PlayState;
+
 class GameOverSubstate extends MusicBeatSubstate
 {
 	var bf:Boyfriend;
@@ -16,6 +18,9 @@ class GameOverSubstate extends MusicBeatSubstate
 
 	public function new(x:Float, y:Float)
 	{
+		if(PlayState.instance.vocals.playing)
+			PlayState.instance.vocals.stop();
+
 		var daStage = states.PlayState.curStage;
 		var daBf:String = '';
 		switch (daStage)

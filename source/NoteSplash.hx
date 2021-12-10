@@ -5,32 +5,31 @@ import flixel.FlxSprite;
 
 class NoteSplash extends FlxSprite
 {
-	public function new(x:Float = 0, y:Float = 0, ?note:Int = 0,?skin:String) {
+	public function new(x:Float = 0, y:Float = 0, ?note:Int = 0,?skin:String = 'noteSplashes') {
 		super(x, y);
-		if(skin == null)skin = 'noteSplashes';
 		setupAnimations(skin);
 
 		setupNoteSplash(x, y, note);
 	}
 
-	public function setupNoteSplash(x:Float, y:Float, ?note:Int = 0) {
+	public function setupNoteSplash(x:Float, y:Float, ?direction:Int = 0) {
 		setPosition(x - Note.swagWidth * 0.95, y - Note.swagWidth);
 		alpha = 0.6;
-		animation.play('note' + note + '-' + FlxG.random.int(1, 2), true);
-		animation.curAnim.frameRate = 24 + FlxG.random.int(-2, 2);
-		updateHitbox();
-		offset.set(Std.int(0.3 * width), Std.int(0.3 * height));
+
+		var animNum:Int = FlxG.random.int(1, 2);
+		animation.play('note' + direction + '-' + animNum, true);
+		if(animation.curAnim != null)animation.curAnim.frameRate = 24 + FlxG.random.int(-2, 2);
+		offset.set(10, 10);
 	}
+
+	var posibleShit:Array<String> = [" purple"," blue"," green"," red"];
 	
 	public function setupAnimations(?skin:String){
-		frames = Paths.getSparrowAtlas('UI/$skin');
-		for(i in 1... 3){
-			animation.addByPrefix("note1-" + i, "note impact " + i + " blue", 24, false);
-			animation.addByPrefix("note2-" + i, "note impact " + i +" green", 24, false);
-			animation.addByPrefix("note0-" + i, "note impact " + i + " purple", 24, false);
-			animation.addByPrefix("note3-" + i, "note impact" + i +" red", 24, false);
-
-			trace('note impact ' + i + ' is ready');
+		frames = Paths.getSparrowAtlas('UI/' + skin);
+		for(i in 1...3){
+			for(y in 0...5){
+				animation.addByPrefix("note" + y + "-" + i, "note impact " + i + posibleShit[y], 24, false);
+			}
 		}
 	}
 

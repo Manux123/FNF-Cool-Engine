@@ -1,5 +1,7 @@
 package states;
 
+import flixel.input.actions.FlxAction.FlxActionDigital;
+import lime.utils.Assets;
 import flixel.FlxSprite;
 import flixel.util.FlxColor;
 import states.MusicBeatState;
@@ -12,50 +14,53 @@ class VideoState extends MusicBeatState
     var videoPath:String;
     var nextState:FlxState;
 
-    public static var isCutscene = true;
-    public function new(path:String,state:FlxState) {
+    public function new(path:String,state:FlxState){
         super();
 
-        videoPath = path;
-        nextState = state;
+        this.videoPath = path;
+        this.nextState = state;
     }
 
-    var video:MP4Handler;
+    var video:MP4Handler = new MP4Handler();
 
     public override function create(){
-        super.create();
-        var videoGrp:FlxSprite = new FlxSprite(0,0);
+        FlxG.autoPause = true;
 
-        video.playMP4(Paths.video(videoPath),null,videoGrp);
-
-        //yes, it's duplicated shit
-        //deal with it B)
-		video.finishCallback = function(){
-            funnyChange = true;
-            FlxG.switchState(nextState);
+        #if (windows || androidC)
+        if(Assets.exists(Paths.video(videoPath))){
+            video.playMP4(Paths.video(videoPath));
+    		video.finishCallback = function(){
+                FlxG.sound.music.stop();
+                LoadingState.loadAndSwitchState(nextState);
+            }
+        }
+        else{
+            trace('Not existing path: ' + Paths.video(videoPath));
+            video.kill();
             FlxG.sound.music.stop();
-            isCutscene = false;
-        };
+            LoadingState.loadAndSwitchState(nextState);
+        }
+        #else
+        trace('DUM ASS, THIS ONLY WORKS ON WINDOWS XDDDD');
+        video.kill();
+        FlxG.sound.music.stop();
+        LoadingState.loadAndSwitchState(nextState);
+        #end
 
-        add(videoGrp);
+        #if androidC
+        controls.addDefaultGamepad(0);
+        #end
+
+        super.create();
     }
-
-    var funnyChange:Bool = false;
 
     public override function update(elapsed:Float){
         super.update(elapsed);
 
-        if (isCutscene)
-            video.onVLCComplete();
-
-        if(controls.ACCEPT && !funnyChange)
-            changeState();
-    }
-
-    public function changeState(){
-        funnyChange = true;
-        FlxG.sound.music.stop();
-        FlxG.switchState(nextState);
-        isCutscene = false;
+        if(controls.ACCEPT){
+            video.kill();
+            FlxG.sound.music.stop();
+            LoadingState.loadAndSwitchState(nextState);
+        }
     }
 }

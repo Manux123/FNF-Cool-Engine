@@ -20,42 +20,11 @@ class CacheState extends MusicBeatState
 	var loading:FlxText;
 
 	var charactersloading:Bool = false;
-	var characters:Array<String> = ["characters/BOYFRIEND", 
-									"characters/week4/bfCar", 
-									"characters/christmas/bfChristmas", 
-									"characters/characters/weeb/bfPixel", "characters/weeb/bfPixelsDEAD",
-									"characters/GF_assets", 
-									"characters/week4/gfCar", 
-									"characters/christmas/gfChristmas", 
-									"characters/weeb/gfPixel",
-									"characters/week1/DADDY_DEAREST", 
-									"characters/spooky_kids_assets", 
-									"characters/Monster_Assets",
-									"characters/Pico_FNF_assetss", 
-									"characters/week4/Mom_Assets", 
-									"characters/week4/momCar",
-									"characters/christmas/mom_dad_christmas_assets", 
-									"characters/christmas/monsterChristmas",
-									"characters/weeb/senpai", "characters/weeb/spirit", "characters/weeb/senpaiCrazy"];
-    
+	var characters:Array<String> = CoolUtil.coolTextFile(Paths.txt('cache-characters'));
     var objectsloading:Bool = false;
-    var objects:Array<String> = [
-        "freeplay/record player freeplay", 
-        "menu/bg", "menu/blackslines_finalrating", 
-        'menu/FNF_main_menu_assets', "menu/menuBG", 
-        'menu/menuBGBlue', 'menu/menuBGMagenta', 
-        'menu/menuChartingBG', 'menu/menuDesat',
-        "menu/menuoptions", "menu/BOYFRIEND", 
-        "ratings/A", 'ratings/B', 'ratings/C', 
-        'ratings/D', 'ratings/F', 'ratings/S', 'ratings/SS', 
-        'ratings/BOYFRIEND_RATING', 'titlestate/gfDanceTitle', 
-        'titlestate/logoBumpin', 'titlestate/newgrounds_logo', 
-        'titlestate/titleEnter', 'titlestate/titlestateBG',
-        'UI/checkboxThingie'];
+    var objects:Array<String> = CoolUtil.coolTextFile(Paths.txt('cache-objects'));
     var soundsloading:Bool = false;
-    var sounds:Array<String> =[
-        "confirmMenu","scrollMenu","cancelMenu",
-        "intro1","intro2","intro3","introGo"];
+    var sounds:Array<String> = CoolUtil.coolTextFile(Paths.txt('cache-sounds'));
 
 	var loadingStart:Bool = false;
 
@@ -72,7 +41,7 @@ class CacheState extends MusicBeatState
 
         PlayerSettings.player1.controls.loadKeyBinds();
 
-        toBeFinished = Lambda.count(characters) + Lambda.count(objects) + Lambda.count(sounds);
+        toBeFinished = (Lambda.count(characters) + Lambda.count(objects) + Lambda.count(sounds));
 
         var bg:FlxSprite = new FlxSprite().loadGraphic(BitmapData.fromFile(Paths.image('menu/menuBG')));
         add(bg);
@@ -94,16 +63,19 @@ class CacheState extends MusicBeatState
 
         math = Mathf.getPercentage2(finished,toBeFinished);
 
+        if(!(charactersloading && objectsloading && soundsloading)){
+            loading.text = "Loaded Objects: " + math;
+        }
+
         if (charactersloading && objectsloading && soundsloading)
         {
-            FlxG.switchState(new TitleState());
+            loading.text = "Done!";
+            LoadingState.loadAndSwitchState(new TitleState(),true);
             FlxG.camera.fade(FlxColor.BLACK, 0.8, false);
         }
 	}
 
     function preload(){
-
-        loading.text = "Loaded Objects: " + math;
 
         if(!charactersloading){
             #if sys sys.thread.Thread.create(() -> { #end
@@ -128,10 +100,10 @@ class CacheState extends MusicBeatState
             if(#if sys sys.FileSystem.exists(Paths.image(x))
                 #else Assets.exists(Paths.image(x))#end){
                 ImageCache.add(Paths.image(x));
+                trace("Chached " + x);
             }
             else
-                loading.text = "Error while loading\nImage in path " + Paths.image(x);
-            trace("Chached " + x);
+                trace("Error while loading\nImage in path " + Paths.image(x));
             finished++;
             charactersloading = true;
         }
@@ -141,13 +113,12 @@ class CacheState extends MusicBeatState
         for(x in objects){
             if(#if sys sys.FileSystem.exists(Paths.image(x))
                 #else Assets.exists(Paths.image(x))#end){
-                loading.text = "Loaded Objects: " + math;
                 ImageCache.add(Paths.image(x));
+                trace("Chached " + x);
             }
             else{
-                loading.text = "Error while loading\nImage in path " + Paths.image(x);
+                trace("Error while loading\nImage in path " + Paths.image(x));
             }
-            trace("Chached " + x);
             finished++;
         }
         objectsloading = true;
@@ -157,9 +128,11 @@ class CacheState extends MusicBeatState
             if(#if sys sys.FileSystem.exists(Paths.sound(x))
                 #else Assets.exists(Paths.sound(x)) #end){
                 FlxG.sound.cache(Paths.sound(x));
+                trace("Chached " + x);
             }
             else
-                loading.text = "Error while loading\nSound in path " + Paths.sound(x);
+                trace("Error while loading\nSound in path " + Paths.sound(x));
+            finished++;
         }
         soundsloading = true;
     }

@@ -14,10 +14,23 @@ class HealthIcon extends FlxSprite
 	public function new(char:String = 'bf', isPlayer:Bool = false)
 	{
 		super();
+		loadChar4(char);		
+		updateIcon(char, isPlayer);
+	}
+
+	//this shit is for week 4 DX
+	public function loadChar4(char:String){
+		if(char.startsWith('bf') && !char.endsWith('pixel'))
+			char = 'bf';
+		if(char.startsWith('mom'))
+			char = 'mom';
+	}
+
+	//not thad used, cuz normally you dont forget to set the same name to the icon XD
+	//put it if your dum, but this can brake loadChar4 function, so...
+	public function antiCrash(char:String){
 		if(char == null || !Assets.exists(Paths.image('icons/icon-' + char)))
 			char = 'face';
-
-		updateIcon(char, isPlayer);
 	}
 
 	public function updateIcon(char:String = 'bf', isPlayer:Bool = false)

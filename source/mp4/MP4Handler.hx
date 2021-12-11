@@ -1,5 +1,6 @@
 package mp4;
 
+import states.LoadingState;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxState;
@@ -8,8 +9,8 @@ import flixel.util.FlxTimer;
 import openfl.events.Event;
 import vlc.VlcBitmap;
 
-// "THIS IS FOR TESTING, DONT STEAL MY CODE >:("
-// -Random dumm guy
+// THIS IS FOR TESTING
+// DONT STEAL MY CODE >:(
 class MP4Handler
 {
 	public var finishCallback:Void->Void;
@@ -18,6 +19,11 @@ class MP4Handler
 	public var bitmap:VlcBitmap;
 
 	public var sprite:FlxSprite;
+
+	public function new()
+	{
+		//FlxG.autoPause = false;
+	}
 
 	public function playMP4(path:String, ?repeat:Bool = false, ?outputTo:FlxSprite = null, ?isWindow:Bool = false, ?isFullscreen:Bool = false,
 			?midSong:Bool = false):Void
@@ -112,7 +118,7 @@ class MP4Handler
 			}
 			else if (stateCallback != null)
 			{
-				states.LoadingState.loadAndSwitchState(stateCallback);
+				LoadingState.loadAndSwitchState(stateCallback);
 			}
 
 			bitmap.dispose();
@@ -144,7 +150,7 @@ class MP4Handler
 		}
 		else if (stateCallback != null)
 		{
-			states.LoadingState.loadAndSwitchState(stateCallback);
+			LoadingState.loadAndSwitchState(stateCallback);
 		}
 	}
 

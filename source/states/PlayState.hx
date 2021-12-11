@@ -9,6 +9,7 @@ import flixel.FlxBasic;
 import flixel.FlxCamera;
 import flixel.FlxG;
 import lime.app.Application;
+import states.RatingState;
 import flixel.FlxGame;
 import flixel.FlxObject;
 import flixel.FlxSprite;
@@ -2138,7 +2139,7 @@ class PlayState extends states.MusicBeatState
 					}
 
 					if (FlxG.save.data.downscroll){
-						daNote.y = (strumLine.y + (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)));
+						daNote.y = (strumLine.y + (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)) - (FlxG.save.data.newInput?15:0));
 					
 
 						if(daNote.isSustainNote){
@@ -2162,7 +2163,7 @@ class PlayState extends states.MusicBeatState
 						}
 					}
 					else
-						daNote.y = (strumLine.y - (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)));
+						daNote.y = (strumLine.y - (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)) + (FlxG.save.data.newInput?15:0));
 
 					if (!daNote.mustPress && FlxG.save.data.middlescroll)
 						daNote.alpha = 0;
@@ -2171,7 +2172,7 @@ class PlayState extends states.MusicBeatState
 					// WIP interpolation shit? Need to fix the pause issue
 					// daNote.y = (strumLine.y - (songTime - daNote.strumTime) * (0.45 * PlayState.SONG.speed));
 	
-					if (daNote.y < -daNote.height && !FlxG.save.data.downscroll || daNote.y >= strumLine.y + 106 && FlxG.save.data.downscroll)
+					if (daNote.y < -daNote.height - (FlxG.save.data.newInput?15:0) && !FlxG.save.data.downscroll || daNote.y >= strumLine.y + 106 + (FlxG.save.data.newInput?15:0) && FlxG.save.data.downscroll)
 					{
 						if (daNote.isSustainNote && daNote.wasGoodHit)
 						{
@@ -2295,7 +2296,7 @@ class PlayState extends states.MusicBeatState
 				*/
 				FlxG.save.flush();
 
-				FlxG.switchState(new FinalRating());
+				LoadingState.loadAndSwitchState(new RatingState());
 			}
 			else
 			{
@@ -2338,7 +2339,7 @@ class PlayState extends states.MusicBeatState
 			FlxG.sound.music.stop();
 			vocals.stop();
 
-			FlxG.switchState(new FinalRating());
+			LoadingState.loadAndSwitchState(new RatingState());
 		}
 	}
 

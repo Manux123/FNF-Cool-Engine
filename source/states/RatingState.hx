@@ -1,5 +1,6 @@
-package;
+package states;
 
+import openfl.display.BitmapData;
 import flixel.text.FlxText;
 import states.PlayState;
 import flixel.FlxG;
@@ -10,7 +11,7 @@ import flixel.tweens.FlxTween;
 import flixel.FlxSubState;
 import flixel.util.FlxTimer;
 
-class FinalRating extends FlxSubState
+class RatingState extends FlxSubState
 {
 //  var daRatings:String = "S";
     var comboText:FlxText;
@@ -55,16 +56,24 @@ class FinalRating extends FlxSubState
         daRank.antialiasing = true;
         add(daRank);
 
+        var daFC:FlxSprite = new FlxSprite(daRank.x,daRank.y).loadGraphic(BitmapData.fromFile(Paths.image('ratings/FC')));
+        daFC.scale.x = 1.5; //I tried other method but this is the one it worked
+        daFC.scale.y = 1.5;
+        daFC.antialiasing = true;
+        if(PlayState.misses == 0)
+            add(daFC);
+
         var daLogo:FlxSprite = new FlxSprite(600, 200).loadGraphic(Paths.image('titlestate/daLogo'));
         daLogo.scale.x = 0.5;
-        daLogo.scale.y = 0.5;
+        daLogo.scale.y = 0.5;   
         add(daLogo);
 
         FlxG.camera.flash(FlxColor.WHITE, 1);
 
-        FlxTween.tween(bg, {alpha: 0.5},1.1);
-        FlxTween.tween(daRank, {y:150},1.1,{ease: FlxEase.expoInOut});
-        FlxTween.tween(bf, {y:200},1.1,{ease: FlxEase.expoInOut});
+        FlxTween.tween(bg, {alpha: 0.5},1.1+FlxG.random.float(-0.4,0.4));
+        FlxTween.tween(daRank, {y:150},1.1+FlxG.random.float(-0.4,0.4),{ease: FlxEase.expoInOut});
+        FlxTween.tween(daFC, {y:150},1.1+FlxG.random.float(-0.4,0.4),{ease: FlxEase.expoInOut});
+        FlxTween.tween(bf, {y:200},1.1+FlxG.random.float(-0.4,0.4),{ease: FlxEase.expoInOut});
     } 
 
     override function update(elapsed:Float)

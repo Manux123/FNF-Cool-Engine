@@ -80,13 +80,17 @@ class Character extends FlxSprite
 
 			case 'dad':
 				// DAD ANIMATION?
-				tex = Paths.getSparrowAtlas('characters/week1/DADDY_DEAREST');
+				//ANIMATIONS FROM TEXT FILE WIP!?!?!?!
+				var coolFile = CoolUtil.coolTextFile(Paths.txt('characters/animations/$curCharacter'+'Animations'));
+
+				tex = Paths.getSparrowAtlas(coolFile[5]);
 				frames = tex;
-				animation.addByPrefix('idle', 'Dad idle dance', 24);
-				animation.addByPrefix('singUP', 'Dad Sing Note UP', 24);
-				animation.addByPrefix('singRIGHT', 'Dad Sing Note RIGHT', 24);
-				animation.addByPrefix('singDOWN', 'Dad Sing Note DOWN', 24);
-				animation.addByPrefix('singLEFT', 'Dad Sing Note LEFT', 24);
+
+				animation.addByPrefix('idle', coolFile[0], 24);
+				animation.addByPrefix('singUP', coolFile[1], 24);
+				animation.addByPrefix('singRIGHT', coolFile[2], 24);
+				animation.addByPrefix('singDOWN', coolFile[3], 24);
+				animation.addByPrefix('singLEFT', coolFile[4], 24);
 
 				loadOffsetFile(curCharacter);
 

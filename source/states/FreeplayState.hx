@@ -354,9 +354,9 @@ class FreeplayState extends states.MusicBeatState
 		{
 			var songLowercase:String = songs[curSelected].songName.toLowerCase();
 			var poop:String = Highscore.formatSong(songLowercase, curDifficulty);
-			if(!OpenFlAssets.exists(Paths.json(songLowercase + '/' + poop))) {
+			if(!Assets.exists(Paths.json(songLowercase + '/' + poop))) {
 				poop = songLowercase;
-				curDifficulty = 1;
+				//curDifficulty = 2;
 				trace('Couldnt find file');
 			}
 

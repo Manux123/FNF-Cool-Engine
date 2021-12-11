@@ -1,28 +1,49 @@
 package;
-import flixel.FlxG;
-
+import states.PlayState;
 class Ranking {
-    //Change this function in the future
-    /*static public function UpdateRanking():String{
-        var ranking:String = '?';
+    public static function generateLetterRank():String{
+        var daRanking:String = 'N/A';
+        var accuracy:Array<Bool> = [
+            PlayState.accuracy >= 99.99, //SS
+            PlayState.accuracy >= 94.99, //S
+            PlayState.accuracy >= 89.99, //A
+            PlayState.accuracy >= 79.99, //B
+            PlayState.accuracy >= 69.99, //C
+            PlayState.accuracy >= 59.99, //D
+        ];
 
-        if(PlayState.perfects >= 1 && PlayState.sicks == 0 && PlayState.goods == 0 && PlayState.mehs == 0 && PlayState.bads == 0 && PlayState.fucks == 0 && PlayState.shits == 0 && PlayState.misses == 0)
-            ranking = 'YOU ROCK!!(Perfect)';
-        else if(PlayState.perfects >= 1 && PlayState.sicks >= 1 && PlayState.goods == 0 && PlayState.mehs == 0 && PlayState.bads == 0 && PlayState.fucks == 0 && PlayState.shits == 0 && PlayState.misses == 0)
-            ranking = 'Full Combo (sicks/perfects)';
-        else if(PlayState.sicks >= 1 && PlayState.perfects == 0 && PlayState.goods == 0 && PlayState.mehs == 0 && PlayState.bads == 0 && PlayState.fucks == 0 && PlayState.shits == 0 && PlayState.misses == 0)
-            ranking = 'Full Combo (sicks)';
-        else if(PlayState.goods >= 1 && PlayState.mehs == 0 && PlayState.bads == 0 && PlayState.fucks == 0 && PlayState.shits == 0  && PlayState.misses == 0)
-            ranking = 'Full Combo (Goods)';
-        else if(PlayState.misses == 0)
-            ranking = 'Regular Full Combo';
-        else if(PlayState.misses > 10)
-            ranking = 'Fucked';
-        else
-            ranking = 'N/A';
+        //Osu!Mania Ranking System
 
-        return ranking;
-    }*/
+        for(i in 0...accuracy.length)
+        {
+            var lyrics = accuracy[i];
+            if (lyrics)
+            {
+                switch(i)
+                {
+                    case 0:
+                        daRanking = "SS";
+                    case 1:
+                        daRanking = "S";
+                    case 2:
+                        daRanking = "A";
+                    case 3:
+                        daRanking = "B";
+                    case 4:
+                        daRanking = "C";
+                    case 5:
+                        daRanking = "D";
+                }
+                break;
+            }
+        }
+
+        if (PlayState.accuracy == 0 /*&& PlayState.startingSong*/)
+            daRanking = "N/A";
+        else if (PlayState.accuracy <= 59.99 && !PlayState.startingSong)
+            daRanking = "F";
+        return daRanking;
+    }
 
     static public function GenerateRating(noteDiff:Float,?saveFrames:Float = 0):String{
         var daRating:String = 'sick';

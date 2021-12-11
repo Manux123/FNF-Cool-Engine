@@ -29,6 +29,8 @@
 	<!--Mobile-specific-->
 	<window if="mobile" orientation="landscape" fullscreen="true" width="1280" height="720" resizable="false"/>
 
+	<!-- the target-sdk-version is for OpenFL stuff -->
+	<android target-sdk-version="17" />
 	<define name="mobileC" if="mobile" />
 	<assets path="assets/shared/images/hitbox"/>
 

@@ -1,13 +1,12 @@
 package states;
 
-import flixel.input.actions.FlxAction.FlxActionDigital;
 import lime.utils.Assets;
-import flixel.FlxSprite;
-import flixel.util.FlxColor;
 import states.MusicBeatState;
 import flixel.FlxState;
 import flixel.FlxG;
+#if windows
 import mp4.MP4Handler;
+#end
 
 class VideoState extends MusicBeatState
 {
@@ -21,12 +20,14 @@ class VideoState extends MusicBeatState
         this.nextState = state;
     }
 
+    #if windows
     var video:MP4Handler = new MP4Handler();
+    #end
 
     public override function create(){
         FlxG.autoPause = true;
 
-        #if (windows || androidC)
+        #if windows
         if(Assets.exists(Paths.video(videoPath))){
             video.playMP4(Paths.video(videoPath));
     		video.finishCallback = function(){
@@ -42,13 +43,8 @@ class VideoState extends MusicBeatState
         }
         #else
         trace('DUM ASS, THIS ONLY WORKS ON WINDOWS XDDDD');
-        video.kill();
         FlxG.sound.music.stop();
         LoadingState.loadAndSwitchState(nextState);
-        #end
-
-        #if androidC
-        controls.addDefaultGamepad(0);
         #end
 
         super.create();
@@ -56,11 +52,12 @@ class VideoState extends MusicBeatState
 
     public override function update(elapsed:Float){
         super.update(elapsed);
-
+        #if windows
         if(controls.ACCEPT){
             video.kill();
             FlxG.sound.music.stop();
             LoadingState.loadAndSwitchState(nextState);
         }
+        #end
     }
 }

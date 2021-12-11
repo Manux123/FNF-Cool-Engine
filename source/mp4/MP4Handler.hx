@@ -7,6 +7,7 @@ import flixel.FlxState;
 import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 import openfl.events.Event;
+#if windows
 import vlc.VlcBitmap;
 
 // THIS IS FOR TESTING
@@ -170,3 +171,4 @@ class MP4Handler
 			bitmap.volume = 0;
 	}
 }
+#end

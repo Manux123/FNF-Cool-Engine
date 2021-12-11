@@ -186,7 +186,6 @@ class PlayState extends states.MusicBeatState
 	var noteSplashOp:Bool; //cool
 	public static var songScore:Int = 0;
 	var scoreTxt:FlxText;
-	var scoreTxt2:FlxText;
 	
 	public static var campaignScore:Int = 0;
 
@@ -911,53 +910,60 @@ class PlayState extends states.MusicBeatState
 		healthBar = new FlxBar(healthBarBG.x + 4, healthBarBG.y + 4, RIGHT_TO_LEFT, Std.int(healthBarBG.width - 8), Std.int(healthBarBG.height - 8), this,
 			'health', 0, 2);
 		healthBar.scrollFactor.set();
-		
-		switch (SONG.song.toLowerCase())
+
+
+		var cpuColor = 0xFFa5004d;
+		var playerColor = 0xFF31b0d1;
+		switch(SONG.player1.toLowerCase()){
+			case 'bf':
+				playerColor = 0xFF31b0d1;
+			case 'bf-pixel':
+				playerColor = 0xFF7bd6f6;
+			case 'bf-car':
+				playerColor = 0xFF31b0d1;
+			case 'bf-christmas':
+				playerColor = 0xFF31b0d1;
+			default:
+				playerColor = 0xFF31b0d1;
+		}
+
+		switch (SONG.player2.toLowerCase())
         {
-            case 'tutorial':
-                healthBar.createFilledBar(0xFFa5004d, 0xFF31b0d1);
-            case 'bopeebo' | 'fresh' | 'dadbattle':
-                healthBar.createFilledBar(0xFFaf66ce, 0xFF31b0d1);
-            case 'spookeez' | 'south':
-                healthBar.createFilledBar(0xFFd57e00, 0xFF31b0d1);
-            case 'pico' | 'blammed' | 'philly':
-                healthBar.createFilledBar(0xFFb7d855, 0xFF31b0d1);
-            case 'milf' | 'satin-panties' | 'high':
-                healthBar.createFilledBar(0xFFd8558e, 0xFF31b0d1);
-            case 'cocoa' | 'eggnog':
-                healthBar.createFilledBar(0xFFaf66ce, 0xFF31b0d1);
-            case 'winter-horrorland' | 'monster':
-                healthBar.createFilledBar(0xFFf3ff6e, 0xFF31b0d1);
-            case 'senpai' | 'roses':
-                healthBar.createFilledBar(0xFFffaa6f, 0xFF7bd6f6);
-            case 'thorns':
-                healthBar.createFilledBar(0xFFff3c6e, 0xFF7bd6f6);
-            case 'test':
-                healthBar.createFilledBar(0xFF7bd6f6, 0xFF31b0d1);
+            case 'gf':
+                cpuColor = 0xFFa5004d;
+            case 'dad':
+                cpuColor = 0xFFaf66ce;
+            case 'spooky':
+                cpuColor = 0xFFd57e00;
+            case 'pico':
+                cpuColor = 0xFFb7d855;
+            case 'mom' | 'mom-car':
+                cpuColor = 0xFFd8558e;
+            case 'parents-christmas':
+                cpuColor = 0xFFaf66ce;
+            case 'monster-christmas' | 'monster':
+                cpuColor = 0xFFf3ff6e;
+            case 'senpai' | 'senpai-angry':
+                cpuColor = 0xFFffaa6f;
+            case 'spirit':
+                cpuColor = 0xFFff3c6e;
+            case 'bf-pixel-enemy':
+                cpuColor = 0xFF7bd6f6;
             default:
-                healthBar.createFilledBar(0xFFFF0000, 0xFF31b0d1);
+				cpuColor = 0xFFFF0000;
         }
+
+		healthBar.createFilledBar(cpuColor, playerColor);
 
 		// healthBar
 		add(healthBar);
 
-		scoreTxt = new FlxText(healthBarBG.x + healthBarBG.width / 2 - 150, healthBarBG.y + 50, 0, "", 20);
-		if (!FlxG.save.data.accuracyDisplay)
-			scoreTxt.x = healthBarBG.x + healthBarBG.width / 2;
-		scoreTxt.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
+		scoreTxt = new FlxText(healthBarBG.x /*+ healthBarBG.width / 2*/, healthBarBG.y + 50, 0, "", 20);
+		scoreTxt.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
 		scoreTxt.x += 210;
 		scoreTxt.y -= 20;
-		scoreTxt.alpha = 0.7;
+		scoreTxt.alpha = 1;
 		scoreTxt.scrollFactor.set();
-
-		scoreTxt2 = new FlxText(healthBarBG.x + healthBarBG.width / 2 - 150, healthBarBG.y + 50, 0, "", 20);
-		if (!FlxG.save.data.accuracyDisplay)
-			scoreTxt2.x = healthBarBG.x + healthBarBG.width / 2;
-		scoreTxt2.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
-		scoreTxt2.x -= 120;
-		scoreTxt2.y -= 20;
-		scoreTxt2.alpha = 0.7;
-		scoreTxt2.scrollFactor.set();
 
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "FNF Cool Engine BETA - v" + Application.current.meta.get('version'), 12);
 		versionShit.scrollFactor.set();
@@ -1001,7 +1007,6 @@ class PlayState extends states.MusicBeatState
 		iconP2.y = healthBar.y - (iconP2.height / 2);
 		add(iconP2);
 		add(scoreTxt);
-		add(scoreTxt2);
 
 		strumLineNotes.cameras = [camHUD];
 		notes.cameras = [camHUD];
@@ -1011,7 +1016,6 @@ class PlayState extends states.MusicBeatState
 		iconP1.cameras = [camHUD];
 		iconP2.cameras = [camHUD];
 		scoreTxt.cameras = [camHUD];
-		scoreTxt2.cameras = [camHUD];
 		doof.cameras = [camHUD];
 		versionShit.cameras = [camHUD];
 
@@ -1681,50 +1685,6 @@ class PlayState extends states.MusicBeatState
 	
 
 	public static var ranking:String = "N/A";
-    public static function generateLetterRank()
-    {
-        var accuracy:Array<Bool> = [
-            PlayState.accuracy >= 99.99, //SS
-            PlayState.accuracy >= 94.99, //S
-            PlayState.accuracy >= 89.99, //A
-            PlayState.accuracy >= 79.99, //B
-            PlayState.accuracy >= 69.99, //C
-            PlayState.accuracy >= 59.99, //D
-        ];
-
-        //Osu!Mania Ranking System
-
-        for(i in 0...accuracy.length)
-        {
-            var lyrics = accuracy[i];
-            if (lyrics)
-            {
-                switch(i)
-                {
-                    case 0:
-						ranking = "SS";
-					case 1:
-						ranking = "S";
-					case 2:
-						ranking = "A";
-					case 3:
-						ranking = "B";
-                    case 4:
-                        ranking = "C";
-                    case 5:
-                        ranking = "D";
-                }
-                break;
-            }
-        }
-
-        if (PlayState.accuracy == 0 && PlayState.startingSong)
-            ranking = "N/A";
-        else if (PlayState.accuracy <= 59.99 && !PlayState.startingSong)
-            ranking = "F";
-
-        return ranking;
-    }
 
 	function resyncVocals():Void
 	{
@@ -1774,12 +1734,11 @@ class PlayState extends states.MusicBeatState
 
 		if (FlxG.save.data.accuracyDisplay)
 		{
-			scoreTxt.text = "Score:" + songScore + " | Misses:" + misses;
-			scoreTxt2.text = "Accuracy: " + Mathf.getPercentage(accuracy, 2) + "% | Rank: " + generateLetterRank();
+			scoreTxt.text = 'Score: $songScore | Misses: $misses | Rank: ${Ranking.generateLetterRank()}(${Mathf.getPercentage(accuracy, 2)}%)';
 		}
 		else
 		{
-			scoreTxt.text = "Score:" + songScore;
+			scoreTxt.text = 'Score: $songScore | Misses: $misses';
 		}
 		if (FlxG.keys.justPressed.ENTER && startedCountdown && canPause)
 		{
@@ -1943,48 +1902,6 @@ class PlayState extends states.MusicBeatState
 		FlxG.watch.addQuick("beats", curBeat);
 		FlxG.watch.addQuick("steps", curStep);
 
-		if(FlxG.save.data.perfectmode) { //Perfect Mode
-			if(misses == 1)
-			{
-				boyfriend.stunned = true;
-
-				persistentUpdate = false;
-				persistentDraw = false;
-				paused = true;
-
-				vocals.stop();
-				FlxG.sound.music.stop();
-
-				openSubState(new GameOverSubstate(boyfriend.getScreenPosition().x, boyfriend.getScreenPosition().y));
-
-				#if desktop
-				// Game Over doesn't get his own variable because it's only used here
-				DiscordClient.changePresence(detailsText, "GAME OVER -- " + SONG.song + " (" + storyDifficultyText + ")\nAcc: " + Mathf.getPercentage(accuracy, 2) + "% | Score: " + songScore + " | Misses: " + misses  , iconRPC);
-				#end
-			}
-		}
-
-		if(FlxG.save.data.sickmode) { //Sicks Mode
-			if(misses == 1 || goods == 1 || bads == 1 || shits == 1)
-			{
-				boyfriend.stunned = true;
-
-				persistentUpdate = false;
-				persistentDraw = false;
-				paused = true;
-
-				vocals.stop();
-				FlxG.sound.music.stop();
-
-				openSubState(new GameOverSubstate(boyfriend.getScreenPosition().x, boyfriend.getScreenPosition().y));
-
-				#if desktop
-				// Game Over doesn't get his own variable because it's only used here
-				DiscordClient.changePresence(detailsText, "GAME OVER -- " + SONG.song + " (" + storyDifficultyText + ")\nAcc: " + Mathf.getPercentage(accuracy, 2) + "% | Score: " + songScore + " | Misses: " + misses  , iconRPC);
-				#end
-			}
-		}
-
 		if (curSong == 'Fresh')
 		{
 			switch (curBeat)
@@ -2017,21 +1934,7 @@ class PlayState extends states.MusicBeatState
 
 		if (health <= 0)
 		{
-			boyfriend.stunned = true;
-
-			persistentUpdate = false;
-			persistentDraw = false;
-			paused = true;
-
-			vocals.stop();
-			FlxG.sound.music.stop();
-
-			openSubState(new GameOverSubstate(boyfriend.getScreenPosition().x, boyfriend.getScreenPosition().y));
-
-			#if desktop
-			// Game Over doesn't get his own variable because it's only used here
-			DiscordClient.changePresence(detailsText, "GAME OVER -- " + SONG.song + " (" + storyDifficultyText + ")\nAcc: " + Mathf.getPercentage(accuracy, 2) + "% | Score: " + songScore + " | Misses: " + misses  , iconRPC);
-			#end
+			gameOver();
 
 			// FlxG.switchState(new GameOverState(boyfriend.getScreenPosition().x, boyfriend.getScreenPosition().y));
 		}
@@ -2346,6 +2249,22 @@ class PlayState extends states.MusicBeatState
 	var endingSong:Bool = false;
 	var comboFull:FlxSprite;
 
+	private function gameOver(){
+		boyfriend.stunned = true;
+	
+		persistentUpdate = false;
+		persistentDraw = false;
+		paused = true;
+	
+		FlxG.sound.music.stop();
+	
+		openSubState(new GameOverSubstate(boyfriend.getScreenPosition().x, boyfriend.getScreenPosition().y));
+
+		#if desktop
+		DiscordClient.changePresence(detailsText, "GAME OVER -- " + SONG.song + " (" + storyDifficultyText + ")\nAcc: " + Mathf.getPercentage(accuracy, 2) + "% | Score: " + songScore + " | Misses: " + misses  , iconRPC);
+		#end
+	}
+
 	private function popUpScore(daNote:Note):Void
 		{
 			var noteDiff:Float = Math.abs(Conductor.songPosition - daNote.strumTime + 8);
@@ -2364,9 +2283,12 @@ class PlayState extends states.MusicBeatState
 
 			switch(daNote.noteRating){
 				case 'shit':
+					if(FlxG.save.data.sickmode) //Sicks Mode
+						gameOver();
+
 					score = 350;
 					ss = false;
-					scoreTxt.alpha = 1;
+					scoreTxt.alpha = 0.7;
 					boyfriend.stunned = false;
 					if (theFunne){
 						score = -2000;
@@ -2380,12 +2302,15 @@ class PlayState extends states.MusicBeatState
 					}
 					score = -250;
 					shits++;
-					noteMiss(daNote.noteData);
+					badNoteCheck();
 				case 'bad':
+					if(FlxG.save.data.sickmode) //Sicks Mode
+						gameOver();
+
 					score = 350;
 					totalNotesHit += 0.05;
 					boyfriend.stunned = false;
-					scoreTxt.alpha = 1;
+					scoreTxt.alpha = 0.85;
 					if (theFunne){
 						score = -1000;
 						health -= 0.05;
@@ -2396,8 +2321,10 @@ class PlayState extends states.MusicBeatState
 						ss = false;
 						bads++;
 					}
-					noteMiss(daNote.noteData);
 				case 'good':
+					if(FlxG.save.data.sickmode) //Sicks Mode
+						gameOver();
+
 					score = 350;
 					totalNotesHit += 0.3;
 					score = 200;
@@ -2408,12 +2335,12 @@ class PlayState extends states.MusicBeatState
 					sicks++;
 					health += 0.1;
 					scoreTxt.alpha = 1;
-					scoreTxt2.alpha = 1;
 					totalNotesHit += 1;
 					score = 350;
 					if(noteSplashOp)
 						spawnNoteSplashOnNote(daNote);
 			}
+
 			songScore += score;
 
 			var pixelShitPart1:String = "";
@@ -2767,6 +2694,11 @@ class PlayState extends states.MusicBeatState
 	{
 		if (!boyfriend.stunned)
 		{
+			if(FlxG.save.data.perfectmode)//Perfect Mode
+				gameOver();
+
+			fc = false;
+			
 			health -= 0.04;
 			if (combo > 5 && gf.animOffsets.exists('sad'))
 			{
@@ -2843,34 +2775,21 @@ class PlayState extends states.MusicBeatState
 	}
 
 	function badNoteCheck()
-		{
-			// just double pasting this shit cuz fuk u
-			// REDO THIS SYSTEM!
-			var upP = controls.UP_P;
-			var rightP = controls.RIGHT_P;
-			var downP = controls.DOWN_P;
-			var leftP = controls.LEFT_P;
-	
-			if (leftP)
-				noteMiss(0);
-			if (upP)
-				noteMiss(2);
-			if (rightP)
-				noteMiss(3);
-			if (downP)
-				noteMiss(1);
-			updateAccuracy();
+	{
+		// REDO THIS SYSTEM!
+		var pressedControls = [controls.LEFT_P,controls.DOWN_P,controls.UP_P,controls.RIGHT_P];
+		for(pressed in pressedControls){
+			if(pressed)
+				noteMiss(pressedControls.indexOf(pressed));
 		}
+		updateAccuracy();
+	}
 
 	function updateAccuracy()
-		{
-			if (misses > 0)
-				fc = false;
-			else
-				fc = true;
-			totalPlayed += 1;
-			accuracy = totalNotesHit / totalPlayed * 100;
-		}
+	{
+		totalPlayed += 1;
+		accuracy = totalNotesHit / totalPlayed * 100;
+	}
 
 
 	function getKeyPresses(note:Note):Int

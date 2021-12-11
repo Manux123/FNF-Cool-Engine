@@ -81,16 +81,17 @@ class Character extends FlxSprite
 			case 'dad':
 				// DAD ANIMATION?
 				//ANIMATIONS FROM TEXT FILE WIP!?!?!?!
-				var coolFile = CoolUtil.coolTextFile(Paths.txt('characters/animations/$curCharacter'+'Animations'));
 
-				tex = Paths.getSparrowAtlas(coolFile[5]);
+				loadAnimations();
+
+				/*tex = Paths.getSparrowAtlas(coolFile[5]);
 				frames = tex;
 
 				animation.addByPrefix('idle', coolFile[0], 24);
 				animation.addByPrefix('singUP', coolFile[1], 24);
 				animation.addByPrefix('singRIGHT', coolFile[2], 24);
 				animation.addByPrefix('singDOWN', coolFile[3], 24);
-				animation.addByPrefix('singLEFT', coolFile[4], 24);
+				animation.addByPrefix('singLEFT', coolFile[4], 24);*/
 
 				loadOffsetFile(curCharacter);
 
@@ -98,7 +99,7 @@ class Character extends FlxSprite
 
 			case 'spooky':
 				// SPOOKY MONTH!
-				tex = Paths.getSparrowAtlas('week2/spooky_kids_assets');
+				tex = Paths.getSparrowAtlas('characters/week2/spooky_kids_assets');
 				frames = tex;
 				animation.addByPrefix('singUP', 'spooky UP NOTE', 24, false);
 				animation.addByPrefix('singDOWN', 'spooky DOWN note', 24, false);
@@ -142,13 +143,13 @@ class Character extends FlxSprite
 				playAnim('idle');
 
 			case 'monster':
-				tex = Paths.getSparrowAtlas('week2/Monster_Assets');
+				tex = Paths.getSparrowAtlas('characters/week2/Monster_Assets');
 				frames = tex;
 				animation.addByPrefix('idle', 'monster idle', 24, false);
 				animation.addByPrefix('singUP', 'monster up note', 24, false);
 				animation.addByPrefix('singDOWN', 'monster down', 24, false);
-				animation.addByPrefix('singLEFT', 'Monster left note', 24, false);
-				animation.addByPrefix('singRIGHT', 'Monster Right note', 24, false);
+				animation.addByPrefix('singLEFT', 'Monster Right note', 24, false);
+				animation.addByPrefix('singRIGHT', 'Monster left note', 24, false);
 
 				loadOffsetFile(curCharacter);
 
@@ -398,6 +399,24 @@ class Character extends FlxSprite
 		{
 			var data:Array<String> = offset[i].split(' ');
 			addOffset(data[0], Std.parseInt(data[1]), Std.parseInt(data[2]));
+		}
+	}
+
+	public function loadAnimations(){
+		var coolFile:Array<String> = CoolUtil.coolTextFile(Paths.txt('characters/animations/$curCharacter'+'Animations'));
+
+		for(i in 0...coolFile.length){
+			var animations:Array<String> = coolFile[i].split(' ');
+			var looped:Bool = false;
+			if(animations[2] == 'true')
+				looped = true;
+			else
+				looped = false;
+
+			if(animations[0] == 'texture')
+				frames = Paths.getPackerAtlas(animations[1]);
+			else
+				animation.addByPrefix(animations[0],animations[1],24,looped);
 		}
 	}
 

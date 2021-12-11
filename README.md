@@ -12,6 +12,7 @@
 - [Chasetodie](https://twitter.com/Chasetodie10) - Programmer Friday Night Funkin: Cool Engine
 - [Clogsworth](https://youtube.com/c/MrClogsworthYT) - Programmer and composer Friday Night Funkin: Cool Engine
 - [FairyBoy](https://twitter.com/JulianSamwise?s=09) and [Zero Artist](https://twitter.com/zero_artist02) - Artists Friday Night Funkin: Cool Engine
+- [Overcharged Dev](https://www.youtube.com/channel/UCkcscIIXyUsfj2DsnNDWQbg/) - Programmer Friday Night Funkin: Cool Engine
 
 Funkin Original
 - [Kawaisprite](https://twitter.com/kawaisprite) - Musician Friday Night Funkin Original
@@ -23,6 +24,7 @@ Specials Thanks
 
 # Building
 THESE INSTRUCTIONS ARE FOR COMPILING THE GAME'S SOURCE CODE!!!
+IF YOU JUST WANT TO PLAY AND NOT EDIT THE CODE [CLICK HERE!!!](https://gamebanana.com/mods/326036)
 
 ### Installing the Required Programs
 
@@ -30,17 +32,9 @@ First, you need to install Haxe and HaxeFlixel. I'm too lazy to write and keep u
 1. [Install Haxe](https://haxe.org/download/)
 2. [Install HaxeFlixel](https://haxeflixel.com/documentation/install-haxeflixel/) after downloading Haxe (This is a required step and compilation will fail if it isn't installed!)
 
-Other installations you'd need are the additional libraries, a fully updated list will be in `Project.xml` in the project root. Just copy and paste this into your terminal to install them:
-```
-haxelib install hscript
-haxelib install newgrounds
-haxelib install polymod
-```
-
 You'll also need to install a couple things that involve Gits. To do this, you need to do a few things first.
 1. Download [git-scm](https://git-scm.com/downloads). Works for Windows, and Mac, just select your build. (Linux users can install the git package via their respective package manager.)
-2. Follow instructions to install the application properly..
-3. Run `haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc` to install Discord RPC.
+2. Run `Installation_of_the_Haxe_and_APIStuff_libraries.bat`, and everything will be installed automatically
 
 You should have everything ready for compiling the game! Follow the guide below to continue!
 
@@ -49,7 +43,7 @@ NOTE: If you see any messages relating to deprecated packages, ignore them. They
 The -debug flag is completely optional.
 Applying it will make a folder called `export/debug/[TARGET]/bin` instead of `export/release/[TARGET]/bin`
 
-Once you have all those installed, it's pretty easy to compile the game. You just need to run `lime test html5 -debug` in the root of the project to build and run the HTML5 version ([command prompt navigation guide can be found here](https://ninjamuffin99.newgrounds.com/news/post/1090480)).
+Once you have all those installed, it's pretty easy to compile the game. You just need to run `lime build html5 -minify` in the root of the project to build and run the HTML5 version ([command prompt navigation guide can be found here](https://ninjamuffin99.newgrounds.com/news/post/1090480)).
 To run it from your desktop (Windows, Mac, Linux) it can be a bit more involved. For Linux, you only need to open a terminal in the project directory and run `lime test linux -debug` and then run the executable file in export/release/linux/bin. For Windows, you need to install Visual Studio Community 2019. While installing VSC, don't click on any of the options to install workloads. Instead, go to the individual components tab and choose the following:
 * MSVC v142 - VS 2019 C++ x64/x86 build tools
 * Windows SDK (10.0.17763.0)

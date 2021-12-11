@@ -2279,10 +2279,13 @@ class PlayState extends states.MusicBeatState
 
 			var rating:FlxSprite = new FlxSprite();
 
-			daNote.noteRating = Ranking.GenerateRating(noteDiff); 
+			if(!FlxG.save.data.framesRanking)
+				daNote.noteRating = Ranking.GenerateRatingMS(daNote,noteDiff);
+			else
+				daNote.noteRating = Ranking.GenerateRatingFrames(noteDiff);
 
 			switch(daNote.noteRating){
-				case 'shit':
+				case 'shit'|'shit-soon'|'shit-later':
 					if(FlxG.save.data.sickmode) //Sicks Mode
 						gameOver();
 
@@ -2303,7 +2306,7 @@ class PlayState extends states.MusicBeatState
 					score = -250;
 					shits++;
 					badNoteCheck();
-				case 'bad':
+				case 'bad' | 'bad-soon' | 'bad-later':
 					if(FlxG.save.data.sickmode) //Sicks Mode
 						gameOver();
 
@@ -2321,7 +2324,7 @@ class PlayState extends states.MusicBeatState
 						ss = false;
 						bads++;
 					}
-				case 'good':
+				case 'good' | 'good-soon' | 'good-later':
 					if(FlxG.save.data.sickmode) //Sicks Mode
 						gameOver();
 
@@ -2331,7 +2334,7 @@ class PlayState extends states.MusicBeatState
 					scoreTxt.alpha = 1;
 					ss = false;
 					goods++;
-				case 'sick':
+				case 'sick' | 'sick-soon' | 'sick-later':
 					sicks++;
 					health += 0.1;
 					scoreTxt.alpha = 1;

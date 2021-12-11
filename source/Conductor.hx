@@ -1,5 +1,6 @@
 package;
 
+import flixel.FlxG;
 import Song.SwagSong;
 
 /**
@@ -27,6 +28,10 @@ class Conductor
 	public static var safeZoneOffset:Float = (safeFrames / 60) * 1000; // is calculated in create(), is safeFrames in milliseconds
 
 	public static var bpmChangeMap:Array<BPMChangeEvent> = [];
+
+	public function new()
+	{
+	}
 
 	public static function mapBPMChanges(song:SwagSong)
 	{

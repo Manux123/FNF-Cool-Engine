@@ -191,6 +191,7 @@ class OptionsMenu extends MusicBeatState
 		new NewInputOption(),
 		new NoteSplashesOption(),
 		new DownscrollOption(),
+		new RatingSystem(),
 		new MiddleScroll(),
 		#if desktop
 		new FPSCap(),
@@ -695,6 +696,19 @@ class DownscrollOption extends Option
 	}
 }
 
+class RatingSystem extends Option{
+	public override function press():Bool{
+		FlxG.save.data.framesRanking = !FlxG.save.data.framesRanking;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return FlxG.save.data.framesRanking ? "Frames Ranking System" : "MS Ranking System";
+	}
+}
+
 class FPSCap extends Option
 {
 	public override function press():Bool
@@ -853,6 +867,9 @@ class OptionsData
 	
 			if (FlxG.save.data.downscroll == null)
 				FlxG.save.data.downscroll = false;
+
+			if(FlxG.save.data.framesRanking == null)
+				FlxG.save.data.framesRanking = true;
 	
 			if (FlxG.save.data.dfjk == null)
 				FlxG.save.data.dfjk = false;

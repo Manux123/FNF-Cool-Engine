@@ -744,7 +744,7 @@ class PlayState extends states.MusicBeatState
 
 		switch (gfCheck) {
 					
-		if (gfVersion == null || gfVersion.length < 1) };
+		} if (gfVersion == null || gfVersion.length < 1);
 			switch (curStage)
                                {
 			case 'gf-car':

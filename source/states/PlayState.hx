@@ -154,9 +154,9 @@ class PlayState extends states.MusicBeatState
 	public var iconP2:HealthIcon;
 	public var camHUD:FlxCamera;
 	public var camGame:FlxCamera;
-
-	var dialogue:Array<String> = ['blah blah blah', 'coolswag'];
-
+	
+	
+        var dialogue:Array<String> = [':bf:strange code', ':dad:>:]'];
 	var halloweenBG:FlxSprite;
 	var isHalloween:Bool = false;
 
@@ -729,19 +729,32 @@ class PlayState extends states.MusicBeatState
 			luaArray.push(new FunkinLua(luaFile));
 		#end
 
-		var gfVersion:String = SONG.player3;
+		var gfVersion:String = 'gf';
+	
+		var gfCheck:String = 'gf';
 
+		if (SONG.gfVersion == null) {
+			switch(storyWeek)
+			{
+				case 4: gfCheck = 'gf-car';
+				case 5: gfCheck = 'gf-christmas';
+				case 6: gfCheck = 'gf-pixel';
+			}
+		} else {gfCheck = SONG.gfVersion;}
+
+		switch (gfCheck)
+					
 		if(gfVersion == null || gfVersion.length < 1) {
 			switch (curStage)
-			{
-				case 'limo':
-					gfVersion = 'gf-car';
-				case 'mall' | 'mallEvil':
-					gfVersion = 'gf-christmas';
-				case 'school' | 'schoolEvil':
-					gfVersion = 'gf-pixel';
-				default:
-					gfVersion = 'gf';
+                               {
+			case 'gf-car':
+				gfVersion = 'gf-car';
+			case 'gf-christmas':
+				gfVersion = 'gf-christmas';
+			case 'gf-pixel':
+				gfVersion = 'gf-pixel';
+                        case 'gf':
+				gfVersion = 'gf';
 			}
 		}
 

@@ -63,6 +63,7 @@ class ChartingState extends states.MusicBeatState
 	var amountSteps:Int = 0;
 	var bullshitUI:FlxGroup;
 	var bg:FlxSprite;
+        var gfDropDown:FlxUIDropDownMenu;
 
 	var highlight:FlxSprite;
 
@@ -150,7 +151,7 @@ class ChartingState extends states.MusicBeatState
 				needsVoices: true,
 				player1: 'bf',
 				player2: 'dad',
-				player3: 'gf',
+                                gfVersion: 'gf',
 				speed: 1,
 				modchart: false,
 				validScore: false
@@ -307,6 +308,7 @@ class ChartingState extends states.MusicBeatState
 	var stepperSectionBPM:FlxUINumericStepper;
 	var check_altAnim:FlxUICheckBox;
 	var check_modchart:FlxUICheckBox;
+        var gfs:Array<String> = CoolUtil.coolTextFile('assets/data/gfList.txt');
 
 	function addSectionUI():Void
 	{
@@ -330,6 +332,10 @@ class ChartingState extends states.MusicBeatState
 
 		var clearSectionButton:FlxButton = new FlxButton(10, 150, "Clear", clearSection);
 
+
+		gfDropDown = new FlxUIDropDownMenu(10, 200, FlxUIDropDownMenu.makeStrIdLabelArray(gfs, true), function(gf:String)			{				_song.gfVersion = gfs[Std.parseInt(gf)];			});		gfDropDown.selectedLabel = _song.gfVersion;
+
+		stageDropDown = new FlxUIDropDownMenu(140, 200, FlxUIDropDownMenu.makeStrIdLabelArray(stages, true), function(selStage:String)			{				_song.stage = stages[Std.parseInt(selStage)];			});		stageDropDown.selectedLabel = _song.stage;
 		var swapSection:FlxButton = new FlxButton(10, 170, "Swap section", function()
 		{
 			for (i in 0..._song.notes[curSection].sectionNotes.length)
@@ -349,6 +355,18 @@ class ChartingState extends states.MusicBeatState
 		check_altAnim = new FlxUICheckBox(10, 400, null, null, "Alt Animation", 100);
 		check_altAnim.name = 'check_altAnim';
 
+		gfDropDown = new FlxUIDropDownMenu(10, 200, FlxUIDropDownMenu.makeStrIdLabelArray(gfs, true), function(gf:String)
+			{
+				_song.gfVersion = gfs[Std.parseInt(gf)];
+			});
+		gfDropDown.selectedLabel = _song.gfVersion;
+
+		stageDropDown = new FlxUIDropDownMenu(140, 200, FlxUIDropDownMenu.makeStrIdLabelArray(stages, true), function(selStage:String)
+			{
+				_song.stage = stages[Std.parseInt(selStage)];
+			});
+		stageDropDown.selectedLabel = _song.stage;
+
 		check_changeBPM = new FlxUICheckBox(10, 60, null, null, 'Change BPM', 100);
 		check_changeBPM.name = 'check_changeBPM';
 
@@ -361,6 +379,7 @@ class ChartingState extends states.MusicBeatState
 		tab_group_section.add(copyButton);
 		tab_group_section.add(clearSectionButton);
 		tab_group_section.add(swapSection);
+		tab_group_song.add(gfDropDown);
 
 		UI_box.addGroup(tab_group_section);
 	}

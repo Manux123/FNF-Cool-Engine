@@ -63,6 +63,7 @@ class ChartingState extends states.MusicBeatState
 	var amountSteps:Int = 0;
 	var bullshitUI:FlxGroup;
 	var bg:FlxSprite;
+        var gfDropDown:FlxUIDropDownMenu;
 
 	var highlight:FlxSprite;
 
@@ -150,7 +151,7 @@ class ChartingState extends states.MusicBeatState
 				needsVoices: true,
 				player1: 'bf',
 				player2: 'dad',
-				player3: 'gf',
+                                gfVersion: 'gf',
 				speed: 1,
 				modchart: false,
 				validScore: false

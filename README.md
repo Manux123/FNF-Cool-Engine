@@ -11,15 +11,15 @@
 - [Jloor](https://twitter.com/GamerJloor) - Programmer Friday Night Funkin: Cool Engine
 - [Chasetodie](https://twitter.com/Chasetodie10) - Programmer Friday Night Funkin: Cool Engine
 - [Clogsworth](https://youtube.com/c/MrClogsworthYT) - Programmer and composer Friday Night Funkin: Cool Engine
-- [FairyBoy](https://twitter.com/JulianSamwise?s=09) and [Zero Artist](https://twitter.com/zero_artist02) - Artists Friday Night Funkin: Cool Engine
 - [Overcharged Dev](https://www.youtube.com/channel/UCkcscIIXyUsfj2DsnNDWQbg/) - Programmer Friday Night Funkin: Cool Engine
+- [FairyBoy](https://twitter.com/JulianSamwise?s=09) and [Zero Artist](https://twitter.com/zero_artist02) - Artists Friday Night Funkin: Cool Engine
 
-Funkin Original
+## Funkin
 - [Kawaisprite](https://twitter.com/kawaisprite) - Musician Friday Night Funkin Original
 - [ninjamuffin99](https://twitter.com/ninja_muffin99) - Programmer Friday Night Funkin Original
 - [PhantomArcade3K](https://twitter.com/phantomarcade3k) and [Evilsk8r](https://twitter.com/evilsk8r) - Artists Friday Night Funkin Original
 
-Specials Thanks
+## Specials Thanks
 - [PolybiusProxy](https://twitter.com/polybiusproxy) - MP4 Extension Loader
 
 # Building
@@ -34,7 +34,7 @@ First, you need to install Haxe and HaxeFlixel. I'm too lazy to write and keep u
 
 You'll also need to install a couple things that involve Gits. To do this, you need to do a few things first.
 1. Download [git-scm](https://git-scm.com/downloads). Works for Windows, and Mac, just select your build. (Linux users can install the git package via their respective package manager.)
-2. Run `Installation_of_the_Haxe_and_APIStuff_libraries.bat`, and everything will be installed automatically
+2. Run [this](https://codeload.github.com/Manux123/FNF-Cool-Engine/zip/master/Installation_of_the_Haxe_and_APIStuff_libraries.bat), and everything will be installed automatically
 
 You should have everything ready for compiling the game! Follow the guide below to continue!
 

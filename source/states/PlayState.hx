@@ -744,7 +744,7 @@ class PlayState extends states.MusicBeatState
 
 		switch (gfCheck) {
 					
-		} if (gfVersion == null || gfVersion.length < 1);
+		if (gfVersion == null) {
 			switch (curStage)
                                {
 			case 'gf-car':
@@ -806,7 +806,7 @@ class PlayState extends states.MusicBeatState
 		switch (curStage)
 		{
 			case 'limo':
-				boyfriend.y -= 220;
+		 		boyfriend.y -= 220;
 				boyfriend.x += 260;
 
 				resetFastCar();

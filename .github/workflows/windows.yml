@@ -31,18 +31,21 @@ jobs:
       - name: Install Haxelib
         run: |
           haxelib setup C:/haxelib
-          haxelib install hxcpp > nul -quiet
-          haxelib install lime -quiet
-          haxelib install openfl 9.0.2 -quiet
-          haxelib install flixel 4.8.1 -quiet
-          haxelib install flixel-addons 2.9.0 -quiet
-          haxelib install flixel-ui 2.3.3 -quiet
-          haxelib install openfl-webm -quiet
-          haxelib install actuate -quiet
-          haxelib install hscript 2.4.0 -quiet
-          haxelib install newgrounds 1.1.4 -quiet
-          haxelib run lime setup -quiet
-          haxelib install flixel-tools 1.4.4 -quiet
+          haxelib install hxcpp > nul --quiet
+          haxelib install lime 7.7.8 --quiet
+          haxelib install openfl 9.0.2 --quiet
+          haxelib install flixel 4.9.0 --quiet
+          haxelib run lime setup flixel --quiet
+          haxelib run lime setup --quiet
+          haxelib install flixel-tools --quiet
+          haxelib install flixel-ui --quiet
+          haxelib install flixel-addons --quiet
+          haxelib install hscript --quiet
+          haxelib install polymod --quiet
+          haxelib install newgrounds --quiet
+          haxelib install linc_luajit --quiet
+          haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc --quiet
+          haxelib install hxcpp-debug-server --quiet
           haxelib list
         shell: cmd
       - name: Create Version Tag

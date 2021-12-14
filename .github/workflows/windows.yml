@@ -32,7 +32,7 @@ jobs:
         run: |
           haxelib setup C:/haxelib
           haxelib install hxcpp > nul --quiet
-          haxelib install lime 7.7.8 --quiet
+          haxelib install lime 7.8.0 --quiet
           haxelib install openfl 9.0.2 --quiet
           haxelib install flixel 4.9.0 --quiet
           haxelib run lime setup flixel --quiet

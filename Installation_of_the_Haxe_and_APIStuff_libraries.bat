@@ -6,7 +6,7 @@ pause >nul
 title FNF Setup - Installation of libraries
 echo Installing haxelib libraries ...
 haxelib install hxcpp > nul 
-haxelib install lime 7.7.8
+haxelib install lime 7.8.0
 haxelib install openfl 9.0.2
 haxelib install flixel 4.9.0
 haxelib run lime setup flixel

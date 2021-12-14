@@ -5,17 +5,21 @@ echo Press any key to continue!
 pause >nul
 title FNF Setup - Installation of libraries
 echo Installing haxelib libraries ...
-haxelib install lime
+haxelib install hxcpp > nul 
+haxelib install lime 7.7.8
 haxelib install openfl 9.0.2
-haxelib install flixel 4.8.1
-haxelib install flixel-addons 2.9.0
-haxelib install flixel-ui 2.3.3
-haxelib install openfl-webm
-haxelib install actuate
-haxelib install hscript 2.4.0
-haxelib install newgrounds 1.1.4
+haxelib install flixel 4.9.0
+haxelib run lime setup flixel
 haxelib run lime setup
-haxelib install flixel-tools 1.4.4
+haxelib install flixel-tools
+haxelib install flixel-ui
+haxelib install flixel-addons
+haxelib install hscript
+haxelib install polymod
+haxelib install newgrounds
+haxelib install linc_luajit
+haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
+haxelib install hxcpp-debug-server
 title FNF Setup
 cls
 haxelib run flixel-tools setup

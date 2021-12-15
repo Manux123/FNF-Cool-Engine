@@ -264,19 +264,19 @@ class ChartingState extends states.MusicBeatState
 
 		var characters:Array<String> = CoolUtil.coolTextFile(Paths.txt('characters/characterList'));
 
-		var player1DropDown = new FlxUIDropDownMenu(0, 100, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
+		var player1DropDown = new FlxUIDropDownMenu(10, 100, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
 		{
 			_song.player1 = characters[Std.parseInt(character)];
 		});
 		player1DropDown.selectedLabel = _song.player1;
 
-		var player2DropDown = new FlxUIDropDownMenu(130, 100, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
+		var player2DropDown = new FlxUIDropDownMenu(140, 100, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
 		{
 			_song.player2 = characters[Std.parseInt(character)];
 		});
 
-		gfDropDown = new FlxUIDropDownMenu(10, 200, FlxUIDropDownMenu.makeStrIdLabelArray(gfs, true), function(gf:String)			{				_song.gfVersion = gfs[Std.parseInt(gf)];			});		gfDropDown.selectedLabel = _song.gfVersion;
-		gfDropDown = new FlxUIDropDownMenu(10, 200, FlxUIDropDownMenu.makeStrIdLabelArray(gfs, true), function(gf:String)
+		gfDropDown = new FlxUIDropDownMenu(10, 140, FlxUIDropDownMenu.makeStrIdLabelArray(gfs, true), function(gf:String)			{				_song.gfVersion = gfs[Std.parseInt(gf)];			});		gfDropDown.selectedLabel = _song.gfVersion;
+		gfDropDown = new FlxUIDropDownMenu(10, 140, FlxUIDropDownMenu.makeStrIdLabelArray(gfs, true), function(gf:String)
 		{
 			_song.gfVersion = gfs[Std.parseInt(gf)];
 		});
@@ -314,7 +314,7 @@ class ChartingState extends states.MusicBeatState
 	var stepperSectionBPM:FlxUINumericStepper;
 	var check_altAnim:FlxUICheckBox;
 	var check_modchart:FlxUICheckBox;
-    var gfs:Array<String> = CoolUtil.coolTextFile('assets/data/gfList.txt');
+    var gfs:Array<String> = CoolUtil.coolTextFile('assets/data/characters/gfList.txt');
 
 	function addSectionUI():Void
 	{

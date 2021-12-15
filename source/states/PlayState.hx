@@ -742,22 +742,17 @@ class PlayState extends states.MusicBeatState
 			}
 		} else {gfCheck = SONG.gfVersion;}
 
-		switch (gfCheck) 
-	{		
-{				
-		if (gfVersion == null || gfVersion.length < 1) 
-			switch (curStage)
-                               {
+		//switch (gfCheck) {} 
+		if (gfVersion == null || gfVersion.length < 1)
+			switch (curStage){
 			case 'gf-car':
 				gfVersion = 'gf-car';
 			case 'gf-christmas':
 				gfVersion = 'gf-christmas';
 			case 'gf-pixel':
 				gfVersion = 'gf-pixel';
-                        case 'gf':
-				gfVersion = 'gf';
-			}
-		}
+            case 'gf':
+				gfVersion = 'gf';}
 
 		gf = new Character(400, 130, gfVersion);
 		gf.scrollFactor.set(0.95, 0.95);
@@ -1805,8 +1800,11 @@ class PlayState extends states.MusicBeatState
 		/* if (FlxG.keys.justPressed.NINE)
 			FlxG.switchState(new Charting()); */
 
+		if (FlxG.keys.justPressed.SIX)
+			FlxG.switchState(new AnimationDebug(SONG.player1));
+
 		if (FlxG.keys.justPressed.EIGHT)
-			FlxG.switchState(new AnimationDebug(SONG.player3));
+			FlxG.switchState(new AnimationDebug(SONG.gfVersion));
 
 		if (FlxG.keys.justPressed.NINE)
 			FlxG.switchState(new AnimationDebug(SONG.player2));

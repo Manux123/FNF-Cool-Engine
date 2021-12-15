@@ -39,7 +39,7 @@ jobs:
           haxelib run lime setup --quiet
           haxelib install flixel-tools --quiet
           haxelib install flixel-ui --quiet
-          haxelib install flixel-addons --quiet
+          haxelib install flixel-addons 2.11.0 --quiet
           haxelib install hscript --quiet
           haxelib install polymod --quiet
           haxelib install newgrounds --quiet
@@ -47,6 +47,7 @@ jobs:
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc --quiet
           haxelib install hxcpp-debug-server --quiet
           haxelib list
+          haxelib set lime 7.8.0
         shell: cmd
       - name: Create Version Tag
         run: echo "${{github.run_id}}" > VERSION

@@ -101,7 +101,7 @@ class PlayerSettings
 	{
 		player1 = null;
 		player2 = null;
-		player3 = null;
+		gfVersion = null;
 		numPlayers = 0;
 	}
 }

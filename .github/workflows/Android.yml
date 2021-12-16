@@ -69,7 +69,7 @@ jobs:
       - name: Build Log
         run: |
           haxelib run lime setup android
-          haxelib run lime build android -Dci
+          haxelib run lime build android -final
           
       - uses: actions/upload-artifact@v2
         with:

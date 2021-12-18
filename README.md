@@ -43,7 +43,7 @@ NOTE: If you see any messages relating to deprecated packages, ignore them. They
 The -debug flag is completely optional.
 Applying it will make a folder called `export/debug/[TARGET]/bin` instead of `export/release/[TARGET]/bin`
 
-Once you have all those installed, it's pretty easy to compile the game. You just need to run `lime build html5 -minify` in the root of the project to build and run the HTML5 version ([command prompt navigation guide can be found here](https://ninjamuffin99.newgrounds.com/news/post/1090480)).
+Once you have all those installed, it's pretty easy to compile the game. You just need to run `lime build html5 -minify` in the root of the project to build and run the HTML5 version command prompt navigation guide can be found [here](https://ninjamuffin99.newgrounds.com/news/post/1090480).
 To run it from your desktop (Windows, Mac, Linux) it can be a bit more involved. For Linux, you only need to open a terminal in the project directory and run `lime test linux -debug` and then run the executable file in export/release/linux/bin. For Windows, you need to install Visual Studio Community 2019. While installing VSC, don't click on any of the options to install workloads. Instead, go to the individual components tab and choose the following:
 * MSVC v142 - VS 2019 C++ x64/x86 build tools
 * Windows SDK (10.0.17763.0)

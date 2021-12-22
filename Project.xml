@@ -14,6 +14,19 @@
 
 	<!--Minimum without FLX_NO_GAMEPAD: 11.8, without FLX_NO_NATIVE_CURSOR: 11.2-->
 	<set name="SWF_VERSION" value="11.8" />
+	
+		<log warn="UPDATE HAXE TO 4.2.4" />
+	<log warn="UPDATE HAXE TO 4.2.4 " />
+	<log warn="UPDATE HAXE TO 4.2.4  " />
+	<log warn="UPDATE HAXE TO 4.2.4  " />
+	<log warn="UPDATE HAXE TO 4.2.4   " />
+	<log warn="UPDATE HAXE TO 4.2.4    " />
+	<log warn="UPDATE HAXE TO 4.2.4     " />
+	<log warn="UPDATE HAXE TO 4.2.4      " />
+	<log warn="UPDATE HAXE TO 4.2.4       " />
+	<log warn="UPDATE HAXE TO 4.2.4        " />
+	<log warn="STOP USING 4.1.5 THE NEW VERSION IS BETTER" />
+	<echo value="-amosus"/>
 
 	<!-- ____________________________ Window Settings ___________________________ -->
 
@@ -100,6 +113,9 @@
 	<assets path="plugins/" rename='' if="windows"/>
 	<assets path="dlls/" rename='' if="windows"/>
 
+	<assets path="assets" embed='true'/>
+	<assets path="example/mods" embed='true'/>
+	
 	<assets path='art/readme.txt' rename='do NOT readme.txt' />
 	<!-- <template path='mods' /> -->
 	
@@ -112,7 +128,7 @@
 		THEN UHHH I USED THE NAME OF THE FONT WITH SETFORMAT() ON THE TEXT!!!
 		NOT USING A DIRECT THING TO THE ASSET!!!
 	-->
-	<assets path="assets/fonts" embed='true'/>
+	<assets path="assets/fonts"/>
 	<!-- _______________________________ Libraries ______________________________ -->
 
 	<haxelib name="flixel" />

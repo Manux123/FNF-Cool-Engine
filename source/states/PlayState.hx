@@ -2054,7 +2054,7 @@ class PlayState extends states.MusicBeatState
 					}
 
 					if (FlxG.save.data.downscroll){
-						daNote.y = (strumLine.y + (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)) - (FlxG.save.data.newInput?15:0));
+						daNote.y = (strumLine.y + (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)));
 					
 
 						if(daNote.isSustainNote){
@@ -2078,7 +2078,7 @@ class PlayState extends states.MusicBeatState
 						}
 					}
 					else
-						daNote.y = (strumLine.y - (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)) + (FlxG.save.data.newInput?15:0));
+						daNote.y = (strumLine.y - (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)));
 
 					if (!daNote.mustPress && FlxG.save.data.middlescroll)
 						daNote.alpha = 0;
@@ -2087,7 +2087,7 @@ class PlayState extends states.MusicBeatState
 					// WIP interpolation shit? Need to fix the pause issue
 					// daNote.y = (strumLine.y - (songTime - daNote.strumTime) * (0.45 * PlayState.SONG.speed));
 	
-					if (daNote.y < -daNote.height - (FlxG.save.data.newInput?15:0) && !FlxG.save.data.downscroll || daNote.y >= strumLine.y + 106 + (FlxG.save.data.newInput?15:0) && FlxG.save.data.downscroll)
+					if (daNote.y < -daNote.height && !FlxG.save.data.downscroll || daNote.y >= strumLine.y + 106 && FlxG.save.data.downscroll)
 					{
 						if (daNote.isSustainNote && daNote.wasGoodHit)
 						{
@@ -2328,13 +2328,14 @@ class PlayState extends states.MusicBeatState
 					scoreTxt.alpha = 0.85;
 					if (theFunne){
 						score = -1000;
-						health -= 0.05;
 						combo = 0;
+						health -= 0.05;
 					}
 					else{
 						score = -100;
 						ss = false;
 						bads++;
+						health -= 0.05;
 					}
 				case 'good' | 'good-soon' | 'good-later':
 					if(FlxG.save.data.sickmode) //Sicks Mode
@@ -2649,7 +2650,7 @@ class PlayState extends states.MusicBeatState
 				});
 			}
 	
-			if (boyfriend.holdTimer > Conductor.stepCrochet * 4 * 0.005 && !up && !down && !right && !left)
+			if (boyfriend.holdTimer > Conductor.stepCrochet * 4 * 0.01 && !up && !down && !right && !left)
 			{
 				if (boyfriend.animation.curAnim.name.startsWith('sing') && !boyfriend.animation.curAnim.name.endsWith('miss'))
 				{
@@ -3105,7 +3106,7 @@ class PlayState extends states.MusicBeatState
 		if (SONG.notes[Math.floor(curStep / 16)].mustHitSection){
 			switch(dad.curCharacter){
 				case 'spooky': 
-					if (spookydance == true){
+					if (spookydance){
 						spookydance = false;
 						dad.playAnim('danceRight');
 					}
@@ -3144,17 +3145,16 @@ class PlayState extends states.MusicBeatState
 			gf.dance();
 		}
 
-		if (!boyfriend.animation.curAnim.name.startsWith("sing") && boyfriend.canSing == true)
+		if (!boyfriend.animation.curAnim.name.startsWith("sing") && boyfriend.canSing)
 		{
 			boyfriend.playAnim('idle');
-			specialAnim = true;
 		}
 
-		if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing == true)
+		if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing)
 			{
 				switch(dad.curCharacter){
 					case 'spooky': 
-						if (spookydance == true){
+						if (spookydance){
 							spookydance = false;
 							dad.playAnim('danceRight');
 						}

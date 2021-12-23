@@ -34,7 +34,7 @@ class Song
 
 	public var player1:String = 'bf';
 	public var player2:String = 'dad';
-        public var gfVersion:String = 'gf';
+    public var gfVersion:String = 'gf';
 
 	public function new(song, notes, bpm, modchart)
 	{
@@ -46,12 +46,27 @@ class Song
 
 	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong
 	{
-		var rawJson = Assets.getText(Paths.json('songs/' + folder.toLowerCase() + '/' + jsonInput.toLowerCase())).trim();
-
-		while (!rawJson.endsWith("}"))
+		var loadingJSON:Bool = true;
+		if(loadingJSON)
 		{
-			rawJson = rawJson.substr(0, rawJson.length - 1);
-			// LOL GOING THROUGH THE BULLSHIT TO CLEAN IDK WHATS STRANGE
+			var rawJson = Assets.getText(Paths.json('songs/' + folder.toLowerCase() + '/' + jsonInput.toLowerCase())).trim();
+
+			while (!rawJson.endsWith("}"))
+			{
+				rawJson = rawJson.substr(0, rawJson.length - 1);
+				// LOL GOING THROUGH THE BULLSHIT TO CLEAN IDK WHATS STRANGE
+			}
+			return parseJSONshit(rawJson);
+		}
+		else {
+			var rawJson1 = Assets.getText(Paths.json('defaultjsonsong/' + jsonInput.toLowerCase())).trim();
+
+			while (!rawJson1.endsWith("}"))
+			{
+				rawJson1 = rawJson1.substr(0, rawJson1.length - 1);
+				// LOL GOING THROUGH THE BULLSHIT TO CLEAN IDK WHATS STRANGE
+			}
+			return parseJSONshit(rawJson1);
 		}
 
 		// FIX THE CASTING ON WINDOWS/NATIVE
@@ -69,8 +84,6 @@ class Song
 				daNotes = songData.notes;
 				daSong = songData.song;
 				daBpm = songData.bpm; */
-
-		return parseJSONshit(rawJson);
 	}
 
 	public static function parseJSONshit(rawJson:String):SwagSong

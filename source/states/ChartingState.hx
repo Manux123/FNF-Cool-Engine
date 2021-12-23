@@ -154,7 +154,7 @@ class ChartingState extends states.MusicBeatState
 				needsVoices: true,
 				player1: 'bf',
 				player2: 'dad',
-                                gfVersion: 'gf',
+                gfVersion: 'gf',
 				speed: 1,
 				modchart: false,
 				validScore: false
@@ -379,20 +379,6 @@ class ChartingState extends states.MusicBeatState
 
 		UI_box.addGroup(tab_group_section);
 	}
-
-	function addModChartUI():Void
-	{
-		var tab_group_modchart = new FlxUI(null, UI_box);
-		tab_group_modchart.name = 'ModCharts';
-
-		check_modchart = new FlxUICheckBox(10, 30, null, null, "Flip Arrows", 100);
-		check_modchart.name = 'check_modchart';
-
-		tab_group_modchart.add(check_modchart);
-	//	tab_group_modchart.add(stepperSectionBPM); wtf even is this
-		UI_box.addGroup(tab_group_modchart);
-	}
-
 
 	var stepperSusLength:FlxUINumericStepper;
 

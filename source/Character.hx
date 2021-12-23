@@ -364,6 +364,25 @@ class Character extends FlxSprite
 				antialiasing = false;
 	
 				flipX = true;
+
+			if(isPlayer)
+			{
+				switch(curCharacter){
+					default:
+						var tex = Paths.getSparrowAtlas('characters/BOYFRIEND');
+						frames = tex;
+						boyfriendAnimation();
+						loadOffsetFile(curCharacter);
+						playAnim('idle');
+		
+						flipX = true;}
+			}
+			else
+			{
+				switch(curCharacter){
+					default:
+				}
+			}
 		}
 
 		dance();

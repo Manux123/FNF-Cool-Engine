@@ -4,7 +4,6 @@ menu/blackslines_finalrating
 menu/FNF_main_menu_assets
 menu/menuBG
 menu/menuBGBlue
-menu/menuBGMagenta
 menu/menuChartingBG
 menu/menuDesat
 menu/menuoptions

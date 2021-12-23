@@ -885,6 +885,18 @@ class OptionsData
 
 			if (FlxG.save.data.middlescroll == null)
 				FlxG.save.data.middlescroll = false;
+
+			if(FlxG.save.data.HUD == null)
+				FlxG.save.data.HUD = false;
+			
+			if(FlxG.save.data.HUDTime == null)
+				FlxG.save.data.HUDTime = false;
+
+			if(FlxG.save.data.camZoom == null)
+				FlxG.save.data.camZoom = false;
+
+			if(FlxG.save.data.flashing == null)
+				FlxG.save.data.flashing = false;
 	
 			if (FlxG.save.data.offset == null)
 				FlxG.save.data.offset = 0;

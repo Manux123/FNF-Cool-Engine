@@ -114,7 +114,6 @@
 	<assets path="dlls/" rename='' if="windows"/>
 
 	<assets path="assets" embed='true'/>
-	<assets path="example/mods" embed='true'/>
 	
 	<assets path='art/readme.txt' rename='do NOT readme.txt' />
 	<!-- <template path='mods' /> -->

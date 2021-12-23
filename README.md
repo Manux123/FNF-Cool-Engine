@@ -1,6 +1,6 @@
 # [Cool Engine](https://github.com/Manux123/FNF-Cool-Engine)
 
-**Friday Night Funkin': Cool Engine, this is a modification of the original Friday Night Funkin' source that includes new Options and better Graphics!!**
+**FNF': Cool Engine, this is a modification of the original FNF' source (it can be found [here](https://github.com/ninjamuffin99) btw) the mod includes new Options and better Graphics!!**
 ----------------------------------------------
 
 ![image](https://media.discordapp.net/attachments/871591689737875486/886366232859803668/cool.png?width=958&height=670)
@@ -14,27 +14,28 @@
 - [Overcharged Dev](https://www.youtube.com/channel/UCkcscIIXyUsfj2DsnNDWQbg/) - Programmer Friday Night Funkin: Cool Engine
 - [FairyBoy](https://twitter.com/JulianSamwise?s=09) and [Zero Artist](https://twitter.com/zero_artist02) - Artists Friday Night Funkin: Cool Engine
 
-## Funkin
+## FNF
 - [Kawaisprite](https://twitter.com/kawaisprite) - Musician Friday Night Funkin Original
 - [ninjamuffin99](https://twitter.com/ninja_muffin99) - Programmer Friday Night Funkin Original
 - [PhantomArcade3K](https://twitter.com/phantomarcade3k) and [Evilsk8r](https://twitter.com/evilsk8r) - Artists Friday Night Funkin Original
 
-## Specials Thanks
+## Specials Thanks & mp4 support
 - [PolybiusProxy](https://twitter.com/polybiusproxy) - MP4 Extension Loader
 
 # Building
 THESE INSTRUCTIONS ARE FOR COMPILING THE GAME'S SOURCE CODE!!!
-IF YOU JUST WANT TO PLAY AND NOT EDIT THE CODE [CLICK HERE!!!](https://gamebanana.com/mods/326036)
+IF YOU JUST WANT TO PLAY AND NOT EDIT THE CODE CLICK [HERE](https://gamebanana.com/mods/326036)!!!
 
 ### Installing the Required Programs
 
 First, you need to install Haxe and HaxeFlixel. I'm too lazy to write and keep updated with that setup (which is pretty simple). 
-1. [Install Haxe](https://haxe.org/download/)
+1. [Install Haxe](https://haxe.org/download/) (pls install the latest version or i cri)
 2. [Install HaxeFlixel](https://haxeflixel.com/documentation/install-haxeflixel/) after downloading Haxe (This is a required step and compilation will fail if it isn't installed!)
 
 You'll also need to install a couple things that involve Gits. To do this, you need to do a few things first.
 1. Download [git-scm](https://git-scm.com/downloads). Works for Windows, and Mac, just select your build. (Linux users can install the git package via their respective package manager.)
-2. Run [this](https://github.com/Manux123/FNF-Cool-Engine/blob/master/Installation_of_the_Haxe_and_APIStuff_libraries.bat), and everything will be installed automatically
+2. Run [this](https://github.com/Manux123/FNF-Cool-Engine/blob/master/Installation_of_the_Haxe_and_APIStuff_libraries.bat), and everything should be installed automatically
+if it doesnt use the errors to download the left libraries
 
 You should have everything ready for compiling the game! Follow the guide below to continue!
 
@@ -50,8 +51,7 @@ To run it from your desktop (Windows, Mac, Linux) it can be a bit more involved.
 
 Once that is done you can open up a command line in the project's directory and run `lime test windows -debug`. Once that command finishes (it takes forever even on a higher end PC), you can run FNF from the .exe file under export\release\windows\bin
 
-As for Mac, `lime test mac -debug` should work, if not the internet surely has a guide on how to compile Haxe stuff for Mac.
-
+As for Mac, `lime test mac -debug` will work,
 ----------------------------------------------
 
 ADDITIONS IN 0.1.6 (FINAL!!)
@@ -66,4 +66,4 @@ ADDITIONS IN 0.1.6 (FINAL!!)
 
 ----------------------------------------------
 Thanks for checking out our Engine! Do you have any question? Text me at Jloor # 2491 or 『𝑴𝒂𝒏𝒖𝒙』#6183 or Chasetodie10#3164 on Discord!
-----------------------------------------------
+##### heh line 69

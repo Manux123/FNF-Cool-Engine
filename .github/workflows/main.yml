@@ -2,21 +2,12 @@
 
 name: Build
 
-# Controls when the action will run. 
-on:
-  # Triggers the workflow on push or pull request events but only for the master branch
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+# Controls when the workflow will run
+on: [push, pull_request, workflow_dispatch]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-
   buildWindows:
     runs-on: windows-latest
     
@@ -26,7 +17,7 @@ jobs:
 
       - uses: krdlab/setup-haxe@master
         with:
-          haxe-version: 4.2.0
+          haxe-version: 4.2.4
       # Runs a set of commands using the runners shell
       - name: Install Haxelib
         run: |
@@ -67,7 +58,7 @@ jobs:
 
       - uses: krdlab/setup-haxe@master
         with:
-          haxe-version: 4.2.0
+          haxe-version: 4.2.4
       # Runs a set of commands using the runners shell
       - name: Install Haxelib
         run: |

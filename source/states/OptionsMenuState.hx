@@ -136,7 +136,7 @@ class OptionsMenuState extends MusicBeatState
 						FlxG.state.openSubState(new KeyBindMenu());
 						#end
 					case 5:
-						FlxG.switchstate(new CreditsState());
+						FlxG.switchState(new CreditsState());
 					case 6:
 						FlxG.switchState(new MainMenuState());
 				}

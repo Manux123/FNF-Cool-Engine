@@ -24,13 +24,25 @@ class CreditsState extends MusicBeatState
 
 	private static var creditsStuff:Array<Dynamic> = [ //Name Description - Link
 		['Cool engine'],
+		[''],
+		["Manux"],
 		['Manux',	        	'Main Programmer of cool Engine',					'https://twitter.com/Manux'],
-                ['Clogsworth',           	'Additional Programmer and Musician of cool Engine',				'https:/youtube.com/c/MrClogsworthYT'],
+		[''],
+		["amosus"],
+                ['amosus',           	'Additional Programmer and Musician of cool Engine',				'https:/youtube.com/c/MrClogsworthYT'],
 		[''],
 		["Funkin' Crew"],
+		[''],
+		["Ninjamuffin99"],
 		['ninjamuffin99',       	"Programmer of Friday Night Funkin'",	               			'https://twitter.com/ninja_muffin99'],
+		[''],
+		["PhantomArcade"],
 		['PhantomArcade',        	"Animator of Friday Night Funkin'",					'https://twitter.com/PhantomArcade3K'],
+		[''],
+		["Evilsk8r"],
 		['evilsk8r',            	"Artist of Friday Night Funkin'",					'https://twitter.com/evilsk8r'],
+		[''],
+		["kawaisprite"],
 		['kawaisprite',			"Composer of Friday Night Funkin'",					'https://twitter.com/kawaisprite'];
 
 	var bg:FlxSprite;
@@ -38,7 +50,7 @@ class CreditsState extends MusicBeatState
 
 	override function create()
 	{
-		#if desktop
+		#if deskto
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("In the Credits", null);
 		#end

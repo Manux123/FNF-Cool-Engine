@@ -16,6 +16,7 @@ using StringTools;
 
 class CreditsState extends MusicBeatState
 {
+	//THIS BETTER WORK
 	var curSelected:Int = 1;
 
 	private var grpOptions:FlxTypedGroup<Alphabet>;

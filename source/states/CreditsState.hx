@@ -111,7 +111,8 @@ class CreditsState extends MusicBeatState
 
 		var bullShit:Int = 0;
 
-		for} (item in grpOptions.members)
+		}
+                        for (item in grpOptions.members)
 		
 			item.targetY = bullShit - curSelected;
 			bullShit++;

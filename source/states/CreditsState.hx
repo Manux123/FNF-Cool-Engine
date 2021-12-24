@@ -29,21 +29,7 @@ class CreditsState extends MusicBeatState
 		['Manux',	        	'Main Programmer of cool Engine',					'https://twitter.com/Manux'],
 		[''],
 		["amosus"],
-                ['amosus',           	'Additional Programmer and Musician of cool Engine',				'https:/youtube.com/c/MrClogsworthYT'],
-		[''],
-		["Funkin' Crew"],
-		[''],
-		["Ninjamuffin99"],
-		['ninjamuffin99',       	"Programmer of Friday Night Funkin'",	               			'https://twitter.com/ninja_muffin99'],
-		[''],
-		["PhantomArcade"],
-		['PhantomArcade',        	"Animator of Friday Night Funkin'",					'https://twitter.com/PhantomArcade3K'],
-		[''],
-		["Evilsk8r"],
-		['evilsk8r',            	"Artist of Friday Night Funkin'",					'https://twitter.com/evilsk8r'],
-		[''],
-		["kawaisprite"],
-		['kawaisprite',			"Composer of Friday Night Funkin'",					'https://twitter.com/kawaisprite'];
+                ['amosus',           	'Additional Programmer and Musician of cool Engine',				'https:/youtube.com/c/MrClogsworthYT'];
 
 	var bg:FlxSprite;
 	var descText:FlxText;

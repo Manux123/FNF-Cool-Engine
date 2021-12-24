@@ -20,10 +20,16 @@ class CreditsState extends MusicBeatState
 
 	private var grpOptions:FlxTypedGroup<Alphabet>;
 
-	private static var creditsStuff:Array<Dynamic> = [ //Name Description - Link
+	private static var creditsStuff:Array<Dynamic> = [ 
 		['Cool engine'],
-		['Manux',	        	'Main Programmer of cool Engine',					'https://twitter.com/Manux'],
-                ['amosus',           	'Additional Programmer and Musician of cool Engine',				'https:/youtube.com/c/MrClogsworthYT']
+		['Manux',		Main Programmer of cool Engine',					'https://twitter.com/Manux'],
+                ['Clogsworth',  "Additional Programmer and Musician of cool Engine",				'https://youtube.com/c/MrClogsworthYT'],
+		[''],
+		["Funkin' Crew"],
+		['ninjamuffin99',		"Programmer of Friday Night Funkin",				'https://twitter.com/ninja_muffin99'],
+		['PhantomArcade',   	"Animator of Friday Night Funkin",					'https://twitter.com/PhantomArcade3K'],
+		['evilsk8r',			"Artist of Friday Night Funkin",					'https://twitter.com/evilsk8r'],
+		['kawaisprite',           	"Composer of Friday Night Funkin",					'https://twitter.com/kawaisprite']
 	];
 
 	var bg:FlxSprite;
@@ -31,7 +37,7 @@ class CreditsState extends MusicBeatState
 
 	override function create()
 	{
-		#if deskto
+		#if desktop
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("In the Credits", null);
 		#end
@@ -62,19 +68,14 @@ class CreditsState extends MusicBeatState
 		descText.scrollFactor.set();
 		descText.borderSize = 2.4;
 		add(descText);
-
-		bg.color = creditsStuff[curSelected][4];
-		changeSelection();
-		super.create();
-		#if mobileC
-		addVirtualPad(UP_DOWN, A_B);
-		#end
-	}
+        }
+   }
+}
 
 	override function update(elapsed:Float)
 	{
 		if (FlxG.sound.music.volume < 0.7)
-		{}
+		{
 			FlxG.sound.music.volume += 0.5 * FlxG.elapsed;
 		}
 
@@ -92,6 +93,9 @@ class CreditsState extends MusicBeatState
 
 		if (controls.BACK)
 		{
+			if(colorTween != null) {
+				colorTween.cancel();
+			}
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 			FlxG.switchState(new MainMenuState());
 		}
@@ -115,6 +119,9 @@ class CreditsState extends MusicBeatState
 			if (curSelected >= creditsStuff.length)
 				curSelected = 0;
 		} while(unselectableCheck(curSelected));
+				}
+			});
+		}
 
 		var bullShit:Int = 0;
 

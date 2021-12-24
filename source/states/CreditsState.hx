@@ -118,6 +118,7 @@ class CreditsState extends MusicBeatState
 				curSelected = creditsStuff.length - 1;
 			if (curSelected >= creditsStuff.length)
 				curSelected = 0;
+			while 
 
 		var bullShit:Int = 0;
 

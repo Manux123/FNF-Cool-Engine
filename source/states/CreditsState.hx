@@ -22,7 +22,7 @@ class CreditsState extends MusicBeatState
 
 	private static var creditsStuff:Array<Dynamic> = [ 
 		['Cool engine'],
-		['Manux',		Main Programmer of cool Engine',					'https://twitter.com/Manux'],
+		['Manux',		"Main Programmer of cool Engine",					'https://twitter.com/Manux'],
                 ['Clogsworth',  "Additional Programmer and Musician of cool Engine",				'https://youtube.com/c/MrClogsworthYT'],
 		[''],
 		["Funkin' Crew"],

@@ -29,7 +29,7 @@ class CreditsState extends MusicBeatState
 		['Manux',	        	'Main Programmer of cool Engine',					'https://twitter.com/Manux'],
 		[''],
 		["amosus"],
-                ['amosus',           	'Additional Programmer and Musician of cool Engine',				'https:/youtube.com/c/MrClogsworthYT'];
+                ['amosus',           	'Additional Programmer and Musician of cool Engine',				'https:/youtube.com/c/MrClogsworthYT']];
 
 	var bg:FlxSprite;
 	var descText:FlxText;

@@ -10,8 +10,6 @@ import flixel.addons.display.FlxGridOverlay;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
 import flixel.text.FlxText;
-import flixel.util.FlxColor;
-import flixel.tweens.FlxTween;
 import lime.utils.Assets;
 
 using StringTools;
@@ -24,12 +22,9 @@ class CreditsState extends MusicBeatState
 
 	private static var creditsStuff:Array<Dynamic> = [ //Name Description - Link
 		['Cool engine'],
-		[''],
-		["Manux"],
 		['Manux',	        	'Main Programmer of cool Engine',					'https://twitter.com/Manux'],
-		[''],
-		["amosus"],
-                ['amosus',           	'Additional Programmer and Musician of cool Engine',				'https:/youtube.com/c/MrClogsworthYT']];
+                ['amosus',           	'Additional Programmer and Musician of cool Engine',				'https:/youtube.com/c/MrClogsworthYT']
+	];
 
 	var bg:FlxSprite;
 	var descText:FlxText;
@@ -79,7 +74,7 @@ class CreditsState extends MusicBeatState
 	override function update(elapsed:Float)
 	{
 		if (FlxG.sound.music.volume < 0.7)
-		{
+		{}
 			FlxG.sound.music.volume += 0.5 * FlxG.elapsed;
 		}
 
@@ -97,9 +92,6 @@ class CreditsState extends MusicBeatState
 
 		if (controls.BACK)
 		{
-			if(colorTween != null) {
-				colorTween.cancel();
-			}
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 			FlxG.switchState(new MainMenuState());
 		}

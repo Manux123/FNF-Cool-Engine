@@ -28,9 +28,9 @@ class CreditsState extends MusicBeatState
                 ['Clogsworth',           	'Additional Programmer and Musician of cool Engine',				'https:/youtube.com/c/MrClogsworthYT'],
 		[''],
 		["Funkin' Crew"],
-		['ninjamuffin99',       	"Programmer of Friday Night Funkin'",				'https://twitter.com/ninja_muffin99'],
+		['ninjamuffin99',       	"Programmer of Friday Night Funkin'",	               			'https://twitter.com/ninja_muffin99'],
 		['PhantomArcade',        	"Animator of Friday Night Funkin'",					'https://twitter.com/PhantomArcade3K'],
-		['evilsk8r',			"Artist of Friday Night Funkin'",					'https://twitter.com/evilsk8r'],
+		['evilsk8r',            	"Artist of Friday Night Funkin'",					'https://twitter.com/evilsk8r'],
 		['kawaisprite',			"Composer of Friday Night Funkin'",					'https://twitter.com/kawaisprite'];
 
 	var bg:FlxSprite;

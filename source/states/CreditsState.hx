@@ -21,26 +21,20 @@ class CreditsState extends MusicBeatState
 	var curSelected:Int = 1;
 
 	private var grpOptions:FlxTypedGroup<Alphabet>;
-	private var iconArray:Array<AttachedSprite> = [];
 
-	private static var creditsStuff:Array<Dynamic> = [ //Name - Icon name - Description - Link - BG Color
+	private static var creditsStuff:Array<Dynamic> = [ //Name Description - Link
 		['Cool engine'],
-		['Manux',		'manux',		'Main Programmer of cool Engine',					'https://twitter.com/Manux',	0xFFFFDD33],
-        [''],
-		['Engine Contributors'],
-        ['Clogsworth',  'clogsworth',		'Additional Programmer and Musician of cool Engine',				'https://twitter.com/Manux',	0xFFFFFFFF],
+		['Manux',	        	'Main Programmer of cool Engine',					'https://twitter.com/Manux'],
+                ['Clogsworth',           	'Additional Programmer and Musician of cool Engine',				'https:/youtube.com/c/MrClogsworthYT'],
 		[''],
 		["Funkin' Crew"],
-		['ninjamuffin99',		'ninjamuffin99',	"Programmer of Friday Night Funkin'",				'https://twitter.com/ninja_muffin99',	0xFFF73838],
-		['PhantomArcade',		'phantomarcade',	"Animator of Friday Night Funkin'",					'https://twitter.com/PhantomArcade3K',	0xFFFFBB1B],
-		['evilsk8r',			'evilsk8r',			"Artist of Friday Night Funkin'",					'https://twitter.com/evilsk8r',			0xFF53E52C],
-		['kawaisprite',			'kawaisprite',		"Composer of Friday Night Funkin'",					'https://twitter.com/kawaisprite',		0xFF6475F3]
-	];
+		['ninjamuffin99',       	"Programmer of Friday Night Funkin'",				'https://twitter.com/ninja_muffin99'],
+		['PhantomArcade',        	"Animator of Friday Night Funkin'",					'https://twitter.com/PhantomArcade3K'],
+		['evilsk8r',			"Artist of Friday Night Funkin'",					'https://twitter.com/evilsk8r'],
+		['kawaisprite',			"Composer of Friday Night Funkin'",					'https://twitter.com/kawaisprite'];
 
 	var bg:FlxSprite;
 	var descText:FlxText;
-	var intendedColor:Int;
-	var colorTween:FlxTween;
 
 	override function create()
 	{
@@ -69,15 +63,6 @@ class CreditsState extends MusicBeatState
 			grpOptions.add(optionText);
 
 			if(isSelectable) {
-				var icon:AttachedSprite = new AttachedSprite('credits/' + creditsStuff[i][1]);
-				icon.xAdd = optionText.width + 10;
-				icon.sprTracker = optionText;
-	
-				// using a FlxGroup is too much fuss!
-				iconArray.push(icon);
-				add(icon);
-			}
-		}
 
 		descText = new FlxText(50, 600, 1180, "", 32);
 		descText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -86,7 +71,6 @@ class CreditsState extends MusicBeatState
 		add(descText);
 
 		bg.color = creditsStuff[curSelected][4];
-		intendedColor = bg.color;
 		changeSelection();
 		super.create();
 		#if mobileC
@@ -141,19 +125,6 @@ class CreditsState extends MusicBeatState
 			if (curSelected >= creditsStuff.length)
 				curSelected = 0;
 		} while(unselectableCheck(curSelected));
-
-		var newColor:Int = creditsStuff[curSelected][4];
-		if(newColor != intendedColor) {
-			if(colorTween != null) {
-				colorTween.cancel();
-			}
-			intendedColor = newColor;
-			colorTween = FlxTween.color(bg, 1, bg.color, intendedColor, {
-				onComplete: function(twn:FlxTween) {
-					colorTween = null;
-				}
-			});
-		}
 
 		var bullShit:Int = 0;
 

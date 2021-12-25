@@ -45,7 +45,6 @@ class OptionsMenuState extends MusicBeatState
 			("\n" + 'Optimization') +
 			("\n" + 'Note Skin') +
 			("\n" + 'Controls') +
-			("\n" + 'Credits') +
 			("\n" + 'Exit'));
 		
 		//trace(controlsStrings);
@@ -136,8 +135,6 @@ class OptionsMenuState extends MusicBeatState
 						FlxG.state.openSubState(new KeyBindMenu());
 						#end
 					case 5:
-						FlxG.switchState(new CreditsState());
-					case 6:
 						FlxG.switchState(new MainMenuState());
 				}
 			}

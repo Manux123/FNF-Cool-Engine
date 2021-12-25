@@ -72,7 +72,16 @@ class CreditsState extends MusicBeatState
         }
    }
 }
+	
+	descText.text = creditsStuff[curSelected][2];
+        }
 
+	private function unselectableCheck(num:Int):Bool {
+		return creditsStuff[num].length <= 1;
+	}
+}
+	
+	
 	override function update(elapsed:Float)
 	{
 		if (FlxG.sound.music.volume < 0.7)
@@ -110,10 +119,4 @@ class CreditsState extends MusicBeatState
 	}
 
     }
-		descText.text = creditsStuff[curSelected][2];
-	}
 
-	private function unselectableCheck(num:Int):Bool {
-		return creditsStuff[num].length <= 1;
-	}
-}

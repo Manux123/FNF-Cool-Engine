@@ -110,7 +110,6 @@ class CreditsState extends MusicBeatState
 	}
 
     }
-}
 		descText.text = creditsStuff[curSelected][2];
 	}
 

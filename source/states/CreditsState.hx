@@ -71,7 +71,8 @@ class CreditsState extends MusicBeatState
 		add(descText);
         }
    }
-}
+	}
+    }	
 	
 	descText.text = creditsStuff[curSelected][2];
         }

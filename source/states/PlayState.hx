@@ -2359,8 +2359,12 @@ class PlayState extends states.MusicBeatState
 					scoreTxt.alpha = 1;
 					totalNotesHit += 1;
 					score = 350;
-					if(FlxG.save.data.hitsounds)
-						FlxG.sound.play(Paths.sound('hitsounds/hit-${FlxG.random.int(1,2)}'));
+					if(FlxG.save.data.hitsounds){
+						var hitSound:FlxSound = new FlxSound().loadEmbedded(Paths.sound('hitsounds/hit-${FlxG.random.int(1,2)}'));
+						hitSound.volume = 1 + FlxG.random.float(-0.2,0.2);
+						hitSound.looped = false;
+						hitSound.play();
+					}
 					if(noteSplashOp)
 						spawnNoteSplashOnNote(daNote);
 			}

@@ -52,6 +52,11 @@ class CreditsState extends MusicBeatState
 
 	override function create()
 	{
+		if(FlxG.save.data.FPSCap)
+			openfl.Lib.current.stage.frameRate = 120;
+		else
+			openfl.Lib.current.stage.frameRate = 240;
+
 		#if desktop
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("In the Credits", null);
@@ -93,7 +98,7 @@ class CreditsState extends MusicBeatState
 		return creditsStuff[num].length <= 1;
 	}
 	var pussy;
-	private function getShit():Array<Dynamic>{
+	private function getShit():Void{
 		var text = CoolUtil.coolTextFile(Paths.txt("creditsList"));
 		for(i in 0... text.lenght){
 			pussy.push(text[i].split(":"));

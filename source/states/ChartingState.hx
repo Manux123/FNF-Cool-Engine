@@ -98,6 +98,11 @@ class ChartingState extends states.MusicBeatState
 
 	override function create()
 	{
+		if(FlxG.save.data.FPSCap)
+			openfl.Lib.current.stage.frameRate = 120;
+		else
+			openfl.Lib.current.stage.frameRate = 240;
+		
 		#if desktop
 		DiscordClient.changePresence("Chart Editor", null, null, true);
 		#end

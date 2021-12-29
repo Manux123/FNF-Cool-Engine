@@ -15,6 +15,7 @@ class Character extends FlxSprite
 	public var canSing:Bool = true;
 
 	public var isPlayer:Bool = false;
+	public var specialAnim:Bool = false;
 	public var curCharacter:String = 'bf';
 
 	public var holdTimer:Float = 0;
@@ -476,7 +477,7 @@ class Character extends FlxSprite
 	 */
 	public function dance()
 	{
-		if (!debugMode)
+		if (!debugMode && !specialAnim)
 		{
 			switch (curCharacter)
 			{
@@ -506,7 +507,7 @@ class Character extends FlxSprite
 
 	public function playAnim(AnimName:String, Force:Bool = false, Reversed:Bool = false, Frame:Int = 0):Void
 	{
-		if (canSing){
+		if (canSing && !specialAnim){
 			animation.play(AnimName, Force, Reversed, Frame);
 
 			var daOffset = animOffsets.get(AnimName);

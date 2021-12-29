@@ -156,8 +156,7 @@ class PlayState extends states.MusicBeatState
 	public var camHUD:FlxCamera;
 	public var camGame:FlxCamera;
 	
-	
-        var dialogue:Array<String> = [':bf:strange code', ':dad:>:]'];
+	var dialogue:Array<String> = [':bf:strange code', ':dad:>:]'];
 	var halloweenBG:FlxSprite;
 	var isHalloween:Bool = false;
 
@@ -325,11 +324,11 @@ class PlayState extends states.MusicBeatState
 					"Only then I will even CONSIDER letting you\ndate my daughter!"
 				];
 			case 'senpai':
-				dialogue = CoolUtil.coolTextFile(Paths.txt('songs/senpai/senpaiDialogue'));
+				dialogueFile('senpaiDialogue');
 			case 'roses':
-				dialogue = CoolUtil.coolTextFile(Paths.txt('songs/roses/rosesDialogue'));
+				dialogueFile('rosesDialogue');
 			case 'thorns':
-				dialogue = CoolUtil.coolTextFile(Paths.txt('songs/thorns/thornsDialogue'));
+				dialogueFile('thornsDialogue');
 		}
 
 		switch (SONG.song.toLowerCase())
@@ -1680,6 +1679,9 @@ class PlayState extends states.MusicBeatState
 		super.closeSubState();
 	}
 	
+	function dialogueFile(dialogue:String) {
+		return CoolUtil.coolTextFile(Paths.txt('songs/${SONG.song.toLowerCase()}/${dialogue}'));
+	}
 
 	public static var ranking:String = "N/A";
 
@@ -2798,6 +2800,24 @@ class PlayState extends states.MusicBeatState
 		accuracy = totalNotesHit / totalPlayed * 100;
 	}
 
+	function switchCharacter(player:String, character:String):Void {
+		switch (player) {
+			case 'Bf':
+				remove(boyfriend);
+				boyfriend = new Boyfriend(boyfriend.x, boyfriend.y, character);
+				add(boyfriend);
+				iconP1.animation.play(character);
+			case 'Oponnent':
+				remove(dad);
+				dad = new Character(dad.x, dad.y, character);
+				add(dad);
+				iconP2.animation.play(character);
+			case 'Gf':
+				remove(gf);
+				gf = new Character(gf.x, gf.y, character);
+				add(gf);
+		}
+	}
 
 	function getKeyPresses(note:Note):Int
 	{

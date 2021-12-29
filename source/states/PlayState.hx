@@ -501,9 +501,10 @@ class PlayState extends states.MusicBeatState
 				boyfriend.y += 220;
 				gf.x += 180;
 				gf.y += 300;
-			case 'stagetest':
-				dad.y += 510;
-				dad.x += 250;
+		}
+		if(SONG.song.toLowerCase() == 'test'){
+			dad.y += 510;
+			dad.x += 250;
 		}
 
 		if (!FlxG.save.data.gfbye) 

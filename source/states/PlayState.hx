@@ -1680,6 +1680,7 @@ class PlayState extends states.MusicBeatState
 	
 	function dialogueFile(dialogue:String) {
 		return CoolUtil.coolTextFile(Paths.txt('songs/${SONG.song.toLowerCase()}/${dialogue}'));
+		trace('LOADING ' + dialogue);
 	}
 
 	public static var ranking:String = "N/A";
@@ -2359,7 +2360,7 @@ class PlayState extends states.MusicBeatState
 					totalNotesHit += 1;
 					score = 350;
 					if(FlxG.save.data.hitsounds)
-						FlxG.sound.play(Paths.sound('hitsounds/hit-${FlxG.random.int(1,3)}'));
+						FlxG.sound.play(Paths.sound('hitsounds/hit-${FlxG.random.int(1,2)}'));
 					if(noteSplashOp)
 						spawnNoteSplashOnNote(daNote);
 			}

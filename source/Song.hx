@@ -56,29 +56,12 @@ class Song
 			rawJson = Assets.getText(Paths.json('songs/tutorial/tutorial-hard'));
 		}
 
-		while (!rawJson.endsWith("}"))
-		var loadingJSON:Bool = true;
-		if(loadingJSON)
-		{
-			var rawJson = Assets.getText(Paths.json('songs/' + folder.toLowerCase() + '/' + jsonInput.toLowerCase())).trim();
-
-			while (!rawJson.endsWith("}"))
-			{
-				rawJson = rawJson.substr(0, rawJson.length - 1);
-				// LOL GOING THROUGH THE BULLSHIT TO CLEAN IDK WHATS STRANGE
-			}
-			return parseJSONshit(rawJson);
+		while (!rawJson.endsWith("}")){
+			// LOL GOING THROUGH THE BULLSHIT TO CLEAN IDK WHATS STRANGE
+			rawJson = rawJson.substr(0, rawJson.length - 1);
 		}
-		else {
-			var rawJson1 = Assets.getText(Paths.json('defaultjsonsong/' + jsonInput.toLowerCase())).trim();
 
-			while (!rawJson1.endsWith("}"))
-			{
-				rawJson1 = rawJson1.substr(0, rawJson1.length - 1);
-				// LOL GOING THROUGH THE BULLSHIT TO CLEAN IDK WHATS STRANGE
-			}
-			return parseJSONshit(rawJson1);
-		}
+		return parseJSONshit(rawJson);
 
 		// FIX THE CASTING ON WINDOWS/NATIVE
 		// Windows???

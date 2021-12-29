@@ -438,9 +438,12 @@ class FreeplayState extends states.MusicBeatState
 
 			if (item.targetY == 0)
 			{
+				FlxTween.tween(item,{x:45},0.45,{ease:FlxEase.elasticInOut});
 				item.alpha = 1;
 				// item.setGraphicSize(Std.int(item.width));
 			}
+			else
+				FlxTween.tween(item,{x:0},0.45,{ease:FlxEase.elasticInOut});
 		}
 		changeDiff();
 	}

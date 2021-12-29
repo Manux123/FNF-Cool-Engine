@@ -21,13 +21,15 @@ class CreditsState extends MusicBeatState
 
 	private var grpOptions:FlxTypedGroup<Alphabet>;
 
-	private static var creditsStuff:Array<Dynamic> = [ 
+	getShit();
+
+	/*private static var creditsStuff:Array<Dynamic> = [ 
 		['Cool engine'],
 		['Manux',		'manux',		'Main Programmer of Cool Engine',					'https://twitter.com/Manux',	0xFFFFDD33],
 		['Juanen100',  'juan',		'Main Programmer of Cool Engine',				'https://github.com/Juanen100',	0xAC41FF],
         [''],
 		['Engine Contributors'],
-        ['Clogsworth',  'clogsworth',		'Additional Programmer and Musician of Cool Engine',				'https://twitter.com/Manux',	0xFFFFFFFF],
+        ['Clogsworth',  'clogsworth',		'Additional Programmer and Musician of Cool Engine',				'https://youtube.com/c/MrClogsworthYT',	0xFFFFFFFF],
 		['JloorMC',  'jloor',		'Additional Programmer of Cool Engine',				'https://github.com/JloorMC',	0xFF41CE],
 		['OverchargedDev',  'overDev',		'Additional Programmer and Dumbass of Cool Engine',				'https://twitter.com/KillerBeanFan2',	0x4158FF],
 		[''],
@@ -36,15 +38,14 @@ class CreditsState extends MusicBeatState
 		['PabloelproxD210',  'pablo',		'Cool Engine Android port',				'https://github.com/PabloelproxD210',	0xFFFFFF],
 		['ChaseToDie',  'chase',		'Programmer of Cool Engine',				'https://github.com/Chasetodie',	0x4823FF],
 		['PolybiusProxy',  'polybius',		'MP4 Extension',				'https://twitter.com/polybiusproxy',	0xFFA641],
-		['Manux',		"Main Programmer of cool Engine",					'https://twitter.com/Manux'],
-                ['Clogsworth',  "Additional Programmer and Musician of cool Engine",				'https://youtube.com/c/MrClogsworthYT'],
 		[''],
 		["Funkin' Crew"],
 		['ninjamuffin99',		"Programmer of Friday Night Funkin",				'https://twitter.com/ninja_muffin99'],
 		['PhantomArcade',   	"Animator of Friday Night Funkin",					'https://twitter.com/PhantomArcade3K'],
 		['evilsk8r',			"Artist of Friday Night Funkin",					'https://twitter.com/evilsk8r'],
 		['kawaisprite',           	"Composer of Friday Night Funkin",					'https://twitter.com/kawaisprite']
-	];
+	];*/
+	private static var creditsStuff:Array<Dynamic> = pussy;
 
 	var bg:FlxSprite;
 	var descText:FlxText;
@@ -77,25 +78,27 @@ class CreditsState extends MusicBeatState
 
 			if(isSelectable) {
 
-		descText = new FlxText(50, 600, 1180, "", 32);
-		descText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		descText.scrollFactor.set();
-		descText.borderSize = 2.4;
-		add(descText);
-        }
-   }
-	}
-    }	
+				descText = new FlxText(50, 600, 1180, "", 32);
+				descText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+				descText.scrollFactor.set();
+				descText.borderSize = 2.4;
+				add(descText);
+        	}
+		}
+	}	
 	
 	descText.text = creditsStuff[curSelected][2];
-        }
 
 	private function unselectableCheck(num:Int):Bool {
 		return creditsStuff[num].length <= 1;
 	}
-}
-	
-	
+	var pussy;
+	private function getShit():Array<Dynamic>{
+		var text = CoolUtil.coolTextFile(Paths.txt("creditsList"));
+		for(i in 0... text.lenght){
+			pussy.push(text[i].split(":"));
+		}
+	} 
 	override function update(elapsed:Float)
 	{
 		if (FlxG.sound.music.volume < 0.7)
@@ -124,13 +127,11 @@ class CreditsState extends MusicBeatState
 		}
 		if(controls.ACCEPT) {
 			#if linux
-			Sys.command('/usr/bin/xdg-open', (creditsStuff[curSelected][3])]);
+			Sys.command('/usr/bin/xdg-open', (creditsStuff[curSelected][3]));
 			#else
 			FlxG.openURL(creditsStuff[curSelected][3]);
 			#end
 		}
 		super.update(elapsed);
 	}
-
-    }
-
+}

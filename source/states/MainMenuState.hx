@@ -79,7 +79,7 @@ class MainMenuState extends states.MusicBeatState
 		for (i in 0...optionShit.length)
 		{
 			var offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;
-			var menuItem:FlxSprite = new FlxSprite(0, (i * 140)  + offset);
+			var menuItem:FlxSprite = new FlxSprite(70, (i * 140)  + offset);
 			menuItem.frames = Paths.getSparrowAtlas('mainmenu/menu_' + optionShit[i]);
 			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
@@ -87,7 +87,6 @@ class MainMenuState extends states.MusicBeatState
 			menuItem.ID = i;
 			//menuItem.screenCenter(X);
 			menuItems.add(menuItem);
-			menuItem.x += 70;
 			var scr:Float = (optionShit.length - 4) * 0.135;
 			if(optionShit.length < 6) scr = 0;
 			menuItem.scrollFactor.set(0, scr);
@@ -243,12 +242,15 @@ class MainMenuState extends states.MusicBeatState
 
 			if (spr.ID == curSelected)
 			{
+				FlxTween.tween(spr,{x:150},0.45,{ease:FlxEase.elasticInOut});
 				spr.animation.play('selected');
 				camFollow.setPosition(spr.getGraphicMidpoint().x, spr.getGraphicMidpoint().y);
 				spr.offset.x = 0.15 * (spr.frameWidth / 2 + 180);
 				spr.offset.y = 0.15 * spr.frameHeight;
 				FlxG.log.add(spr.frameWidth);
 			}
+			else
+				FlxTween.tween(spr,{x:70},0.45,{ease:FlxEase.elasticInOut});
 		});
 	}
 }

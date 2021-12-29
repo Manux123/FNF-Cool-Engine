@@ -3,6 +3,8 @@
 
 package controls;
 
+import states.PlayState;
+import states.PauseSubState;
 import states.MusicBeatSubstate;
 import flixel.FlxSubState;
 import flixel.input.FlxInput;
@@ -51,9 +53,13 @@ class KeyBindMenu extends MusicBeatSubstate
     var state:String = "select";
     var black:FlxSprite;
 
+    public static var isPlaying:Bool = false;
 	override function create()
 	{
+        isPlaying = false;
+        
         black = new FlxSprite(0,0).makeGraphic(FlxG.width,FlxG.height,FlxColor.BLACK);
+        black.screenCenter();
         black.alpha = 0.6;
         add(black);
 
@@ -167,6 +173,8 @@ class KeyBindMenu extends MusicBeatSubstate
         FlxTween.tween(black,{alpha: 0},0.45,{ease: FlxEase.elasticInOut});
         FlxTween.tween(keyTextDisplay,{alpha: 0},0.45,{ease: FlxEase.elasticInOut,onComplete: function(twn:FlxTween){
             FlxG.state.closeSubState();
+            if(isPlaying)
+                FlxG.state.openSubState(new PauseSubState(PlayState.instance.boyfriend.getScreenPosition().x, PlayState.instance.boyfriend.getScreenPosition().y));
         }});
     }
 

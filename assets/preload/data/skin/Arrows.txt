@@ -1,0 +1,12 @@
+greenScroll:arrowUP
+redScroll:arrowRIGHT
+blueScroll:arrowDOWN
+purpleScroll:arrowLEFT
+purpleholdend:purple tail
+greenholdend:green tail
+redholdend:red tail
+blueholdend:blue tail
+purplehold:purple hold
+greenhold:green hold
+redhold:red hold
+bluehold:blue hold

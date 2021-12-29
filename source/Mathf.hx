@@ -31,15 +31,6 @@ class Mathf {
         return Std.int(Math.floor(Math.abs(value)));
     }
 
-    static var sineShit:Float;
-
-    //just put this in on functions than are called per frame
-    //like override function update
-    public static function sineByTime(elapsed:Float, ?multi:Float = 1){
-        sineShit+=elapsed;
-        return Math.sin(Math.abs(sineShit * multi));
-    }
-
     //this functions are for angles and rotations
     public static function radiants2degrees(value:Float){
         return value * (180/Math.PI);

@@ -1,11 +1,12 @@
 package;
 
+import NoteSkinDetector;
 import flixel.FlxG;
 import flixel.FlxSprite;
 
 class NoteSplash extends FlxSprite
 {
-	public function new(x:Float = 0, y:Float = 0, ?note:Int = 0,?skin:String = 'noteSplashes') {
+	public function new(x:Float = 0, y:Float = 0, ?note:Int = 0,?skin:String = 'noteSplashes_3') {
 		super(x, y);
 		setupAnimations(skin);
 
@@ -25,7 +26,7 @@ class NoteSplash extends FlxSprite
 	var posibleShit:Array<String> = [" purple"," blue"," green"," red"];
 	
 	public function setupAnimations(?skin:String){
-		frames = Paths.getSparrowAtlas('UI/' + skin);
+		frames = NoteSkinDetector.noteSplashSkin(skin);
 		for(i in 1...3){
 			for(y in 0...5){
 				animation.addByPrefix("note" + y + "-" + i, "note impact " + i + posibleShit[y], 24, false);

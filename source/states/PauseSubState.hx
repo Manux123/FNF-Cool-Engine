@@ -1,5 +1,6 @@
 package states;
 
+import controls.KeyBindMenu;
 import Controls.Control;
 import flixel.FlxG;
 import flixel.FlxSprite;
@@ -17,7 +18,7 @@ class PauseSubState extends states.MusicBeatSubstate
 {
 	var grpMenuShit:FlxTypedGroup<Alphabet>;
 
-	var menuItems:Array<String> = ['Resume', 'Restart Song', 'Exit to menu'];
+	var menuItems:Array<String> = ['Resume', 'Restart Song', 'Change KeyBinds' , 'Exit to menu'];
 	var curSelected:Int = 0;
 
 	var pauseMusic:FlxSound;
@@ -113,6 +114,8 @@ class PauseSubState extends states.MusicBeatSubstate
 					FlxG.resetState();
 				case "Skip Song":
 					PlayState.instance.endSong();
+				case "Change KeyBinds":
+					FlxG.state.openSubState(new KeyBindMenu());
 				case "Exit to menu":
 				if (PlayState.isStoryMode)
 					FlxG.switchState(new StoryMenuState());

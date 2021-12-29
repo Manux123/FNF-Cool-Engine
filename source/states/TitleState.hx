@@ -40,7 +40,7 @@ class TitleState extends states.MusicBeatState
 	var textGroup:FlxGroup;
 	var ngSpr:FlxSprite;
 
-	var curWacky:Array<String> = [];
+	//var curWacky:Array<String> = [];
 
 	var wackyImage:FlxSprite;
 
@@ -49,19 +49,11 @@ class TitleState extends states.MusicBeatState
 		PlayerSettings.init();
 
 		if(FlxG.save.data.FPSCap)
-			#if desktop
 			openfl.Lib.current.stage.frameRate = 120;
-			#else
-			openfl.Lib.current.stage.frameRate = 60;
-			#end
 		else
-			#if !androidC
-			openfl.Lib.current.stage.frameRate = 999;
-			#else
 			openfl.Lib.current.stage.frameRate = 240;
-			#end
 
-		curWacky = FlxG.random.getObject(getIntroTextShit());
+		//curWacky = FlxG.random.getObject(getIntroTextShit());
 
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGtitle')));
 		add(bg);
@@ -207,7 +199,7 @@ class TitleState extends states.MusicBeatState
 		// credGroup.add(credTextShit);
 	}
 
-	function getIntroTextShit():Array<Array<String>>
+	/*function getIntroTextShit():Array<Array<String>>
 	{
 		var fullText:String = Assets.getText(Paths.txt('introText'));
 
@@ -220,7 +212,7 @@ class TitleState extends states.MusicBeatState
 		}
 
 		return swagGoodArray;
-	}
+	}*/
 
 	var transitioning:Bool = false;
 
@@ -353,6 +345,10 @@ class TitleState extends states.MusicBeatState
 		}
 	}
 
+	var randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for"];
+	var randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D"];
+	var random:Int;
+
 	override function beatHit()
 	{
 		super.beatHit();
@@ -386,10 +382,15 @@ class TitleState extends states.MusicBeatState
 			// credTextShit.text = 'In association \nwith';
 			// credTextShit.screenCenter();
 			case 5:
-				createCoolText(['Cool Engine', 'by']);
+				createCoolText(['Cool Engine Team']);
 			case 7:
 				// I can just put the original engine creator instead of every single fucking person that helps with it
+				//Suck my dick Juan
 				addMoreText('Manux');
+				addMoreText('Juanen100');
+				addMoreText('MrClogsworthYt');
+				addMoreText('JloorMC');
+				addMoreText('Overcharged Dev');
 			// credTextShit.text += '\nNewgrounds';
 			case 8:
 				deleteCoolText();
@@ -399,10 +400,11 @@ class TitleState extends states.MusicBeatState
 			// credTextShit.text = 'Shoutouts Tom Fulp';
 			// credTextShit.screenCenter();
 			case 9:
-				createCoolText([curWacky[0]]);
+				random = FlxG.random.int(0,randomString.length);
+				createCoolText([randomString[random]]);
 			// credTextShit.visible = true;
 			case 11:
-				addMoreText(curWacky[1]);
+				addMoreText(randomString2[random]);
 			// credTextShit.text += '\nlmao';
 			case 12:
 				deleteCoolText();

@@ -18,6 +18,11 @@ class RatingState extends FlxSubState
     var bf:FlxSprite;
     override public function create()
     {
+        if(FlxG.save.data.FPSCap)
+			openfl.Lib.current.stage.frameRate = 120;
+		else
+			openfl.Lib.current.stage.frameRate = 240;
+        
         FlxG.camera.fade(FlxColor.BLACK, 0.8, true);
         var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGBlue'));
 		add(bg);

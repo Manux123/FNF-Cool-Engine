@@ -1,5 +1,6 @@
 package states;
 
+import flixel.util.FlxTimer;
 import lime.utils.Assets;
 import flixel.FlxG;
 import flixel.FlxSprite;
@@ -25,6 +26,8 @@ class CacheState extends MusicBeatState
     var objects:Array<String> = CoolUtil.coolTextFile(Paths.txt('cache-objects'));
     var soundsloading:Bool = false;
     var sounds:Array<String> = CoolUtil.coolTextFile(Paths.txt('cache-sounds'));
+    var musicloading:Bool = false;
+    var music:Array<String> = CoolUtil.coolTextFile(Paths.txt('cache-music'));
 
 	var loadingStart:Bool = false;
 
@@ -47,6 +50,7 @@ class CacheState extends MusicBeatState
         add(bg);
 
         loading = new FlxText(0, 680);
+        loading.screenCenter(X);
         loading.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, RIGHT, OUTLINE,FlxColor.BLACK);
         loading.size = 20;
         add(loading);
@@ -57,6 +61,7 @@ class CacheState extends MusicBeatState
 		super.create();
 	}
 
+    var ended:Bool = false;
 	override function update(elapsed:Float)
     {
         super.update(elapsed);
@@ -64,14 +69,20 @@ class CacheState extends MusicBeatState
         math = Mathf.getPercentage2(finished,toBeFinished);
 
         if(!(charactersloading && objectsloading && soundsloading)){
-            loading.text = "Loaded Objects: " + math;
+            loading.text = 'Loaded Objects: ${math}%';
+            loading.screenCenter(X);
         }
 
-        if (charactersloading && objectsloading && soundsloading)
+        if (charactersloading && objectsloading && soundsloading && !ended)
         {
             loading.text = "Done!";
-            LoadingState.loadAndSwitchState(new TitleState(),true);
-            FlxG.camera.fade(FlxColor.BLACK, 0.8, false);
+            loading.screenCenter(X);
+            FlxG.sound.play(Paths.sound('confirmMenu'),1,false,null,false,function(){
+                FlxG.autoPause = true;
+                LoadingState.loadAndSwitchState(new TitleState(),true);
+                FlxG.camera.fade(FlxColor.BLACK, 0.8, false);
+            });
+            ended = true;
         }
 	}
 
@@ -93,6 +104,7 @@ class CacheState extends MusicBeatState
                 soundsAssets();
             #if sys }); #end
         }
+
     }
 
     function preloadAssets(){
@@ -136,6 +148,19 @@ class CacheState extends MusicBeatState
         }
         soundsloading = true;
     }
+    function preloadMusic(){
+        for(x in music){
+			if(#if sys sys.FileSystem.exists(Paths.inst(x)) || sys.FileSystem.exists(Paths.voices(x))
+                #else Assets.exists(Paths.inst(x)) || Assets.exists(Paths.voices(x))#end){
+				FlxG.sound.cache(Paths.inst(x));
+        	    FlxG.sound.cache(Paths.voices(x));
+			}
+            else
+                trace("Error while loading\nSound in path " + Paths.sound(x));
+            finished++;
+        }
+        musicloading = true;
+	}
 }
 
 //End of Loading and Start of Image Caching

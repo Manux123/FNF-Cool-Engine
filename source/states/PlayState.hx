@@ -46,6 +46,7 @@ import openfl.display.StageQuality;
 import openfl.filters.ShaderFilter;
 //import ModchartState;
 import FunkinLua;
+import controls.KeyBindMenu;
 #if mobileC
 import ui.Mobilecontrols;
 #end
@@ -60,7 +61,7 @@ using StringTools;
 
 class PlayState extends states.MusicBeatState
 {
-	public static var instance:PlayState = null; //lol
+	public static var instance:PlayState = null; //epic shit
 
 	#if mobileC
 	var mcontrols:Mobilecontrols; 
@@ -209,24 +210,18 @@ class PlayState extends states.MusicBeatState
 
 	override public function create()
 	{
-		FlxG.mouse.visible = false;
 		instance = this;
+		KeyBindMenu.isPlaying = true;
+
+		FlxG.mouse.visible = false;
 		theFunne = FlxG.save.data.newInput;
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
 
 		if(FlxG.save.data.FPSCap)
-			#if desktop
 			openfl.Lib.current.stage.frameRate = 120;
-			#else
-			openfl.Lib.current.stage.frameRate = 60;
-			#end
 		else
-			#if !androidC
-			openfl.Lib.current.stage.frameRate = 999;
-			#else
 			openfl.Lib.current.stage.frameRate = 240;
-			#end
 
 		sicks = 0;
 		misses = 0;
@@ -1234,7 +1229,7 @@ class PlayState extends states.MusicBeatState
 		{
 			dad.dance();
 			gf.dance();
-			boyfriend.playAnim('idle');
+			boyfriend.dance();
 
 			introAssets = new Map<String, Array<String>>();
 			introAssets.set('default', ['ready', "set", "go"]);
@@ -1508,11 +1503,11 @@ class PlayState extends states.MusicBeatState
 			switch (curStage)
 			{
 				case 'school' | 'schoolEvil':
-					if(Assets.exists(NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin)))
-						babyArrow.loadGraphic(NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin));
+					if(Assets.exists(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin)))
+						babyArrow.loadGraphic(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin));
 					else{
 						babyArrow.loadGraphic(Paths.image('skins_arrows/pixels/arrows-pixels'));
-						trace('Assets Path: ' + NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin) + " Dosn't Exist");
+						trace('Assets Path: ' + NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin) + " Dosn't Exist");
 					}
 
 					babyArrow.animation.add('green', [6]);
@@ -1549,44 +1544,40 @@ class PlayState extends states.MusicBeatState
 					}
 
 				default:
-						if(Assets.exists(NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin)))
-							babyArrow.frames = Paths.getSparrowAtlas(NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin));
-						else{
-							babyArrow.frames = Paths.getSparrowAtlas('UI/NOTE_assets');
-							trace('Assets Path: ' + NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin) + " Dosn't Exist");
-						}
+					var tex = NoteSkinDetector.noteSkinNormal();
+					babyArrow.frames = tex;
 
-						babyArrow.animation.addByPrefix('green', 'arrowUP');
-						babyArrow.animation.addByPrefix('blue', 'arrowDOWN');
-						babyArrow.animation.addByPrefix('purple', 'arrowLEFT');
-						babyArrow.animation.addByPrefix('red', 'arrowRIGHT');
+					babyArrow.animation.addByPrefix('green', 'arrowUP');
+					babyArrow.animation.addByPrefix('blue', 'arrowDOWN');
+					babyArrow.animation.addByPrefix('purple', 'arrowLEFT');
+					babyArrow.animation.addByPrefix('red', 'arrowRIGHT');
 
-						babyArrow.antialiasing = true;
-						babyArrow.setGraphicSize(Std.int(babyArrow.width * 0.7));
+					babyArrow.antialiasing = true;
+					babyArrow.setGraphicSize(Std.int(babyArrow.width * 0.7));
 
-						switch (Math.abs(i))
-						{
-							case 0:
-								babyArrow.x += Note.swagWidth * 0;
-								babyArrow.animation.addByPrefix('static', 'arrowLEFT');
-								babyArrow.animation.addByPrefix('pressed', 'left press', 24, false);
-								babyArrow.animation.addByPrefix('confirm', 'left confirm', 24, false);
-							case 1:
-								babyArrow.x += Note.swagWidth * 1;
-								babyArrow.animation.addByPrefix('static', 'arrowDOWN');
-								babyArrow.animation.addByPrefix('pressed', 'down press', 24, false);
-								babyArrow.animation.addByPrefix('confirm', 'down confirm', 24, false);
-							case 2:
-								babyArrow.x += Note.swagWidth * 2;
-								babyArrow.animation.addByPrefix('static', 'arrowUP');
-								babyArrow.animation.addByPrefix('pressed', 'up press', 24, false);
-								babyArrow.animation.addByPrefix('confirm', 'up confirm', 24, false);
-							case 3:
-								babyArrow.x += Note.swagWidth * 3;
-								babyArrow.animation.addByPrefix('static', 'arrowRIGHT');
-								babyArrow.animation.addByPrefix('pressed', 'right press', 24, false);
-								babyArrow.animation.addByPrefix('confirm', 'right confirm', 24, false);
-						}
+					switch (Math.abs(i))
+					{
+						case 0:
+							babyArrow.x += Note.swagWidth * 0;
+							babyArrow.animation.addByPrefix('static', 'arrowLEFT');
+							babyArrow.animation.addByPrefix('pressed', 'left press', 24, false);
+							babyArrow.animation.addByPrefix('confirm', 'left confirm', 24, false);
+						case 1:
+							babyArrow.x += Note.swagWidth * 1;
+							babyArrow.animation.addByPrefix('static', 'arrowDOWN');
+							babyArrow.animation.addByPrefix('pressed', 'down press', 24, false);
+							babyArrow.animation.addByPrefix('confirm', 'down confirm', 24, false);
+						case 2:
+							babyArrow.x += Note.swagWidth * 2;
+							babyArrow.animation.addByPrefix('static', 'arrowUP');
+							babyArrow.animation.addByPrefix('pressed', 'up press', 24, false);
+							babyArrow.animation.addByPrefix('confirm', 'up confirm', 24, false);
+						case 3:
+							babyArrow.x += Note.swagWidth * 3;
+							babyArrow.animation.addByPrefix('static', 'arrowRIGHT');
+							babyArrow.animation.addByPrefix('pressed', 'right press', 24, false);
+							babyArrow.animation.addByPrefix('confirm', 'right confirm', 24, false);
+					}
 			}
 
 			babyArrow.updateHitbox();
@@ -1704,8 +1695,10 @@ class PlayState extends states.MusicBeatState
 	var startedCountdown:Bool = false;
 	var canPause:Bool = true;
 
+	var floatShit:Float = 0;
 	override public function update(elapsed:Float)
 	{
+		floatShit +=0.1;
 		if(FlxG.keys.justPressed.CONTROL)
 			CPUvsCPUMode = false;
 		songPositionBar = Conductor.songPosition;
@@ -1728,9 +1721,8 @@ class PlayState extends states.MusicBeatState
 
 		super.update(elapsed);
 
-		if(dad.curCharacter == 'spirit'){
-			dad.y += Mathf.sineByTime(elapsed);
-		}
+		if(dad.curCharacter == 'spirit')
+			dad.y += floatShit;
 
 		if (FlxG.save.data.accuracyDisplay)
 		{
@@ -1998,7 +1990,7 @@ class PlayState extends states.MusicBeatState
 						}
 					}
 
-					if (gf.canSing){
+					else if (gf.canSing){
 						switch (Math.abs(daNote.noteData))
 						{
 							case 2:
@@ -2280,7 +2272,7 @@ class PlayState extends states.MusicBeatState
 			var rating:FlxSprite = new FlxSprite();
 
 			if(!FlxG.save.data.framesRanking)
-				daNote.noteRating = Ranking.GenerateRatingMS(daNote,noteDiff);
+				daNote.noteRating = Ranking.GenerateRatingMS(noteDiff);
 			else
 				daNote.noteRating = Ranking.GenerateRatingFrames(noteDiff);
 
@@ -2316,7 +2308,7 @@ class PlayState extends states.MusicBeatState
 					scoreTxt.alpha = 0.85;
 					if (theFunne){
 						score = -1000;
-						health -= 0.05;
+						health -= 0.03;
 						combo = 0;
 					}
 					else{
@@ -2340,6 +2332,7 @@ class PlayState extends states.MusicBeatState
 					scoreTxt.alpha = 1;
 					totalNotesHit += 1;
 					score = 350;
+					FlxG.sound.play(Paths.sound('Hitsounds/hard-${FlxG.random.int(1,4)}'));
 					if(noteSplashOp)
 						spawnNoteSplashOnNote(daNote);
 			}
@@ -2481,7 +2474,7 @@ class PlayState extends states.MusicBeatState
 		splash.setupNoteSplash(x, y, data);
 		grpNoteSplashes.add(splash);
 	}
-	
+
 	public function NearlyEquals(value1:Float, value2:Float, unimportantDifference:Float = 10):Bool
 	{
 		return Math.abs(FlxMath.roundDecimal(value1, 1) - FlxMath.roundDecimal(value2, 1)) < unimportantDifference;
@@ -2824,7 +2817,7 @@ class PlayState extends states.MusicBeatState
 
 					// ANTI MASH CODE FOR THE BOYS
 
-					if (mashing <= getKeyPresses(note) + 1 && mashViolations < 2)
+					if ((mashing <= getKeyPresses(note)) && mashViolations > 2 || !theFunne || !FlxG.save.data.mash_punish)
 					{
 						mashViolations++;
 						goodNoteHit(note, (mashing <= getKeyPresses(note) + 1));
@@ -2834,19 +2827,17 @@ class PlayState extends states.MusicBeatState
 						playerStrums.members[note.noteData].animation.play('static');
 						trace('mash ' + mashing);
 					}
-
-					if (mashing != 0)
-						mashing = 0;
 				}
-			else if (!theFunne)
+			else if (!theFunne && startedCountdown)
 			{
 				badNoteCheck();
 			}
 		}
 
 		function goodNoteHit(note:Note, resetMashViolation = true):Void
-			{
-
+		{
+				if(mashing != 0)
+					mashing = 0;
 				if (resetMashViolation)
 					mashViolations--;
 
@@ -3093,14 +3084,10 @@ class PlayState extends states.MusicBeatState
 		if (SONG.notes[Math.floor(curStep / 16)].mustHitSection){
 			switch(dad.curCharacter){
 				case 'spooky': 
-					if (spookydance == true){
+					if (spookydance)
 						spookydance = false;
-						dad.playAnim('danceRight');
-					}
-					else{
+					else
 						spookydance = true;
-						dad.playAnim('danceLeft');
-					}
 				default: 
 					dad.dance();
 				}
@@ -3132,28 +3119,34 @@ class PlayState extends states.MusicBeatState
 			gf.dance();
 		}
 
-		if (!boyfriend.animation.curAnim.name.startsWith("sing") && boyfriend.canSing == true)
+		if (!boyfriend.animation.curAnim.name.startsWith("sing") && boyfriend.canSing)
 		{
-			boyfriend.playAnim('idle');
+			boyfriend.dance();
+			//boyfriend.playAnim('idle');
 			specialAnim = true;
 		}
 
-		if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing == true)
-			{
-				switch(dad.curCharacter){
-					case 'spooky': 
-						if (spookydance == true){
-							spookydance = false;
-							dad.playAnim('danceRight');
-						}
-						else{
-							spookydance = true;
-							dad.playAnim('danceLeft');
-						}
-					default: 
-						dad.dance();
-					}
+		if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing)
+		{
+			switch(dad.curCharacter){
+				case 'spooky': 
+					if(spookydance)
+						dad.playAnim('danceRight');
+					else
+						dad.playAnim('danceLeft');
+
+					if (spookydance)//{
+						spookydance = false;
+						/*dad.playAnim('danceRight');
+					}*/
+					else//{
+						spookydance = true;
+						/*dad.playAnim('danceLeft');
+					}*/
+				default: 
+					dad.dance();
 			}
+		}
 
 		if (curBeat % 8 == 7 && curSong == 'Bopeebo')
 		{

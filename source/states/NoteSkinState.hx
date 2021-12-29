@@ -12,6 +12,7 @@ import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.input.keyboard.FlxKey;
 import flixel.math.FlxMath;
 import flixel.text.FlxText;
+import states.OptionsMenuState;
 import flixel.tweens.FlxTween;
 import flixel.tweens.FlxEase;
 import flixel.util.FlxColor;
@@ -29,10 +30,11 @@ class NoteSkinState extends states.MusicBeatState
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
 	var versionShit:FlxText;
+	var daNoteSkins:Array<String>;
 	override function create()
 	{
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
-		var daNoteSkins = CoolUtil.coolTextFile(Paths.txt('noteSkinList'));
+		daNoteSkins = CoolUtil.coolTextFile(Paths.txt('noteSkinList'));
 
 		menuBG.color = 0xFFea71fd;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
@@ -73,18 +75,10 @@ class NoteSkinState extends states.MusicBeatState
 		var noteSkinTex = CoolUtil.coolTextFile(Paths.txt('noteName'));
 		super.update(elapsed);
 
-		switch (FlxG.save.data.noteSkin)
-		{
-			case 'Arrows':
-				previewSkins.frames = Paths.getSparrowAtlas('UI/NOTE_assets', 'shared');
-			case 'Circles':
-				previewSkins.frames = Paths.getSparrowAtlas('UI/Circles', 'shared');
-			case 'Quaver Skin':
-				previewSkins.frames = Paths.getSparrowAtlas('UI/QUAVER_assets', 'shared');
-		}
+		previewSkins.frames = NoteSkinDetector.noteSkinNormal();
 
 		if(controls.BACK)
-			FlxG.switchState(new states.OptionsMenuState());
+			FlxG.switchState(new OptionsMenuState());
 			//FlxTween.tween(controlLabel, {x: controlLabel.x - 400}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
 		if (controls.UP_P)
 			changeSelection(-1);
@@ -93,7 +87,10 @@ class NoteSkinState extends states.MusicBeatState
 
 		if(controls.ACCEPT)
 		{
-			switch(curSelected)
+			FlxG.save.data.noteSkin = daNoteSkins[curSelected];
+			FlxG.sound.play(Paths.sound('confirmMenu'));
+			trace('Cur selected skin is ${FlxG.save.data.noteSkin} B)');
+			/*switch(daNoteSkins[curSelected])
 			{
 				case 0:
 					FlxG.save.data.noteSkin = 'Arrows';
@@ -102,8 +99,10 @@ class NoteSkinState extends states.MusicBeatState
 				case 2:
 					FlxG.save.data.noteSkin = 'Quaver Skin';
 				case 3:
+					FlxG.save.data.noteSkin = 'StepMania';
+				case 4:
 					FlxG.save.data.noteSkin = noteSkinTex;
-			}
+			}*/
 		}
 	}
 

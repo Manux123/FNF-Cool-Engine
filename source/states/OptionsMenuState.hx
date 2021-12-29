@@ -62,42 +62,14 @@ class OptionsMenuState extends MusicBeatState
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
 
-		var controlLabel:Alphabet = new Alphabet(0, 100, controlsStrings[0], true, false);
-		controlLabel.isMenuItem = false;
-		controlLabel.targetY = 0;
-		controlLabel.screenCenter(X);
-		grpControls.add(controlLabel);
+		for(i in 0... controlsStrings.length){
+			var controlLabel:Alphabet = new Alphabet(0, (i + 1) * 100, controlsStrings[i], true, false);
+			controlLabel.isMenuItem = false;
+			controlLabel.targetY = i;
+			controlLabel.screenCenter(X);
+			grpControls.add(controlLabel);
+		}
 
-		var controlLabel:Alphabet = new Alphabet(0, 200, controlsStrings[1], true, false);
-		controlLabel.isMenuItem = false;
-		controlLabel.targetY = 1;
-		controlLabel.screenCenter(X);
-		grpControls.add(controlLabel);
-
-		var controlLabel:Alphabet = new Alphabet(0, 300, controlsStrings[2], true, false);
-		controlLabel.isMenuItem = false;
-		controlLabel.targetY = 2;
-		controlLabel.screenCenter(X);
-		grpControls.add(controlLabel);
-
-		var controlLabel:Alphabet = new Alphabet(0, 400, controlsStrings[3], true, false);
-		controlLabel.isMenuItem = false;
-		controlLabel.targetY = 3;
-		controlLabel.screenCenter(X);
-		grpControls.add(controlLabel);
-		
-		var controlLabel:Alphabet = new Alphabet(0, 500, controlsStrings[4], true, false);
-		controlLabel.isMenuItem = false;
-		controlLabel.targetY = 4;
-		controlLabel.screenCenter(X);
-		grpControls.add(controlLabel);
-		super.create();
-
-		var controlLabel:Alphabet = new Alphabet(0, 600, controlsStrings[5], true, false);
-		controlLabel.isMenuItem = false;
-		controlLabel.targetY = 5;
-		controlLabel.screenCenter(X);
-		grpControls.add(controlLabel);
 		#if mobileC
 		addVirtualPad(UP_DOWN, A_B);
 		#end
@@ -189,6 +161,7 @@ class OptionsMenu extends MusicBeatState
 
 	var options:Array<Option> = [
 		new NewInputOption(),
+		new AntiSmashOption(),
 		new NoteSplashesOption(),
 		new DownscrollOption(),
 		new RatingSystem(),
@@ -204,6 +177,7 @@ class OptionsMenu extends MusicBeatState
 	var versionShit:FlxText;
 	override function create()
 	{
+		KeyBindMenu.isPlaying = false;
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 
 		menuBG.color = 0xFF453F3F;
@@ -214,17 +188,9 @@ class OptionsMenu extends MusicBeatState
 		add(menuBG);
 
 		if(FlxG.save.data.FPSCap)
-			#if desktop
 			openfl.Lib.current.stage.frameRate = 120;
-			#else
-			openfl.Lib.current.stage.frameRate = 60;
-			#end
 		else
-			#if !androidC
-			openfl.Lib.current.stage.frameRate = 999;
-			#else
 			openfl.Lib.current.stage.frameRate = 240;
-			#end
 
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
@@ -696,6 +662,20 @@ class DownscrollOption extends Option
 	}
 }
 
+class AntiSmashOption extends Option{
+	public override function press():Bool
+		{
+			FlxG.save.data.antiSmash = !FlxG.save.data.antiSmash;
+			display = updateDisplay();
+			return true;
+		}
+	
+	private override function updateDisplay():String
+	{
+		return FlxG.save.data.antiSmash ? "AntiSmash: ON" : "AntiSmash: Off";
+	}
+}
+
 class RatingSystem extends Option{
 	public override function press():Bool{
 		FlxG.save.data.framesRanking = !FlxG.save.data.framesRanking;
@@ -716,17 +696,9 @@ class FPSCap extends Option
 		FlxG.save.data.noFpsCap = !FlxG.save.data.noFpsCap;
 		
 		if(FlxG.save.data.FPSCap)
-			#if desktop
 			openfl.Lib.current.stage.frameRate = 120;
-			#else
-			openfl.Lib.current.stage.frameRate = 60;
-			#end
 		else
-			#if !androidC
-			openfl.Lib.current.stage.frameRate = 999;
-			#else
 			openfl.Lib.current.stage.frameRate = 240;
-			#end
 
 		display = updateDisplay();
 		return true;

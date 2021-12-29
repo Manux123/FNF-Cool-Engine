@@ -45,38 +45,47 @@ class Ranking {
         return daRanking;
     }
 
-    public static function GenerateRatingMS(note:Note, diff:Float=0) //STOLEN FROM PSYCH ENGINE (Shadow Mario) - I had to rewrite it later anyway after i added the custom hit windows lmao (Overcharged Dev)
+    public static function GenerateRatingMS(noteDiff:Float, ?customSafeZone:Float):String // Generate a judgement through some timing shit
     {
-        //tryna do MS based judgment due to popular demand
-        var timingWindows:Array<Int> = [25, 75, 115, 145];
-        var windowNames:Array<String> =['sick','good','bad','shit'];
+    
+        var customTimeScale = Conductor.timeScale;
+    
+        if (customSafeZone != null)
+            customTimeScale = customSafeZone / 166;
 
-        // var diff = Math.abs(note.strumTime - Conductor.songPosition) / (PlayState.songMultiplier >= 1 ? PlayState.songMultiplier : 1);
-        for(i in 0...timingWindows.length) // based on 4 timing windows, will break with anything else
-        {
-            trace(timingWindows[Math.round(Math.min(i, timingWindows.length - 1))]);
-            if (diff <= timingWindows[Math.round(Math.min(i, timingWindows.length - 1))])
-            {
-                return windowNames[i];
+        var rating = "";
+
+        var timingWindowsRating:Array<String> = ['shit-soon','bad-soon','good-soon','sick','good-later','bad-later','shit-later'];
+        var timingWindows:Array<Int> = [166, 135, 90, 45, -90, -135, -166];
+        var timingWindowsTiny:Array<Int> = [135, 90, 45, -45, -45, -90, -135];
+
+        for(i in 0... timingWindows.length){
+            if(noteDiff <= timingWindows[i] * customTimeScale && noteDiff >= timingWindowsTiny[i] * customTimeScale){
+                rating = timingWindowsRating[i];
+                break;
             }
         }
-        return 'shit';
+
+        //piñera chupame el pico, grande boric
+        trace('${noteDiff} && ${customTimeScale}');
+
+        return rating;
     }
 
     static public function GenerateRatingFrames(noteDiff:Float,?saveFrames:Float = 0):String{
         var daRating:String = 'sick';
 
         // late
-        if (noteDiff > Conductor.safeZoneOffset * 0.75 + saveFrames)
+        if (noteDiff > Conductor.safeZoneOffset * 0.95 + saveFrames)
             daRating = 'shit-later';
 
-        else if (noteDiff > Conductor.safeZoneOffset * 0.5 + saveFrames)
+        else if (noteDiff > Conductor.safeZoneOffset * 0.7 + saveFrames)
             daRating = 'bad-later';
 
-        else if (noteDiff > Conductor.safeZoneOffset * 0.28 + saveFrames)
+        else if (noteDiff > Conductor.safeZoneOffset * 0.38 + saveFrames)
             daRating = 'good-later';
 
-        else if (noteDiff > Conductor.safeZoneOffset * 0.019 + saveFrames)
+        else if (noteDiff > Conductor.safeZoneOffset * 0.029 + saveFrames)
             daRating = 'sick-later';
 
         //Perfect
@@ -93,16 +102,16 @@ class Ranking {
             daRating = 'sick';
 
         // After
-        else if (noteDiff < Conductor.safeZoneOffset * -0.019 + saveFrames)
+        else if (noteDiff < Conductor.safeZoneOffset * -0.029 + saveFrames)
             daRating = 'sick-soon';
 
-        else if(noteDiff < Conductor.safeZoneOffset * -0.28 + saveFrames)
+        else if(noteDiff < Conductor.safeZoneOffset * -0.38 + saveFrames)
             daRating = 'good-soon';
 
-        else if (noteDiff < Conductor.safeZoneOffset * -0.5 + saveFrames)
+        else if (noteDiff < Conductor.safeZoneOffset * -0.7 + saveFrames)
             daRating = 'bad-soon';
 
-        else if (noteDiff < Conductor.safeZoneOffset * -0.75 + saveFrames)
+        else if (noteDiff < Conductor.safeZoneOffset * -0.95 + saveFrames)
             daRating = 'shit-soon';
 
             return daRating;

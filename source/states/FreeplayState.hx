@@ -46,39 +46,21 @@ class FreeplayState extends states.MusicBeatState
 		['Senpai', 'Roses', 'Thorns']
 	];
 
-	var musicloading:Bool = false;
-	var musicgame:Array<String> = [
-		"Tutorial", 
-		"Boopebo", "Fresh", "Dadbattle", 
-		"Spookeez", "South", "Monster",
-		"Pico", "Philly", "Blammed", 
-		"Satin-Panties", "High", "Milf",
-		"Cocoa", "Eggnog",
-		"Senpai", "Roses", "Thorns",
-		"Test"
-	];
+	//now you need to add the music to the file cache-music, in the path `assets/preload/data/cache-music.txt`
+	public var musicgame:Array<String> = CoolUtil.coolTextFile(Paths.txt('cache-music'));
 
-	function preloadMusic(){
-        for(x in musicgame){
-            FlxG.sound.cache(Paths.inst(x));
-            FlxG.sound.cache(Paths.voices(x));
-            trace("Chached " + x);
-            finished++;
-        }
-	}
-
-	function preload(){
+	/*function preload(){
 		if(!musicloading){ 
             #if sys sys.thread.Thread.create(() -> { #end
                 preloadMusic();
             #if sys }); #end
         }
-	}
+	}*/
 
 	var songs:Array<SongMetadata> = [];
 
 	var selector:FlxText;
-	var disc:FlxSprite;
+	var discSpr:FlxSprite;
 	private static var curSelected:Int = 0;
 	private static var curDifficulty:Int = 1;
 
@@ -116,15 +98,15 @@ class FreeplayState extends states.MusicBeatState
 
 	override function create()
 	{
-		preload();
+		//preload();
 		transIn = FlxTransitionableState.defaultTransIn;
 		transOut = FlxTransitionableState.defaultTransOut;
 		var initSonglist = CoolUtil.coolTextFile(Paths.txt('freeplaySonglist'));
 		for (i in 0...initSonglist.length)
 		{
 			var songArray:Array<String> = initSonglist[i].split(":");
-			addSong(songArray[0], 0, songArray[1]);
-			songs[songs.length-1].color = Std.parseInt(songArray[2]);
+			addSong(songArray[0], (songArray[2]==null)?0:Std.parseInt(songArray[2]), songArray[1]);
+			songs[songs.length-1].color = Std.parseInt(songArray[3]);
 		}
 		var colorsList = CoolUtil.coolTextFile(Paths.txt('freeplayColors'));
 		for (i in 0...colorsList.length)
@@ -139,7 +121,7 @@ class FreeplayState extends states.MusicBeatState
 		DiscordClient.changePresence("In the FreePlay", null);
 		#end
 
-		addSong('Test', 7,'bf-pixel');
+		//addSong('Test', 7,'bf-pixel');
 
 		for (i in 1...weekData.length) {
 			#if !debug
@@ -333,18 +315,19 @@ class FreeplayState extends states.MusicBeatState
 			vocals.volume = 0.7;
 			instPlaying = curSelected;
 
-			disc = new FlxSprite(750, 280);
-			disc.frames = Paths.getSparrowAtlas('freeplay/record player freeplay'); // made by zero B) is very cool.
-			disc.antialiasing = true;
-			disc.animation.addByPrefix('idle', 'disco', 24);
-			disc.animation.play('idle');
-			disc.x += 750;
+			discSpr = new FlxSprite(750, 280);
+			discSpr.frames = Paths.getSparrowAtlas('freeplay/record player freeplay'); // made by zero B) is very cool.
+			discSpr.antialiasing = true;
+			discSpr.animation.addByPrefix('idle', 'disco', 24);
+			discSpr.animation.play('idle');
+			discSpr.x += 750;
 
 			//disc.y += 880;
-			disc.setGraphicSize(Std.int(disc.width * 0.5));
-			disc.updateHitbox();
-			add(disc);
-				
+			discSpr.setGraphicSize(Std.int(discSpr.width * 0.5));
+			discSpr.updateHitbox();
+			add(discSpr);
+			
+			FlxTween.tween(discSpr,{"x":750},0.6,{ease: FlxEase.elasticInOut});
 			//FlxTween.tween(disc, {y: disc.y - 770}, 1.5, {ease: FlxEase.quadInOut, type: ONESHOT});
 
 			// I speak spanish ._.XD
@@ -354,12 +337,6 @@ class FreeplayState extends states.MusicBeatState
 		{
 			var songLowercase:String = songs[curSelected].songName.toLowerCase();
 			var poop:String = Highscore.formatSong(songLowercase, curDifficulty);
-			if(!Assets.exists(Paths.json(songLowercase + '/' + poop))) {
-				poop = songLowercase;
-				//curDifficulty = 2;
-				trace('Couldnt find file');
-			}
-
 			//FlxTween.tween(songText.isMenuItem, {y: songText.y - 2000}, 0.6, {ease: FlxEase.quadIn, type: ONESHOT});
 			trace(poop);
 

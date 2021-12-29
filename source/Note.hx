@@ -3,7 +3,6 @@ package;
 import lime.utils.Assets;
 import states.NoteSkinState;
 import states.PlayState;
-import states.NoteSkinDetectorState;
 import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.math.FlxMath;
@@ -61,11 +60,11 @@ class Note extends FlxSprite
 			switch (daStage)
 			{
 				case 'school' | 'schoolEvil':
-					if(Assets.exists(NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin)))
-						loadGraphic(NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin));
+					if(Assets.exists(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin)))
+						loadGraphic(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin));
 					else{
 						loadGraphic(Paths.image('skins_arrows/pixels/arrows-pixels'));
-						trace('Assets Path: ' + NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin) + " Dosn't Exist");
+						trace('Assets Path: ' + NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin) + " Dosn't Exist");
 					}
 			
 					animation.add('greenScroll', [6]);
@@ -75,11 +74,11 @@ class Note extends FlxSprite
 
 					if (isSustainNote)
 					{
-						if(Assets.exists(NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin)))
-							loadGraphic(NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin));
+						if(Assets.exists(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin)))
+							loadGraphic(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin));
 						else{
 							loadGraphic(Paths.image('skins_arrows/pixels/arrows-pixels'));
-							trace('Assets Path: ' + NoteSkinDetectorState.noteSkinPixel(FlxG.save.data.noteSkin) + " Dosn't Exist");
+							trace('Assets Path: ' + NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin) + " Dosn't Exist");
 						}
 
 						animation.add('purpleholdend', [4]);
@@ -97,31 +96,27 @@ class Note extends FlxSprite
 					updateHitbox();
 
 				default:
-					if(Assets.exists(NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin)))
-						frames = Paths.getSparrowAtlas(NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin));
-					else{
-						frames = Paths.getSparrowAtlas('UI/NOTE_assets');
-						trace('Assets Path: ' + NoteSkinDetectorState.noteSkinNormal(FlxG.save.data.noteSkin) + " Dosn't Exist");
-					}
+					loadAnimationsFromTextFile(Std.string(FlxG.save.data.noteSkin));
+					/*frames = NoteSkinDetector.noteSkinNormal();
 
-						animation.addByPrefix('greenScroll', 'green alone');
-						animation.addByPrefix('redScroll', 'red alone');
-						animation.addByPrefix('blueScroll', 'blue alone');
-						animation.addByPrefix('purpleScroll', 'purple alone');
+					animation.addByPrefix('greenScroll', 'green alone');
+					animation.addByPrefix('redScroll', 'red alone');
+					animation.addByPrefix('blueScroll', 'blue alone');
+					animation.addByPrefix('purpleScroll', 'purple alone');
 
-						animation.addByPrefix('purpleholdend', 'purple tail');
-						animation.addByPrefix('greenholdend', 'green tail');
-						animation.addByPrefix('redholdend', 'red tail');
-						animation.addByPrefix('blueholdend', 'blue tail');
+					animation.addByPrefix('purpleholdend', 'purple tail');
+					animation.addByPrefix('greenholdend', 'green tail');
+					animation.addByPrefix('redholdend', 'red tail');
+					animation.addByPrefix('blueholdend', 'blue tail');
 
-						animation.addByPrefix('purplehold', 'purple hold');
-						animation.addByPrefix('greenhold', 'green hold');
-						animation.addByPrefix('redhold', 'red hold');
-						animation.addByPrefix('bluehold', 'blue hold');
+					animation.addByPrefix('purplehold', 'purple hold');
+					animation.addByPrefix('greenhold', 'green hold');
+					animation.addByPrefix('redhold', 'red hold');
+					animation.addByPrefix('bluehold', 'blue hold');*/
 
-						setGraphicSize(Std.int(width * 0.7));
-						updateHitbox();
-						antialiasing = true;
+					setGraphicSize(Std.int(width * 0.7));
+					updateHitbox();
+					antialiasing = true;
 			}
 		//}
 
@@ -192,6 +187,17 @@ class Note extends FlxSprite
 				prevNote.updateHitbox();
 				// prevNote.setGraphicSize();
 			}
+		}
+	}
+
+	function loadAnimationsFromTextFile(cum:String){
+		var coolFile = CoolUtil.coolTextFile(Paths.txt('skin/${cum}'));
+
+		frames = NoteSkinDetector.noteSkinNormal();
+
+		for(i in 0...coolFile.length){
+			var animations = coolFile[i].split(':');
+			animation.addByPrefix(animations[0],animations[1]);
 		}
 	}
 

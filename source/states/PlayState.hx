@@ -155,9 +155,9 @@ class PlayState extends states.MusicBeatState
 	public var iconP2:HealthIcon;
 	public var camHUD:FlxCamera;
 	public var camGame:FlxCamera;
-
-	var dialogue:Array<String> = ['blah blah blah', 'coolswag'];
-
+	
+	
+        var dialogue:Array<String> = [':bf:strange code', ':dad:>:]'];
 	var halloweenBG:FlxSprite;
 	var isHalloween:Bool = false;
 
@@ -724,21 +724,30 @@ class PlayState extends states.MusicBeatState
 			luaArray.push(new FunkinLua(luaFile));
 		#end
 
-		var gfVersion:String = SONG.player3;
+		var gfVersion:String = 'gf';
+	
+		var gfCheck:String = 'gf';
 
-		if(gfVersion == null || gfVersion.length < 1) {
-			switch (curStage)
+		if (SONG.gfVersion == null) {
+			switch(storyWeek)
 			{
-				case 'limo':
-					gfVersion = 'gf-car';
-				case 'mall' | 'mallEvil':
-					gfVersion = 'gf-christmas';
-				case 'school' | 'schoolEvil':
-					gfVersion = 'gf-pixel';
-				default:
-					gfVersion = 'gf';
+				case 4: gfCheck = 'gf-car';
+				case 5: gfCheck = 'gf-christmas';
+				case 6: gfCheck = 'gf-pixel';
 			}
-		}
+		} else {gfCheck = SONG.gfVersion;}
+
+		//switch (gfCheck) {} 
+		if (gfVersion == null || gfVersion.length < 1)
+			switch (curStage){
+			case 'gf-car':
+				gfVersion = 'gf-car';
+			case 'gf-christmas':
+				gfVersion = 'gf-christmas';
+			case 'gf-pixel':
+				gfVersion = 'gf-pixel';
+            case 'gf':
+				gfVersion = 'gf';}
 
 		gf = new Character(400, 130, gfVersion);
 		gf.scrollFactor.set(0.95, 0.95);
@@ -788,7 +797,7 @@ class PlayState extends states.MusicBeatState
 		switch (curStage)
 		{
 			case 'limo':
-				boyfriend.y -= 220;
+		 		boyfriend.y -= 220;
 				boyfriend.x += 260;
 
 				resetFastCar();
@@ -1783,8 +1792,11 @@ class PlayState extends states.MusicBeatState
 		/* if (FlxG.keys.justPressed.NINE)
 			FlxG.switchState(new Charting()); */
 
+		if (FlxG.keys.justPressed.SIX)
+			FlxG.switchState(new AnimationDebug(SONG.player1));
+
 		if (FlxG.keys.justPressed.EIGHT)
-			FlxG.switchState(new AnimationDebug(SONG.player3));
+			FlxG.switchState(new AnimationDebug(SONG.gfVersion));
 
 		if (FlxG.keys.justPressed.NINE)
 			FlxG.switchState(new AnimationDebug(SONG.player2));
@@ -2034,7 +2046,7 @@ class PlayState extends states.MusicBeatState
 					}
 
 					if (FlxG.save.data.downscroll){
-						daNote.y = (strumLine.y + (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)) - (FlxG.save.data.newInput?15:0));
+						daNote.y = (strumLine.y + (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)));
 					
 
 						if(daNote.isSustainNote){
@@ -2058,7 +2070,7 @@ class PlayState extends states.MusicBeatState
 						}
 					}
 					else
-						daNote.y = (strumLine.y - (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)) + (FlxG.save.data.newInput?15:0));
+						daNote.y = (strumLine.y - (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)));
 
 					if (!daNote.mustPress && FlxG.save.data.middlescroll)
 						daNote.alpha = 0;
@@ -2067,7 +2079,7 @@ class PlayState extends states.MusicBeatState
 					// WIP interpolation shit? Need to fix the pause issue
 					// daNote.y = (strumLine.y - (songTime - daNote.strumTime) * (0.45 * PlayState.SONG.speed));
 	
-					if (daNote.y < -daNote.height - (FlxG.save.data.newInput?15:0) && !FlxG.save.data.downscroll || daNote.y >= strumLine.y + 106 + (FlxG.save.data.newInput?15:0) && FlxG.save.data.downscroll)
+					if (daNote.y < -daNote.height && !FlxG.save.data.downscroll || daNote.y >= strumLine.y + 106 && FlxG.save.data.downscroll)
 					{
 						if (daNote.isSustainNote && daNote.wasGoodHit)
 						{
@@ -2310,11 +2322,13 @@ class PlayState extends states.MusicBeatState
 						score = -1000;
 						health -= 0.03;
 						combo = 0;
+						health -= 0.05;
 					}
 					else{
 						score = -100;
 						ss = false;
 						bads++;
+						health -= 0.05;
 					}
 				case 'good' | 'good-soon' | 'good-later':
 					if(FlxG.save.data.sickmode) //Sicks Mode
@@ -2630,7 +2644,7 @@ class PlayState extends states.MusicBeatState
 				});
 			}
 	
-			if (boyfriend.holdTimer > Conductor.stepCrochet * 4 * 0.005 && !up && !down && !right && !left)
+			if (boyfriend.holdTimer > Conductor.stepCrochet * 4 * 0.01 && !up && !down && !right && !left)
 			{
 				if (boyfriend.animation.curAnim.name.startsWith('sing') && !boyfriend.animation.curAnim.name.endsWith('miss'))
 				{
@@ -3145,6 +3159,24 @@ class PlayState extends states.MusicBeatState
 					}*/
 				default: 
 					dad.dance();
+			boyfriend.playAnim('idle');
+		}
+
+		if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing)
+			{
+				switch(dad.curCharacter){
+					case 'spooky': 
+						if (spookydance){
+							spookydance = false;
+							dad.playAnim('danceRight');
+						}
+						else{
+							spookydance = true;
+							dad.playAnim('danceLeft');
+						}
+					default: 
+						dad.dance();
+					}
 			}
 		}
 

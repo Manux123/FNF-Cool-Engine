@@ -40,7 +40,7 @@ class StoryMenuState extends states.MusicBeatState
 	public static var weekUnlocked:Array<Bool> = [true, true, true, true, true, true, true];
 
 	var weekCharacters:Array<Dynamic> = [
-		['dad', 'bf', 'gf'],
+		['', 'bf', 'gf'],
 		['dad', 'bf', 'gf'],
 		['spooky', 'bf', 'gf'],
 		['pico', 'bf', 'gf'],
@@ -50,7 +50,7 @@ class StoryMenuState extends states.MusicBeatState
 	];
 
 	var weekNames:Array<String> = [
-		"",
+		"My Girlfriend",
 		"Daddy Dearest",
 		"Spooky Month",
 		"PICO",

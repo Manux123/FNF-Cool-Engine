@@ -29,12 +29,11 @@ class MainMenuState extends states.MusicBeatState
 	var menuItems:FlxTypedGroup<FlxSprite>;
 
 	#if !switch
-	var optionShit:Array<String> = ['story_mode', 'freeplay', 'options', 'credits'];
+	var optionShit:Array<String> = ['story-mode', 'freeplay', 'options', 'donate'];
 	#else
-	var optionShit:Array<String> = ['story_mode', 'freeplay', 'credits'];
+	var optionShit:Array<String> = ['story-mode', 'freeplay', 'donate'];
 	#end
 
-	var magenta:FlxSprite;
 	var canSnap:Array<Float> = [];
 	var camFollow:FlxObject;
 	var newInput:Bool = true;
@@ -74,17 +73,6 @@ class MainMenuState extends states.MusicBeatState
 		camFollow = new FlxObject(0, 0, 1, 1);
 		add(camFollow);
 
-		magenta = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGMagenta')));
-		magenta.screenCenter();
-		magenta.visible = false;
-		magenta.antialiasing = true;
-		magenta.color = 0xFFfd719b;
-		add(magenta);
-
-		bg = new FlxSprite().loadGraphic(Paths.image('menu/bg'));
-		bg.antialiasing = true;
-		add(bg);
-
 		menuItems = new FlxTypedGroup<FlxSprite>();
 		add(menuItems);
 
@@ -97,14 +85,16 @@ class MainMenuState extends states.MusicBeatState
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
 			menuItem.animation.play('idle');
 			menuItem.ID = i;
-			menuItem.screenCenter(X);
+			//menuItem.screenCenter(X);
 			menuItems.add(menuItem);
+			menuItem.x += 70;
 			var scr:Float = (optionShit.length - 4) * 0.135;
 			if(optionShit.length < 6) scr = 0;
 			menuItem.scrollFactor.set(0, scr);
 			menuItem.antialiasing = true;
-			//menuItem.setGraphicSize(Std.int(menuItem.width * 0.58));
+			menuItem.setGraphicSize(Std.int(menuItem.width * 0.8));
 			menuItem.updateHitbox();
+
 		}
 		//FlxG.camera.follow(camFollow, null, 0.06);
 		
@@ -175,8 +165,7 @@ class MainMenuState extends states.MusicBeatState
 					//FlxTween.tween(menuItem, {x: menuItem.x + 200}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
 					selectedSomethin = true;
 					FlxG.sound.play(Paths.sound('confirmMenu'));
-
-					FlxFlicker.flicker(magenta, 1.1, 0.15, false);
+					FlxG.camera.flash(FlxColor.WHITE);
 
 					menuItems.forEach(function(spr:FlxSprite)
 					{
@@ -212,12 +201,10 @@ class MainMenuState extends states.MusicBeatState
 			
 											switch (daChoice)
 											{
-												case 'story_mode':
+												case 'story-mode':
 													FlxG.switchState(new StoryMenuState());
 												case 'freeplay':
 													FlxG.switchState(new FreeplayState());
-												case 'credits':
-													FlxG.switchState(new CreditsState());
 												case 'options':
 													FlxG.switchState(new OptionsMenuState());
 											}

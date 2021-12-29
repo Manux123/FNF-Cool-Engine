@@ -136,16 +136,16 @@ class FunkinLua {
 		set('defaultGirlfriendY', lePlayState.GF_Y);
 		
 		// Some settings, no jokes
-		set('downscroll', FlxG.save.data.isdownscroll);
+		set('downscroll', FlxG.save.data.downscroll);
 		set('middlescroll', FlxG.save.data.middlescroll);
-		set('framerate', ClientPrefs.framerate);
+		set('framerate', FlxG.save.data.FPSCap);
 		set('ghostTapping', FlxG.save.data.newInput);
-		set('hideHud', ClientPrefs.hideHud);
-		set('hideTime', ClientPrefs.hideTime);
-		set('cameraZoomOnBeat', ClientPrefs.camZooms);
-		set('flashingLights', ClientPrefs.flashing);
-		set('noteOffset', ClientPrefs.noteOffset);
-		set('lowQuality', ClientPrefs.lowQuality);
+		set('hideHud', FlxG.save.data.HUD);
+		set('hideTime', FlxG.save.data.HUDTime);
+		set('cameraZoomOnBeat', FlxG.save.data.camZoom);
+		set('flashingLights', FlxG.save.data.flashing);
+		set('noteOffset', FlxG.save.data.offset);
+		set('lowQuality', FlxG.save.data.staticstage);
 
 		//stuff 4 noobz like you B)
 		Lua_helper.add_callback(lua, "getProperty", function(variable:String) {

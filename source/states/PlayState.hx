@@ -324,11 +324,11 @@ class PlayState extends states.MusicBeatState
 					"Only then I will even CONSIDER letting you\ndate my daughter!"
 				];
 			case 'senpai':
-				dialogueFile('senpaiDialogue');
+				dialogue = dialogueFile('senpaiDialogue');
 			case 'roses':
-				dialogueFile('rosesDialogue');
+				dialogue = dialogueFile('rosesDialogue');
 			case 'thorns':
-				dialogueFile('thornsDialogue');
+				dialogue = dialogueFile('thornsDialogue');
 		}
 
 		switch (SONG.song.toLowerCase())
@@ -2299,12 +2299,18 @@ class PlayState extends states.MusicBeatState
 					if (theFunne){
 						score = -2000;
 						combo = 0;
-						health -= 0.45;
+						if(FlxG.save.data.hellmode)
+							health -= 0.6;
+						else
+							health -= 0.45;
 					}
 					else{
 						score = -1000;
 						combo = 0;
-						health -= 0.25;
+						if(FlxG.save.data.hellmode)
+							health -= 0.4;
+						else
+							health -= 0.25;
 					}
 					score = -250;
 					shits++;
@@ -2319,15 +2325,20 @@ class PlayState extends states.MusicBeatState
 					scoreTxt.alpha = 0.85;
 					if (theFunne){
 						score = -1000;
-						health -= 0.03;
 						combo = 0;
-						health -= 0.05;
+						if(FlxG.save.data.hellmode)
+							health -= 0.1;
+						else
+							health -= 0.03;
 					}
 					else{
 						score = -100;
 						ss = false;
 						bads++;
-						health -= 0.05;
+						if(FlxG.save.data.hellmode)
+							health -= 0.1;
+						else
+							health -= 0.05;
 					}
 				case 'good' | 'good-soon' | 'good-later':
 					if(FlxG.save.data.sickmode) //Sicks Mode
@@ -2341,11 +2352,15 @@ class PlayState extends states.MusicBeatState
 					goods++;
 				case 'sick' | 'sick-soon' | 'sick-later':
 					sicks++;
-					health += 0.1;
+					if(FlxG.save.data.hellmode)
+						health += 0.085;
+					else
+						health += 0.1;
 					scoreTxt.alpha = 1;
 					totalNotesHit += 1;
 					score = 350;
-					FlxG.sound.play(Paths.sound('Hitsounds/hard-${FlxG.random.int(1,4)}'));
+					if(FlxG.save.data.hitsounds)
+						FlxG.sound.play(Paths.sound('hitsounds/hit-${FlxG.random.int(1,3)}'));
 					if(noteSplashOp)
 						spawnNoteSplashOnNote(daNote);
 			}

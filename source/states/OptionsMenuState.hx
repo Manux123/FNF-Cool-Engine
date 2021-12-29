@@ -166,6 +166,7 @@ class OptionsMenu extends MusicBeatState
 		new DownscrollOption(),
 		new RatingSystem(),
 		new MiddleScroll(),
+		new HitSoundsOption(),
 		#if desktop
 		new FPSCap(),
 		new Fullscreen(),
@@ -309,8 +310,9 @@ class MenuGameOptions extends MusicBeatState
 	var curSelected:Int = 0;
 
 	var options:Array<Option> = [
+		new SickModeOption(),
 		new PerfectModeOption(),
-		new SickModeOption()
+		new HellModeOption()
 	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
@@ -827,6 +829,36 @@ class EffectsOption extends Option
 	private override function updateDisplay():String
 	{
 		return FlxG.save.data.specialVisualEffects ? "Visual Effects On" : "Visual Effects Off";
+	}
+}
+
+class HellModeOption extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.hellmode = !FlxG.save.data.hellmode;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return FlxG.save.data.hellmode ? "Hell Mode On" : "Hell Mode Off";
+	}
+}
+
+class HitSoundsOption extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.hitsounds = !FlxG.save.data.hitsounds;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return FlxG.save.data.hitsounds ? "Hit Sounds On" : "Hit Sounds Off";
 	}
 }
 

@@ -925,23 +925,29 @@ class OptionsData
 			if (FlxG.save.data.offset == null)
 				FlxG.save.data.offset = 0;
 			
-			if(FlxG.save.data.perfectmode = null)
+			if(FlxG.save.data.perfectmode == null)
 				FlxG.save.data.perfectmode = false;
 
-			if(FlxG.save.data.sickmode = null)
+			if(FlxG.save.data.sickmode == null)
 				FlxG.save.data.sickmode = false;
 
-			if(FlxG.save.data.staticstage = null)
+			if(FlxG.save.data.staticstage == null)
 				FlxG.save.data.staticstage = false;
 
-			if(FlxG.save.data.specialVisualEffects = null)
+			if(FlxG.save.data.specialVisualEffects == null)
 				FlxG.save.data.specialVisualEffects = true;
 
-			if(FlxG.save.data.gfbye = null)
+			if(FlxG.save.data.gfbye == null)
 				FlxG.save.data.gfbye = false;
 
-			if(FlxG.save.data.byebg = null)
+			if(FlxG.save.data.byebg == null)
 				FlxG.save.data.byebg = false;
+
+			if(FlxG.save.data.hellmode == null)
+				FlxG.save.data.hellmode = false;
+
+			if(FlxG.save.data.hitsounds == null)
+				FlxG.save.data.hitsounds = false;
 		}
 }
 

@@ -518,11 +518,11 @@ class PlayState extends states.MusicBeatState
 		add(dad);
 		add(boyfriend);
 
-		var doof:DialogueBox = new DialogueBox(false, dialogue);
+		var dialogueBox:DialogueBox = new DialogueBox(false, dialogue);
 		// doof.x += 70;
 		// doof.y = FlxG.height * 0.5;
-		doof.scrollFactor.set();
-		doof.finishThing = startCountdown;
+		dialogueBox.scrollFactor.set();
+		dialogueBox.finishThing = startCountdown;
 
 		Conductor.songPosition = -5000;
 		noteSplashOp = true;
@@ -690,7 +690,7 @@ class PlayState extends states.MusicBeatState
 		iconP1.cameras = [camHUD];
 		iconP2.cameras = [camHUD];
 		scoreTxt.cameras = [camHUD];
-		doof.cameras = [camHUD];
+		dialogueBox.cameras = [camHUD];
 		versionShit.cameras = [camHUD];
 
 		#if mobileC
@@ -754,11 +754,10 @@ class PlayState extends states.MusicBeatState
 							});
 						});
 					});
-				case 'senpai' | 'thorns':
-					schoolIntro(doof);
-				case 'roses':
-					FlxG.sound.play(Paths.sound('ANGRY'));
-					schoolIntro(doof);
+				case 'senpai' | 'thorns' | 'roses':
+					if(curSong.toLowerCase() == 'roses')
+						FlxG.sound.play(Paths.sound('ANGRY'));
+					schoolIntro(dialogueBox);
 				default:
 					startCountdown();
 			}

@@ -66,6 +66,11 @@ class OptionsMenuState extends MusicBeatState
 			var controlLabel:Alphabet = new Alphabet(0, (i + 1) * 100, controlsStrings[i], true, false);
 			controlLabel.isMenuItem = false;
 			controlLabel.targetY = i;
+
+			controlLabel.alpha = 0.3;
+			if(i == curSelected)
+				controlLabel.alpha = 1;
+
 			controlLabel.screenCenter(X);
 			grpControls.add(controlLabel);
 		}
@@ -139,7 +144,7 @@ class OptionsMenuState extends MusicBeatState
 			item.targetY = bullShit - curSelected;
 			bullShit++;
 
-			item.alpha = 0.6;
+			item.alpha = 0.3;
 			// item.setGraphicSize(Std.int(item.width * 0.8));
 
 			if (item.targetY == 0)
@@ -206,6 +211,11 @@ class OptionsMenu extends MusicBeatState
 			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 30, options[i].getDisplay(), true, false);
 			controlLabel.isMenuItem = true;
 			controlLabel.targetY = i;
+
+			controlLabel.alpha = 0.3;
+			if(i == curSelected)
+				controlLabel.alpha = 1;
+
 			grpControls.add(controlLabel);
 			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
 		}
@@ -340,6 +350,11 @@ class MenuGameOptions extends MusicBeatState
 			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 30, options[i].getDisplay(), true, false);
 			controlLabel.isMenuItem = true;
 			controlLabel.targetY = i;
+
+			controlLabel.alpha = 0.3;
+			if(i == curSelected)
+				controlLabel.alpha = 1;
+
 			grpControls.add(controlLabel);
 			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
 		}
@@ -488,6 +503,11 @@ class OptimizationOptions extends MusicBeatState
 			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 30, options[i].getDisplay(), true, false);
 			controlLabel.isMenuItem = true;
 			controlLabel.targetY = i;
+
+			controlLabel.alpha = 0.3;
+			if(i == curSelected)
+				controlLabel.alpha = 1;
+
 			grpControls.add(controlLabel);
 			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
 		}

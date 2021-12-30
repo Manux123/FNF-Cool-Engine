@@ -117,6 +117,15 @@ class PlayState extends states.MusicBeatState
 
 	public var notes:FlxTypedGroup<Note>;
 	private var unspawnNotes:Array<Note> = [];
+	
+	public var normal_songs:String = [
+	'tutorial', 'bopeebo', 'fresh', 'dadbattle',
+	'spookeez', 'south', "monster",
+	'pico', 'philly', "blammed",
+	'satin-panties', "high", "milf", 
+	'cocoa', 'eggnog', 'winter-horrorland'];
+
+	public var pixel_songs:String = ['senpai', 'roses', 'thorns'];
 
 	public var strumLine:FlxSprite;
 	private var curSection:Int = 0;
@@ -753,10 +762,14 @@ class PlayState extends states.MusicBeatState
 							});
 						});
 					});
-				case 'senpai' | 'thorns' | 'roses':
-					if(curSong.toLowerCase() == 'roses')
-						FlxG.sound.play(Paths.sound('ANGRY'));
-					schoolIntro(dialogueBox);
+
+				var pixel_songs = ['senpai','roses','thorns'];
+           		for(i in 0... pixel_songs.length){
+                if(daSong == pixelShit[i]){
+                    if(daSong == 'roses') FlxG.sound.play(Paths.sound('ANGRY'));
+                    schoolIntro(doof);
+                }
+            }
 				default:
 					startCountdown();
 			}
@@ -2117,26 +2130,15 @@ class PlayState extends states.MusicBeatState
 			}
 
 
-		cpuStrums.forEach(function(spr:FlxSprite)
-			{
-				if (spr.animation.finished)
-				{
-					spr.animation.play('static');
-					spr.centerOffsets();
-				}
-			});
+		cpuStrums.forEach(function(spr:FlxSprite) {
+			if (spr.animation.finished){
+				spr.animation.play('static');
+				spr.centerOffsets();
+			}
+		});
 			
 		if (!inCutscene)
 			keyShit();
-
-		#if debug
-		if (FlxG.keys.justPressed.ONE)
-			endSong();
-
-		setOnLuas('cameraX', camFollowPos.x);
-		setOnLuas('cameraY', camFollowPos.y);
-		callOnLuas('onUpdatePost', [elapsed]);
-		#end
 	}
 
 	public function setOnLuas(variable:String, arg:Dynamic) {

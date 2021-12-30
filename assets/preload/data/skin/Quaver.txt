@@ -1,7 +1,7 @@
-greenScroll:arrowUP
-redScroll:arrowRIGHT
-blueScroll:arrowDOWN
-purpleScroll:arrowLEFT
+greenScroll:green alone
+redScroll:red alone
+blueScroll:blue alone
+purpleScroll:purple alone
 purpleholdend:purple tail
 greenholdend:green tail
 redholdend:red tail

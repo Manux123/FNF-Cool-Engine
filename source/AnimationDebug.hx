@@ -157,7 +157,7 @@ class AnimationDebug extends FlxState
 		add(dumbTexts);
 
 		textcontrols = new FlxText(0,50,'J = Camera Left  L = Camera Right  I = Camera Up  K = Camera Down');
-        textcontrols.size = 28;
+        textcontrols.size = 24;
         textcontrols.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);
         textcontrols.color = FlxColor.WHITE;
         textcontrols.scrollFactor.set();

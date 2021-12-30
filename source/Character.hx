@@ -438,7 +438,7 @@ class Character extends FlxSprite
 		var coolFile:Array<String> = CoolUtil.coolTextFile(Paths.txt('characters/animations/$curCharacter'+'Animations'));
 
 		for(i in 0...coolFile.length){
-			var animations:Array<String> = coolFile[i].split(' ');
+			var animations:Array<String> = coolFile[i].split(', ');
 			var looped:Bool = false;
 			if(animations[2] == 'true')
 				looped = true;

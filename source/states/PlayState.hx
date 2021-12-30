@@ -117,7 +117,7 @@ class PlayState extends states.MusicBeatState
 
 	public var notes:FlxTypedGroup<Note>;
 	private var unspawnNotes:Array<Note> = [];
-	
+	/*
 	public var normal_songs:String = [
 	'tutorial', 'bopeebo', 'fresh', 'dadbattle',
 	'spookeez', 'south', "monster",
@@ -125,7 +125,7 @@ class PlayState extends states.MusicBeatState
 	'satin-panties', "high", "milf", 
 	'cocoa', 'eggnog', 'winter-horrorland'];
 
-	public var pixel_songs:String = ['senpai', 'roses', 'thorns'];
+	public var pixel_songs:String = ['senpai', 'roses', 'thorns'];*/
 
 	public var strumLine:FlxSprite;
 	private var curSection:Int = 0;

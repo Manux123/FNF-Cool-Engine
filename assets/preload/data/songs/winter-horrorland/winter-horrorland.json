@@ -2706,6 +2706,7 @@
         "needsVoices": true,
         "player1": "bf-christmas",
         "player2": "monster-christmas",
+        "gfVersion":"gf-christmas",
         "sectionLengths": [],
         "speed": 1.1,
         "validScore": true

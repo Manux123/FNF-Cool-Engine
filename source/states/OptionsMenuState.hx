@@ -113,6 +113,7 @@ class OptionsMenuState extends MusicBeatState
 						#end
 					case 5:
 						FlxG.switchState(new MainMenuState());
+						OptionsData.initSave();
 				}
 			}
 		FlxG.save.flush();

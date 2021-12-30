@@ -277,6 +277,18 @@ class Character extends FlxSprite
 				
 				flipX = true;
 
+			case 'bf-dead':
+				frames = Paths.getSparrowAtlas('characters/BF_dead');
+				animation.addByPrefix('firstDeath', "BF dies", 24, false);
+				animation.addByPrefix('deathLoop', "BF Dead Loop", 24, true);
+				animation.addByPrefix('deathConfirm', "BF Dead confirm", 24, false);
+				animation.play('firstDeath');
+
+				loadOffsetFile(curCharacter);
+				playAnim('firstDeath');
+				
+				flipX = true;
+
 			case 'senpai':
 				frames = Paths.getSparrowAtlas('weeb/senpai');
 				animation.addByPrefix('idle', 'Senpai Idle', 24, false);
@@ -556,10 +568,6 @@ class Character extends FlxSprite
 	animation.addByPrefix('singRIGHTmiss', 'BF NOTE RIGHT MISS', 24, false);
 	animation.addByPrefix('singDOWNmiss', 'BF NOTE DOWN MISS', 24, false);
 	animation.addByPrefix('hey', 'BF HEY', 24, false);
-
-	animation.addByPrefix('firstDeath', "BF dies", 24, false);
-	animation.addByPrefix('deathLoop', "BF Dead Loop", 24, true);
-	animation.addByPrefix('deathConfirm', "BF Dead confirm", 24, false);
 
 	animation.addByPrefix('scared', 'BF idle shaking', 24); }
 

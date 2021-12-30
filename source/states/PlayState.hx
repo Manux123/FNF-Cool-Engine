@@ -131,7 +131,7 @@ class PlayState extends states.MusicBeatState
 	var camPos:FlxPoint;
 
 	private var camZooming:Bool = false;
-	private var curSong:String = "";
+	public var curSong:String = "";
 
 	private var gfSpeed:Int = 1;
 	public var health:Float = 1;

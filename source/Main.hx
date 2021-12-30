@@ -1,5 +1,6 @@
 package;
 
+import states.OptionsMenuState.OptionsData;
 import states.TitleState;
 import flixel.FlxGame;
 import flixel.FlxState;

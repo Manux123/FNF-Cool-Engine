@@ -131,7 +131,7 @@ class PlayState extends states.MusicBeatState
 	var camPos:FlxPoint;
 
 	private var camZooming:Bool = false;
-	private var curSong:String = "";
+	public var curSong:String = "";
 
 	private var gfSpeed:Int = 1;
 	public var health:Float = 1;
@@ -408,13 +408,13 @@ class PlayState extends states.MusicBeatState
 		//switch (gfCheck) {} 
 		if (gfVersion == null || gfVersion.length < 1)
 			switch (curStage){
-			case 'gf-car':
+			case 'limo':
 				gfVersion = 'gf-car';
-			case 'gf-christmas':
+			case 'mall | mallEvil':
 				gfVersion = 'gf-christmas';
-			case 'gf-pixel':
+			case 'school' | 'schoolEvil':
 				gfVersion = 'gf-pixel';
-            case 'gf':
+           	default:
 				gfVersion = 'gf';}
 
 		gf = new Character(400, 130, gfVersion);
@@ -1372,26 +1372,28 @@ class PlayState extends states.MusicBeatState
 
 	function startSong():Void
 	{
-		startingSong = false;
+		if(!songEnd) {
+			startingSong = false;
 
-		previousFrameTime = FlxG.game.ticks;
-		lastReportedPlayheadPosition = 0;
+			previousFrameTime = FlxG.game.ticks;
+			lastReportedPlayheadPosition = 0;
 
-		if (!paused)
-			FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), 1, false);
-		FlxG.sound.music.onComplete = endSong;
-		vocals.play();
+			if (!paused)
+				FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), 1, false);
+			FlxG.sound.music.onComplete = endSong;
+			vocals.play();
 
-		#if desktop
-		// Song duration in a float, useful for the time left feature
-		songLength = FlxG.sound.music.length;
+			#if desktop
+			// Song duration in a float, useful for the time left feature
+			songLength = FlxG.sound.music.length;
 
-		// Updating Discord Rich Presence (with Time Left)
+			// Updating Discord Rich Presence (with Time Left)
 
 
 
-		DiscordClient.changePresence(detailsText + " " + SONG.song + " (" + storyDifficultyText + ")", "\nAcc: " + Mathf.getPercentage(accuracy, 2) + "% | Score: " + songScore + " | Misses: " + misses  , iconRPC);
-		#end
+			DiscordClient.changePresence(detailsText + " " + SONG.song + " (" + storyDifficultyText + ")", "\nAcc: " + Mathf.getPercentage(accuracy, 2) + "% | Score: " + songScore + " | Misses: " + misses  , iconRPC);
+			#end
+		}
 	}
 
 	var debugNum:Int = 0;
@@ -2145,8 +2147,11 @@ class PlayState extends states.MusicBeatState
 		return returnVal;
 	}
 
+	var songEnd:Bool = false;
+
 	public function endSong():Void
 	{
+		songEnd = true;
 		canPause = false;
 		FlxG.sound.music.volume = 0;
 		vocals.volume = 0;

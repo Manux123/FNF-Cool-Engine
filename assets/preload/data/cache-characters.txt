@@ -3,6 +3,7 @@ characters/week4/bfCar
 characters/christmas/bfChristmas
 characters/characters/weeb/bfPixel
 characters/weeb/bfPixelsDEAD
+characters/BF_dead
 characters/GF_assets
 characters/week4/gfCar
 characters/christmas/gfChristmas

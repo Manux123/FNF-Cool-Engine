@@ -641,10 +641,10 @@ class PlayState extends states.MusicBeatState
 		// healthBar
 		add(healthBar);
 
-		scoreTxt = new FlxText(healthBarBG.x /*+ healthBarBG.width / 2*/, healthBarBG.y + 50, 0, "", 20);
+		scoreTxt = new FlxText(healthBarBG.x /*+ healthBarBG.width / 2*/, healthBarBG.y + 50, 0, "", 32);
 		scoreTxt.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
-		scoreTxt.x += 210;
-		scoreTxt.y -= 20;
+		scoreTxt.x = FlxG.width/1.5;
+		scoreTxt.y = FlxG.height/2.5;
 		scoreTxt.alpha = 1;
 		scoreTxt.scrollFactor.set();
 
@@ -1747,11 +1747,11 @@ class PlayState extends states.MusicBeatState
 
 		if (FlxG.save.data.accuracyDisplay)
 		{
-			scoreTxt.text = 'Score: $songScore | Misses: $misses | Rank: ${Ranking.generateLetterRank()}(${Mathf.getPercentage(accuracy, 2)}%)';
+			scoreTxt.text = 'Score: \n ${songScore}\n\n' + 'Misses: \n ${misses}\n\n' + 'Accuracy: \n ${Mathf.getPercentage(accuracy, 2)}\n\n';
 		}
 		else
 		{
-			scoreTxt.text = 'Score: $songScore | Misses: $misses';
+			scoreTxt.text = 'Score: \n ${songScore}\n' + 'Misses: \n ${misses}\n';
 		}
 		if (FlxG.keys.justPressed.ENTER && startedCountdown && canPause)
 		{
@@ -2340,6 +2340,7 @@ class PlayState extends states.MusicBeatState
 					totalNotesHit += 0.05;
 					boyfriend.stunned = false;
 					scoreTxt.alpha = 0.85;
+					combo = 0;
 					if (theFunne){
 						score = -1000;
 						combo = 0;
@@ -2360,7 +2361,7 @@ class PlayState extends states.MusicBeatState
 				case 'good' | 'good-soon' | 'good-later':
 					if(FlxG.save.data.sickmode) //Sicks Mode
 						gameOver();
-
+					combo++;
 					score = 350;
 					totalNotesHit += 0.3;
 					score = 200;
@@ -2368,6 +2369,7 @@ class PlayState extends states.MusicBeatState
 					ss = false;
 					goods++;
 				case 'sick' | 'sick-soon' | 'sick-later':
+					combo++;
 					sicks++;
 					if(FlxG.save.data.hellmode)
 						health += 0.085;
@@ -2905,6 +2907,7 @@ class PlayState extends states.MusicBeatState
 
 		function goodNoteHit(note:Note, resetMashViolation = true):Void
 		{
+				//combo ++;
 				if(mashing != 0)
 					mashing = 0;
 				if (resetMashViolation)
@@ -2915,7 +2918,6 @@ class PlayState extends states.MusicBeatState
 					if (!note.isSustainNote)
 					{
 						popUpScore(note);
-						combo += 1;
 					}
 					else
 						totalNotesHit += 1;
@@ -2969,44 +2971,22 @@ class PlayState extends states.MusicBeatState
 					updateAccuracy();
 				}
 
-				var placement:String = Std.string(combo);
-
-				var coolText:FlxText = new FlxText(0, 0, 0, placement, 32);
-				coolText.screenCenter();
-				coolText.x = FlxG.width * 0.55;
-
-				var ratingf:FlxSprite = new FlxSprite();
-				ratingf.loadGraphic(Paths.image('combo'));
-				ratingf.screenCenter();
-				ratingf.y += 200;
-				ratingf.x = coolText.x - 40;
-				ratingf.acceleration.y = 550;
-				ratingf.velocity.y -= FlxG.random.int(140, 175);
-				ratingf.velocity.x -= FlxG.random.int(0, 10);
-				add(ratingf);
-
-				if (!curStage.startsWith('school'))
-					{
-						ratingf.setGraphicSize(Std.int(ratingf.width * 0.4));
-						ratingf.antialiasing = true;
-					}
-				else
-					{
-						ratingf.setGraphicSize(Std.int(ratingf.width * 0.4));
-					}
+				var combof:FlxText = new FlxText(0, 0, 0, 'Combo +' + combo, 24);
+				combof.screenCenter();
+				combof.y -= 40;
+				combof.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
+				combof.cameras = [camHUD];
+				combof.scrollFactor.set();
+				add(combof);
 	
-					ratingf.updateHitbox();
-	
-				FlxTween.tween(ratingf, {alpha: 0}, 0.2, {
+				FlxTween.tween(combof, {alpha: 0}, 0.1, {
 					startDelay: Conductor.crochet * 0.001
 				});
 		
-				FlxTween.tween(ratingf, {alpha: 0}, 0.2, {
+				FlxTween.tween(combof, {alpha: 0}, 0.1, {
 					onComplete: function(tween:FlxTween)
 					{
-						coolText.destroy();
-		
-						ratingf.destroy();
+						combof.destroy();
 					},
 					startDelay: Conductor.crochet * 0.001
 				});	

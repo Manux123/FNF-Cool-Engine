@@ -161,6 +161,7 @@ class AnimationDebug extends MusicBeatState
         textcontrols.size = 24;
         textcontrols.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);
         textcontrols.color = FlxColor.WHITE;
+		textcontrols.cameras = [camHUD];
         textcontrols.scrollFactor.set();
         add(textcontrols);
 

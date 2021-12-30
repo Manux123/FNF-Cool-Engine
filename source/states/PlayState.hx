@@ -763,14 +763,12 @@ class PlayState extends states.MusicBeatState
 							});
 						});
 					});
+				
+				case 'senpai' | 'thorns' | 'roses':
+					if(curSong.toLowerCase() == 'roses')
+						FlxG.sound.play(Paths.sound('ANGRY'));
+						schoolIntro(dialogueBox);
 
-				var pixel_songs = ['senpai','roses','thorns'];
-           		for(i in 0... pixel_songs.length){
-                if(daSong == pixelShit[i]){
-                    if(daSong == 'roses') FlxG.sound.play(Paths.sound('ANGRY'));
-                    schoolIntro(doof);
-                }
-            }
 				default:
 					startCountdown();
 			}

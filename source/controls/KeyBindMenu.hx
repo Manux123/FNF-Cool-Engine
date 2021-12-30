@@ -56,8 +56,6 @@ class KeyBindMenu extends MusicBeatSubstate
     public static var isPlaying:Bool = false;
 	override function create()
 	{
-        isPlaying = false;
-        
         black = new FlxSprite(0,0).makeGraphic(FlxG.width,FlxG.height,FlxColor.BLACK);
         black.screenCenter();
         black.alpha = 0.6;

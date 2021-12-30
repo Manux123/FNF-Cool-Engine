@@ -183,7 +183,6 @@ class PlayState extends states.MusicBeatState
 	var talking:Bool = true;
 	private var SplashNote:NoteSplash;
 	var grpNoteSplashes:FlxTypedGroup<NoteSplash>;
-	var noteSplashOp:Bool; //cool
 	public static var songScore:Int = 0;
 	var scoreTxt:FlxText;
 	
@@ -525,7 +524,6 @@ class PlayState extends states.MusicBeatState
 		dialogueBox.finishThing = startCountdown;
 
 		Conductor.songPosition = -5000;
-		noteSplashOp = true;
 
 
 		strumLine = new FlxSprite(0, 50).makeGraphic(FlxG.width, 10);
@@ -2365,7 +2363,7 @@ class PlayState extends states.MusicBeatState
 						hitSound.looped = false;
 						hitSound.play();
 					}
-					if(noteSplashOp)
+					if(FlxG.save.data.notesplashes)
 						spawnNoteSplashOnNote(daNote);
 			}
 

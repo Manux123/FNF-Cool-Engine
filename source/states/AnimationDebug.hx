@@ -190,15 +190,16 @@ class AnimationDebug extends MusicBeatState
 
 		animList=[];
 
-		if (daAnim == 'bf')
+		if (daAnim == 'bf') {
 			isDad = false;
 			isGF = false;
-		if(daAnim == 'gf')
+		} else if(daAnim == 'gf') {
 			isDad = false;
 			isGF = true;
-		if(daAnim == 'dad')
+		} else {
 			isDad = true;
 			isGF = false;
+		}
 
 		if(dad!=null)
 			layeringbullshit.remove(dad);

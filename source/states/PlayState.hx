@@ -5,6 +5,7 @@ import flixel.input.FlxAccelerometer;
 import Section.SwagSection;
 import Song.SwagSong;
 import shaders.WiggleEffect.WiggleEffectType;
+import states.AnimationDebug;
 import flixel.FlxBasic;
 import flixel.FlxCamera;
 import flixel.FlxG;

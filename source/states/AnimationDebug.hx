@@ -1,5 +1,6 @@
-package;
+package states;
 
+import states.MusicBeatState;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
@@ -26,7 +27,7 @@ import flixel.ui.FlxButton;
 import flixel.ui.FlxSpriteButton;
 using StringTools;
 
-class AnimationDebug extends FlxState
+class AnimationDebug extends MusicBeatState
 {
 	var UI_box:FlxUITabMenu;
 	var bf:Boyfriend;

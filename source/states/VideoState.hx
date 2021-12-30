@@ -4,7 +4,7 @@ import lime.utils.Assets;
 import states.MusicBeatState;
 import flixel.FlxState;
 import flixel.FlxG;
-#if windows
+#if (windows || web)
 import mp4.MP4Handler;
 #end
 
@@ -20,7 +20,7 @@ class VideoState extends MusicBeatState
         this.nextState = state;
     }
 
-    #if windows
+    #if (windows || web)
     var video:MP4Handler = new MP4Handler();
     #end
 
@@ -32,7 +32,7 @@ class VideoState extends MusicBeatState
 		else
 			openfl.Lib.current.stage.frameRate = 240;
 
-        #if windows
+        #if (windows || web)
         if(Assets.exists(Paths.video(videoPath))){
             video.playMP4(Paths.video(videoPath));
     		video.finishCallback = function(){
@@ -47,7 +47,7 @@ class VideoState extends MusicBeatState
             LoadingState.loadAndSwitchState(nextState);
         }
         #else
-        trace('DUM ASS, THIS ONLY WORKS ON WINDOWS XDDDD');
+        trace('DUM ASS, THIS ONLY WORKS ON WINDOWS/HTML XDDDD');
         FlxG.sound.music.stop();
         LoadingState.loadAndSwitchState(nextState);
         #end
@@ -57,12 +57,16 @@ class VideoState extends MusicBeatState
 
     public override function update(elapsed:Float){
         super.update(elapsed);
-        #if windows
+        #if (windows || web)
         if(controls.ACCEPT){
             video.kill();
             FlxG.sound.music.stop();
             LoadingState.loadAndSwitchState(nextState);
         }
+        #else
+        video.kill();
+        FlxG.sound.music.stop();
+        LoadingState.loadAndSwitchState(nextState);
         #end
     }
 }

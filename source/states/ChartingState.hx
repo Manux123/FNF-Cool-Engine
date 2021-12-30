@@ -319,6 +319,8 @@ class ChartingState extends states.MusicBeatState
 	var stepperSectionBPM:FlxUINumericStepper;
 	var check_altAnim:FlxUICheckBox;
 	var check_modchart:FlxUICheckBox;
+	var check_gfSing:FlxUICheckBox;
+	var check_bothSing:FlxUICheckBox;
     var gfs:Array<String> = CoolUtil.coolTextFile('assets/data/characters/gfList.txt');
 
 	function addSectionUI():Void
@@ -360,6 +362,14 @@ class ChartingState extends states.MusicBeatState
 		check_mustHitSection.checked = true;
 		// _song.needsVoices = check_mustHit.checked;
 
+		check_gfSing = new FlxUICheckBox(10, 200, null, null, "Can GF Sing in this section", 100);
+		check_gfSing.name = 'check_gfSing';
+		check_gfSing.checked = false;
+
+		check_bothSing = new FlxUICheckBox(10, 250, null, null, "Dad n' GF can sing in \nthis section", 100);
+		check_bothSing.name = 'check_bothSing';
+		check_bothSing.checked = false;
+
 		check_altAnim = new FlxUICheckBox(10, 400, null, null, "Alt Animation", 100);
 		check_altAnim.name = 'check_altAnim';
 /*
@@ -376,6 +386,8 @@ class ChartingState extends states.MusicBeatState
 		tab_group_section.add(stepperSectionBPM);
 		tab_group_section.add(stepperCopy);
 		tab_group_section.add(check_mustHitSection);
+		tab_group_section.add(check_gfSing);
+		tab_group_section.add(check_bothSing);
 		tab_group_section.add(check_altAnim);
 		tab_group_section.add(check_changeBPM);
 		tab_group_section.add(copyButton);
@@ -468,6 +480,10 @@ class ChartingState extends states.MusicBeatState
 					FlxG.log.add('changed bpm shit');
 				case "Alt Animation":
 					_song.notes[curSection].altAnim = check.checked;
+				case "Can GF Sing in this section":
+					_song.notes[curSection].gfSing = check.checked;
+				case "Dad n' GF can sing in \nthis section":
+					_song.notes[curSection].bothSing = check.checked;
 			}
 		}
 		else if (id == FlxUINumericStepper.CHANGE_EVENT && (sender is FlxUINumericStepper))
@@ -972,7 +988,9 @@ class ChartingState extends states.MusicBeatState
 			sectionNotes: [],
 			typeOfSection: 0,
 			altAnim: false,
-			modchart: false
+			modchart: false,
+			gfSing: false,
+			bothSing: false
 		};
 
 		_song.notes.push(sec);

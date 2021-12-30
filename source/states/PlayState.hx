@@ -95,6 +95,7 @@ class PlayState extends states.MusicBeatState
 	public static var songPosBG:FlxSprite;
 	public static var songPosBar:FlxBar;
 
+	private var gfSing:Bool = false;
 	var halloweenLevel:Bool = false;
 
 	#if desktop
@@ -1985,9 +1986,23 @@ class PlayState extends states.MusicBeatState
 						{
 							if (SONG.notes[Math.floor(curStep / 16)].altAnim)
 								altAnim = '-alt';
+
+							gf.canSing = SONG.notes[Math.floor(curStep / 16)].bothSing?true:SONG.notes[Math.floor(curStep / 16)].gfSing;
+							if(gf.canSing == true && !SONG.notes[Math.floor(curStep / 16)].bothSing){
+								dad.canSing = false;
+								dad.dance();
+							}
+							else
+								dad.canSing = true;
+
+							if(!gf.canSing)
+								gf.dance();
 						}
+
+						if(FlxG.save.data.notesplashes)
+							spawnNoteSplashOnNote(daNote,0);
 	
-					if (dad.canSing){
+					if (dad.canSing)
 						switch (Math.abs(daNote.noteData))
 						{
 							case 2:
@@ -1999,9 +2014,8 @@ class PlayState extends states.MusicBeatState
 							case 0:
 								dad.playAnim('singLEFT' + altAnim, true);
 						}
-					}
 
-					else if (gf.canSing){
+					if (gf.canSing)
 						switch (Math.abs(daNote.noteData))
 						{
 							case 2:
@@ -2013,7 +2027,6 @@ class PlayState extends states.MusicBeatState
 							case 0:
 								gf.playAnim('singLEFT' + altAnim, true);
 						}
-					}
 
 						callOnLuas('opponentNoteHit', [notes.members.indexOf(daNote), Math.abs(daNote.noteData), daNote.isSustainNote]);
 				
@@ -2493,9 +2506,11 @@ class PlayState extends states.MusicBeatState
 			curSection += 1;
 		}
 
-	function spawnNoteSplashOnNote(note:Note) {
+	function spawnNoteSplashOnNote(note:Note,?player:Int = 1) {
 		if(note != null) {
 			var strum = playerStrums.members[note.noteData];
+			if(player == 0)
+				strum = cpuStrums.members[note.noteData];
 			if(strum != null) {
 				spawnNoteSplash(strum.x, strum.y, note.noteData, note);
 			}

@@ -15,11 +15,12 @@
 - [FairyBoy](https://twitter.com/JulianSamwise?s=09) and [Zero Artist](https://twitter.com/zero_artist02) - Artists Friday Night Funkin: Cool Engine
 
 ## FNF
-- [Kawaisprite](https://twitter.com/kawaisprite) - Musician Friday Night Funkin Original
-- [ninjamuffin99](https://twitter.com/ninja_muffin99) - Programmer Friday Night Funkin Original
-- [PhantomArcade3K](https://twitter.com/phantomarcade3k) and [Evilsk8r](https://twitter.com/evilsk8r) - Artists Friday Night Funkin Original
+- [Kawaisprite](https://twitter.com/kawaisprite) - Musician of fnf
+- [ninjamuffin99](https://twitter.com/ninja_muffin99) - Programmer of fnf
+- [PhantomArcade3K](https://twitter.com/phantomarcade3k) - Animator of of fnf
+- [Evilsk8r](https://twitter.com/evilsk8r)  - Artist of fnf
 
-## mp4 support
+## mp4 stuff
 - [PolybiusProxy](https://twitter.com/polybiusproxy) - MP4 Extension Loader
 
 # Building

@@ -21,9 +21,6 @@ using StringTools;
 
 class MainMenuState extends states.MusicBeatState
 {
-	/*var ChangelogKeyCombinationEnabled:Bool = true; //Disable this to disable the combination most likely for mods
-	var ChangelogKeyCombination:Array<FlxKey> = [FlxKey.B, FlxKey.B]; //bb is bbpanzu cuz bbpanzu = legend 
-	So fucking Glitched*/
 	var curSelected:Int = 0;
 
 	var menuItems:FlxTypedGroup<FlxSprite>;
@@ -98,7 +95,7 @@ class MainMenuState extends states.MusicBeatState
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 
-		var versionShit2:FlxText = new FlxText(5, FlxG.height - 19, 0, 'Cool Engine - V${Application.current.meta.get('version')}b', 12);
+		var versionShit2:FlxText = new FlxText(5, FlxG.height - 19, 0, 'Cool Engine - V${Application.current.meta.get('version')}', 12);
 		versionShit2.scrollFactor.set();
 		versionShit2.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		versionShit2.y -= 20;

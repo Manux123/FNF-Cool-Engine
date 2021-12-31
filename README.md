@@ -1,6 +1,6 @@
 # [Cool Engine](https://github.com/Manux123/FNF-Cool-Engine)
 
-**FNF': Cool Engine, this is a modification of the original FNF' source (it can be found [here](https://github.com/ninjamuffin99) btw) the mod includes new Options and better Graphics!!**
+**FNF': Cool Engine is a modification of the original FNF' source code the mod includes new Options and better Graphics!!**
 ----------------------------------------------
 
 ![](/art/cool-logo.png)

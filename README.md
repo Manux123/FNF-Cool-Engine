@@ -3,10 +3,10 @@
 **FNF': Cool Engine, this is a modification of the original FNF' source (it can be found [here](https://github.com/ninjamuffin99) btw) the mod includes new Options and better Graphics!!**
 ----------------------------------------------
 
-![image](https://media.discordapp.net/attachments/871591689737875486/886366232859803668/cool.png?width=958&height=670)
+![image](art/cool logo.png)
 ----------------------------------------------
 
-## Credits / shoutouts
+## The Cool Engine Team Credits
 - [Manux (me)](https://twitter.com/ActionsAnimati1) - Programmer Friday Night Funkin: Cool Engine
 - [Jloor](https://twitter.com/GamerJloor) - Programmer Friday Night Funkin: Cool Engine
 - [Chasetodie](https://twitter.com/Chasetodie10) - Programmer Friday Night Funkin: Cool Engine
@@ -19,7 +19,7 @@
 - [ninjamuffin99](https://twitter.com/ninja_muffin99) - Programmer Friday Night Funkin Original
 - [PhantomArcade3K](https://twitter.com/phantomarcade3k) and [Evilsk8r](https://twitter.com/evilsk8r) - Artists Friday Night Funkin Original
 
-## Specials Thanks & mp4 support
+## mp4 support
 - [PolybiusProxy](https://twitter.com/polybiusproxy) - MP4 Extension Loader
 
 # Building
@@ -29,7 +29,7 @@ IF YOU JUST WANT TO PLAY AND NOT EDIT THE CODE CLICK [HERE](https://gamebanana.c
 ### Installing the Required Programs
 
 First, you need to install Haxe and HaxeFlixel. I'm too lazy to write and keep updated with that setup (which is pretty simple). 
-1. [Install Haxe](https://haxe.org/download/) (pls install the latest version or i cri)
+1. [Install Haxe](https://haxe.org/download/)
 2. [Install HaxeFlixel](https://haxeflixel.com/documentation/install-haxeflixel/) after downloading Haxe (This is a required step and compilation will fail if it isn't installed!)
 
 You'll also need to install a couple things that involve Gits. To do this, you need to do a few things first.
@@ -54,16 +54,13 @@ Once that is done you can open up a command line in the project's directory and 
 As for Mac, `lime test mac -debug` will work,
 ----------------------------------------------
 
-ADDITIONS IN 0.1.6 (FINAL!!)
+ADDITIONS IN 0.3.5
 
-- New Title Menu.
-- Better Charting Menu
-- Webm Videos!!
-- Tutorials.
-- Now PlayState.hx more ordered!
-- Improved sorting of folders.
-- CpuStrums. (Imitates the player when hitting a note)
+- Functions Switch Characters!
+- More Fixed Bugs
+- New Notes in Txt
+- New Splashes in Txt
+- Best ubication in the folders
 
 ----------------------------------------------
-Thanks for checking out our Engine! Do you have any question? Text me at Jloor # 2491 or 『𝑴𝒂𝒏𝒖𝒙』#6183 or Chasetodie10#3164 on Discord!
-##### heh line 69
+Thanks for checking out our Engine! Do you have any question? Go to the [discussions](https://github.com/Manux123/FNF-Cool-Engine/discussions) tab!

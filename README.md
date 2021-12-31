@@ -3,7 +3,7 @@
 **FNF': Cool Engine, this is a modification of the original FNF' source (it can be found [here](https://github.com/ninjamuffin99) btw) the mod includes new Options and better Graphics!!**
 ----------------------------------------------
 
-![image](art/cool logo.png)
+![image](art/cool logo)
 ----------------------------------------------
 
 ## The Cool Engine Team Credits

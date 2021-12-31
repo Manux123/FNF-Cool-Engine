@@ -2,3 +2,4 @@ export/
 .vscode/
 assets/shared/images/skins_arrows/normals/[CRAP].png
 assets/shared/images/skins_arrows/normals/[CRAP].xml
+source/GJKeys.hx

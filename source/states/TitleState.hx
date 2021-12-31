@@ -4,6 +4,7 @@ package states;
 import Discord.DiscordClient;
 import sys.thread.Thread;
 #end
+import GameJolt;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxState;
@@ -297,6 +298,10 @@ class TitleState extends states.MusicBeatState
 
 				http.request();
 			});
+
+			GameJoltAPI.connect();
+			GameJoltAPI.authDaUser(FlxG.save.data.gjUser, FlxG.save.data.gjToken);
+			
 			// FlxG.sound.play(Paths.music('titleShoot'), 0.7);
 		}
             
@@ -386,6 +391,7 @@ class TitleState extends states.MusicBeatState
 			case 7:
 				// I can just put the original engine creator instead of every single fucking person that helps with it
 				//Suck my dick Juan
+				// LMFAO MANUX THAT WAS TO HARSH LOLLLLLLLLLLLLLLLLLLLLLLLLLLL
 				addMoreText('Manux');
 				addMoreText('Juanen100');
 				addMoreText('MrClogsworthYt');

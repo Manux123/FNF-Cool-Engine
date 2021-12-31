@@ -355,13 +355,13 @@ class PlayState extends states.MusicBeatState
 			case 'milf' | 'satin-panties' | 'high': //week 4
 				curStage = 'limo';
 
-			case 'cocoa' | 'eggnog': //week 5
+			case 'cocoa' | 'eggnog': //week 5 parents christmas
 				curStage = 'mall';
 
 			case 'winter-horrorland': //week 5 limon demon
 				curStage = 'mallEvil';
 
-			case 'senpai' | 'roses': //week 6
+			case 'senpai' | 'roses': //week 6 senpai
 				curStage = 'school';
 
 			case 'thorns': //week 6 spirit
@@ -641,11 +641,11 @@ class PlayState extends states.MusicBeatState
 		// healthBar
 		add(healthBar);
 
-		scoreTxt = new FlxText(healthBarBG.x /*+ healthBarBG.width / 2*/, healthBarBG.y + 50, 0, "", 32);
-		scoreTxt.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
-		scoreTxt.x = FlxG.width/1;
-		scoreTxt.y = FlxG.height/2;
-		scoreTxt.alpha = 1;
+		scoreTxt = new FlxText(45, healthBarBG.y + 50, 0, "", 32);
+		scoreTxt.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);
+        scoreTxt.color = FlxColor.WHITE;
+		scoreTxt.size = 22;
+		scoreTxt.y -= 350;
 		scoreTxt.scrollFactor.set();
 
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "FNF Cool Engine BETA - v" + Application.current.meta.get('version'), 12);
@@ -1716,10 +1716,8 @@ class PlayState extends states.MusicBeatState
 	var startedCountdown:Bool = false;
 	var canPause:Bool = true;
 
-	var floatShit:Float = 0;
 	override public function update(elapsed:Float)
 	{
-		floatShit +=0.1;
 		if(FlxG.keys.justPressed.CONTROL)
 			CPUvsCPUMode = false;
 		songPositionBar = Conductor.songPosition;
@@ -1742,17 +1740,15 @@ class PlayState extends states.MusicBeatState
 
 		super.update(elapsed);
 
-		if(dad.curCharacter == 'spirit')
-			dad.y += floatShit;
+		if(dad.curCharacter == 'spirit'){
+			dad.y += Mathf.sineByTime(elapsed);
+		}
 
 		if (FlxG.save.data.accuracyDisplay)
-		{
-			scoreTxt.text = 'Score: \n ${songScore}\n\n' + 'Misses: \n ${misses}\n\n' + 'Accuracy: \n ${Mathf.getPercentage(accuracy, 2)}\n\n';
-		}
+			scoreTxt.text = 'Score: \n ${songScore}\n\n' + 'Misses: \n ${misses}\n\n' + 'Accuracy: \n ${Mathf.getPercentage(accuracy, 2)}% \n\n';
 		else
-		{
 			scoreTxt.text = 'Score: \n ${songScore}\n' + 'Misses: \n ${misses}\n';
-		}
+
 		if (FlxG.keys.justPressed.ENTER && startedCountdown && canPause)
 		{
 			persistentUpdate = false;
@@ -2003,6 +1999,9 @@ class PlayState extends states.MusicBeatState
 							if(gf.canSing == true && !SONG.notes[Math.floor(curStep / 16)].bothSing){
 								dad.canSing = false;
 								dad.dance();
+								camPos.x -= 100;
+								camPos.y -= 250;
+								tweenCamIn();
 							}
 							else
 								dad.canSing = true;
@@ -2311,7 +2310,6 @@ class PlayState extends states.MusicBeatState
 
 					score = 350;
 					ss = false;
-					scoreTxt.alpha = 0.7;
 					boyfriend.stunned = false;
 					if (theFunne){
 						score = -2000;
@@ -2339,7 +2337,6 @@ class PlayState extends states.MusicBeatState
 					score = 350;
 					totalNotesHit += 0.05;
 					boyfriend.stunned = false;
-					scoreTxt.alpha = 0.85;
 					combo = 0;
 					if (theFunne){
 						score = -1000;
@@ -2365,7 +2362,6 @@ class PlayState extends states.MusicBeatState
 					score = 350;
 					totalNotesHit += 0.3;
 					score = 200;
-					scoreTxt.alpha = 1;
 					ss = false;
 					goods++;
 				case 'sick' | 'sick-soon' | 'sick-later':
@@ -2375,7 +2371,6 @@ class PlayState extends states.MusicBeatState
 						health += 0.085;
 					else
 						health += 0.1;
-					scoreTxt.alpha = 1;
 					totalNotesHit += 1;
 					score = 350;
 					if(FlxG.save.data.hitsounds){
@@ -2400,13 +2395,15 @@ class PlayState extends states.MusicBeatState
 			}
 	
 			rating.loadGraphic(Paths.image(pixelShitPart1 + daNote.noteRating + pixelShitPart2));
-			rating.screenCenter();
-			rating.y += 200;
+			//rating.screenCenter();
 			rating.x = coolText.x - 40;
-			rating.y -= 60;
+			rating.x -= 210;
+			rating.y += 50;
 			rating.acceleration.y = 550;
 			rating.velocity.y -= FlxG.random.int(140, 175);
 			rating.velocity.x -= FlxG.random.int(0, 10);
+			rating.scrollFactor.set();
+			rating.cameras = [camHUD];
 
 			var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(pixelShitPart1 + 'combo' + pixelShitPart2));
 			comboSpr.screenCenter();
@@ -2454,7 +2451,8 @@ class PlayState extends states.MusicBeatState
 				var numScore:FlxSprite = new FlxSprite().loadGraphic(Paths.image(pixelShitPart1 + 'num' + Std.int(i) + pixelShitPart2));
 				numScore.screenCenter();
 				numScore.x = coolText.x + (43 * daLoop) - 90;
-				numScore.y += 80 + 200;
+				numScore.scrollFactor.set();
+				numScore.cameras = [camHUD];
 	
 				if (!curStage.startsWith('school'))
 				{
@@ -2470,9 +2468,7 @@ class PlayState extends states.MusicBeatState
 				numScore.acceleration.y = FlxG.random.int(200, 300);
 				numScore.velocity.y -= FlxG.random.int(140, 160);
 				numScore.velocity.x = FlxG.random.float(-5, 5);
-	
-				if (combo >= 10 || combo == 0)
-					add(numScore);
+				add(numScore);
 	
 				FlxTween.tween(numScore, {alpha: 0}, 0.2, {
 					onComplete: function(tween:FlxTween)
@@ -2765,13 +2761,15 @@ class PlayState extends states.MusicBeatState
 
 			var rating:FlxSprite = new FlxSprite();
 			rating.loadGraphic(Paths.image('miss'));
-			rating.screenCenter();
-			rating.y += 200;
+			//rating.screenCenter();
 			rating.x = coolText.x - 40;
-			rating.y -= 60;
+			rating.x -= 180;
+			rating.y += 50;
 			rating.acceleration.y = 550;
 			rating.velocity.y -= FlxG.random.int(140, 175);
 			rating.velocity.x -= FlxG.random.int(0, 10);
+			rating.scrollFactor.set();
+			rating.cameras = [camHUD];
 			add(rating);
 
 			if (!curStage.startsWith('school'))
@@ -2977,19 +2975,7 @@ class PlayState extends states.MusicBeatState
 				combof.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
 				combof.cameras = [camHUD];
 				combof.scrollFactor.set();
-				add(combof);
-	
-				FlxTween.tween(combof, {alpha: 0}, 0.1, {
-					startDelay: Conductor.crochet * 0.001
-				});
-		
-				FlxTween.tween(combof, {alpha: 0}, 0.1, {
-					onComplete: function(tween:FlxTween)
-					{
-						combof.destroy();
-					},
-					startDelay: Conductor.crochet * 0.001
-				});	
+				//add(combof);
 			}
 		
 

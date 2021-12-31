@@ -39,4 +39,12 @@ class Mathf {
     public static function degrees2radiants(value:Float){
         return value * (Math.PI/180);
     }
+
+    static var sineShit:Float;
+    //just put this in on functions than are called per frame
+    //like override function update
+    public static function sineByTime(elapsed:Float, ?multi:Float = 1){
+        sineShit+=elapsed;
+        return Math.sin(Math.abs(sineShit * multi));
+    }
 }

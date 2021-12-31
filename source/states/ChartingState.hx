@@ -63,7 +63,7 @@ class ChartingState extends states.MusicBeatState
 	var amountSteps:Int = 0;
 	var bullshitUI:FlxGroup;
 	var bg:FlxSprite;
-        var gfDropDown:FlxUIDropDownMenu;
+    var gfDropDown:FlxUIDropDownMenu;
 
 	var highlight:FlxSprite;
 
@@ -131,7 +131,7 @@ class ChartingState extends states.MusicBeatState
 
 		add(leftIcon);
 		add(rightIcon);
-		add(middleIcon);
+		//add(middleIcon);
 
 		leftIcon.setPosition(0, -100);
 		rightIcon.setPosition(gridBG.width / 3, -100);
@@ -747,7 +747,9 @@ class ChartingState extends states.MusicBeatState
 			+ " / "
 			+ Std.string(FlxMath.roundDecimal(FlxG.sound.music.length / 1000, 2))
 			+ "\nSection: "
-			+ curSection;
+			+ curSection
+			+ "\nCurStep: " + curStep
+			+ "\nCurBeat: " + curBeat;
 		super.update(elapsed);
 	}
 

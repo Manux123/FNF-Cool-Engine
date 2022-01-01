@@ -299,8 +299,7 @@ class TitleState extends states.MusicBeatState
 				http.request();
 			});
 
-			GameJoltAPI.connect();
-			GameJoltAPI.authDaUser(FlxG.save.data.gjUser, FlxG.save.data.gjToken);
+			GameJoltAPI.getTrophy(154423);
 			
 			// FlxG.sound.play(Paths.music('titleShoot'), 0.7);
 		}

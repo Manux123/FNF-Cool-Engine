@@ -10,6 +10,7 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flash.display.BitmapData;
 import states.TitleState;
+import GameJolt;
 
 using StringTools;
 class CacheState extends MusicBeatState
@@ -51,6 +52,9 @@ class CacheState extends MusicBeatState
 
         toBeFinished = (Lambda.count(characters) + Lambda.count(objects) + Lambda.count(sounds));
 
+        GameJoltAPI.connect();
+        GameJoltAPI.authDaUser(FlxG.save.data.gjUser, FlxG.save.data.gjToken);
+
         var bg:FlxSprite = new FlxSprite().loadGraphic(BitmapData.fromFile(Paths.image('menu/menuBG')));
         add(bg);
 
@@ -90,6 +94,7 @@ class CacheState extends MusicBeatState
             ended = true;
         }
 	}
+
 
     function preload(){
 

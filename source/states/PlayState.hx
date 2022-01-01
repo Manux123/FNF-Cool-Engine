@@ -404,9 +404,7 @@ class PlayState extends states.MusicBeatState
 		#end
 
 		var gfVersion:String = 'gf';
-	
-		var gfCheck:String = 'gf';
-
+/*
 		if (SONG.gfVersion == null) {
 			switch(storyWeek)
 			{
@@ -416,14 +414,28 @@ class PlayState extends states.MusicBeatState
 			}
 		} else {gfCheck = SONG.gfVersion;}
 
-		//switch (gfCheck) {} 
-		if (gfVersion == null || gfVersion.length < 1)
-			switch (curStage){
+		switch (gfCheck) {}
+
+			customizable GF Type*/
+		switch (curStage){
 			case 'limo':
 				gfVersion = 'gf-car';
-			case 'mall | mallEvil':
+			case 'mall':
 				gfVersion = 'gf-christmas';
+			case 'mallEvil':
+				gf.visible = false;
 			case 'school' | 'schoolEvil':
+				gfVersion = 'gf-pixel';
+           	default:
+				gfVersion = 'gf';}
+		switch (SONG.song.toLowerCase()){
+			case 'satin-panties' | 'high' | 'milf':
+				gfVersion = 'gf-car';
+			case 'eggnog' | 'cocoa':
+				gfVersion = 'gf-christmas';
+			case 'winter-horrorland':
+				gf.visible = false;
+			case 'senpai' | 'roses' | 'thorns':
 				gfVersion = 'gf-pixel';
            	default:
 				gfVersion = 'gf';}
@@ -478,13 +490,10 @@ class PlayState extends states.MusicBeatState
 			case 'limo':
 		 		boyfriend.y -= 220;
 				boyfriend.x += 260;
-
 				resetFastCar();
-				if (!FlxG.save.data.staticstage)
-					{
-						add(fastCar);
-					}
-			
+
+				if (!FlxG.save.data.staticstage){
+					add(fastCar);}
 
 			case 'mall':
 				boyfriend.x += 200;
@@ -788,7 +797,7 @@ class PlayState extends states.MusicBeatState
 	function setCurrentStage(){
 		switch (curStage.toLowerCase())
 		{
-			case 'stage_week1': //Default
+			case 'stage_week1': //Dad Week 1 Stage
 			{
 				defaultCamZoom = 0.9;
 				var bg:FlxSprite = new FlxSprite(-600, -200).loadGraphic(Paths.image('backgrounds/week1/stageback'));
@@ -2284,6 +2293,7 @@ class PlayState extends states.MusicBeatState
 		#end
 	}
 
+	var splash:NoteSplash;
 	private function popUpScore(daNote:Note):Void
 		{
 			var noteDiff:Float = Math.abs(Conductor.songPosition - daNote.strumTime + 8);
@@ -2510,6 +2520,11 @@ class PlayState extends states.MusicBeatState
 			var strum = playerStrums.members[note.noteData];
 			if(player == 0)
 				strum = cpuStrums.members[note.noteData];
+				FlxTween.tween(splash, {alpha: 0}, 0.3, {
+				ease: FlxEase.elasticInOut, onComplete: function(twn:FlxTween)
+				{
+					remove(splash);
+				}});
 			if(strum != null) {
 				spawnNoteSplash(strum.x, strum.y, note.noteData, note);
 			}
@@ -2519,7 +2534,7 @@ class PlayState extends states.MusicBeatState
 	public function spawnNoteSplash(x:Float, y:Float, data:Int,n:Note) {
 		var skin:String = 'noteSplashes';
 
-		var splash:NoteSplash = grpNoteSplashes.recycle(NoteSplash);
+		splash = grpNoteSplashes.recycle(NoteSplash);
 		splash.setupNoteSplash(x, y, data);
 		grpNoteSplashes.add(splash);
 	}

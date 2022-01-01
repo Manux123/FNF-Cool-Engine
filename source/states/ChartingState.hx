@@ -155,7 +155,7 @@ class ChartingState extends states.MusicBeatState
 			_song = {
 				song: 'Test',
 				notes: [],
-				bpm: 150,
+				bpm: 150.0,
 				needsVoices: true,
 				player1: 'bf',
 				player2: 'dad',

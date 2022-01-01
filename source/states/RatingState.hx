@@ -18,6 +18,7 @@ class RatingState extends FlxSubState
     var bf:FlxSprite;
     override public function create()
     {
+        FlxG.mouse.visible = false;
         if(FlxG.save.data.FPSCap)
 			openfl.Lib.current.stage.frameRate = 120;
 		else

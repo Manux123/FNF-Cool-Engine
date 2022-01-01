@@ -343,8 +343,8 @@ class PlayState extends states.MusicBeatState
 
 		switch (SONG.song.toLowerCase())
 		{
-			case 'bopeebo' | 'fresh' | 'dadbattle' | 'test': //week 1 and secret song
-				curStage = 'stage_week1';
+			/*case 'bopeebo' | 'fresh' | 'dadbattle' | 'test': //week 1 and secret song
+				curStage = 'stage_week1';*/
 
 			case 'spookeez' | 'monster' | 'south': //week 2
 				curStage = "spooky";

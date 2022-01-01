@@ -61,13 +61,13 @@ class RatingState extends FlxSubState
         daRank.scale.y = 1.5;
         daRank.antialiasing = true;
         add(daRank);
-
+/*
         var daFC:FlxSprite = new FlxSprite(daRank.x,daRank.y).loadGraphic(BitmapData.fromFile(Paths.image('ratings/FC')));
         daFC.scale.x = 1.5; //I tried other method but this is the one it worked
         daFC.scale.y = 1.5;
         daFC.antialiasing = true;
         if(PlayState.misses == 0)
-            add(daFC);
+            add(daFC);*/
 
         var daLogo:FlxSprite = new FlxSprite(600, 200).loadGraphic(Paths.image('titlestate/daLogo'));
         daLogo.scale.x = 0.5;

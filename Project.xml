@@ -130,7 +130,7 @@
 	<haxelib name="linc_luajit" if="windows"/>
 	<haxelib name="tentools" />
     <haxelib name="systools" />
-    <ndll name="systools" haxelib="systools" />
+    <!-- <ndll name="systools" haxelib="systools" /> -->
 	<!-- <haxelib name="hxcpp-debug-server" if="desktop"/> -->
 
 	<!-- <haxelib name="markdown" /> -->

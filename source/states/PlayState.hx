@@ -2520,11 +2520,6 @@ class PlayState extends states.MusicBeatState
 			var strum = playerStrums.members[note.noteData];
 			if(player == 0)
 				strum = cpuStrums.members[note.noteData];
-				FlxTween.tween(splash, {alpha: 0}, 0.3, {
-				ease: FlxEase.elasticInOut, onComplete: function(twn:FlxTween)
-				{
-					remove(splash);
-				}});
 			if(strum != null) {
 				spawnNoteSplash(strum.x, strum.y, note.noteData, note);
 			}

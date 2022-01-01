@@ -78,7 +78,7 @@ class RatingState extends FlxSubState
 
         FlxTween.tween(bg, {alpha: 0.5},1.1+FlxG.random.float(-0.4,0.4));
         FlxTween.tween(daRank, {y:150},1.1+FlxG.random.float(-0.4,0.4),{ease: FlxEase.expoInOut});
-        FlxTween.tween(daFC, {y:150},1.1+FlxG.random.float(-0.4,0.4),{ease: FlxEase.expoInOut});
+        //FlxTween.tween(daFC, {y:150},1.1+FlxG.random.float(-0.4,0.4),{ease: FlxEase.expoInOut});
         FlxTween.tween(bf, {y:200},1.1+FlxG.random.float(-0.4,0.4),{ease: FlxEase.expoInOut});
     } 
 

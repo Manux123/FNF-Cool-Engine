@@ -1079,8 +1079,10 @@ class PlayState extends states.MusicBeatState
 			}
 			case 'schoolEvil': //eee u a eueue eee uu aa e ue ue
 			{
-				//var waveEffectBG = new FlxWaveEffect(FlxWaveMode.ALL, 2, -1, 3, 2);
-				//var waveEffectFG = new FlxWaveEffect(FlxWaveMode.ALL, 2, -1, 5, 2);
+				curStage = 'schoolEvil';
+
+				var waveEffectBG = new FlxWaveEffect(FlxWaveMode.ALL, 2, -1, 3, 2);
+				var waveEffectFG = new FlxWaveEffect(FlxWaveMode.ALL, 2, -1, 5, 2);
 
 				var bg:FlxSprite = new FlxSprite(400, 200);
 				bg.frames = Paths.getSparrowAtlas('weeb/animatedEvilSchool');

@@ -4,7 +4,6 @@ import openfl.display.FPS;
 #if desktop
 import Discord.DiscordClient;
 #end
-import GameJolt;
 import controls.KeyBindMenu;
 import controls.CustomControlsState;
 import Controls.KeyboardScheme;
@@ -46,7 +45,6 @@ class OptionsMenuState extends MusicBeatState
 			("\n" + 'Optimization') +
 			("\n" + 'Note Skin') +
 			("\n" + 'Controls') +
-			("\n" + 'GJ Login') +
 			("\n" + 'Exit'));
 		
 		//trace(controlsStrings);
@@ -114,10 +112,6 @@ class OptionsMenuState extends MusicBeatState
 						FlxG.state.openSubState(new KeyBindMenu());
 						#end
 					case 5:
-						#if desktop
-						FlxG.switchState(new GameJoltLogin());
-						#end	
-					case 6:
 						FlxG.switchState(new MainMenuState());
 						OptionsData.initSave();
 				}

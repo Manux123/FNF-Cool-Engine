@@ -4,7 +4,6 @@ package states;
 import Discord.DiscordClient;
 import sys.thread.Thread;
 #end
-import GameJolt;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxState;
@@ -298,9 +297,6 @@ class TitleState extends states.MusicBeatState
 
 				http.request();
 			});
-
-			GameJoltAPI.getTrophy(154423);
-			
 			// FlxG.sound.play(Paths.music('titleShoot'), 0.7);
 		}
             

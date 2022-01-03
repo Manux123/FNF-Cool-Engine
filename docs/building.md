@@ -5,8 +5,6 @@ Install haxelib in the engine:
 * haxelib install flixel-tools
 * haxelib install flixel-ui
 * haxelib install hscript
-* haxelib git tentools https://github.com/TentaRJ/tentools
-* haxelib install systools
 * haxelib install flixel-addons
 * haxelib install actuate
 * haxelib run lime setup

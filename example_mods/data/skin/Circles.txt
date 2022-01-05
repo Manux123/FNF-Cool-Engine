@@ -1,0 +1,12 @@
+greenScroll:green alone
+redScroll:red alone
+blueScroll:blue alone
+purpleScroll:purple alone
+purpleholdend:purple tail
+greenholdend:green tail
+redholdend:red tail
+blueholdend:blue tail
+purplehold:purple hold
+greenhold:green hold
+redhold:red hold
+bluehold:blue hold

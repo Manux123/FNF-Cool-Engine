@@ -109,6 +109,7 @@ class PlayState extends states.MusicBeatState
 	#end
 
 	private var luaArray:Array<FunkinLua> = [];
+	private var modsArray:Array<ModsState> = [];
 
 	public var vocals:FlxSound;
 
@@ -372,8 +373,8 @@ class PlayState extends states.MusicBeatState
 		}
 
 		setCurrentStage();
-
-		#if (MODS_ALLOWED && LUA_ALLOWED)
+/*
+		#if (LUA_ALLOWED)
 		var doPush:Bool = false;
 		var luaFile2:String = 'data/songs/' + Paths.formatToSongPath(SONG.song) + '/script.lua';
 		if(FileSystem.exists(Paths.modFolders(luaFile2))) {
@@ -402,6 +403,37 @@ class PlayState extends states.MusicBeatState
 		if(doPush) 
 			luaArray.push(new FunkinLua(luaFile));
 		#end
+
+		#if (MOD_ALL && LUA_ALLOWED)
+		var doPush:Bool = false;
+		var luaFile2:String = 'data/songs/' + Paths.formatToSongPath(SONG.song) + '/script.lua';
+		if(FileSystem.exists(ModsState.getPreloadMod(luaFile2))) {
+			luaFile2 = ModsState.getPreloadMod(luaFile2);
+			doPush = true;
+		} else {
+			luaFile2 = Paths.getPreloadPath(luaFile2);
+			if(FileSystem.exists(luaFile2)) {
+				doPush = true;
+			}
+		}
+
+		var luaFile:String = 'data/stages/' + curStage + '.lua';
+		if(FileSystem.exists(ModsState.getPreloadMod(luaFile))) {
+			luaFile = ModsState.getPreloadMod(luaFile);
+			doPush = true;
+		} 
+		else 
+		{
+			luaFile = Paths.getPreloadPath(luaFile);
+			if(FileSystem.exists(luaFile)) {
+				doPush = true;
+			}
+		}
+
+		if(doPush) 
+			luaArray.push(new FunkinLua(luaFile));
+		#end*/
+
 
 		var gfVersion:String = 'gf';
 /*
@@ -2772,7 +2804,7 @@ class PlayState extends states.MusicBeatState
 			coolText.x = FlxG.width * 0.55;
 
 			var rating:FlxSprite = new FlxSprite();
-			rating.loadGraphic(Paths.image('miss'));
+			ModsState.modPaths('miss');
 			//rating.screenCenter();
 			rating.x = coolText.x - 40;
 			rating.x -= 180;

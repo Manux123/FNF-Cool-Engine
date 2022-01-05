@@ -1,0 +1,6 @@
+idle, Dad idle dance, false
+singUP, Dad Sing Note UP, false
+singRIGHT, Dad Sing Note RIGHT, false
+singDOWN, Dad Sing Note DOWN, false
+singLEFT, Dad Sing Note LEFT, false
+texture, characters/week1/DADDY_DEAREST, false

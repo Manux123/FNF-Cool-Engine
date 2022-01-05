@@ -10,7 +10,6 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flash.display.BitmapData;
 import states.TitleState;
-import GameJolt;
 
 using StringTools;
 class CacheState extends MusicBeatState

@@ -48,7 +48,9 @@
 	<assets path="assets/preload" rename="assets" exclude="*.ogg" if="web"/>
 	<assets path="assets/preload" rename="assets" exclude="*.mp3" unless="web"/>
 	
-	<!-- <define name="PRELOAD_ALL" /> -->
+	<define name="MOD_ALL" if="desktop"/>
+	
+	<!-- <define name="PRELOAD_ALL" /> <define name="LUA_ALLOWED" if="desktop"/>-->
 	<define name="PRELOAD_ALL" unless="web" />
 	<define name="NO_PRELOAD_ALL" unless="PRELOAD_ALL"/>
 	
@@ -75,6 +77,8 @@
 		<library name="week5"    preload="false" />
 		<library name="week6"    preload="false" />
 	</section>
+
+	<assets if="MOD_ALL" rename="mods" path="example_mods" embed="false"/>
 	
 	<assets path="assets/songs"    library="songs"    exclude="*.ogg" if="web"/>
 	<assets path="assets/songs"    library="songs"    exclude="*.mp3" unless="web"/>

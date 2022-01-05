@@ -1,0 +1,12 @@
+greenScroll:arrowUP
+redScroll:arrowRIGHT
+blueScroll:arrowDOWN
+purpleScroll:arrowLEFT
+purpleholdend:left press
+greenholdend:up press
+redholdend:right press
+blueholdend:down press
+purplehold:purple hold piece
+greenhold:green hold piece
+redhold:red hold piece
+bluehold:blue hold piece

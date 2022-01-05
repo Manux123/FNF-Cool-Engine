@@ -1,0 +1,4 @@
+characters/BOYFRIEND
+characters/BF_dead
+characters/GF_assets
+characters/week1/DADDY_DEAREST

@@ -36,6 +36,11 @@ class StoryMenuState extends states.MusicBeatState
 		['Senpai', 'Roses', 'Thorns']
 	];
 	var curDifficulty:Int = 1;
+	private var difficultyMap:Map<Int,String> = [
+		0 => "-easy",
+		1 => "",
+		2 => "-hard"
+	];
 
 	public static var weekUnlocked:Array<Bool> = [true, true, true, true, true, true, true];
 
@@ -312,19 +317,9 @@ class StoryMenuState extends states.MusicBeatState
 			PlayState.isStoryMode = true;
 			selectedWeek = true;
 
-			var diffic = "";
-
-			switch (curDifficulty)
-			{
-				case 0:
-					diffic = '-easy';
-				case 2:
-					diffic = '-hard';
-			}
-
 			PlayState.storyDifficulty = curDifficulty;
 
-			PlayState.SONG = Song.loadFromJson(PlayState.storyPlaylist[0].toLowerCase() + diffic, PlayState.storyPlaylist[0].toLowerCase());
+			PlayState.SONG = Song.loadFromJson(PlayState.storyPlaylist[0].toLowerCase() + difficultyMap[curDifficulty], PlayState.storyPlaylist[0].toLowerCase());
 			PlayState.storyWeek = curWeek;
 			PlayState.campaignScore = 0;
 			if(curWeek == 0)

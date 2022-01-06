@@ -12,6 +12,7 @@ import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.text.FlxText;
 import flixel.tweens.FlxEase;
+import flixel.util.FlxTimer;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 import lime.app.Application;
@@ -101,6 +102,14 @@ class MainMenuState extends states.MusicBeatState
 		versionShit2.y -= 20;
 		add(versionShit2);
 
+		var mods:FlxText = new FlxText(5, FlxG.height - 19, 0, 'Open the Menu Mods with the number six', 12);
+		mods.scrollFactor.set();
+		mods.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		mods.y += 65;
+		add(mods);
+		new FlxTimer().start(1, function (tmrr:FlxTimer){
+		FlxTween.tween(mods, {alpha: 0}, 1, {type:PINGPONG});});
+
 		// NG.core.calls.event.logEvent('swag').send();
 
 		changeItem();
@@ -122,6 +131,11 @@ class MainMenuState extends states.MusicBeatState
 			FlxG.sound.music.volume += 0.5 * FlxG.elapsed;
 		}
 		#end
+
+		if (FlxG.keys.pressed.SIX) {
+			FlxG.switchState(new ModsState());
+			FlxG.camera.flash(FlxColor.WHITE);
+		}
 
 		if (!selectedSomethin)
 		{

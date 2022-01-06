@@ -1,21 +1,114 @@
 package states;
 
+#if desktop
+import Discord.DiscordClient;
+#end
+import flixel.text.FlxText;
+import flixel.FlxSprite;
+import flixel.tweens.FlxTween;
+import flixel.util.FlxColor;
+import states.MusicBeatState;
 import flixel.FlxG;
 import flixel.graphics.frames.FlxAtlasFrames;
 import openfl.utils.AssetType;
 import openfl.utils.Assets as OpenFlAssets;
 import openfl.display.BitmapData as Bitmap;
+import flixel.input.keyboard.FlxKey;
+import flixel.util.FlxTimer;
 import lime.utils.Assets;
 #if sys
 import sys.FileSystem;
 #end
 
-class ModsState
+class ModsState extends states.MusicBeatState
 {
+	var doPush:Bool = false;
 	inline public static var SOUND_EXT = #if web "mp3" #else "ogg" #end;
 
 	static var currentLevel:String;
 	public static var modsArray:Array<ModsState> = [];
+	var exitState:FlxText;
+	var warning:FlxText;
+
+	override function create(){
+		#if desktop
+		DiscordClient.changePresence("In the Menu Mods", null);
+		#end
+
+		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGBlue')));
+		bg.scrollFactor.x = 0;
+		bg.scrollFactor.y = 0.18;
+		bg.screenCenter();
+		bg.antialiasing = true;
+		add(bg);
+
+		var	black:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
+		black.screenCenter(X);
+		black.alpha = 0.7;
+		add(black);
+
+		exitState = new FlxText(0, 0, 0, "ESC to exit", 12);
+		exitState.size = 28;
+		exitState.y += 35;
+		exitState.scrollFactor.set();
+		exitState.screenCenter(X);
+		exitState.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		add(exitState);
+
+		super.create();
+	}
+
+	override function update(elapsed:Float){
+		#if MOD_ALL
+		var nameSongs:String = '';
+		var folderModsOn:String = 'data/songs/' + PlayState.SONG.song.toLowerCase() + '/' + nameSongs + '.json';
+		modPaths(folderModsOn);
+
+		if(!doPush) {
+			warning = new FlxText(0, 0, 0, "NO MODS IN THE FOLDER example_mods", 12);
+			warning.size = 36;
+			warning.scrollFactor.set();
+			warning.screenCenter(X);
+			warning.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			add(warning);
+			new FlxTimer().start(1, function (tmrr:FlxTimer){
+			FlxTween.tween(warning, {alpha: 0}, 1, {type:PINGPONG});});
+		} else {
+			warning.kill(); }
+		#end
+
+		if(controls.BACK) {
+			FlxG.switchState(new MainMenuState());
+			FlxG.camera.flash(FlxColor.WHITE); }
+		
+		super.update(elapsed);
+	}
+
+	public static function modPaths(name:String) {
+		#if MOD_ALL
+			var doPush = false;
+			var path:String = name;
+			if(FileSystem.exists(ModsState.image(path))) {
+				path = ModsState.getPreloadMod(path);
+				doPush = true;
+			} else {
+				path = Paths.image(path);
+				if(FileSystem.exists(path)) {
+					doPush = false;
+				}
+			}
+			/*
+			if(doPush) 
+				modsArray.push(new states.ModsState(path));*/
+		#end
+	}
+
+	function exit(){
+		if (controls.BACK) {
+			FlxG.switchState(new MainMenuState());
+			FlxG.camera.flash(FlxColor.WHITE);
+		}
+	}
 
 	static public function setCurrentLevel(name:String)
 	{
@@ -140,24 +233,5 @@ class ModsState
 	inline static public function getPackerAtlas(key:String, ?library:String)
 	{
 		return FlxAtlasFrames.fromSpriteSheetPacker(image(key, library), file('images/$key.txt', library));
-	}
-
-	static public function modPaths(name:String) {
-		#if (MOD_ALL)
-			var path:String = name;
-			var doPush:Bool = false;
-			if(FileSystem.exists(ModsState.image(path))) {
-				path = ModsState.getPreloadMod(path);
-				doPush = true;
-			} else {
-				path = Paths.image(path);
-				if(FileSystem.exists(path)) {
-					doPush = false;
-				}
-			}
-			/*
-			if(doPush) 
-				modsArray.push(new states.ModsState(path));*/
-		#end
 	}
 }

@@ -25,7 +25,7 @@ class ModsState extends states.MusicBeatState
 	var doPush:Bool = false;
 	inline public static var SOUND_EXT = #if web "mp3" #else "ogg" #end;
 
-	static var currentLevel:String;
+	static var currentLevel:String = Paths.currentLevel;
 	public static var modsArray:Array<ModsState> = [];
 	var exitState:FlxText;
 	var warning:FlxText;
@@ -103,32 +103,21 @@ class ModsState extends states.MusicBeatState
 		#end
 	}
 
-	function exit(){
-		if (controls.BACK) {
-			FlxG.switchState(new MainMenuState());
-			FlxG.camera.flash(FlxColor.WHITE);
-		}
-	}
-
 	static public function setCurrentLevel(name:String)
 	{
 		currentLevel = name.toLowerCase();
 	}
 
-	static function getMod(file:String, type:AssetType, library:Null<String>)
+	static function getPath(file:String, type:AssetType, ?library:String = null)
 	{
 		if (library != null)
 			return getModLibPath(file, library);
 
 		if (currentLevel != null)
 		{
-			var levelPath = getLibraryMod(file, currentLevel);
-			if (OpenFlAssets.exists(levelPath, type))
-				return levelPath;
-/*
-			levelPath = getLibraryMod(file, "shared");
-			if (OpenFlAssets.exists(levelPath, type))
-				return levelPath;*/
+			var path = getLibraryMod(file, currentLevel);
+			if (OpenFlAssets.exists(path, type))
+				return path;
 		}
 
 		return getPreloadMod(file);
@@ -151,27 +140,27 @@ class ModsState extends states.MusicBeatState
 
 	inline static public function file(file:String, type:AssetType = TEXT, ?library:String)
 	{
-		return getMod(file, type, library);
+		return getPath(file, type, library);
 	}
 
 	inline static public function txt(key:String, ?library:String)
 	{
-		return getMod('data/$key.txt', TEXT, library);
+		return getPath('data/$key.txt', TEXT, library);
 	}
 
 	inline static public function xml(key:String, ?library:String)
 	{
-		return getMod('data/$key.xml', TEXT, library);
+		return getPath('data/$key.xml', TEXT, library);
 	}
 
 	inline static public function json(key:String, ?library:String)
 	{
-		return getMod('data/$key.json', TEXT, library);
+		return getPath('data/$key.json', TEXT, library);
 	}
 
 	static public function sound(key:String, ?library:String)
 	{
-		return getMod('sounds/$key.$SOUND_EXT', SOUND, library);
+		return getPath('sounds/$key.$SOUND_EXT', SOUND, library);
 	}
 
 	inline static public function soundRandom(key:String, min:Int, max:Int, ?library:String)
@@ -182,13 +171,13 @@ class ModsState extends states.MusicBeatState
 	inline static public function video(key:String, ?library:String)
 	{
 		trace('assets/videos/$key.mp4');
-		return getMod('videos/$key.mp4', BINARY, library);
+		return getPath('videos/$key.mp4', BINARY, library);
 	}
 		
 
 	inline static public function music(key:String, ?library:String)
 	{
-		return getMod('music/$key.$SOUND_EXT', MUSIC, library);
+		return getPath('music/$key.$SOUND_EXT', MUSIC, library);
 	}
 
 	inline static public function voices(song:String)
@@ -199,7 +188,7 @@ class ModsState extends states.MusicBeatState
 			trace('Done Loading VOICES!');
 			return 'songs:example_mods/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';}
 		else {
-			trace('ERROR Loading INST :c');
+			('ERROR Loading INST :c');
 			return 'defaultsong:assets/defaultsong/Voices.$SOUND_EXT';}
 	}
 
@@ -217,7 +206,7 @@ class ModsState extends states.MusicBeatState
 
 	inline static public function image(key:String, ?library:String)
 	{
-		return getMod('images/$key.png', IMAGE, library);
+		return getPath('images/$key.png', IMAGE, library);
 	}
 
 	inline static public function font(key:String)

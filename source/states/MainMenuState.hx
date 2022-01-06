@@ -17,16 +17,22 @@ import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 import lime.app.Application;
 import openfl.display.BitmapData as Bitmap;
+import states.MusicBeatState;
 
 using StringTools;
 
-class MainMenuState extends states.MusicBeatState
+class MainMenuState extends MusicBeatState
 {
 	var curSelected:Int = 0;
 
 	var menuItems:FlxTypedGroup<FlxSprite>;
 
 	var optionShit:Array<String> = ['story-mode', 'freeplay'#if !switch ,'options', 'donate'#end];
+	var optionMap:Map<String,MusicBeatState> = [
+		'story-mode' => new StoryMenuState(),
+		'freeplay' => new FreeplayState(),
+		'options' => new OptionsMenuState()
+	];
 
 	var canSnap:Array<Float> = [];
 	var camFollow:FlxObject;
@@ -204,16 +210,7 @@ class MainMenuState extends states.MusicBeatState
 										FlxFlicker.flicker(spr, 1, 0.06, false, false, function(flick:FlxFlicker)
 										{
 											var daChoice:String = optionShit[curSelected];
-			
-											switch (daChoice)
-											{
-												case 'story-mode':
-													FlxG.switchState(new StoryMenuState());
-												case 'freeplay':
-													FlxG.switchState(new FreeplayState());
-												case 'options':
-													FlxG.switchState(new OptionsMenuState());
-											}
+											FlxG.switchState(optionMap[daChoice]);
 										});
 									}
 								});

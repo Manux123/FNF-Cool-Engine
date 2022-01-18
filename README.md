@@ -14,6 +14,10 @@
 - [Overcharged Dev](https://www.youtube.com/channel/UCkcscIIXyUsfj2DsnNDWQbg/) - Programmer Friday Night Funkin: Cool Engine
 - [FairyBoy](https://twitter.com/JulianSamwise?s=09) and [Zero Artist](https://twitter.com/zero_artist02) - Artists Friday Night Funkin: Cool Engine
 
+## Funkin android credits
+- [LuckyDog](https://github.com/luckydog7)
+- [Zack](https://github.com/zacksgamerz)
+
 ## FNF
 - [Kawaisprite](https://twitter.com/kawaisprite) - Musician of fnf
 - [ninjamuffin99](https://twitter.com/ninja_muffin99) - Programmer of fnf

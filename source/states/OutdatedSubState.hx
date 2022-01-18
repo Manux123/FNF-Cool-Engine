@@ -15,6 +15,8 @@ class OutdatedSubState extends states.MusicBeatState
 	
         public static var daChangelogNeeded:String = "If i knew the lastests features i'll say it, i promise";
 	
+        var leDate = Date.now();
+	
 	#if sys       
 		// i wanna make things spooky so ill make it so if the date is october 31 it will show your computer name
 		function getComputerName():String {
@@ -34,8 +36,7 @@ class OutdatedSubState extends states.MusicBeatState
 		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		add(bg);
 		var ver = Application.current.meta.get('version');
-		#if sys 
-	        var leDate = Date.now();
+		#if sys
             	#if (leDate.getMonth() == 10 && leDate.getDay() >= 31)
 		var txtHalloween:FlxText = new FlxText(0, 0, FlxG.width,
 			"HEY!"  + getComputerName "Your running an outdated version of the Cool Engine!\nYour current version is "

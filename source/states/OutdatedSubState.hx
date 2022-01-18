@@ -34,7 +34,9 @@ class OutdatedSubState extends states.MusicBeatState
 		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		add(bg);
 		var ver = Application.current.meta.get('version');
-		/*#if sys
+		#if sys 
+	        var leDate = Date.now();
+            	#if (leDate.getMonth() == 10 && leDate.getDay() >= 31)
 		var txtHalloween:FlxText = new FlxText(0, 0, FlxG.width,
 			"HEY!"  + getComputerName "Your running an outdated version of the Cool Engine!\nYour current version is "
 			+ ver
@@ -48,7 +50,7 @@ class OutdatedSubState extends states.MusicBeatState
 		txt.screenCenter();
 		add(txtHalloween);
 	}
-	#else*/
+	#else
 	        var txt:FlxText = new FlxText(0, 0, FlxG.width,
 			"HEY! Your running an outdated version of the Cool Engine!\nYour current version is "
 			+ ver

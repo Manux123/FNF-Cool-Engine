@@ -78,7 +78,7 @@ class NoteSkinState extends states.MusicBeatState
 
 	override function update(elapsed:Float)
 	{
-		var noteSkinTex = CoolUtil.coolTextFile(Paths.txt('noteName'));
+		//var noteSkinTex = CoolUtil.coolTextFile(Paths.txt('noteName'));
 		super.update(elapsed);
 
 		previewSkins.frames = NoteSkinDetector.noteSkinNormal();

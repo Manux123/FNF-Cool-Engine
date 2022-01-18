@@ -5,7 +5,7 @@ import llua.State;
 import llua.Convert;
 #end
 
- //CREDITS PSYCH ENGINE DEVELOPERS
+//CREDITS PSYCH ENGINE DEVELOPERS
 
 import flixel.FlxG;
 import flixel.tweens.FlxTween;

@@ -104,7 +104,7 @@ class OptionsMenuState extends MusicBeatState
 					case 2:
 						FlxG.switchState(new OptimizationOptions());
 					case 3:
-						FlxG.switchState(new NoteSkinState());
+						LoadingState.loadAndSwitchState(new NoteSkinState());
 					case 4:
 						#if mobileC
 						FlxG.switchState(new CustomControlsState());

@@ -345,8 +345,8 @@ class TitleState extends states.MusicBeatState
 		}
 	}
 
-	var randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for"];
-	var randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D"];
+	var randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for", "YOU WHAT", "We shouldn't be"];
+	var randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "*dances epicly*", "hardcoding this lmao"];
 	var random:Int;
 
 	override function beatHit()
@@ -387,6 +387,7 @@ class TitleState extends states.MusicBeatState
 				// I can just put the original engine creator instead of every single fucking person that helps with it
 				//Suck my dick Juan
 				// LMFAO MANUX THAT WAS TO HARSH LOLLLLLLLLLLLLLLLLLLLLLLLLLLL
+				//Yea thx OverchargedDev you are for saying that the first time I came back to the Engine
 				addMoreText('Manux');
 				addMoreText('Juanen100');
 				addMoreText('MrClogsworthYt');

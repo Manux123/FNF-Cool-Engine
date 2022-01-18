@@ -61,7 +61,7 @@ class ModsState extends states.MusicBeatState
 	override function update(elapsed:Float){
 		#if MOD_ALL
 		var nameSongs:String = '';
-		var folderModsOn:String = 'data/songs/' + PlayState.SONG.song.toLowerCase() + '/' + nameSongs + '.json';
+		var folderModsOn:String = 'mods/data/songs/' + PlayState.SONG.song.toLowerCase() + '/' + nameSongs + '.json'; //its searches for the preload folder, not the mods folder
 		modPaths(folderModsOn);
 
 		if(!doPush) {

@@ -54,7 +54,7 @@ class CacheState extends MusicBeatState
         var bg:FlxSprite = new FlxSprite().loadGraphic(BitmapData.fromFile(Paths.image('menu/menuBG')));
         add(bg);
 
-        loading = new FlxText(0, 680);
+        loading = new FlxText(0, 680, 'Loading...');
         loading.screenCenter(X);
         loading.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, RIGHT, OUTLINE,FlxColor.BLACK);
         loading.size = 20;

@@ -37,7 +37,7 @@ class OutdatedSubState extends states.MusicBeatState
 		add(bg);
 		var ver = Application.current.meta.get('version');
 		#if sys
-            	#if (leDate.getMonth() == 10 && leDate.getDay() >= 31)
+            	if (leDate.getMonth() == 10 && leDate.getDay() >= 31)
 		var txtHalloween:FlxText = new FlxText(0, 0, FlxG.width,
 			"HEY!"  + getComputerName "Your running an outdated version of the Cool Engine!\nYour current version is "
 			+ ver
@@ -65,7 +65,7 @@ class OutdatedSubState extends states.MusicBeatState
 		txt.screenCenter();
 		add(txt);
 	}
-           //#end
+           #end
 
 	override function update(elapsed:Float)
 	{

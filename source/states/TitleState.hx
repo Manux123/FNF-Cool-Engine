@@ -92,7 +92,10 @@ class TitleState extends states.MusicBeatState
 		#else
 		new FlxTimer().start(1, function(tmr:FlxTimer)
 		{
-			startIntro();
+			if(!FirstTimeState.firstTime)
+				FlxG.switchState(new FirstTimeState());
+			else
+				startIntro();
 		});
 		#end
 

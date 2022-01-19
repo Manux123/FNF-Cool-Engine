@@ -398,6 +398,8 @@ class MenuGameOptions extends MusicBeatState
 					versionShit.text = 'Full Combo Mode: You need to do full combo or else you die';
 				case 1:
 					versionShit.text = 'Only Sick Mode: You need to do sicks, not goods, or shits';
+				case 2:
+					versionShit.text = 'Hell Mode: Still in beta (i think)';
 			}
 
 			if (controls.RIGHT_R)

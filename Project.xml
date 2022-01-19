@@ -2,7 +2,7 @@
 <project>
 	<!-- _________________________ Application Settings _________________________ -->
 
-	<app title="Friday Night Funkin': Cool Engine" file="Funkin" packageName="com.coolTeam.coolEngine" package="com.coolTeam.coolEngine" main="Main" version="0.3.5B" company="Cool Engine Team" />
+	<app title="Friday Night Funkin': Cool Engine" file="Funkin" packageName="com.coolTeam.coolEngine" package="com.coolTeam.coolEngine" main="Main" version="0.12.5B" company="Cool Engine Team" />
 
 	<!--Switch Export with Unique ApplicationID and Icon-->
 	<set name="APP_ID" value="0x0100f6c013bbc000" />

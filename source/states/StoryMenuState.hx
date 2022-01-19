@@ -400,7 +400,7 @@ class StoryMenuState extends states.MusicBeatState
 
 		var bullShit:Int = 0;
 
-		/*for (item in grpWeekText.members)
+		for (item in grpWeekText.members) //If you comment this, it will look REALLY weird
 		{
 			item.targetY = bullShit - curWeek;
 			if (item.targetY == Std.int(0) && weekUnlocked[curWeek])
@@ -408,7 +408,7 @@ class StoryMenuState extends states.MusicBeatState
 			else
 				item.alpha = 0.6;
 			bullShit++;
-		}*/
+		}
 
 		FlxG.sound.play(Paths.sound('scrollMenu'));
 

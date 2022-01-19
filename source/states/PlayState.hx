@@ -1269,7 +1269,6 @@ class PlayState extends states.MusicBeatState
 		for (i in 0...cpuStrums.length) {
 			setOnLuas('defaultOpponentStrumX' + i, cpuStrums.members[i].x);
 			setOnLuas('defaultOpponentStrumY' + i, cpuStrums.members[i].y);
-			if(FlxG.save.data.middlescroll) cpuStrums.members[i].visible = false;
 		}
 
 		generateStaticArrows(0);
@@ -1560,6 +1559,9 @@ class PlayState extends states.MusicBeatState
 			// FlxG.log.add(i);
 			var babyArrow:FlxSprite = new FlxSprite(0, strumLine.y);
 
+			if(FlxG.save.data.middlescroll && player==0)
+				babyArrow.visible=false;
+
 			switch (curStage)
 			{
 				case 'school' | 'schoolEvil':
@@ -1656,20 +1658,18 @@ class PlayState extends states.MusicBeatState
 			{
 				case 0:
 					cpuStrums.add(babyArrow);
-					if(FlxG.save.data.middlescroll){
-						cpuStrums.members[i].visible = false;
-					}
 				case 1:
 					playerStrums.add(babyArrow);
-					if(FlxG.save.data.middlescroll){
-					//	playerStrums.add(babyArrow); U are literally adding the strums twice, thats weird
-						playerStrums.members[i].x -= 250;
-					}
 			}
 
 			babyArrow.animation.play('static');
-			babyArrow.x += 50;
-			babyArrow.x += ((FlxG.width / 2) * player);
+			if(!FlxG.save.data.middlescroll){
+				babyArrow.x += 50;
+				babyArrow.x += ((FlxG.width / 2) * player);
+			}
+
+			if (FlxG.save.data.middlescroll)
+				babyArrow.x += 440;
 
 			cpuStrums.forEach(function(spr:FlxSprite)
 			{					
@@ -2024,6 +2024,10 @@ class PlayState extends states.MusicBeatState
 					{
 						daNote.visible = true;
 						daNote.active = true;
+
+						if((daNote.mustPress || !daNote.mustPress && !FlxG.save.data.middlescroll)){
+							daNote.visible = true;
+						}
 					}
 	
 					if (!daNote.mustPress && daNote.wasGoodHit)

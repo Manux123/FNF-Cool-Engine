@@ -67,7 +67,8 @@ class Ranking {
         }
 
         //piñera chupame el pico, grande boric
-        trace('${noteDiff} && ${customTimeScale}');
+        //trace('${noteDiff} && ${customTimeScale}'); L A G
+        //no entendi ni verga pero vale
 
         return rating;
     }

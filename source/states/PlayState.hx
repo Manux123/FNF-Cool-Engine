@@ -2238,27 +2238,28 @@ class PlayState extends states.MusicBeatState
 				{
 					Highscore.saveWeekScore(storyWeek, campaignScore, storyDifficulty);
 				}
-				/* remove the / * if you want the progressive lockable weeks again
-				switch(StoryMenuState.curWeek) 
+				if(FlxG.save.data.weekLocked)
 				{
-					case 1:
-						StoryMenuState.weekUnlocked[2] = true;
-						trace("week 2 unlocked BOIIIIIIII");
-					case 2:
-						StoryMenuState.weekUnlocked[3] = true;
-						trace("week 3 unlocked BOIIIIIIII");
-					case 3:
-						StoryMenuState.weekUnlocked[4] = true;
-						trace("week 4 unlocked BOIIIIIIII");
-					case 4:
-						StoryMenuState.weekUnlocked[5] = true;
-						trace("week 5 unlocked BOIIIIIIII");
-					case 5:
-						StoryMenuState.weekUnlocked[6] = true;
-						trace("week 6 unlocked BOIIIIIIII");
-				}
+					switch(StoryMenuState.curWeek) 
+					{
+						case 1:
+							StoryMenuState.weekUnlocked[2] = true;
+							trace("week 2 unlocked BOIIIIIIII");
+						case 2:
+							StoryMenuState.weekUnlocked[3] = true;
+							trace("week 3 unlocked BOIIIIIIII");
+						case 3:
+							StoryMenuState.weekUnlocked[4] = true;
+							trace("week 4 unlocked BOIIIIIIII");
+						case 4:
+							StoryMenuState.weekUnlocked[5] = true;
+							trace("week 5 unlocked BOIIIIIIII");
+						case 5:
+							StoryMenuState.weekUnlocked[6] = true;
+							trace("week 6 unlocked BOIIIIIIII");
+					}
+				}			
 				FlxG.save.data.weekUnlocked = StoryMenuState.weekUnlocked;
-				*/
 				FlxG.save.flush();
 
 				LoadingState.loadAndSwitchState(new RatingState());

@@ -98,6 +98,20 @@ class StoryMenuState extends states.MusicBeatState
 				FlxG.sound.playMusic(Paths.music('freakyMenu'));
 		}
 
+		if(FlxG.save.data.weekLocked) {
+			StoryMenuState.weekUnlocked[0] = true;
+			StoryMenuState.weekUnlocked[1] = true;
+		}
+		else {
+			StoryMenuState.weekUnlocked[0] = true;
+			StoryMenuState.weekUnlocked[1] = true;
+			StoryMenuState.weekUnlocked[2] = true;
+			StoryMenuState.weekUnlocked[3] = true;
+			StoryMenuState.weekUnlocked[4] = true;
+			StoryMenuState.weekUnlocked[5] = true;
+			StoryMenuState.weekUnlocked[6] = true;
+		}
+
 		persistentUpdate = persistentDraw = true;
 
 		scoreText = new FlxText(10, 10, 0, "WEEK SCORE: 49324858", 36);

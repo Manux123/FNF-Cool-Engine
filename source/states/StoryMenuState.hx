@@ -42,7 +42,7 @@ class StoryMenuState extends states.MusicBeatState
 		2 => "-hard"
 	];
 
-	public static var weekUnlocked:Array<Bool> = [true, true, true, true, true, true, true];
+	public static var weekUnlocked:Array<Bool> = [true, true];
 
 	var weekCharacters:Array<Dynamic> = [
 		['', 'bf', 'gf'],

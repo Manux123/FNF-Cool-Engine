@@ -382,16 +382,6 @@ class MenuGameOptions extends MusicBeatState
 			if (controls.DOWN_P)
 				changeSelection(1);
 
-			/*if(curSelected == 0)
-			{
-				versionShit.text = 'Full Combo Mode: You need to do full combo or else you die';
-			}
-			else if(curSelected == 1)
-			{
-				versionShit.text = 'Only Sick Mode: You need to do sicks, not goods, or shits';
-			} 
-			Yandere Dev Moment
-			*/
 			switch(curSelected)
 			{
 				case 0:
@@ -399,7 +389,7 @@ class MenuGameOptions extends MusicBeatState
 				case 1:
 					versionShit.text = 'Only Sick Mode: You need to do sicks, not goods, or shits';
 				case 2:
-					versionShit.text = 'Hell Mode: Still in beta (i think)';
+					versionShit.text = 'Hell Mode: It removes more health than it should';
 			}
 
 			if (controls.RIGHT_R)

@@ -373,8 +373,8 @@ class PlayState extends states.MusicBeatState
 		}
 
 		setCurrentStage();
-/*
-		#if (LUA_ALLOWED)
+
+		#if LUA_ALLOWED
 		var doPush:Bool = false;
 		var luaFile2:String = 'data/songs/' + Paths.formatToSongPath(SONG.song) + '/script.lua';
 		if(FileSystem.exists(Paths.modFolders(luaFile2))) {
@@ -432,7 +432,7 @@ class PlayState extends states.MusicBeatState
 
 		if(doPush) 
 			luaArray.push(new FunkinLua(luaFile));
-		#end*/
+		#end
 
 
 		var gfVersion:String = 'gf';

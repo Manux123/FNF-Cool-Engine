@@ -30,10 +30,15 @@ class ModsState extends states.MusicBeatState
 	var exitState:FlxText;
 	var warning:FlxText;
 
+	var nameSongs:String = '';
+
 	override function create(){
 		#if desktop
 		DiscordClient.changePresence("In the Menu Mods", null);
 		#end
+
+		/*var folderMods = 'data/songs/' + PlayState.SONG.song.toLowerCase() + '/' + nameSongs + '.json';
+		modPaths(folderMods);*/
 
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGBlue')));
 		bg.scrollFactor.x = 0;
@@ -60,12 +65,8 @@ class ModsState extends states.MusicBeatState
 
 	override function update(elapsed:Float){
 		#if MOD_ALL
-		var nameSongs:String = '';
-		var folderModsOn:String = 'mods/data/songs/' + PlayState.SONG.song.toLowerCase() + '/' + nameSongs + '.json'; //its searches for the preload folder, not the mods folder
-		modPaths(folderModsOn);
-
 		if(!doPush) {
-			warning = new FlxText(0, 0, 0, "NO MODS IN THE FOLDER example_mods", 12);
+			warning = new FlxText(0, 0, 0, "NO MODS IN THE FOLDER mods", 12);
 			warning.size = 36;
 			warning.scrollFactor.set();
 			warning.screenCenter(X);
@@ -74,7 +75,8 @@ class ModsState extends states.MusicBeatState
 			new FlxTimer().start(1, function (tmrr:FlxTimer){
 			FlxTween.tween(warning, {alpha: 0}, 1, {type:PINGPONG});});
 		} else {
-			warning.kill(); }
+			warning.kill(); 
+		}
 		#end
 
 		if(controls.BACK) {
@@ -84,9 +86,8 @@ class ModsState extends states.MusicBeatState
 		super.update(elapsed);
 	}
 
-	public static function modPaths(name:String) {
+	public function modPaths(name:String) {
 		#if MOD_ALL
-			var doPush = false;
 			var path:String = name;
 			if(FileSystem.exists(ModsState.image(path))) {
 				path = ModsState.getPreloadMod(path);
@@ -130,12 +131,12 @@ class ModsState extends states.MusicBeatState
 
 	inline static function getLibraryMod(file:String, library:String)
 	{
-		return '$library:example_mods/$library/$file';
+		return '$library:mods/$library/$file';
 	}
 
 	inline static function getPreloadMod(file:String)
 	{
-		return 'example_mods/$file';
+		return 'mods/$file';
 	}
 
 	inline static public function file(file:String, type:AssetType = TEXT, ?library:String)
@@ -186,7 +187,7 @@ class ModsState extends states.MusicBeatState
 		var loadingSong:Bool = true;
 		if(loadingSong) {
 			trace('Done Loading VOICES!');
-			return 'songs:example_mods/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';}
+			return 'songs:mods/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';}
 		else {
 			('ERROR Loading INST :c');
 			return 'defaultsong:assets/defaultsong/Voices.$SOUND_EXT';}
@@ -198,7 +199,7 @@ class ModsState extends states.MusicBeatState
 		var loadingSong:Bool = true;
 		if(loadingSong) {
 			trace('Done Loading INST!');
-			return 'songs:example_mods/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';}
+			return 'songs:mods/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';}
 		else {
 			trace('ERROR Loading INST :c');
 			return 'defaultsong:assets/defaultsong/Inst.$SOUND_EXT';}
@@ -211,7 +212,7 @@ class ModsState extends states.MusicBeatState
 
 	inline static public function font(key:String)
 	{
-		return 'example_mods/fonts/$key';
+		return 'mods/fonts/$key';
 	}
 
 	inline static public function getSparrowAtlas(key:String, ?library:String)

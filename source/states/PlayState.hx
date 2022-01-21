@@ -2347,39 +2347,37 @@ class PlayState extends states.MusicBeatState
 
 			var rating:FlxSprite = new FlxSprite();
 
-			if(!FlxG.save.data.framesRanking)
-				daNote.noteRating = Ranking.GenerateRatingMS(noteDiff);
-			else
-				daNote.noteRating = Ranking.GenerateRatingFrames(noteDiff);
+			//No longer Frames Ranking :pensive:
+			daNote.noteRating = Ranking.GenerateRatingMS(noteDiff,10);
 
-			switch(daNote.noteRating){
-				case 'shit'|'shit-soon'|'shit-later':
-					if(FlxG.save.data.sickmode) //Sicks Mode
-						gameOver();
+			if(daNote.noteRating.startsWith('shit')){
+				if(FlxG.save.data.sickmode) //Sicks Mode
+					gameOver();
 
-					score = 350;
-					ss = false;
-					boyfriend.stunned = false;
-					if (theFunne){
-						score = -2000;
-						combo = 0;
-						if(FlxG.save.data.hellmode)
-							health -= 0.6;
-						else
-							health -= 0.45;
-					}
-					else{
-						score = -1000;
-						combo = 0;
-						if(FlxG.save.data.hellmode)
-							health -= 0.4;
-						else
-							health -= 0.25;
-					}
-					score = -250;
-					shits++;
-					badNoteCheck();
-				case 'bad' | 'bad-soon' | 'bad-later':
+				score = 350;
+				ss = false;
+				boyfriend.stunned = false;
+				if (theFunne){
+					score = -2000;
+					combo = 0;
+					if(FlxG.save.data.hellmode)
+						health -= 0.6;
+					else
+						health -= 0.45;
+				}
+				else{
+					score = -1000;
+					combo = 0;
+					if(FlxG.save.data.hellmode)
+						health -= 0.4;
+					else
+						health -= 0.25;
+				}
+				score = -250;
+				shits++;
+				badNoteCheck();
+			}
+			else if(daNote.noteRating.startsWith('bad')){
 					if(FlxG.save.data.sickmode) //Sicks Mode
 						gameOver();
 
@@ -2404,7 +2402,8 @@ class PlayState extends states.MusicBeatState
 						else
 							health -= 0.05;
 					}
-				case 'good' | 'good-soon' | 'good-later':
+				}
+				else if(daNote.noteRating.startsWith('good')){
 					if(FlxG.save.data.sickmode) //Sicks Mode
 						gameOver();
 					combo++;
@@ -2413,7 +2412,8 @@ class PlayState extends states.MusicBeatState
 					score = 200;
 					ss = false;
 					goods++;
-				case 'sick' | 'sick-soon' | 'sick-later':
+				}
+				else if(daNote.noteRating.startsWith('sick')){
 					combo++;
 					sicks++;
 					if(FlxG.save.data.hellmode)
@@ -2430,7 +2430,7 @@ class PlayState extends states.MusicBeatState
 					}
 					if(FlxG.save.data.notesplashes)
 						spawnNoteSplashOnNote(daNote);
-			}
+				}
 
 			songScore += score;
 

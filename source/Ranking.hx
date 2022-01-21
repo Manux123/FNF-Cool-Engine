@@ -45,13 +45,10 @@ class Ranking {
         return daRanking;
     }
 
-    public static function GenerateRatingMS(noteDiff:Float, ?customSafeZone:Float):String // Generate a judgement through some timing shit
+    public static function GenerateRatingMS(noteDiff:Float, ?customSafeZone:Float = 10):String // Generate a judgement through some timing shit
     {
     
-        var customTimeScale = Conductor.timeScale;
-    
-        if (customSafeZone != null)
-            customTimeScale = customSafeZone / 166;
+        var customTimeScale = Conductor.timeScale * customSafeZone / 166 * 15;
 
         var rating = "";
 
@@ -66,55 +63,6 @@ class Ranking {
             }
         }
 
-        //piñera chupame el pico, grande boric
-        //trace('${noteDiff} && ${customTimeScale}'); L A G
-        //no entendi ni verga pero vale
-
         return rating;
-    }
-
-    static public function GenerateRatingFrames(noteDiff:Float,?saveFrames:Float = 0):String{
-        var daRating:String = 'sick';
-
-        // late
-        if (noteDiff > Conductor.safeZoneOffset * 0.95 + saveFrames)
-            daRating = 'shit-later';
-
-        else if (noteDiff > Conductor.safeZoneOffset * 0.7 + saveFrames)
-            daRating = 'bad-later';
-
-        else if (noteDiff > Conductor.safeZoneOffset * 0.38 + saveFrames)
-            daRating = 'good-later';
-
-        else if (noteDiff > Conductor.safeZoneOffset * 0.029 + saveFrames)
-            daRating = 'sick-later';
-
-        //Perfect
-        if (noteDiff == Conductor.safeZoneOffset * 0.75 + saveFrames)
-            daRating = 'shit';
-
-        else if (noteDiff == Conductor.safeZoneOffset * 0.5 + saveFrames)
-            daRating = 'bad';
-
-        else if (noteDiff == Conductor.safeZoneOffset * 0.28 + saveFrames)
-            daRating = 'good';
-
-        else if(noteDiff == Conductor.safeZoneOffset + saveFrames)
-            daRating = 'sick';
-
-        // After
-        else if (noteDiff < Conductor.safeZoneOffset * -0.029 + saveFrames)
-            daRating = 'sick-soon';
-
-        else if(noteDiff < Conductor.safeZoneOffset * -0.38 + saveFrames)
-            daRating = 'good-soon';
-
-        else if (noteDiff < Conductor.safeZoneOffset * -0.7 + saveFrames)
-            daRating = 'bad-soon';
-
-        else if (noteDiff < Conductor.safeZoneOffset * -0.95 + saveFrames)
-            daRating = 'shit-soon';
-
-            return daRating;
     }
 }

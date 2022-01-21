@@ -1,5 +1,6 @@
 package;
 
+import haxe.Int32;
 import states.TitleState;
 import flixel.FlxGame;
 import flixel.FlxState;
@@ -9,6 +10,11 @@ import openfl.display.FPS;
 import openfl.display.Sprite;
 import openfl.events.Event;
 import states.CacheState;
+
+import openfl.events.Event;
+import openfl.system.System;
+import openfl.text.TextField;
+import openfl.text.TextFormat;
 
 class Main extends Sprite
 {
@@ -71,16 +77,53 @@ class Main extends Sprite
 		initialState = states.TitleState;
 		#end
 
-		#if (!html5 && !androidC)
+		#if (!html5 || !androidC)
 		framerate = 124;
 		#else
 		framerate = 60;
 		#end
 
-		addChild(new FlxGame(gameWidth, gameHeight, initialState, zoom, framerate, framerate, skipSplash, startFullscreen));
+		var dataText = new DataText(10,3);
 
-		#if !mobile
-		addChild(new FPS(10, 3, 0xFFFFFF));
+		addChild(new FlxGame(gameWidth, gameHeight, initialState, zoom, framerate, framerate, skipSplash, startFullscreen));
+		addChild(dataText);
+		addChild(new FPSCount(10, 3, 0xFFFFFF));
+	}
+}
+
+//Worked from Mic'd Up engine
+class DataText extends TextField{
+	@:noCompletion private var memPeak:Float = 0;
+	@:noCompletion private var byteValue:Int32 = 1024;
+	
+	public function new(inX:Float = 10.0, inY:Float = 10.0) 
+	{
+		super();
+
+		#if androidC
+		byteValue = 1000;
 		#end
+
+		x = inX;
+		y = inY;
+		selectable = false;
+		defaultTextFormat = new TextFormat(openfl.utils.Assets.getFont("assets/fonts/vcr.ttf").fontName, 12, 0xFFFFFF);
+
+		addEventListener(Event.ENTER_FRAME, onEnter);
+		width = 150;
+		height = 70;
+	}
+
+	private function onEnter(_){
+		if (mem > memPeak){
+			memPeak = mem;
+			this.textColor = 0xFF0000;
+		}
+		else if(mem < memPeak)
+			this.textColor = 0x17FF00;
+		else
+			this.textColor = 0xFFFFFF;
+
+		text = visible?'\nMEM: ${mem}MB\nMEM peak: ${memPeak}MB\nVersion: ${lime.app.Application.current.meta.get('version')}':"";	
 	}
 }

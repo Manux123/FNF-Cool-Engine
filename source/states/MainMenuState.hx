@@ -108,7 +108,7 @@ class MainMenuState extends MusicBeatState
 		versionShit2.y -= 20;
 		add(versionShit2);
 
-		var mods:FlxText = new FlxText(5, FlxG.height - 19, 0, 'Open the Menu Mods with the number six', 12);
+		var mods:FlxText = new FlxText(5, FlxG.height - 19, 0, 'Open the Mods Menu with the number six', 12);
 		mods.scrollFactor.set();
 		mods.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		mods.y -= 65;

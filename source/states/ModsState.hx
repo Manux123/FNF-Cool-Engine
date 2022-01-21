@@ -34,7 +34,7 @@ class ModsState extends states.MusicBeatState
 
 	override function create(){
 		#if desktop
-		DiscordClient.changePresence("In the Menu Mods", null);
+		DiscordClient.changePresence("In the Mods Menu", null);
 		#end
 
 		/*var folderMods = 'data/songs/' + PlayState.SONG.song.toLowerCase() + '/' + nameSongs + '.json';

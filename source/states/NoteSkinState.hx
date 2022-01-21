@@ -62,10 +62,10 @@ class NoteSkinState extends states.MusicBeatState
 
 		for (i in 0...daNoteSkins.length)
 		{
-				controlLabel = new Alphabet(0, (70 * i) + 30, daNoteSkins[i], true, false);
-				controlLabel.isMenuItem = true;
-				controlLabel.targetY = i;
-				grpControls.add(controlLabel);
+			controlLabel = new Alphabet(0, (70 * i) + 30, daNoteSkins[i], true, false);
+			controlLabel.isMenuItem = true;
+			controlLabel.targetY = i;
+			grpControls.add(controlLabel);
 			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
 		}
 

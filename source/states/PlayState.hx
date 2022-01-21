@@ -2808,8 +2808,7 @@ class PlayState extends states.MusicBeatState
 			coolText.screenCenter();
 			coolText.x = FlxG.width * 0.55;
 
-			var rating:FlxSprite = new FlxSprite();
-			ModsState.modPaths('miss');
+			var rating:FlxSprite = new FlxSprite().loadGraphic(Paths.image('miss', 'shared'));
 			//rating.screenCenter();
 			rating.x = coolText.x - 40;
 			rating.x -= 180;

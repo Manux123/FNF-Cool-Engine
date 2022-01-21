@@ -20,6 +20,8 @@ import lime.utils.Assets;
 import sys.FileSystem;
 #end
 
+using StringTools;
+
 class ModsState extends states.MusicBeatState
 {
 	var doPush:Bool = false;
@@ -30,9 +32,28 @@ class ModsState extends states.MusicBeatState
 	var exitState:FlxText;
 	var warning:FlxText;
 
+	var nameSongs:String = '';
+	var modsFolder:String;
+
 	override function create(){
 		#if desktop
-		DiscordClient.changePresence("In the Menu Mods", null);
+		DiscordClient.changePresence("In the Mods Menu", null);
+		#end
+
+		modsFolder = modsRoot('modList');
+
+		#if MOD_ALL
+			var path:String = modsFolder;
+			var daModFoldaArray:Array<String> = coolTextFile(modsRoot('modList'));
+			if(FileSystem.exists(path)) {
+				path = ModsState.getPreloadModArray(daModFoldaArray);
+				doPush = true;
+			} else {
+				path = Paths.image(path);
+				if(!FileSystem.exists(path)) {
+					doPush = false;
+				}
+			}
 		#end
 
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGBlue')));
@@ -52,7 +73,7 @@ class ModsState extends states.MusicBeatState
 		exitState.y += 35;
 		exitState.scrollFactor.set();
 		exitState.screenCenter(X);
-		exitState.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		exitState.setFormat("VCR OSD Mono", 28, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(exitState);
 
 		super.create();
@@ -60,21 +81,18 @@ class ModsState extends states.MusicBeatState
 
 	override function update(elapsed:Float){
 		#if MOD_ALL
-		var nameSongs:String = '';
-		var folderModsOn:String = 'mods/data/songs/' + PlayState.SONG.song.toLowerCase() + '/' + nameSongs + '.json'; //its searches for the preload folder, not the mods folder
-		modPaths(folderModsOn);
-
 		if(!doPush) {
-			warning = new FlxText(0, 0, 0, "NO MODS IN THE FOLDER example_mods", 12);
+			warning = new FlxText(0, 0, 0, "NO MODS IN THE MODS FOLDER", 36);
 			warning.size = 36;
 			warning.scrollFactor.set();
 			warning.screenCenter(X);
-			warning.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			warning.setFormat("VCR OSD Mono", 36, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			add(warning);
 			new FlxTimer().start(1, function (tmrr:FlxTimer){
 			FlxTween.tween(warning, {alpha: 0}, 1, {type:PINGPONG});});
 		} else {
-			warning.kill(); }
+			//warning.kill(); kill it when it not initialiced isn't very smart
+		}
 		#end
 
 		if(controls.BACK) {
@@ -84,11 +102,11 @@ class ModsState extends states.MusicBeatState
 		super.update(elapsed);
 	}
 
-	public static function modPaths(name:String) {
+	/*public function modPaths(name:String)
+	{
 		#if MOD_ALL
-			var doPush = false;
 			var path:String = name;
-			if(FileSystem.exists(ModsState.image(path))) {
+			if(FileSystem.exists(path)) {
 				path = ModsState.getPreloadMod(path);
 				doPush = true;
 			} else {
@@ -97,11 +115,8 @@ class ModsState extends states.MusicBeatState
 					doPush = false;
 				}
 			}
-			/*
-			if(doPush) 
-				modsArray.push(new states.ModsState(path));*/
 		#end
-	}
+	} */
 
 	static public function setCurrentLevel(name:String)
 	{
@@ -123,6 +138,18 @@ class ModsState extends states.MusicBeatState
 		return getPreloadMod(file);
 	}
 
+	public static function coolTextFile(path:String):Array<String>
+	{
+		var daList:Array<String> = Assets.getText(path).trim().split('\n');
+
+		for (i in 0...daList.length)
+		{
+			daList[i] = daList[i].trim();
+		}
+
+		return daList;
+	}
+
 	static public function getModLibPath(file:String, library = "images")
 	{
 		return if (library == "images" || library == "default") getPreloadMod(file); else getLibraryMod(file, library);
@@ -130,12 +157,17 @@ class ModsState extends states.MusicBeatState
 
 	inline static function getLibraryMod(file:String, library:String)
 	{
-		return '$library:example_mods/$library/$file';
+		return '$library:mods/$library/$file';
 	}
 
 	inline static function getPreloadMod(file:String)
 	{
-		return 'example_mods/$file';
+		return 'mods/$file';
+	}
+
+	inline static function getPreloadModArray(file:Array<String>)
+	{
+		return 'mods/$file';
 	}
 
 	inline static public function file(file:String, type:AssetType = TEXT, ?library:String)
@@ -145,7 +177,12 @@ class ModsState extends states.MusicBeatState
 
 	inline static public function txt(key:String, ?library:String)
 	{
-		return getPath('data/$key.txt', TEXT, library);
+		return getPath('mods/data/$key.txt', TEXT, library);
+	}
+
+	inline static public function modsRoot(key:String, ?library:String)
+	{
+		return getPath('mods/$key.txt', TEXT, library);
 	}
 
 	inline static public function xml(key:String, ?library:String)
@@ -186,7 +223,7 @@ class ModsState extends states.MusicBeatState
 		var loadingSong:Bool = true;
 		if(loadingSong) {
 			trace('Done Loading VOICES!');
-			return 'songs:example_mods/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';}
+			return 'songs:mods/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';}
 		else {
 			('ERROR Loading INST :c');
 			return 'defaultsong:assets/defaultsong/Voices.$SOUND_EXT';}
@@ -198,7 +235,7 @@ class ModsState extends states.MusicBeatState
 		var loadingSong:Bool = true;
 		if(loadingSong) {
 			trace('Done Loading INST!');
-			return 'songs:example_mods/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';}
+			return 'songs:mods/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';}
 		else {
 			trace('ERROR Loading INST :c');
 			return 'defaultsong:assets/defaultsong/Inst.$SOUND_EXT';}
@@ -211,7 +248,7 @@ class ModsState extends states.MusicBeatState
 
 	inline static public function font(key:String)
 	{
-		return 'example_mods/fonts/$key';
+		return 'mods/fonts/$key';
 	}
 
 	inline static public function getSparrowAtlas(key:String, ?library:String)

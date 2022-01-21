@@ -33,14 +33,28 @@ class ModsState extends states.MusicBeatState
 	var warning:FlxText;
 
 	var nameSongs:String = '';
+	var modsFolder:String;
 
 	override function create(){
 		#if desktop
 		DiscordClient.changePresence("In the Mods Menu", null);
 		#end
 
-		var folderMods = modsRoot('modList');
-		modPaths(folderMods);
+		modsFolder = modsRoot('modList');
+
+		#if MOD_ALL
+			var path:String = modsFolder;
+			var daModFoldaArray:Array<String> = coolTextFile(modsRoot('modList'));
+			if(FileSystem.exists(path)) {
+				path = ModsState.getPreloadModArray(daModFoldaArray);
+				doPush = true;
+			} else {
+				path = Paths.image(path);
+				if(!FileSystem.exists(path)) {
+					doPush = false;
+				}
+			}
+		#end
 
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGBlue')));
 		bg.scrollFactor.x = 0;
@@ -77,7 +91,7 @@ class ModsState extends states.MusicBeatState
 			new FlxTimer().start(1, function (tmrr:FlxTimer){
 			FlxTween.tween(warning, {alpha: 0}, 1, {type:PINGPONG});});
 		} else {
-			warning.kill();
+			//warning.kill(); kill it when it not initialiced isn't very smart
 		}
 		#end
 
@@ -88,7 +102,7 @@ class ModsState extends states.MusicBeatState
 		super.update(elapsed);
 	}
 
-	public function modPaths(name:String) 
+	/*public function modPaths(name:String)
 	{
 		#if MOD_ALL
 			var path:String = name;
@@ -102,7 +116,7 @@ class ModsState extends states.MusicBeatState
 				}
 			}
 		#end
-	}
+	} */
 
 	static public function setCurrentLevel(name:String)
 	{
@@ -124,6 +138,18 @@ class ModsState extends states.MusicBeatState
 		return getPreloadMod(file);
 	}
 
+	public static function coolTextFile(path:String):Array<String>
+	{
+		var daList:Array<String> = Assets.getText(path).trim().split('\n');
+
+		for (i in 0...daList.length)
+		{
+			daList[i] = daList[i].trim();
+		}
+
+		return daList;
+	}
+
 	static public function getModLibPath(file:String, library = "images")
 	{
 		return if (library == "images" || library == "default") getPreloadMod(file); else getLibraryMod(file, library);
@@ -135,6 +161,11 @@ class ModsState extends states.MusicBeatState
 	}
 
 	inline static function getPreloadMod(file:String)
+	{
+		return 'mods/$file';
+	}
+
+	inline static function getPreloadModArray(file:Array<String>)
 	{
 		return 'mods/$file';
 	}

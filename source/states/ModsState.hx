@@ -39,7 +39,7 @@ class ModsState extends states.MusicBeatState
 		DiscordClient.changePresence("In the Mods Menu", null);
 		#end
 
-		var folderMods = CoolUtil.coolTextFile(modsRoot('modList'));
+		var folderMods = modsRoot('modList');
 		modPaths(folderMods);
 
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGBlue')));
@@ -88,10 +88,10 @@ class ModsState extends states.MusicBeatState
 		super.update(elapsed);
 	}
 
-	public function modPaths(name:Array<String>) 
+	public function modPaths(name:String) 
 	{
 		#if MOD_ALL
-			var path:Array<String> = name;
+			var path:String = name;
 			if(FileSystem.exists(path)) {
 				path = ModsState.getPreloadMod(path);
 				doPush = true;

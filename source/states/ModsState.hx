@@ -20,6 +20,8 @@ import lime.utils.Assets;
 import sys.FileSystem;
 #end
 
+using StringTools;
+
 class ModsState extends states.MusicBeatState
 {
 	var doPush:Bool = false;
@@ -37,8 +39,8 @@ class ModsState extends states.MusicBeatState
 		DiscordClient.changePresence("In the Mods Menu", null);
 		#end
 
-		/*var folderMods = 'data/songs/' + PlayState.SONG.song.toLowerCase() + '/' + nameSongs + '.json';
-		modPaths(folderMods);*/
+		var folderMods = CoolUtil.coolTextFile(modsRoot('modList'));
+		modPaths(folderMods);
 
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGBlue')));
 		bg.scrollFactor.x = 0;
@@ -57,7 +59,7 @@ class ModsState extends states.MusicBeatState
 		exitState.y += 35;
 		exitState.scrollFactor.set();
 		exitState.screenCenter(X);
-		exitState.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		exitState.setFormat("VCR OSD Mono", 28, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(exitState);
 
 		super.create();
@@ -66,16 +68,16 @@ class ModsState extends states.MusicBeatState
 	override function update(elapsed:Float){
 		#if MOD_ALL
 		if(!doPush) {
-			warning = new FlxText(0, 0, 0, "NO MODS IN THE FOLDER mods", 12);
+			warning = new FlxText(0, 0, 0, "NO MODS IN THE MODS FOLDER", 36);
 			warning.size = 36;
 			warning.scrollFactor.set();
 			warning.screenCenter(X);
-			warning.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			warning.setFormat("VCR OSD Mono", 36, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			add(warning);
 			new FlxTimer().start(1, function (tmrr:FlxTimer){
 			FlxTween.tween(warning, {alpha: 0}, 1, {type:PINGPONG});});
 		} else {
-			warning.kill(); 
+			warning.kill();
 		}
 		#end
 
@@ -86,10 +88,11 @@ class ModsState extends states.MusicBeatState
 		super.update(elapsed);
 	}
 
-	public function modPaths(name:String) {
+	public function modPaths(name:Array<String>) 
+	{
 		#if MOD_ALL
-			var path:String = name;
-			if(FileSystem.exists(ModsState.image(path))) {
+			var path:Array<String> = name;
+			if(FileSystem.exists(path)) {
 				path = ModsState.getPreloadMod(path);
 				doPush = true;
 			} else {
@@ -98,9 +101,6 @@ class ModsState extends states.MusicBeatState
 					doPush = false;
 				}
 			}
-			/*
-			if(doPush) 
-				modsArray.push(new states.ModsState(path));*/
 		#end
 	}
 
@@ -146,7 +146,12 @@ class ModsState extends states.MusicBeatState
 
 	inline static public function txt(key:String, ?library:String)
 	{
-		return getPath('data/$key.txt', TEXT, library);
+		return getPath('mods/data/$key.txt', TEXT, library);
+	}
+
+	inline static public function modsRoot(key:String, ?library:String)
+	{
+		return getPath('mods/$key.txt', TEXT, library);
 	}
 
 	inline static public function xml(key:String, ?library:String)

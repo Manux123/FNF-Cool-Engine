@@ -36,7 +36,7 @@ class NoteSkinDetector
 
 		if(!Assets.exists(Paths.image(path))){
 			tex = Paths.getSparrowAtlas('UI/NOTE_assets', 'shared');
-			//trace('Assets Path: ' + Paths.getSparrowAtlas(path) + " Dosn't Exist"); FUCK IT LAGS SO MUCHHHHHHHHHHHHHHHHHHHHH
+			//trace('Assets Path: ' + Paths.getSparrowAtlas(path) + " Dosn't Exist"); FUCK, IT LAGS SO MUCHHHHHHHHHHHHHHHHHHHHH
 			trace('Loading: UI/NOTE_assets');  //Holy fuck it lags so much the game
 		}
 

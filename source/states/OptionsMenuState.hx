@@ -1095,6 +1095,9 @@ class OptionsData
 
 			if(FlxG.save.data.hitsounds == null)
 				FlxG.save.data.hitsounds = false;
+			
+			if(FlxG.save.data.notesplashes == null)
+				FlxG.save.data.notesplashes = true;
 		}
 }
 

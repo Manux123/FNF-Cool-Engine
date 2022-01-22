@@ -45,8 +45,7 @@ class OptionsMenuState extends MusicBeatState
 			("\n" + 'Game Options') +
 			("\n" + 'Optimization') +
 			("\n" + 'Note Skin') +
-			("\n" + 'Controls') +
-			("\n" + 'Exit')#if DEBUG_BUILD +
+			("\n" + 'Controls')#if DEBUG_BUILD +
 			("\n" + 'Debug')#end);
 		
 		//trace(controlsStrings);
@@ -87,6 +86,9 @@ class OptionsMenuState extends MusicBeatState
 	{
 		super.update(elapsed);
 
+			if (controls.BACK) {
+				FlxG.switchState(new MainMenuState());
+				OptionsData.initSave(); }
 			if (controls.UP_P)
 				changeSelection(-1);
 			if (controls.DOWN_P)
@@ -114,9 +116,6 @@ class OptionsMenuState extends MusicBeatState
 						FlxG.state.openSubState(new KeyBindMenu());
 						#end
 					case 5:
-						FlxG.switchState(new MainMenuState());
-						OptionsData.initSave();
-					case 6:
 						LoadingState.loadAndSwitchState(new DebugOptions());
 				}
 			}

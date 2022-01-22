@@ -349,7 +349,7 @@ class TitleState extends states.MusicBeatState
 	}
 
 	var randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for", "YOU WHAT", "We shouldn't be", "you sussy baka", "._.", "get a brain", "sus", "we are cool"];
-	var randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "*dances epicly*", "hardcoding this lmao", "among us", "im not imposter i swear", "for me", "sus", "right?";
+	var randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "*dances epicly*", "hardcoding this lmao", "among us", "im not imposter i swear", "for me", "sus", "right?"];
 	var random:Int;
 
 	override function beatHit()

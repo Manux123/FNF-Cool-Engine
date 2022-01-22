@@ -27,10 +27,11 @@ class MainMenuState extends MusicBeatState
 
 	var menuItems:FlxTypedGroup<FlxSprite>;
 
-	var optionShit:Array<String> = ['story-mode', 'freeplay'#if !switch ,'options', 'donate'#end];
+	var optionShit:Array<String> = ['story-mode', 'freeplay', 'mods' #if !switch ,'options', 'donate'#end];
 	var optionMap:Map<String,MusicBeatState> = [
 		'story-mode' => new StoryMenuState(),
 		'freeplay' => new FreeplayState(),
+		'mods' => new ModsState(),
 		'options' => new OptionsMenuState()
 	];
 
@@ -108,14 +109,6 @@ class MainMenuState extends MusicBeatState
 		versionShit2.y -= 20;
 		add(versionShit2);
 
-		var mods:FlxText = new FlxText(5, FlxG.height - 19, 0, 'Open the Mods Menu with the number six', 12);
-		mods.scrollFactor.set();
-		mods.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		mods.y -= 65;
-		add(mods);
-		new FlxTimer().start(1, function (tmrr:FlxTimer){
-		FlxTween.tween(mods, {alpha: 0}, 1, {type:PINGPONG});});
-
 		// NG.core.calls.event.logEvent('swag').send();
 
 		changeItem();
@@ -137,11 +130,6 @@ class MainMenuState extends MusicBeatState
 			FlxG.sound.music.volume += 0.5 * FlxG.elapsed;
 		}
 		#end
-
-		if (FlxG.keys.pressed.SIX) {
-			FlxG.switchState(new ModsState());
-			FlxG.camera.flash(FlxColor.WHITE);
-		}
 
 		if (!selectedSomethin)
 		{

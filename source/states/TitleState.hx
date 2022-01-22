@@ -48,11 +48,6 @@ class TitleState extends states.MusicBeatState
 	{
 		PlayerSettings.init();
 
-		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
-
 		//curWacky = FlxG.random.getObject(getIntroTextShit());
 
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGtitle')));

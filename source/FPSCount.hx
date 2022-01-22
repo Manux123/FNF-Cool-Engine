@@ -40,6 +40,7 @@ class FPSCount extends TextField
 		selectable = false;
 		mouseEnabled = false;
 		defaultTextFormat = new TextFormat(openfl.utils.Assets.getFont("assets/fonts/vcr.ttf").fontName, 12, color);
+		visible = false;
 		text = "FPS: ";
 
 		cacheCount = 0;

@@ -83,11 +83,24 @@ class Main extends Sprite
 		framerate = 60;
 		#end
 
-		var dataText = new DataText(10,3);
+		#if DEBUG_BUILD
+		switchDevData();
+		#end
 
 		addChild(new FlxGame(gameWidth, gameHeight, initialState, zoom, framerate, framerate, skipSplash, startFullscreen));
 		addChild(dataText);
-		addChild(new FPSCount(10, 3, 0xFFFFFF));
+		addChild(fps);
+	}
+
+	public final fps:FPSCount = new FPSCount(10, 3, 0xFFFFFF);
+	public final dataText:DataText = new DataText(10,3);
+
+	public function setMaxFps(fps:Int){
+		openfl.Lib.current.stage.frameRate = fps;
+	}
+	public function switchDevData(){
+		dataText.visible = !dataText.visible;
+		fps.visible = !fps.visible;
 	}
 }
 
@@ -108,6 +121,7 @@ class DataText extends TextField{
 		y = inY;
 		selectable = false;
 		defaultTextFormat = new TextFormat(openfl.utils.Assets.getFont("assets/fonts/vcr.ttf").fontName, 12, 0xFFFFFF);
+		visible = false;
 
 		addEventListener(Event.ENTER_FRAME, onEnter);
 		width = 150;

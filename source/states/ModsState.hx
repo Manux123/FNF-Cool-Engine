@@ -1,5 +1,7 @@
 package states;
 
+import flixel.group.FlxGroup.FlxTypedGroup;
+import openfl.display.Sprite;
 #if desktop
 import Discord.DiscordClient;
 #end
@@ -11,7 +13,6 @@ import states.MusicBeatState;
 import flixel.FlxG;
 import flixel.graphics.frames.FlxAtlasFrames;
 import openfl.utils.AssetType;
-import openfl.utils.Assets as OpenFlAssets;
 import openfl.display.BitmapData as Bitmap;
 import flixel.input.keyboard.FlxKey;
 import flixel.util.FlxTimer;
@@ -19,6 +20,7 @@ import lime.utils.Assets;
 #if sys
 import sys.FileSystem;
 #end
+import openfl.utils.Assets as OpenflAssets;
 
 using StringTools;
 
@@ -34,25 +36,40 @@ class ModsState extends states.MusicBeatState
 
 	var nameSongs:String = '';
 	var modsFolder:String;
+	var grpMods:FlxTypedGroup<Alphabet>;
 
 	override function create(){
 		#if desktop
 		DiscordClient.changePresence("In the Mods Menu", null);
 		#end
 
-		modsFolder = modsRoot('modList');
+		modsFolder = modsRoot('modsList');
+
+		grpMods = new FlxTypedGroup<Alphabet>();
+		add(grpMods);
 
 		#if MOD_ALL
 			var path:String = modsFolder;
-			var daModFoldaArray:Array<String> = coolTextFile(modsRoot('modList'));
-			if(FileSystem.exists(path)) {
-				path = ModsState.getPreloadModArray(daModFoldaArray);
-				doPush = true;
-			} else {
-				path = Paths.image(path);
-				if(!FileSystem.exists(path)) {
-					doPush = false;
+			var daModFoldaArray:Array<String> = CoolUtil.coolTextFile(modsRoot('modsList'));
+			for(i in 0... daModFoldaArray.length){
+				if(#if sys FileSystem.exists(path)#else
+					OpenflAssets.exists(path)#end) {
+					path = ModPaths.getPreloadMod(daModFoldaArray[i]);
+					doPush = true;
+				} else {
+					path = Paths.image(path);
+					if(!#if sys FileSystem.exists(path)
+						#else OpenflAssets.exists(path)#end) {
+						doPush = false;
+					}
 				}
+			}
+			for(i in 0... daModFoldaArray.length){
+				var mod:Alphabet = new Alphabet(0,(i + 1) * 100, daModFoldaArray[i].toLowerCase(),false,true);
+				mod.isMenuItem = true;
+				mod.targetY = i;
+				mod.screenCenter(X);
+				grpMods.add(mod);
 			}
 		#end
 
@@ -65,7 +82,7 @@ class ModsState extends states.MusicBeatState
 
 		var	black:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		black.screenCenter(X);
-		black.alpha = 0.7;
+		black.alpha = 1;
 		add(black);
 
 		exitState = new FlxText(0, 0, 0, "ESC to exit", 12);
@@ -101,163 +118,7 @@ class ModsState extends states.MusicBeatState
 		
 		super.update(elapsed);
 	}
-
-	/*public function modPaths(name:String)
-	{
-		#if MOD_ALL
-			var path:String = name;
-			if(FileSystem.exists(path)) {
-				path = ModsState.getPreloadMod(path);
-				doPush = true;
-			} else {
-				path = Paths.image(path);
-				if(FileSystem.exists(path)) {
-					doPush = false;
-				}
-			}
-		#end
-	} */
-
-	static public function setCurrentLevel(name:String)
-	{
-		currentLevel = name.toLowerCase();
-	}
-
-	static function getPath(file:String, type:AssetType, ?library:String = null)
-	{
-		if (library != null)
-			return getModLibPath(file, library);
-
-		if (currentLevel != null)
-		{
-			var path = getLibraryMod(file, currentLevel);
-			if (OpenFlAssets.exists(path, type))
-				return path;
-		}
-
-		return getPreloadMod(file);
-	}
-
-	public static function coolTextFile(path:String):Array<String>
-	{
-		var daList:Array<String> = Assets.getText(path).trim().split('\n');
-
-		for (i in 0...daList.length)
-		{
-			daList[i] = daList[i].trim();
-		}
-
-		return daList;
-	}
-
-	static public function getModLibPath(file:String, library = "images")
-	{
-		return if (library == "images" || library == "default") getPreloadMod(file); else getLibraryMod(file, library);
-	}
-
-	inline static function getLibraryMod(file:String, library:String)
-	{
-		return '$library:mods/$library/$file';
-	}
-
-	inline static function getPreloadMod(file:String)
-	{
-		return 'mods/$file';
-	}
-
-	inline static function getPreloadModArray(file:Array<String>)
-	{
-		return 'mods/$file';
-	}
-
-	inline static public function file(file:String, type:AssetType = TEXT, ?library:String)
-	{
-		return getPath(file, type, library);
-	}
-
-	inline static public function txt(key:String, ?library:String)
-	{
-		return getPath('mods/data/$key.txt', TEXT, library);
-	}
-
-	inline static public function modsRoot(key:String, ?library:String)
-	{
-		return getPath('mods/$key.txt', TEXT, library);
-	}
-
-	inline static public function xml(key:String, ?library:String)
-	{
-		return getPath('data/$key.xml', TEXT, library);
-	}
-
-	inline static public function json(key:String, ?library:String)
-	{
-		return getPath('data/$key.json', TEXT, library);
-	}
-
-	static public function sound(key:String, ?library:String)
-	{
-		return getPath('sounds/$key.$SOUND_EXT', SOUND, library);
-	}
-
-	inline static public function soundRandom(key:String, min:Int, max:Int, ?library:String)
-	{
-		return sound(key + FlxG.random.int(min, max), library);
-	}
-
-	inline static public function video(key:String, ?library:String)
-	{
-		trace('assets/videos/$key.mp4');
-		return getPath('videos/$key.mp4', BINARY, library);
-	}
-		
-
-	inline static public function music(key:String, ?library:String)
-	{
-		return getPath('music/$key.$SOUND_EXT', MUSIC, library);
-	}
-
-	inline static public function voices(song:String)
-	{
-		trace('Loading VOICES');
-		var loadingSong:Bool = true;
-		if(loadingSong) {
-			trace('Done Loading VOICES!');
-			return 'songs:mods/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';}
-		else {
-			('ERROR Loading INST :c');
-			return 'defaultsong:assets/defaultsong/Voices.$SOUND_EXT';}
-	}
-
-	inline static public function inst(song:String)
-	{
-		trace('Loading INST');
-		var loadingSong:Bool = true;
-		if(loadingSong) {
-			trace('Done Loading INST!');
-			return 'songs:mods/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';}
-		else {
-			trace('ERROR Loading INST :c');
-			return 'defaultsong:assets/defaultsong/Inst.$SOUND_EXT';}
-	}
-
-	inline static public function image(key:String, ?library:String)
-	{
-		return getPath('images/$key.png', IMAGE, library);
-	}
-
-	inline static public function font(key:String)
-	{
-		return 'mods/fonts/$key';
-	}
-
-	inline static public function getSparrowAtlas(key:String, ?library:String)
-	{
-		return FlxAtlasFrames.fromSparrow(image(key, library), file('images/$key.xml', library));
-	}
-
-	inline static public function getPackerAtlas(key:String, ?library:String)
-	{
-		return FlxAtlasFrames.fromSpriteSheetPacker(image(key, library), file('images/$key.txt', library));
+	function modsRoot(key:String, ?library:String){
+		return ModPaths.getPath('$key.txt', TEXT, library);
 	}
 }

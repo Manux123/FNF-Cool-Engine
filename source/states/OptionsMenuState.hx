@@ -1,6 +1,7 @@
 package states;
 
 import openfl.display.FPS;
+import openfl.Lib;
 #if desktop
 import Discord.DiscordClient;
 #end
@@ -45,7 +46,8 @@ class OptionsMenuState extends MusicBeatState
 			("\n" + 'Optimization') +
 			("\n" + 'Note Skin') +
 			("\n" + 'Controls') +
-			("\n" + 'Exit'));
+			("\n" + 'Exit')#if DEBUG_BUILD +
+			("\n" + 'Debug')#end);
 		
 		//trace(controlsStrings);
 
@@ -98,22 +100,24 @@ class OptionsMenuState extends MusicBeatState
 				switch(curSelected)
 				{
 					case 0:
-						FlxG.switchState(new OptionsMenu());
+						LoadingState.loadAndSwitchState(new OptionsMenu());
 					case 1:
-						FlxG.switchState(new MenuGameOptions());
+						LoadingState.loadAndSwitchState(new MenuGameOptions());
 					case 2:
-						FlxG.switchState(new OptimizationOptions());
+						LoadingState.loadAndSwitchState(new OptimizationOptions());
 					case 3:
 						LoadingState.loadAndSwitchState(new NoteSkinState());
 					case 4:
 						#if mobileC
-						FlxG.switchState(new CustomControlsState());
+						LoadingState.loadAndSwitchState(new CustomControlsState());
 						#else
 						FlxG.state.openSubState(new KeyBindMenu());
 						#end
 					case 5:
 						FlxG.switchState(new MainMenuState());
 						OptionsData.initSave();
+					case 6:
+						LoadingState.loadAndSwitchState(new DebugOptions());
 				}
 			}
 		FlxG.save.flush();
@@ -455,6 +459,146 @@ class MenuGameOptions extends MusicBeatState
 	}
 }
 
+class DebugOptions extends MusicBeatState{
+	var selector:FlxText;
+	var curSelected:Int = 0;
+
+	public static var canDoRight:Bool = false;
+	public static var canDoLeft:Bool = false;
+
+	var options:Array<Option> = [
+		new ShowDevData()
+	];
+
+	private var grpControls:FlxTypedGroup<Alphabet>;
+	var versionShit:FlxText;
+	override function create()
+	{
+		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
+
+		menuBG.color = 0xFF453F3F;
+		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
+		menuBG.updateHitbox();
+		menuBG.screenCenter();
+		menuBG.antialiasing = true;
+		add(menuBG);
+
+		grpControls = new FlxTypedGroup<Alphabet>();
+		add(grpControls);
+		
+		#if desktop
+		// Updating Discord Rich Presence
+		DiscordClient.changePresence("In the Options", null);
+		#end
+
+		for (i in 0...options.length)
+		{
+			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 30, options[i].getDisplay(), true, false);
+			controlLabel.isMenuItem = true;
+			controlLabel.targetY = i;
+
+			controlLabel.alpha = 0.3;
+			if(i == curSelected)
+				controlLabel.alpha = 1;
+
+			grpControls.add(controlLabel);
+			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
+		}
+
+		var optionsBG:FlxSprite = new FlxSprite();
+		optionsBG.frames = Paths.getSparrowAtlas('menu/menuoptions');
+	    optionsBG.animation.addByPrefix('idle', 'options basic', 24, false);
+	    optionsBG.animation.play('idle');
+	    optionsBG.antialiasing = true;
+		optionsBG.screenCenter(X);
+	    add(optionsBG);
+
+		versionShit = new FlxText(5, FlxG.height - 18, 0, "Offset (Left, Right): " + FlxG.save.data.offset, 12);
+		versionShit.scrollFactor.set();
+		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		add(versionShit);
+
+		#if mobileC
+		addVirtualPad(FULL, A_B);
+		#end
+		super.create();
+	}
+
+	override function update(elapsed:Float)
+	{
+		super.update(elapsed);
+
+			if (controls.BACK)
+				FlxG.switchState(new OptionsMenuState());
+			if (controls.UP_P)
+				changeSelection(-1);
+			if (controls.DOWN_P)
+				changeSelection(1);
+
+
+			if (controls.RIGHT_R)
+			{
+				FlxG.save.data.offset++;
+				versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset;
+			}
+
+			if (controls.LEFT_R)
+				{
+					FlxG.save.data.offset--;
+					versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset;
+				}
+	
+
+			if (controls.ACCEPT)
+			{
+				if (options[curSelected].press()) {
+					grpControls.remove(grpControls.members[curSelected]);
+					var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, options[curSelected].getDisplay(), true, false);
+					ctrl.isMenuItem = true;
+					grpControls.add(ctrl);
+				}
+			}
+		FlxG.save.flush();
+	}
+
+	var isSettingControl:Bool = false;
+
+	function changeSelection(change:Int = 0)
+	{
+		#if !switch
+		// NGio.logEvent("Fresh");
+		#end
+		
+		FlxG.sound.play(Paths.sound("scrollMenu"), 0.4);
+
+		curSelected += change;
+
+		if (curSelected < 0)
+			curSelected = grpControls.length - 1;
+		if (curSelected >= grpControls.length)
+			curSelected = 0;
+
+		// selector.y = (70 * curSelected) + 30;
+
+		var bullShit:Int = 0;
+
+		for (item in grpControls.members)
+		{
+			item.targetY = bullShit - curSelected;
+			bullShit++;
+
+			item.alpha = 0.3;
+			// item.setGraphicSize(Std.int(item.width * 0.8));
+
+			if (item.targetY == 0)
+			{
+				item.alpha = 1;
+				// item.setGraphicSize(Std.int(item.width));
+			}
+		}
+	}
+}
+
 class OptimizationOptions extends MusicBeatState
 {
 	var selector:FlxText;
@@ -614,6 +758,8 @@ class Option
 
 	// Returns whether the label is to be updated.
 	public function press():Bool { return throw "stub!"; }
+	public function pressL():Bool { return throw "stub!"; }
+	public function pressR():Bool { return throw "stub!"; }
 	private function updateDisplay():String { return throw "stub!"; }
 }
 
@@ -629,6 +775,19 @@ class StaticStageOption extends Option
 	private override function updateDisplay():String
 	{
 		return FlxG.save.data.staticstage ? "Static Stage" : "Normal Stage";
+	}
+}
+
+class ShowDevData extends Option{
+	public override function press():Bool{
+		(cast (Lib.current.getChildAt(0), Main)).switchDevData();
+		display = updateDisplay();
+		return true;
+	}
+	private override function updateDisplay():String
+	{
+		return (cast (Lib.current.getChildAt(0), Main)).dataText.visible == true ? "Dev Data: On" : "Dev Data: Off";
+		
 	}
 }
 
@@ -709,11 +868,7 @@ class FPSCap extends Option
 	public override function press():Bool
 	{
 		FlxG.save.data.noFpsCap = !FlxG.save.data.noFpsCap;
-		
-		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
+			openfl.Lib.current.stage.frameRate = FlxG.save.data.FPSCap?120:240;
 
 		display = updateDisplay();
 		return true;

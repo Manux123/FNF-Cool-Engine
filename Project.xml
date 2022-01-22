@@ -30,9 +30,9 @@
 	<window if="mobile" orientation="landscape" fullscreen="true" width="1280" height="720" resizable="false"/>
 
 	<!-- the target-sdk-version is for OpenFL stuff -->
-	<android target-sdk-version="17" />
+	<android target-sdk-version="17" if="mobile"/>
 	<define name="mobileC" if="mobile" />
-	<assets path="assets/shared/images/hitbox"/>
+	<assets if="!mobile" path="assets/shared/images/hitbox" embed="true"/>
 
 	<!--Switch-specific-->
 	<window if="switch" orientation="landscape" fullscreen="true" width="0" height="0" resizable="true" />
@@ -49,6 +49,8 @@
 	<assets path="assets/preload" rename="assets" exclude="*.mp3" unless="web"/>
 	
 	<define name="MOD_ALL" if="desktop"/>
+	<!-- DELETE THIS IF YOU ARE MAKING A MOD AND YOU DONT WANT TO SHOW DEV EXTRA INFO-->
+	<define name="DEBUG_BUILD"/>
 	
 	<!-- <define name="PRELOAD_ALL" /> <define name="LUA_ALLOWED" if="desktop"/>-->
 	<define name="PRELOAD_ALL" unless="web" />

@@ -115,6 +115,7 @@ class DataText extends TextField{
 	}
 
 	private function onEnter(_){
+		var mem:Float = Math.round(System.totalMemory / 1024 / 1024 * 100)/100;
 		if (mem > memPeak){
 			memPeak = mem;
 			this.textColor = 0xFF0000;

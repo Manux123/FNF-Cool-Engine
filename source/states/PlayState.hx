@@ -2056,9 +2056,9 @@ class PlayState extends states.MusicBeatState
 							if(!gf.canSing)
 								gf.dance();
 						}
-
-						if(FlxG.save.data.notesplashes)
-							spawnNoteSplashOnNote(daNote,0);
+/*
+						if(FlxG.save.data.notesplashes && !FlxG.save.data.middlescroll)
+							spawnNoteSplashOnNote(daNote,0);*/
 	
 					if (dad.canSing)
 						switch (Math.abs(daNote.noteData))
@@ -2446,7 +2446,7 @@ class PlayState extends states.MusicBeatState
 			rating.loadGraphic(Paths.image(pixelShitPart1 + daNote.noteRating + pixelShitPart2));
 			//rating.screenCenter();
 			rating.x = coolText.x - 40;
-			rating.x -= 210;
+			if(!FlxG.save.data.middlescroll) rating.x -= 210; else rating.x += 200;
 			rating.y += 50;
 			rating.acceleration.y = 550;
 			rating.velocity.y -= FlxG.random.int(140, 175);
@@ -2557,11 +2557,15 @@ class PlayState extends states.MusicBeatState
 	function spawnNoteSplashOnNote(note:Note,?player:Int = 1) {
 		if(note != null) {
 			var strum = playerStrums.members[note.noteData];
-			if(player == 0)
-				strum = cpuStrums.members[note.noteData];
 			if(strum != null) {
 				spawnNoteSplash(strum.x, strum.y, note.noteData, note);
-			}
+			}/*
+			if(player == 0) {
+				var strum2 = cpuStrums.members[note.noteData];
+				if(strum2 != null) {
+					spawnNoteSplash(strum.x, strum.y, note.noteData, note);
+				}
+			}*/
 		}
 	}
 
@@ -2811,7 +2815,7 @@ class PlayState extends states.MusicBeatState
 			var rating:FlxSprite = new FlxSprite().loadGraphic(Paths.image('miss', 'shared'));
 			//rating.screenCenter();
 			rating.x = coolText.x - 40;
-			rating.x -= 180;
+			if(!FlxG.save.data.middlescroll) rating.x -= 180; else rating.x += 200;
 			rating.y += 50;
 			rating.acceleration.y = 550;
 			rating.velocity.y -= FlxG.random.int(140, 175);

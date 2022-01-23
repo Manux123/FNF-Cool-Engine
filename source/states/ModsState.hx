@@ -79,7 +79,7 @@ class ModsState extends states.MusicBeatState
 
 			if(modsFolders != []){
 				for(i in 0... modsFolders.length){
-					var modText:Alphabet = new Alphabet(0,(i + 1) * 100, modsFolders[i],false,true);
+					var modText:Alphabet = new Alphabet(0,(i + 1) * 100, modsFolders[i],false);
 					modText.isMenuItem = true;
 					modText.targetY = i;
 					modText.screenCenter(X);

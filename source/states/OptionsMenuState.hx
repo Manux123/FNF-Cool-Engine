@@ -466,7 +466,8 @@ class DebugOptions extends MusicBeatState{
 	public static var canDoLeft:Bool = false;
 
 	var options:Array<Option> = [
-		new ShowDevData()
+		new ShowDevData(),
+		new AnimData()
 	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
@@ -790,6 +791,18 @@ class ShowDevData extends Option{
 	}
 }
 
+class AnimData extends Option{
+	public override function press():Bool{
+		FlxG.save.data.debugAnim = !FlxG.save.data.debugAnim;
+		display = updateDisplay();
+		return true;
+	}
+	private override function updateDisplay():String
+	{
+		return FlxG.save.data.debugAnim ? "Characters Menu: On" : "Characters Menu: Off";
+	}
+}
+
 class ByeGF extends Option
 {
 	public override function press():Bool
@@ -1056,6 +1069,9 @@ class OptionsData
 
 			if(FlxG.save.data.HUD == null)
 				FlxG.save.data.HUD = false;
+
+			if(FlxG.save.data.debugAnim == null)
+				FlxG.save.data.debugAnim = true;
 			
 			if(FlxG.save.data.HUDTime == null)
 				FlxG.save.data.HUDTime = false;

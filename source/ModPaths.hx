@@ -94,6 +94,21 @@ class ModPaths {
         return getPreloadMod(file,"example_mod");
     }
 
+    static public function lol(file:String, type:AssetType, mod:String, ?library:String)
+    {
+        if (library != null)
+            return getModLibPath(file, library);
+        
+        if (currentLevel != null)
+        {
+            var path = getLibraryMod(file,null,currentLevel);
+            if (OpenflAssets.exists(path, type))
+                return path;
+        }
+        
+        return esotilin(file);
+    }
+
     static public function getModLibPath(file:String, mod:String, library = "images")
     {
         return if (library == "images" || library == "default") getPreloadMod(file,mod); else getLibraryMod(file, mod, library);
@@ -108,6 +123,11 @@ class ModPaths {
 	{
         if(mod != null)
             return 'mods/$mod/$file';
+        return 'mods/$file';
+	}
+
+    inline static public function esotilin(file:String)
+	{
         return 'mods/$file';
 	}
 }

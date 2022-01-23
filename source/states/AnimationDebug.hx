@@ -46,6 +46,7 @@ class AnimationDebug extends MusicBeatState
 	var camFollow:FlxObject;
 	var camHUD:FlxCamera;
 	var camGame:FlxCamera;
+	var camOther:FlxCamera;
 	var player:FlxUICheckBox;
 	var _file:FileReference;
 	var ghostBF:Character;
@@ -110,10 +111,13 @@ class AnimationDebug extends MusicBeatState
 
 		camHUD = new FlxCamera();
 		camHUD.bgColor.alpha = 0;
+		camOther = new FlxCamera();
+		camOther.bgColor.alpha = 0;
 		camGame = new FlxCamera();
 
 		FlxG.cameras.reset(camGame);
 		FlxG.cameras.add(camHUD,false);
+		FlxG.cameras.add(camOther,false);
 
 		layeringbullshit = new FlxTypedGroup<FlxSprite>();
 		add(layeringbullshit);

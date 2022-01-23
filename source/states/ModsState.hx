@@ -123,6 +123,6 @@ class ModsState extends states.MusicBeatState
 		super.update(elapsed);
 	}
 	function modsRoot(key:String, ?library:String){
-		return ModPaths.getPath('$key.txt',TEXT, null, library);
+		return ModPaths.lol('$key.txt',TEXT,null,library);
 	}
 }

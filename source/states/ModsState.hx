@@ -27,7 +27,7 @@ using StringTools;
 class ModsState extends states.MusicBeatState
 {
 	var doPush:Bool = false;
-	inline public static var SOUND_EXT = #if web "mp3" #else "ogg" #end;
+	//inline public static var SOUND_EXT = #if web "mp3" #else "ogg" #end;
 
 	static var currentLevel:String = Paths.currentLevel;
 	public static var modsArray:Array<ModsState> = [];
@@ -118,10 +118,12 @@ class ModsState extends states.MusicBeatState
 
 		if(controls.BACK) {
 			FlxG.switchState(new MainMenuState());
-			FlxG.camera.flash(FlxColor.WHITE); }
+			FlxG.camera.flash(FlxColor.WHITE); 
+		}
 		
 		super.update(elapsed);
 	}
+
 	function modsRoot(key:String, ?library:String){
 		return ModPaths.lol('$key.txt',TEXT,null,library);
 	}

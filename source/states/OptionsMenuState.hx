@@ -180,7 +180,7 @@ class OptionsMenu extends MusicBeatState
 		new FPSCap(),
 		new Fullscreen(),
 		#end
-		new AccuracyOption()
+		new ScoreOption()
 	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
@@ -887,18 +887,18 @@ class FPSCap extends Option
 	}
 }
 
-class AccuracyOption extends Option
+class ScoreOption extends Option
 {
 	public override function press():Bool
 	{
-		FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay;
+		FlxG.save.data.scoreTxt = !FlxG.save.data.scoreTxt;
 		display = updateDisplay();
 		return true;
 	}
 
 	private override function updateDisplay():String
 	{
-		return "Accuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on");
+		return "ScoreTxt " + (!FlxG.save.data.scoreTxt ? "normal" : "advanced");
 	}
 }
 
@@ -1053,11 +1053,8 @@ class OptionsData
 			if (FlxG.save.data.dfjk == null)
 				FlxG.save.data.dfjk = false;
 	
-			if (FlxG.save.data.accuracyDisplay == null)
-				FlxG.save.data.accuracyDisplay = true;
-	
-			if (FlxG.save.data.accuracyDisplay == null)
-				FlxG.save.data.accuracyDisplay = true;
+			if (FlxG.save.data.scoreTxt == null)
+				FlxG.save.data.scoreTxt = true;
 
 			if (FlxG.save.data.middlescroll == null)
 				FlxG.save.data.middlescroll = false;
@@ -1066,7 +1063,7 @@ class OptionsData
 				FlxG.save.data.HUD = false;
 
 			if(FlxG.save.data.debugAnim == null)
-				FlxG.save.data.debugAnim = true;
+				FlxG.save.data.debugAnim = false;
 			
 			if(FlxG.save.data.HUDTime == null)
 				FlxG.save.data.HUDTime = false;

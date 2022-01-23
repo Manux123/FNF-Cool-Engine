@@ -20,6 +20,8 @@ class NoteSkinDetector
 	inline static public function noteSkinNormal(){
 		var path:String = 'shared/UI/CAMELIANOTES_assets';
 
+		var customNotes = CoolUtil.coolTextFile(Paths.txt('noteName'));
+
 		switch (FlxG.save.data.noteSkin)
 		{
 			case 'Arrows':
@@ -30,6 +32,8 @@ class NoteSkinDetector
 				path = 'UI/QUAVER_assets';
 			case 'StepMania':
 				path = 'UI/CAMELIANOTES_assets';
+			default:
+				path = 'UI/' + customNotes;
 		}
 
 		var tex = Paths.getSparrowAtlas(path, 'shared');

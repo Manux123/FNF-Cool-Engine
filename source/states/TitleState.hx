@@ -1,6 +1,5 @@
 package states;
 
-import js.html.Text;
 #if desktop
 import Discord.DiscordClient;
 import sys.thread.Thread;

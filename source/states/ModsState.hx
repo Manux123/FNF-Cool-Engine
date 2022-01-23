@@ -33,7 +33,7 @@ class ModsState extends states.MusicBeatState
 	var warning:FlxText;
 
 	var nameSongs:String = '';
-	var grpMods:FlxTypedGroup<Alphabet>;
+	var grpMods:FlxTypedGroup<FlxText>;
 
 	override function create(){
 		#if desktop
@@ -64,7 +64,7 @@ class ModsState extends states.MusicBeatState
 		add(exitState);
 
 		if(modsFolders.length != 0){
-			grpMods = new FlxTypedGroup<Alphabet>();
+			grpMods = new FlxTypedGroup<FlxText>();
 
 			for( i in 0... modsFolders.length){
 				if(OpenflAssets.exists(ModPaths.getModPath(modsFolders[i]))){
@@ -79,9 +79,7 @@ class ModsState extends states.MusicBeatState
 
 			if(modsFolders != []){
 				for(i in 0... modsFolders.length){
-					var modText:Alphabet = new Alphabet(0,(i + 1) * 100, modsFolders[i],false);
-					modText.isMenuItem = true;
-					modText.targetY = i;
+					var modText:FlxText = new FlxText(0,(i + 1) * 100, modsFolders[i],32);
 					modText.screenCenter(X);
 					if(usableMods[i])
 						grpMods.add(modText);

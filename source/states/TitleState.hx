@@ -27,6 +27,9 @@ import flixel.util.FlxTimer;
 import lime.app.Application;
 import openfl.Assets;
 import openfl.display.BitmapData as Bitmap;
+#if sys
+import sys.FileSystem;
+#end
 
 using StringTools;
 
@@ -43,6 +46,15 @@ class TitleState extends states.MusicBeatState
 	//var curWacky:Array<String> = [];
 
 	var wackyImage:FlxSprite;
+	
+		function userName():String {
+	
+		var env = Sys.environment();
+		if (!env.exists("USERNAME")) {
+			return "Couldnt find computa name";
+		}
+		return env["USERNAME"];
+	}
 
 	override public function create():Void
 	{
@@ -343,8 +355,8 @@ class TitleState extends states.MusicBeatState
 		}
 	}
 
-	var randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for", "YOU WHAT", "We shouldn't be", "you sussy baka", "._.", "get a brain", "sus", "we are cool"];
-	var randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "*dances epicly*", "hardcoding this lmao", "among us", "im not imposter i swear", "for me", "sus", "right?"];
+	var randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for", "YOU WHAT", "We shouldn't be", "you sussy baka", "._.", "get a brain", "sus", "we are cool", "" + userName(), "why are we"];
+	var randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "*dances epicly*", "hardcoding this lmao", "among us", "im not imposter i swear", "for me", "sus", "right?", "run" "hardcoding this"]; // idk man also dis helps me get ur username
 	var random:Int;
 
 	override function beatHit()

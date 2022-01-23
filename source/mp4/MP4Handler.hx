@@ -1,5 +1,6 @@
 package mp4;
 
+#if windows
 import states.LoadingState;
 import flixel.FlxG;
 import flixel.FlxSprite;
@@ -7,7 +8,6 @@ import flixel.FlxState;
 import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 import openfl.events.Event;
-#if windows
 import vlc.VlcBitmap;
 
 // THIS IS FOR TESTING

@@ -19,6 +19,7 @@ class Character extends FlxSprite
 	public var curCharacter:String = 'bf';
 
 	public var holdTimer:Float = 0;
+	public var healthBarColor:Int;
 
 	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false)
 	{
@@ -43,6 +44,8 @@ class Character extends FlxSprite
 
 				playAnim('danceRight');
 
+				healthBarColor = 0xFFa5004d;
+
 			case 'gf-christmas':
 				tex = Paths.getSparrowAtlas('christmas/gfChristmas');
 				frames = tex;
@@ -51,6 +54,8 @@ class Character extends FlxSprite
 				loadOffsetFile(curCharacter);
 
 				playAnim('danceRight');
+
+			healthBarColor = 0xFFa5004d;
 
 			case 'gf-car':
 				tex = Paths.getSparrowAtlas('characters/week4/gfCar');
@@ -63,6 +68,8 @@ class Character extends FlxSprite
 				loadOffsetFile(curCharacter);
 
 				playAnim('danceRight');
+
+			healthBarColor = 0xFFa5004d;
 
 			case 'gf-pixel':
 				tex = Paths.getSparrowAtlas('weeb/gfPixel');
@@ -78,6 +85,8 @@ class Character extends FlxSprite
 				setGraphicSize(Std.int(width * states.PlayState.daPixelZoom));
 				updateHitbox();
 				antialiasing = false;
+
+			healthBarColor = 0xFFa5004d;
 
 			case 'dad':
 				// DAD ANIMATION?
@@ -97,6 +106,8 @@ class Character extends FlxSprite
 
 				playAnim('idle');
 
+				healthBarColor = 0xFFaf66ce;
+
 			case 'spooky':
 				// SPOOKY MONTH!
 				tex = Paths.getSparrowAtlas('characters/week2/spooky_kids_assets');
@@ -111,6 +122,8 @@ class Character extends FlxSprite
 				loadOffsetFile(curCharacter);
 
 				playAnim('danceRight');
+
+				healthBarColor = 0xFFd57e00;
 
 			case 'mom':
 				tex = Paths.getSparrowAtlas('characters/week4/Mom_Assets');
@@ -128,6 +141,8 @@ class Character extends FlxSprite
 
 				playAnim('idle');
 
+				healthBarColor = 0xFFd8558e;
+
 			case 'mom-car':
 				tex = Paths.getSparrowAtlas('characters/week4/momCar');
 				frames = tex;
@@ -142,6 +157,8 @@ class Character extends FlxSprite
 
 				playAnim('idle');
 
+				healthBarColor = 0xFFd8558e;
+
 			case 'monster':
 				tex = Paths.getSparrowAtlas('characters/week2/Monster_Assets');
 				frames = tex;
@@ -155,6 +172,8 @@ class Character extends FlxSprite
 
 				playAnim('idle');
 
+				healthBarColor = 0xFFf3ff6e;
+
 			case 'monster-christmas':
 				tex = Paths.getSparrowAtlas('christmas/monsterChristmas');
 				frames = tex;
@@ -167,6 +186,8 @@ class Character extends FlxSprite
 				loadOffsetFile(curCharacter);
 
 				playAnim('idle');
+
+				healthBarColor = 0xFFf3ff6e;
 
 			case 'pico':
 				tex = Paths.getSparrowAtlas('Pico_FNF_assetss');
@@ -198,6 +219,8 @@ class Character extends FlxSprite
 				playAnim('idle');
 
 				flipX = true;
+
+				healthBarColor = 0xFFb7d855;
 
 			case 'bf':
 				var tex = Paths.getSparrowAtlas('characters/BOYFRIEND');
@@ -305,6 +328,8 @@ class Character extends FlxSprite
 
 				antialiasing = false;
 
+				healthBarColor = 0xFFffaa6f;
+
 			case 'senpai-angry':
 				frames = Paths.getSparrowAtlas('weeb/senpai');
 				animation.addByPrefix('idle', 'Angry Senpai Idle', 24, false);
@@ -322,6 +347,8 @@ class Character extends FlxSprite
 
 				antialiasing = false;
 
+				healthBarColor = 0xFFffaa6f;
+
 			case 'spirit':
 				frames = Paths.getPackerAtlas('weeb/spirit');
 				animation.addByPrefix('idle', "idle spirit_", 24, false);
@@ -338,6 +365,7 @@ class Character extends FlxSprite
 				playAnim('idle');
 
 				antialiasing = false;
+				healthBarColor = 0xFFff3c6e;
 
 			case 'parents-christmas':
 				frames = Paths.getSparrowAtlas('christmas/mom_dad_christmas_assets');
@@ -356,6 +384,8 @@ class Character extends FlxSprite
 				loadOffsetFile(curCharacter);
 
 				playAnim('idle');
+
+				healthBarColor = 0xFFaf66ce;
 			case 'bf-pixel-enemy':
 				frames = Paths.getSparrowAtlas('weeb/bfPixel', 'week6');
 				animation.addByPrefix('idle', 'BF IDLE', 24, false);
@@ -376,6 +406,22 @@ class Character extends FlxSprite
 				antialiasing = false;
 	
 				flipX = true;
+				healthBarColor = 0xFF7bd6f6;
+
+			default:
+				tex = Paths.getSparrowAtlas('characters/week1/DADDY_DEAREST');
+				frames = tex;
+				animation.addByPrefix('idle', 'Dad idle dance', 24, false);
+				animation.addByPrefix('singUP', 'Dad Sing Note UP', 24, false);
+				animation.addByPrefix('singRIGHT', 'Dad Sing Note RIGHT', 24, false);
+				animation.addByPrefix('singDOWN', 'Dad Sing Note DOWN', 24, false);
+				animation.addByPrefix('singLEFT', 'Dad Sing Note LEFT', 24, false);
+
+				loadOffsetFile(curCharacter);
+
+				playAnim('idle');
+				
+				healthBarColor = 0xFFFF0000;
 		}
 
 		dance();

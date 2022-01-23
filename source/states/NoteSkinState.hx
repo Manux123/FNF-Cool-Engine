@@ -33,12 +33,6 @@ class NoteSkinState extends states.MusicBeatState
 	var daNoteSkins:Array<String>;
 	override function create()
 	{
-
-		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
-		
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 		daNoteSkins = CoolUtil.coolTextFile(Paths.txt('noteSkinList'));
 

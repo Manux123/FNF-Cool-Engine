@@ -44,11 +44,6 @@ class CacheState extends MusicBeatState
 
         PlayerSettings.player1.controls.loadKeyBinds();
 
-        if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
-
         toBeFinished = (Lambda.count(characters) + Lambda.count(objects) + Lambda.count(sounds));
 
         var bg:FlxSprite = new FlxSprite().loadGraphic(BitmapData.fromFile(Paths.image('menu/menuBG')));

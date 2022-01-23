@@ -36,12 +36,6 @@ class LoadingState extends states.MusicBeatState
 	
 	override function create()
 	{
-
-		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
-
 		logo = new FlxSprite(-150, -100);
 		logo.frames = Paths.getSparrowAtlas('titlestate/logoBumpin');
 		logo.antialiasing = true;

@@ -98,11 +98,6 @@ class FreeplayState extends states.MusicBeatState
 
 	override function create()
 	{
-		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
-		
 		//preload();
 		transIn = FlxTransitionableState.defaultTransIn;
 		transOut = FlxTransitionableState.defaultTransOut;
@@ -340,28 +335,10 @@ class FreeplayState extends states.MusicBeatState
 		}
 		else #end if (accepted)
 		{
-			var songLowercase:String = songs[curSelected].songName.toLowerCase();
-			var poop:String = Highscore.formatSong(songLowercase, curDifficulty);
-			//FlxTween.tween(songText.isMenuItem, {y: songText.y - 2000}, 0.6, {ease: FlxEase.quadIn, type: ONESHOT});
-			trace(poop);
-
-			states.PlayState.SONG = Song.loadFromJson(poop, songLowercase);
-			states.PlayState.isStoryMode = false;
-			states.PlayState.storyDifficulty = curDifficulty;
-
-			states.PlayState.storyWeek = songs[curSelected].week;
-			trace('CURRENT WEEK: ' + getCurrentWeekNumber());
+			loadFreeplaySong(songs[curSelected].songName.toLowerCase(),songs[curSelected].week,curDifficulty);
 			if(colorTween != null) {
 				colorTween.cancel();
 			}
-			FlxG.sound.music.volume = 0;
-
-			FlxG.camera.flash(FlxColor.WHITE, 1);
-			FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
-
-			LoadingState.loadAndSwitchState(new PlayState());
-					
-			destroyFreeplayVocals();
 		}
 		super.update(elapsed);
 	}
@@ -393,6 +370,27 @@ class FreeplayState extends states.MusicBeatState
 		positionHighscore();
 	}
 
+	inline static public function loadFreeplaySong(song:String,week:Int,difficulty:Int){
+		var songLowercase:String = song;
+		var poop:String = Highscore.formatSong(songLowercase, difficulty);
+		//FlxTween.tween(songText.isMenuItem, {y: songText.y - 2000}, 0.6, {ease: FlxEase.quadIn, type: ONESHOT});
+		trace(poop);
+
+		states.PlayState.SONG = Song.loadFromJson(poop, songLowercase);
+		states.PlayState.isStoryMode = false;
+		states.PlayState.storyDifficulty = difficulty;
+
+		states.PlayState.storyWeek = week;
+		trace('CURRENT WEEK: ' + getCurrentWeekNumber());
+		FlxG.sound.music.volume = 0;
+
+		FlxG.camera.flash(FlxColor.WHITE, 1);
+		FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
+
+		LoadingState.loadAndSwitchState(new PlayState());
+
+		destroyFreeplayVocals();
+	}
 	function changeSelection(change:Int = 0)
 	{
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);

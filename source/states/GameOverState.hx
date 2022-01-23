@@ -23,12 +23,6 @@ class GameOverState extends FlxTransitionableState
 
 	override function create()
 	{
-
-		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
-		
 		/* var loser:FlxSprite = new FlxSprite(100, 100);
 			var loseTex = FlxAtlasFrames.fromSparrow(AssetPaths.lose.png, AssetPaths.lose.xml);
 			loser.frames = loseTex;

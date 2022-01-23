@@ -26,17 +26,13 @@ using StringTools;
 
 class ModsState extends states.MusicBeatState
 {
-	var doPush:Bool = false;
-	inline public static var SOUND_EXT = #if web "mp3" #else "ogg" #end;
-
-	static var currentLevel:String = Paths.currentLevel;
-	public static var modsArray:Array<ModsState> = [];
+	public static var usableMods:Array<Bool>;
+	public static var modsFolders:Array<String>;
+	private final mods:String = "mods/modsList.txt";
 	var exitState:FlxText;
 	var warning:FlxText;
 
 	var nameSongs:String = '';
-	var modsFolder:String;
-	var modsFolders:Array<String>;
 	var grpMods:FlxTypedGroup<Alphabet>;
 
 	override function create(){
@@ -45,37 +41,9 @@ class ModsState extends states.MusicBeatState
 		#end
 
 		//THIS CRASH WHEN IS EMPTY :I
-		modsFolder = modsRoot('modsList');
-		modsFolders = CoolUtil.coolTextFile(modsFolder);
+		modsFolders = CoolUtil.coolTextFile(mods);
 
-		grpMods = new FlxTypedGroup<Alphabet>();
-
-		#if MOD_ALL
-			var path:String = modsFolder;
-			for(i in 0... modsFolders.length){
-				if(#if sys FileSystem.exists(path)#else
-					OpenflAssets.exists(path)#end) {
-					path = ModPaths.getPreloadMod("",modsFolders[i]);
-					doPush = true;
-				} else {
-					path = ModPaths.getModImage(path,modsFolders[i]);
-					if(!#if sys FileSystem.exists(path)
-						#else OpenflAssets.exists(path)#end) {
-						doPush = false;
-					}
-				}
-			}
-		#end
-
-		for(i in 0... modsFolders.length){
-			var modText:Alphabet = new Alphabet(0,(i + 1) * 100, modsFolders[i],false,true);
-			modText.isMenuItem = true;
-			modText.targetY = i;
-			modText.screenCenter(X);
-			grpMods.add(modText);
-		}
-
-		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGBlue')));
+		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGBlue'));
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0.18;
 		bg.screenCenter();
@@ -87,8 +55,6 @@ class ModsState extends states.MusicBeatState
 		black.alpha = 0.7;
 		add(black);
 
-		add(grpMods);
-
 		exitState = new FlxText(0, 0, 0, "ESC to exit", 12);
 		exitState.size = 28;
 		exitState.y += 35;
@@ -97,12 +63,40 @@ class ModsState extends states.MusicBeatState
 		exitState.setFormat("VCR OSD Mono", 28, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(exitState);
 
+		if(modsFolders.length != 0){
+			grpMods = new FlxTypedGroup<Alphabet>();
+
+			for( i in 0... modsFolders.length){
+				if(OpenflAssets.exists(ModPaths.getModPath(modsFolders[i]))){
+					usableMods.push(true);
+					trace('Current Mod ${modsFolders[i]} is Usable');
+				}
+				else{
+					usableMods.push(false);
+					trace('Current Mod ${modsFolders[i]} is Not-Usable, please, check if you write the name correctly :/');
+				}
+			}
+
+			if(modsFolders != []){
+				for(i in 0... modsFolders.length){
+					var modText:Alphabet = new Alphabet(0,(i + 1) * 100, modsFolders[i],false,true);
+					modText.isMenuItem = true;
+					modText.targetY = i;
+					modText.screenCenter(X);
+					if(usableMods[i])
+						grpMods.add(modText);
+				}
+			}
+			
+			add(grpMods);
+		}
+
 		super.create();
 	}
 
 	override function update(elapsed:Float){
 		#if MOD_ALL
-		if(!doPush) {
+		if(modsFolders.length == 0){
 			warning = new FlxText(0, 0, 0, "NO MODS IN THE MODS FOLDER", 36);
 			warning.size = 36;
 			warning.scrollFactor.set();
@@ -111,18 +105,17 @@ class ModsState extends states.MusicBeatState
 			add(warning);
 			new FlxTimer().start(1, function (tmrr:FlxTimer){
 			FlxTween.tween(warning, {alpha: 0}, 1, {type:PINGPONG});});
-		} else {
-			//warning.kill(); kill it when it not initialiced isn't very smart
 		}
+		#else
+		LoadingState.loadAndSwitchState(new MainMenuState());
+		FlxG.camera.flash(FlxColor.WHITE);
 		#end
 
 		if(controls.BACK) {
-			FlxG.switchState(new MainMenuState());
-			FlxG.camera.flash(FlxColor.WHITE); }
+			LoadingState.loadAndSwitchState(new MainMenuState());
+			FlxG.camera.flash(FlxColor.WHITE);
+		}
 		
 		super.update(elapsed);
-	}
-	function modsRoot(key:String, ?library:String){
-		return ModPaths.lol('$key.txt',TEXT,null,library);
 	}
 }

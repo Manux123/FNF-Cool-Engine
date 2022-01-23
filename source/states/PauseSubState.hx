@@ -109,6 +109,7 @@ class PauseSubState extends states.MusicBeatSubstate
 			switch (daSelected)
 			{
 				case "Resume":
+					states.PlayState.instance.boyfriend.stunned = false;
 					close();
 				case "Restart Song":
 					FlxG.resetState();

@@ -197,11 +197,6 @@ class OptionsMenu extends MusicBeatState
 		menuBG.antialiasing = true;
 		add(menuBG);
 
-		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
-
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
 		
@@ -880,7 +875,7 @@ class FPSCap extends Option
 	public override function press():Bool
 	{
 		FlxG.save.data.noFpsCap = !FlxG.save.data.noFpsCap;
-			openfl.Lib.current.stage.frameRate = FlxG.save.data.FPSCap?120:240;
+		(cast (openfl.Lib.current.getChildAt(0), Main)).setMaxFps(FlxG.save.data.FPSCap?120:240);
 
 		display = updateDisplay();
 		return true;

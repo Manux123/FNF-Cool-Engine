@@ -114,6 +114,10 @@ class ModPaths {
         return if (library == "images" || library == "default") getPreloadMod(file,mod); else getLibraryMod(file, mod, library);
     }
 
+    static public function getModPath(mod:String){
+        return 'mods/$mod';
+    }
+
     inline static function getLibraryMod(file:String, mod:String, library:String)
     {
         return '$library:$library/$file';

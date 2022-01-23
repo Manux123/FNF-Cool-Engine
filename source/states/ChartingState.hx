@@ -48,6 +48,8 @@ class ChartingState extends states.MusicBeatState
 
 	var UI_box:FlxUITabMenu;
 
+	public static var instance:ChartingState = null;
+
 	/**
 	 * Array of notes showing when each section STARTS in STEPS
 	 * Usually rounded up??
@@ -77,7 +79,7 @@ class ChartingState extends states.MusicBeatState
 
 	var gridBG:FlxSprite;
 
-	var _song:SwagSong;
+	public static var _song:SwagSong;
 
 	var typingShit:FlxInputText;
 	/*
@@ -98,11 +100,7 @@ class ChartingState extends states.MusicBeatState
 
 	override function create()
 	{
-		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
-		
+		instance = this;
 		#if desktop
 		DiscordClient.changePresence("Chart Editor", null, null, true);
 		#end
@@ -148,9 +146,9 @@ class ChartingState extends states.MusicBeatState
 
 		curBeat = recalculateBeats();
 
-		if (states.PlayState.SONG != null)
+		if (states.PlayState.SONG != null && _song == null)
 			_song = states.PlayState.SONG;
-		else
+		else if(_song == null)
 		{
 			_song = {
 				song: 'Test',

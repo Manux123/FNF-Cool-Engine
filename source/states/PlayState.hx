@@ -45,7 +45,7 @@ import lime.utils.Assets;
 import openfl.display.BlendMode;
 import openfl.display.StageQuality;
 import openfl.filters.ShaderFilter;
-//import ModchartState;
+import states.MusicBeatState;
 import FunkinLua;
 import controls.KeyBindMenu;
 #if mobileC
@@ -60,7 +60,7 @@ import sys.FileSystem;
 
 using StringTools;
 
-class PlayState extends states.MusicBeatState
+class PlayState extends MusicBeatState
 {
 	public static var instance:PlayState = null; //epic shit
 
@@ -221,17 +221,14 @@ class PlayState extends states.MusicBeatState
 	override public function create()
 	{
 		instance = this;
+
+		MusicBeatState.onApplicationFocusIn = onFocusIn;
 		KeyBindMenu.isPlaying = true;
 
 		FlxG.mouse.visible = false;
 		theFunne = FlxG.save.data.newInput;
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
-
-		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
 
 		sicks = 0;
 		misses = 0;
@@ -635,49 +632,7 @@ class PlayState extends states.MusicBeatState
 			'health', 0, 2);
 		healthBar.scrollFactor.set();
 
-
-		var cpuColor = 0xFFa5004d;
-		var playerColor = 0xFF31b0d1;
-		switch(SONG.player1.toLowerCase()){
-			case 'bf':
-				playerColor = 0xFF31b0d1;
-			case 'bf-pixel':
-				playerColor = 0xFF7bd6f6;
-			case 'bf-car':
-				playerColor = 0xFF31b0d1;
-			case 'bf-christmas':
-				playerColor = 0xFF31b0d1;
-			default:
-				playerColor = 0xFF31b0d1;
-		}
-
-		switch (SONG.player2.toLowerCase())
-        {
-            case 'gf':
-                cpuColor = 0xFFa5004d;
-            case 'dad':
-                cpuColor = 0xFFaf66ce;
-            case 'spooky':
-                cpuColor = 0xFFd57e00;
-            case 'pico':
-                cpuColor = 0xFFb7d855;
-            case 'mom' | 'mom-car':
-                cpuColor = 0xFFd8558e;
-            case 'parents-christmas':
-                cpuColor = 0xFFaf66ce;
-            case 'monster-christmas' | 'monster':
-                cpuColor = 0xFFf3ff6e;
-            case 'senpai' | 'senpai-angry':
-                cpuColor = 0xFFffaa6f;
-            case 'spirit':
-                cpuColor = 0xFFff3c6e;
-            case 'bf-pixel-enemy':
-                cpuColor = 0xFF7bd6f6;
-            default:
-				cpuColor = 0xFFFF0000;
-        }
-
-		healthBar.createFilledBar(cpuColor, playerColor);
+		healthBar.createFilledBar(dad.healthBarColor, boyfriend.healthBarColor);
 
 		// healthBar
 		add(healthBar);
@@ -824,6 +779,10 @@ class PlayState extends states.MusicBeatState
 		}
 
 		super.create();
+	}
+
+	function onFocusIn(){
+		(cast (openfl.Lib.current.getChildAt(0), Main)).setMaxFps(FlxG.save.data.FPSCap?120:240);
 	}
 
 	function setCurrentStage(){
@@ -1699,6 +1658,7 @@ class PlayState extends states.MusicBeatState
 			#if desktop
 			DiscordClient.changePresence("PAUSED on " + SONG.song + " (" + storyDifficultyText + ")", "Acc: " + Mathf.getPercentage(accuracy, 2) + "% | Score: " + songScore + " | Misses: " + misses  , iconRPC);
 			#end
+
 			if (!startTimer.finished)
 				startTimer.active = false;
 		}
@@ -1794,18 +1754,7 @@ class PlayState extends states.MusicBeatState
 
 		if (FlxG.keys.justPressed.ENTER && startedCountdown && canPause)
 		{
-			persistentUpdate = false;
-			persistentDraw = true;
-			paused = true;
-
-			// 1 / 1000 chance for Gitaroo Man easter egg
-			if (FlxG.random.bool(0.1))
-			{
-				// gitaroo man easter egg
-				FlxG.switchState(new GitarooPause());
-			}
-			else
-				openSubState(new PauseSubState(boyfriend.getScreenPosition().x, boyfriend.getScreenPosition().y));
+			pauseGame();
 		}
 
 		if (FlxG.keys.justPressed.SEVEN)
@@ -2313,6 +2262,22 @@ class PlayState extends states.MusicBeatState
 
 			LoadingState.loadAndSwitchState(new RatingState());
 		}
+	}
+
+	private function pauseGame(){
+		boyfriend.stunned = true;
+		persistentUpdate = false;
+		persistentDraw = true;
+		paused = true;
+		Debug.logTrace("Fucking idiot");
+		// 1 / 1000 chance for Gitaroo Man easter egg
+		if (FlxG.random.bool(0.1))
+		{
+			// gitaroo man easter egg
+			FlxG.switchState(new GitarooPause());
+		}
+		else
+			openSubState(new PauseSubState(boyfriend.getScreenPosition().x, boyfriend.getScreenPosition().y));
 	}
 
 	var endingSong:Bool = false;

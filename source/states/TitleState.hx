@@ -46,6 +46,7 @@ class TitleState extends states.MusicBeatState
 
 	override public function create():Void
 	{
+		(cast (openfl.Lib.current.getChildAt(0), Main)).setMaxFps(FlxG.save.data.FPSCap?120:240);
 		PlayerSettings.init();
 
 		//curWacky = FlxG.random.getObject(getIntroTextShit());
@@ -239,16 +240,17 @@ class TitleState extends states.MusicBeatState
 
 		var gamepad:FlxGamepad = FlxG.gamepads.lastActive;
 
-		if (gamepad != null)
-		{
-			if (gamepad.justPressed.START)
+		if(gamepad != null){
+			if (gamepad.justPressed.START#if switch || gamepad.justPressed.B#end)
 				pressedEnter = true;
-
-			#if switch
-			if (gamepad.justPressed.B)
-				pressedEnter = true;
+			#if (!switch && desktop)
+			if(gamepad.justPressed.BACK)
+				Application.current.window.close();
 			#end
 		}
+
+		if(controls.BACK)
+			Application.current.window.close();
 
 		if (pressedEnter && !transitioning && skippedIntro)
 		{

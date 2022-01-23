@@ -134,8 +134,10 @@ class DataText extends TextField{
 			memPeak = mem;
 			this.textColor = 0xFF0000;
 		}
-		else if(mem < memPeak)
+		else if(mem < memPeak){
 			this.textColor = 0x17FF00;
+			memPeak = mem;
+		}
 		else
 			this.textColor = 0xFFFFFF;
 

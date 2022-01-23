@@ -51,14 +51,18 @@ class Ranking {
         var customTimeScale = Conductor.timeScale * customSafeZone / 166 * 15;
 
         var rating = "";
+        var timingWindowsData:Array<Dynamic>=
+            [[166,135,'shit-soon'],
+            [135,90,'bad-soon'],
+            [90,45,'good-soon'],
+            [45,-45,'sick'],
+            [-90,-45,'good-later'],
+            [-135,-90,'bad-later'],
+            [-166,-135,'shit-later']];
 
-        var timingWindowsRating:Array<String> = ['shit-soon','bad-soon','good-soon','sick','good-later','bad-later','shit-later'];
-        var timingWindows:Array<Int> = [166, 135, 90, 45, -90, -135, -166];
-        var timingWindowsTiny:Array<Int> = [135, 90, 45, -45, -45, -90, -135];
-
-        for(i in 0... timingWindows.length){
-            if(noteDiff <= timingWindows[i] * customTimeScale && noteDiff >= timingWindowsTiny[i] * customTimeScale){
-                rating = timingWindowsRating[i];
+        for(i in 0... timingWindowsData.length){
+            if(noteDiff <= timingWindowsData[i][0] * customTimeScale && noteDiff >= timingWindowsData[i][1] * customTimeScale){
+                rating = timingWindowsData[i][2];
                 break;
             }
         }

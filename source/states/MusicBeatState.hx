@@ -1,5 +1,6 @@
 package states;
 
+import lime.app.Application;
 import Conductor.BPMChangeEvent;
 import flixel.FlxG;
 import flixel.addons.transition.FlxTransitionableState;
@@ -21,6 +22,8 @@ class MusicBeatState extends FlxUIState
 	private var curBeat:Int = 0;
 	private var controls(get, never):Controls;
 
+	public static var onApplicationFocusIn:Void->Void = null;
+	public static var onApplicationFocusOut:Void->Void = null;
 	inline function get_controls():Controls
 		return PlayerSettings.player1.controls;
 
@@ -57,10 +60,20 @@ class MusicBeatState extends FlxUIState
 	public function addVirtualPad(?DPad, ?Action){};
 	#end
 
+	override function destroy(){
+		Application.current.window.onFocusIn.remove(onApplicationFocusIn);
+		Application.current.window.onFocusOut.remove(onApplicationFocusOut);
+	}
+
 	override function create()
 	{
 		if (transIn != null)
 			trace('reg ' + transIn.region);
+
+		if(onApplicationFocusIn!=null)
+			Application.current.window.onFocusIn.add(onApplicationFocusIn);
+		if(onApplicationFocusOut!=null)
+			Application.current.window.onFocusOut.add(onApplicationFocusOut);
 
 		super.create();
 	}

@@ -682,12 +682,19 @@ class PlayState extends states.MusicBeatState
 		// healthBar
 		add(healthBar);
 
-		scoreTxt = new FlxText(45, healthBarBG.y + 50, 0, "", 32);
-		scoreTxt.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);
-        scoreTxt.color = FlxColor.WHITE;
-		scoreTxt.size = 22;
-		scoreTxt.y -= 350;
-		scoreTxt.scrollFactor.set();
+		if (FlxG.save.data.scoreTxt) {
+			scoreTxt = new FlxText(45, healthBarBG.y + 50, 0, "", 32);
+			scoreTxt.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);
+        	scoreTxt.color = FlxColor.WHITE;
+			scoreTxt.size = 22;
+			scoreTxt.y -= 350;
+			scoreTxt.scrollFactor.set();
+		} else {
+			scoreTxt = new FlxText(healthBarBG.x + healthBarBG.width - 190, healthBarBG.y + 30, 0, "", 20);
+			scoreTxt.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE,FlxColor.BLACK);
+			scoreTxt.scrollFactor.set();
+			add(scoreTxt);
+		}
 
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "FNF Cool Engine BETA - v" + Application.current.meta.get('version'), 12);
 		versionShit.scrollFactor.set();
@@ -1787,10 +1794,10 @@ class PlayState extends states.MusicBeatState
 			dad.y += Mathf.sineByTime(elapsed);
 		}
 
-		if (FlxG.save.data.accuracyDisplay)
+		if (FlxG.save.data.scoreTxt)
 			scoreTxt.text = 'Score: \n ${songScore}\n\n' + 'Misses: \n ${misses}\n\n' + 'Accuracy: \n ${Mathf.getPercentage(accuracy, 2)}% \n\n';
 		else
-			scoreTxt.text = 'Score: \n ${songScore}\n' + 'Misses: \n ${misses}\n';
+			scoreTxt.text = 'Score: ${songScore}';
 
 		if (FlxG.keys.justPressed.ENTER && startedCountdown && canPause)
 		{

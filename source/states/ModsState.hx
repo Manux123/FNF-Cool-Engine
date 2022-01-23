@@ -36,6 +36,7 @@ class ModsState extends states.MusicBeatState
 
 	var nameSongs:String = '';
 	var modsFolder:String;
+	var modsFolders:Array<String>;
 	var grpMods:FlxTypedGroup<Alphabet>;
 
 	override function create(){
@@ -43,35 +44,36 @@ class ModsState extends states.MusicBeatState
 		DiscordClient.changePresence("In the Mods Menu", null);
 		#end
 
+		//THIS CRASH WHEN IS EMPTY :I
 		modsFolder = modsRoot('modsList');
+		modsFolders = CoolUtil.coolTextFile(modsFolder);
 
 		grpMods = new FlxTypedGroup<Alphabet>();
-		add(grpMods);
 
 		#if MOD_ALL
 			var path:String = modsFolder;
-			var daModFoldaArray:Array<String> = CoolUtil.coolTextFile(modsRoot('modsList'));
-			for(i in 0... daModFoldaArray.length){
+			for(i in 0... modsFolders.length){
 				if(#if sys FileSystem.exists(path)#else
 					OpenflAssets.exists(path)#end) {
-					path = ModPaths.getPreloadMod(daModFoldaArray[i]);
+					path = ModPaths.getPreloadMod("",modsFolders[i]);
 					doPush = true;
 				} else {
-					path = Paths.image(path);
+					path = ModPaths.getModImage(path,modsFolders[i]);
 					if(!#if sys FileSystem.exists(path)
 						#else OpenflAssets.exists(path)#end) {
 						doPush = false;
 					}
 				}
 			}
-			for(i in 0... daModFoldaArray.length){
-				var mod:Alphabet = new Alphabet(0,(i + 1) * 100, daModFoldaArray[i].toLowerCase(),false,true);
-				mod.isMenuItem = true;
-				mod.targetY = i;
-				mod.screenCenter(X);
-				grpMods.add(mod);
-			}
 		#end
+
+		for(i in 0... modsFolders.length){
+			var modText:Alphabet = new Alphabet(0,(i + 1) * 100, modsFolders[i],false,true);
+			modText.isMenuItem = true;
+			modText.targetY = i;
+			modText.screenCenter(X);
+			grpMods.add(modText);
+		}
 
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGBlue')));
 		bg.scrollFactor.x = 0;
@@ -82,8 +84,10 @@ class ModsState extends states.MusicBeatState
 
 		var	black:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		black.screenCenter(X);
-		black.alpha = 1;
+		black.alpha = 0.7;
 		add(black);
+
+		add(grpMods);
 
 		exitState = new FlxText(0, 0, 0, "ESC to exit", 12);
 		exitState.size = 28;
@@ -119,6 +123,6 @@ class ModsState extends states.MusicBeatState
 		super.update(elapsed);
 	}
 	function modsRoot(key:String, ?library:String){
-		return ModPaths.getPath('$key.txt', TEXT, library);
+		return ModPaths.getPath('$key.txt',TEXT, null, library);
 	}
 }

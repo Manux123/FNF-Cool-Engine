@@ -27,7 +27,7 @@ class ModPaths {
 
     static public function getModSound(key:String, mod:String, ?library:String)
 	{
-		return getPath('$mod/sounds/$key.$SOUND_EXT', SOUND, library);
+		return getPath('$mod/sounds/$key.$SOUND_EXT', SOUND, mod, library);
 	}
 
     inline static public function soundRandom(key:String, min:Int, max:Int, ?library:String)
@@ -38,12 +38,12 @@ class ModPaths {
     inline static public function getModVideo(key:String, mod:String, ?library:String)
 	{
 		trace('mods/$mod/videos/$key.mp4');
-		return getPath('$mod/videos/$key.mp4', BINARY, library);
+		return getPath('$mod/videos/$key.mp4', BINARY, mod, library);
 	}
 
     inline static public function getModMusic(key:String, mod:String, ?library:String)
 	{
-		return getPath('$mod/music/$key.$SOUND_EXT', MUSIC, library);
+		return getPath('$mod/music/$key.$SOUND_EXT',MUSIC, mod, library);
 	}
 
     inline static public function getModVoices(song:String, mod:String)
@@ -71,7 +71,7 @@ class ModPaths {
 	}
     
     inline static public function getModImage(key:String, mod:String, ?library:String){
-		return getPath('$mod/data/$key.json',IMAGE,library);
+		return getPath('$mod/data/$key.json', IMAGE, mod, library);
 	}
 
     inline static public function getModFont(key:String,mod:String)
@@ -79,33 +79,35 @@ class ModPaths {
 		return 'mods/$mod/fonts/$key';
 	}
 
-    static public function getPath(file:String, type:AssetType, ?library:Null<String>)
+    static public function getPath(file:String, type:AssetType, mod:String, ?library:String)
     {
         if (library != null)
             return getModLibPath(file, library);
         
         if (currentLevel != null)
         {
-            var path = getLibraryMod(file, currentLevel);
+            var path = getLibraryMod(file,null,currentLevel);
             if (OpenflAssets.exists(path, type))
                 return path;
         }
         
-        return getPreloadMod(file);
+        return getPreloadMod(file,"example_mod");
     }
 
-    static public function getModLibPath(file:String, library = "images")
+    static public function getModLibPath(file:String, mod:String, library = "images")
     {
-        return if (library == "images" || library == "default") getPreloadMod(file); else getLibraryMod(file, library);
+        return if (library == "images" || library == "default") getPreloadMod(file,mod); else getLibraryMod(file, mod, library);
     }
 
-    inline static function getLibraryMod(file:String, library:String)
+    inline static function getLibraryMod(file:String, mod:String, library:String)
     {
         return '$library:$library/$file';
     }
 
-    inline static public function getPreloadMod(file:String)
+    inline static public function getPreloadMod(file:String,mod:String)
 	{
-		return 'mods/$file';
+        if(mod != null)
+            return 'mods/$mod/$file';
+        return 'mods/$file';
 	}
 }

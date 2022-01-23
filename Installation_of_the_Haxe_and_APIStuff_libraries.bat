@@ -17,7 +17,7 @@ haxelib install flixel-addons
 haxelib install hscript
 haxelib install polymod
 haxelib install newgrounds
-haxelib install linc_luajit
+haxelib git linc_luajit https://github.com/AndreiRudenko/linc_luajit
 haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
 haxelib install hxcpp-debug-server
 title FNF Setup

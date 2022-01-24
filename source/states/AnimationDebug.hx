@@ -1,6 +1,5 @@
 package states;
 
-import states.MusicBeatState;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
@@ -21,18 +20,20 @@ import flixel.addons.ui.FlxUITooltip.FlxUITooltipStyle;
 import openfl.net.FileReference;
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
+import states.PlayState;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flixel.ui.FlxButton;
 import flixel.ui.FlxSpriteButton;
 using StringTools;
-
-class AnimationDebug extends MusicBeatState
+/**
+	*DEBUG MODE
+ */
+class AnimationDebug extends FlxState
 {
 	var UI_box:FlxUITabMenu;
 	var bf:Boyfriend;
 	var dad:Character;
-	var gf:Character;
 	var char:Character;
 	var textAnim:FlxText;
 	var textcontrols:FlxText;
@@ -41,12 +42,10 @@ class AnimationDebug extends MusicBeatState
 	var animList:Array<String> = [];
 	var curAnim:Int = 0;
 	var isDad:Bool = true;
-	var isGF:Bool = true;
 	var daAnim:String = 'spooky';
 	var camFollow:FlxObject;
 	var camHUD:FlxCamera;
 	var camGame:FlxCamera;
-	var camOther:FlxCamera;
 	var player:FlxUICheckBox;
 	var _file:FileReference;
 	var ghostBF:Character;
@@ -111,13 +110,11 @@ class AnimationDebug extends MusicBeatState
 
 		camHUD = new FlxCamera();
 		camHUD.bgColor.alpha = 0;
-		camOther = new FlxCamera();
-		camOther.bgColor.alpha = 0;
 		camGame = new FlxCamera();
 
-		FlxG.cameras.reset(camGame);
+		FlxG.cameras.add(camGame);
 		FlxG.cameras.add(camHUD,false);
-		FlxG.cameras.add(camOther,false);
+		//FlxCamera.defaultCameras = [camGame];
 
 		layeringbullshit = new FlxTypedGroup<FlxSprite>();
 		add(layeringbullshit);
@@ -161,11 +158,11 @@ class AnimationDebug extends MusicBeatState
 		dumbTexts.cameras = [camHUD];
 		add(dumbTexts);
 
-		textcontrols = new FlxText(0,50,'J = Camera Left  L = Camera Right  I = Camera Up  K = Camera Down');
-        textcontrols.size = 24;
+		textcontrols = new FlxText(0,0,'J = Camera Left  L = Camera Right  I = Camera Up  K = Camera Down');
+        textcontrols.size = 28;
+		textcontrols.y += 800;
         textcontrols.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);
         textcontrols.color = FlxColor.WHITE;
-		textcontrols.cameras = [camHUD];
         textcontrols.scrollFactor.set();
         add(textcontrols);
 
@@ -173,7 +170,6 @@ class AnimationDebug extends MusicBeatState
 		textAnim.size = 26;
 		textAnim.scrollFactor.set();
 		add(textAnim);
-
 
 		camFollow = new FlxObject(0, 0, 2, 2);
 		camFollow.screenCenter();
@@ -194,22 +190,13 @@ class AnimationDebug extends MusicBeatState
 
 		animList=[];
 
-		if (daAnim == 'bf') {
+		if (daAnim == 'bf')
 			isDad = false;
-			isGF = false;
-		} else if(daAnim == 'gf') {
-			isDad = false;
-			isGF = true;
-		} else {
+		else
 			isDad = true;
-			isGF = false;
-		}
 
 		if(dad!=null)
 			layeringbullshit.remove(dad);
-
-		if(gf!=null)
-			layeringbullshit.remove(gf);
 
 		if(bf!=null)
 			layeringbullshit.remove(bf);
@@ -234,17 +221,6 @@ class AnimationDebug extends MusicBeatState
 
 			char = dad;
 			dad.flipX = player.checked;
-		}
-		if (isGF)
-		{
-
-			gf = new Character(0, 0, daAnim);
-			gf.screenCenter();
-			gf.debugMode = true;
-			layeringbullshit.add(gf);
-
-			char = gf;
-			gf.flipX = player.checked;
 		}
 		else
 		{
@@ -298,7 +274,7 @@ class AnimationDebug extends MusicBeatState
 		if (FlxG.keys.justPressed.ESCAPE)
 		{
 			FlxG.mouse.visible = false;
-			states.LoadingState.loadAndSwitchState(new states.PlayState());
+			LoadingState.loadAndSwitchState(new PlayState());
 		}
 
 		if (FlxG.keys.justPressed.E)

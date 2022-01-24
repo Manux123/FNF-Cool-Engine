@@ -222,7 +222,6 @@ class PlayState extends MusicBeatState
 	{
 		instance = this;
 
-		MusicBeatState.onApplicationFocusIn = onFocusIn;
 		KeyBindMenu.isPlaying = true;
 
 		FlxG.mouse.visible = false;
@@ -784,10 +783,6 @@ class PlayState extends MusicBeatState
 		}
 
 		super.create();
-	}
-
-	function onFocusIn(){
-		(cast (openfl.Lib.current.getChildAt(0), Main)).setMaxFps(FlxG.save.data.FPSCap?120:240);
 	}
 
 	function setCurrentStage(){

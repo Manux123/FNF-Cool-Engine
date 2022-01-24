@@ -115,7 +115,7 @@ class ModPaths {
     }
 
     static public function getModPath(mod:String){
-        return 'mods/$mod';
+        return 'mods/$mod/mod.cool';
     }
 
     inline static function getLibraryMod(file:String, mod:String, library:String)

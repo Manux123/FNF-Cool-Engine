@@ -13,7 +13,10 @@ class ModPaths {
     }
 
     inline static public function getModTxt(key:String, mod:String, ?library:String){
-		return getPath('$mod/data/$key.txt',TEXT,library);
+        if(mod != null)
+            return getPath('$mod/data/$key.txt',TEXT,library);
+        else
+            return getPath('$key.txt',TEXT,library);
 	}
 
     inline static public function getModXml(key:String, mod:String ,?library:String)
@@ -79,19 +82,19 @@ class ModPaths {
 		return 'mods/$mod/fonts/$key';
 	}
 
-    static public function getPath(file:String, type:AssetType, mod:String, ?library:String)
+    static public function getPath(file:String, type:AssetType, ?mod:String, ?library:String)
     {
         if (library != null)
             return getModLibPath(file, library);
         
         if (currentLevel != null)
         {
-            var path = getLibraryMod(file,null,currentLevel);
+            var path = getLibraryMod(file,mod);
             if (OpenflAssets.exists(path, type))
                 return path;
         }
         
-        return getPreloadMod(file,"example_mod");
+        return getPreloadMod(file,null);
     }
 
     static public function lol(file:String, type:AssetType, mod:String, ?library:String)
@@ -101,7 +104,7 @@ class ModPaths {
         
         if (currentLevel != null)
         {
-            var path = getLibraryMod(file,null,currentLevel);
+            var path = getLibraryMod(file,null);
             if (OpenflAssets.exists(path, type))
                 return path;
         }
@@ -111,19 +114,22 @@ class ModPaths {
 
     static public function getModLibPath(file:String, mod:String, library = "images")
     {
-        return if (library == "images" || library == "default") getPreloadMod(file,mod); else getLibraryMod(file, mod, library);
+        return if (library == "images" || library == "default") getPreloadMod(file,mod); else getLibraryMod(file, mod);
     }
 
     static public function getModPath(mod:String){
         return 'mods/$mod/mod.cool';
     }
 
-    inline static function getLibraryMod(file:String, mod:String, library:String)
+    inline static function getLibraryMod(file:String, ?mod:String = null)
     {
-        return '$library:$library/$file';
+        if(mod != null)
+            return 'mods/$mod/$file';
+        else
+            return 'mods/$file';
     }
 
-    inline static public function getPreloadMod(file:String,mod:String)
+    inline static public function getPreloadMod(file:String,?mod:String = null)
 	{
         if(mod != null)
             return 'mods/$mod/$file';

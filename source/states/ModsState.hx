@@ -26,14 +26,14 @@ using StringTools;
 
 class ModsState extends states.MusicBeatState
 {
-	public static var usableMods:Array<Bool>;
+	public static var usableMods:Bool;
 	public static var modsFolders:Array<String>;
 	private final mods:String = "mods/modsList.txt";
 	var exitState:FlxText;
 	var warning:FlxText;
 
 	var nameSongs:String = '';
-	var grpMods:FlxTypedGroup<FlxText>;
+	var grpMods:FlxTypedGroup<Alphabet>;
 
 	override function create(){
 		#if desktop
@@ -64,25 +64,28 @@ class ModsState extends states.MusicBeatState
 		add(exitState);
 
 		if(modsFolders.length != 0){
-			grpMods = new FlxTypedGroup<FlxText>();
+			grpMods = new FlxTypedGroup<Alphabet>();
 
 			for( i in 0... modsFolders.length){
 				if(OpenflAssets.exists(ModPaths.getModPath(modsFolders[i]))){
-					usableMods.push(true);
+					usableMods = true;
 					trace('Current Mod ${modsFolders[i]} is Usable');
 				}
 				else{
-					usableMods.push(false);
+					usableMods = false;
 					trace('Current Mod ${modsFolders[i]} is Not-Usable, please, check if you write the name correctly :/');
 				}
 			}
 
 			if(modsFolders != []){
 				for(i in 0... modsFolders.length){
-					var modText:FlxText = new FlxText(0,(i + 1) * 100, modsFolders[i],32);
+					var modText:Alphabet = new Alphabet(0,(i + 1) * 100, modsFolders[i],false);
+					modText.isMenuItem = true;
+					modText.targetY = i;					
 					modText.screenCenter(X);
-					if(usableMods[i])
-						grpMods.add(modText);
+					grpMods.add(modText);
+					if(!usableMods)
+						modText.changeText('Your current mod is not usable');
 				}
 			}
 			

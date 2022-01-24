@@ -265,7 +265,8 @@ class TitleState extends states.MusicBeatState
 			new FlxTimer().start(2, function(tmr:FlxTimer)
 			{
 				// Check if version and changelog is outdated
-                                if(modsFolders.length != 0): // for mods	
+				//i cant compile with this line so i just commented it DX
+				//if(modsFolders.length != 0) // for mods	
 				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/ver.thing");
 				var returnedData:Array<String> = [];
 				var version:String = Application.current.meta.get('version');

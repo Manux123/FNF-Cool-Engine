@@ -96,12 +96,13 @@ class FreeplayState extends states.MusicBeatState
 	var intendedColor:Int;
 	var colorTween:FlxTween;
 
+	final initSonglist = CoolUtil.coolTextFile(Paths.txt('freeplaySonglist'));
+
 	override function create()
 	{
 		//preload();
 		transIn = FlxTransitionableState.defaultTransIn;
 		transOut = FlxTransitionableState.defaultTransOut;
-		var initSonglist = CoolUtil.coolTextFile(Paths.txt('freeplaySonglist'));
 		for (i in 0...initSonglist.length)
 		{
 			var songArray:Array<String> = initSonglist[i].split(":");
@@ -221,6 +222,7 @@ class FreeplayState extends states.MusicBeatState
 		addVirtualPad(FULL, A_B);
 		#end
 		
+		bpmSong = (60/Song.loadFromJson(initSonglist[curSelected] + difficultyStuff[curDifficulty],initSonglist[curSelected]).bpm)/1;
 	}
 
 	override function closeSubState() {
@@ -250,8 +252,15 @@ class FreeplayState extends states.MusicBeatState
 
 	var instPlaying:Int = -1;
 	private static var vocals:FlxSound = null;
+
+	private var bpmtime:Float = 0;
+	private var bpmSong:Float = 0;
+
+	private var vibing:Bool = false;
 	override function update(elapsed:Float)
 	{
+		bpmtime+=elapsed;
+
 		if (FlxG.sound.music.volume < 0.7)
 		{
 			FlxG.sound.music.volume += 0.5 * FlxG.elapsed;
@@ -272,6 +281,14 @@ class FreeplayState extends states.MusicBeatState
 		var downP = controls.DOWN_P;
 		var accepted = controls.ACCEPT;
 		var space = FlxG.keys.justPressed.SPACE;
+
+		if(vibing)
+			if(bpmtime > bpmSong){
+				var inZoom = FlxG.camera.zoom;
+				FlxG.camera.zoom = inZoom*1.07;
+				FlxTween.tween(FlxG.camera,{zoom: inZoom},(cast(bpmSong/5)));
+				bpmtime -= bpmSong;
+			}
 
 		if (upP)
 		{
@@ -321,6 +338,9 @@ class FreeplayState extends states.MusicBeatState
 			discSpr.animation.addByPrefix('idle', 'disco', 24);
 			discSpr.animation.play('idle');
 			discSpr.x += 750;
+			vibing = true;
+			bpmSong = (60/Song.loadFromJson(initSonglist[curSelected] + difficultyStuff[curDifficulty],initSonglist[curSelected]).bpm)/1;
+			bpmtime = 0;
 
 			//disc.y += 880;
 			discSpr.setGraphicSize(Std.int(discSpr.width * 0.5));
@@ -441,12 +461,9 @@ class FreeplayState extends states.MusicBeatState
 
 			if (item.targetY == 0)
 			{
-				FlxTween.tween(item,{x:45},0.45,{ease:FlxEase.elasticInOut});
 				item.alpha = 1;
 				// item.setGraphicSize(Std.int(item.width));
 			}
-			else
-				FlxTween.tween(item,{x:0},0.45,{ease:FlxEase.elasticInOut});
 		}
 		changeDiff();
 	}

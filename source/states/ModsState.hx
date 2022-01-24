@@ -26,9 +26,9 @@ using StringTools;
 
 class ModsState extends states.MusicBeatState
 {
-	public static var usableMods:Bool;
+	//DEJENLO COMO ARRAY NOMAS, NO LO CAMBIEN >:(
+	public static var usableMods:Array<Bool> = [];
 	public static var modsFolders:Array<String>;
-	private final mods:String = "mods/modsList.txt";
 	var exitState:FlxText;
 	var warning:FlxText;
 
@@ -40,8 +40,7 @@ class ModsState extends states.MusicBeatState
 		DiscordClient.changePresence("In the Mods Menu", null);
 		#end
 
-		//THIS CRASH WHEN IS EMPTY :I
-		modsFolders = CoolUtil.coolTextFile(mods);
+		modsFolders = CoolUtil.coolTextFile("mods/modsList.txt");
 
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGBlue'));
 		bg.scrollFactor.x = 0;
@@ -63,34 +62,29 @@ class ModsState extends states.MusicBeatState
 		exitState.setFormat("VCR OSD Mono", 28, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(exitState);
 
+		//Clear all cuz this can cause errors :/
+		while(usableMods.length > 0){
+			usableMods.pop();
+		}
 		if(modsFolders.length != 0){
 			grpMods = new FlxTypedGroup<Alphabet>();
 
-			for( i in 0... modsFolders.length){
-				if(OpenflAssets.exists(ModPaths.getModPath(modsFolders[i]))){
-					usableMods = true;
-					trace('Current Mod ${modsFolders[i]} is Usable');
-				}
-				else{
-					usableMods = false;
-					trace('Current Mod ${modsFolders[i]} is Not-Usable, please, check if you write the name correctly :/');
-				}
-			}
+			for(i in 0... modsFolders.length){
+				if(usableMods.length == 0)
+					usableMods.push(OpenflAssets.exists(ModPaths.getModPath(modsFolders[i]))?true:false);
 
-			if(modsFolders != []){
-				for(i in 0... modsFolders.length){
-					var modText:Alphabet = new Alphabet(0,(i + 1) * 100, modsFolders[i],false);
-					modText.isMenuItem = true;
-					modText.targetY = i;					
-					modText.screenCenter(X);
-					grpMods.add(modText);
-					if(!usableMods)
-						modText.changeText('Your current mod is not usable');
-				}
+				var modText:Alphabet = new Alphabet(0,(i + 1) * 100, modsFolders[i],false);
+				modText.isMenuItem = true;
+				modText.targetY = i;					
+				modText.screenCenter(X);
+				grpMods.add(modText);
+				if(!usableMods[i])
+					modText.changeText('${modsFolders[i]} (is not usable)');
 			}
-			
 			add(grpMods);
 		}
+		else
+			trace('WATAFAK, THIS IS EMPTY');
 
 		super.create();
 	}

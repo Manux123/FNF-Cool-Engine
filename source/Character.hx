@@ -408,20 +408,40 @@ class Character extends FlxSprite
 				flipX = true;
 				healthBarColor = 0xFF7bd6f6;
 
-			default:
-				tex = Paths.getSparrowAtlas('characters/week1/DADDY_DEAREST');
-				frames = tex;
-				animation.addByPrefix('idle', 'Dad idle dance', 24, false);
-				animation.addByPrefix('singUP', 'Dad Sing Note UP', 24, false);
-				animation.addByPrefix('singRIGHT', 'Dad Sing Note RIGHT', 24, false);
-				animation.addByPrefix('singDOWN', 'Dad Sing Note DOWN', 24, false);
-				animation.addByPrefix('singLEFT', 'Dad Sing Note LEFT', 24, false);
+			if (isPlayer) {
+				switch(curCharacter) {
+					default:
+						var tex = Paths.getSparrowAtlas('characters/BOYFRIEND');
+						frames = tex;
+						boyfriendAnimation();
 
-				loadOffsetFile(curCharacter);
+						loadOffsetFile(curCharacter);
 
-				playAnim('idle');
-				
-				healthBarColor = 0xFFFF0000;
+						playAnim('idle');
+
+						flipX = true;
+						
+						healthBarColor = 0xFF7bd6f6;
+				}
+			}
+			else {
+				switch(curCharacter) {
+					default:
+						tex = Paths.getSparrowAtlas('characters/week1/DADDY_DEAREST');
+						frames = tex;
+						animation.addByPrefix('idle', 'Dad idle dance', 24, false);
+						animation.addByPrefix('singUP', 'Dad Sing Note UP', 24, false);
+						animation.addByPrefix('singRIGHT', 'Dad Sing Note RIGHT', 24, false);
+						animation.addByPrefix('singDOWN', 'Dad Sing Note DOWN', 24, false);
+						animation.addByPrefix('singLEFT', 'Dad Sing Note LEFT', 24, false);
+	
+						loadOffsetFile(curCharacter);
+	
+						playAnim('idle');
+					
+						healthBarColor = 0xFFFF0000;
+				}
+			}
 		}
 
 		dance();

@@ -1,0 +1,34 @@
+{
+    "version": 2.1,
+    "executors": {
+        "my-custom-executor": {
+            "docker": [
+                {
+                    "image": "cimg/base:stable",
+                    "auth": {
+                        "username": "$DOCKER_HUB_USER",
+                        "password": "$DOCKER_HUB_PASSWORD"
+                    }
+                }
+            ]
+        }
+    },
+    "jobs": {
+        "hello": {
+            "executor": "my-custom-executor",
+            "steps": [
+                "checkout",
+                {
+                    "run": "haxelib setup C:/haxelib\nhaxelib install hxcpp > nul\nhaxelib install lime\nhaxelib install openfl\nhaxelib --never install flixel\nhaxelib run lime setup flixel\nhaxelib run lime setup\nhaxelib install flixel-tools\nhaxelib install flixel-ui\nhaxelib install flixel-addons\nhaxelib install tjson\nhaxelib install hxjsonast\nhaxelib install linc_luajit\nhaxelib install hscript\nhaxelib git hscript-ex https://github.com/ianharrigan/hscript-ex\nhaxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc\nhaxelib install hxcpp-debug-server\nhaxelib list\nhaxelib run lime build windows\n"
+                }
+            ]
+        }
+    },
+    "workflows": {
+        "my-custom-workflow": {
+            "jobs": [
+                "hello"
+            ]
+        }
+    }
+}

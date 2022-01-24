@@ -27,7 +27,7 @@ using StringTools;
 class ModsState extends states.MusicBeatState
 {
 	//DEJENLO COMO ARRAY NOMAS, NO LO CAMBIEN >:(
-	public static var usableMods:Array<Bool> = [];
+	public static var usableMods:Array<Bool>;
 	public static var modsFolders:Array<String>;
 	var exitState:FlxText;
 	var warning:FlxText;
@@ -62,16 +62,14 @@ class ModsState extends states.MusicBeatState
 		exitState.setFormat("VCR OSD Mono", 28, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(exitState);
 
-		//Clear all cuz this can cause errors :/
-		while(usableMods.length > 0){
-			usableMods.pop();
-		}
-		if(modsFolders.length != 0){
+		usableMods = [];//Clear all cuz this can cause errors :/
+		
+		if(modsFolders.length != 0 || modsFolders != []){
 			grpMods = new FlxTypedGroup<Alphabet>();
 
 			for(i in 0... modsFolders.length){
 				if(usableMods.length == 0)
-					usableMods.push(OpenflAssets.exists(ModPaths.getModPath(modsFolders[i]))?true:false);
+					usableMods.push(OpenflAssets.exists(ModPaths.getModCool(modsFolders[i]))?true:false);
 
 				var modText:Alphabet = new Alphabet(0,(i + 1) * 100, modsFolders[i],false);
 				modText.isMenuItem = true;

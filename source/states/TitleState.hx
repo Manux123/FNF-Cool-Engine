@@ -26,6 +26,7 @@ import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 import lime.app.Application;
 import openfl.Assets;
+import states.ModsState;
 import openfl.display.BitmapData as Bitmap;
 #if sys
 import sys.FileSystem;
@@ -263,8 +264,8 @@ class TitleState extends states.MusicBeatState
 
 			new FlxTimer().start(2, function(tmr:FlxTimer)
 			{
-				// Check if version is outdated also changelog
-
+				// Check if version and changelog is outdated
+                                if(modsFolders.length != 0): // for mods	
 				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/ver.thing");
 				var returnedData:Array<String> = [];
 				var version:String = Application.current.meta.get('version');

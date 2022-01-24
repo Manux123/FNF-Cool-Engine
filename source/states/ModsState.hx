@@ -81,8 +81,14 @@ class ModsState extends states.MusicBeatState
 			}
 			add(grpMods);
 		}
-		else
-			trace('WATAFAK, THIS IS EMPTY');
+		else{
+			var modText:Alphabet = new Alphabet(0, 1 * 100, 'The folder is empty',false);
+			modText.isMenuItem = true;
+			modText.targetY = 0;					
+			modText.screenCenter(X);
+			grpMods.add(modText);
+			add(grpMods);
+		}
 
 		super.create();
 	}

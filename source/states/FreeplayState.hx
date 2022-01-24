@@ -33,7 +33,7 @@ class FreeplayState extends states.MusicBeatState
 		['pico'],							
 		['mom'],							
 		['parents', 'parents', 'monster'],	
-		['senpai', 'senpai', 'spirit']
+		//['senpai', 'senpai', 'spirit']
 	];
 
 	var weekData:Array<Dynamic> = [
@@ -43,7 +43,7 @@ class FreeplayState extends states.MusicBeatState
 		['Pico', 'Philly', "Blammed"],
 		['Satin-Panties', "High", "Milf"],
 		['Cocoa', 'Eggnog', 'Winter-Horrorland'],
-		['Senpai', 'Roses', 'Thorns']
+		//['Senpai', 'Roses', 'Thorns']
 	];
 
 	//now you need to add the music to the file cache-music, in the path `assets/preload/data/cache-music.txt`
@@ -73,8 +73,8 @@ class FreeplayState extends states.MusicBeatState
 		null,	
 		null,
 		null,
-		null,
 		null
+		//null
 	];
 
 	var scoreBG:FlxSprite;
@@ -214,7 +214,7 @@ class FreeplayState extends states.MusicBeatState
 
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "FNF Cool Engine - v" + Application.current.meta.get('version'), 12);
 		versionShit.scrollFactor.set();
-		versionShit.setFormat("FridayNightFunkin-Regular.ttf", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionShit.setFormat("Friday Night Funkin Regular", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 		super.create();
 

@@ -64,6 +64,7 @@ class ModsState extends states.MusicBeatState
 
 		usableMods = [];//Clear all cuz this can cause errors :/
 		
+		#if MOD_ALL
 		if(modsFolders.length != 0 || modsFolders != []){
 			grpMods = new FlxTypedGroup<Alphabet>();
 
@@ -79,7 +80,6 @@ class ModsState extends states.MusicBeatState
 				if(!usableMods[i])
 					modText.changeText('${modsFolders[i]} (is not usable)');
 			}
-			add(grpMods);
 		}
 		else{
 			var modText:Alphabet = new Alphabet(0, 1 * 100, 'The folder is empty',false);
@@ -87,15 +87,17 @@ class ModsState extends states.MusicBeatState
 			modText.targetY = 0;					
 			modText.screenCenter(X);
 			grpMods.add(modText);
-			add(grpMods);
 		}
+		add(grpMods);
+		#end
 
 		super.create();
 	}
 
+	var curSelected:Int = 0;
 	override function update(elapsed:Float){
 		#if MOD_ALL
-		if(modsFolders.length == 0){
+		if(modsFolders.length == 0 || modsFolders == []){
 			warning = new FlxText(0, 0, 0, "NO MODS IN THE MODS FOLDER", 36);
 			warning.size = 36;
 			warning.scrollFactor.set();
@@ -105,16 +107,46 @@ class ModsState extends states.MusicBeatState
 			new FlxTimer().start(1, function (tmrr:FlxTimer){
 			FlxTween.tween(warning, {alpha: 0}, 1, {type:PINGPONG});});
 		}
-		#else
-		LoadingState.loadAndSwitchState(new MainMenuState());
-		FlxG.camera.flash(FlxColor.WHITE);
-		#end
 
 		if(controls.BACK) {
 			LoadingState.loadAndSwitchState(new MainMenuState());
 			FlxG.camera.flash(FlxColor.WHITE);
 		}
-		
+		if(modsFolders.length != 0 || modsFolders != []) 
+			if(controls.ACCEPT){
+				LoadingState.loadAndSwitchState(new ModsFreeplayState());
+				ModsFreeplayState.mod = modsFolders[curSelected];
+			}
+		#else
+		LoadingState.loadAndSwitchState(new MainMenuState());
+		FlxG.camera.flash(FlxColor.WHITE);
+		#end
 		super.update(elapsed);
+	}
+
+	private function changeSelection(change:Int):Void{
+		
+		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+
+		curSelected+=change;
+		if (curSelected < 0)
+			curSelected = modsFolders.length - 1;
+		if (curSelected >= modsFolders.length)
+			curSelected = 0;
+
+		var bullShit:Int = 0;
+
+		for (item in grpMods.members)
+		{
+			item.targetY = bullShit - curSelected;
+			bullShit++;
+
+			item.alpha = 0.6;
+
+			if (item.targetY == 0)
+			{
+				item.alpha = 1;
+			}
+		}
 	}
 }

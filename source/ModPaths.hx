@@ -5,8 +5,8 @@ import openfl.utils.AssetType;
 import openfl.utils.Assets as OpenflAssets;
 
 class ModPaths {
-    static var currentLevel:String = Paths.currentLevel;
-    inline public static var SOUND_EXT = #if web "mp3" #else "ogg" #end;
+    static final currentLevel:String = Paths.currentLevel;
+    private static final SOUND_EXT = Paths.SOUND_EXT;
 
     inline static public function getModFile(file:String, mod:String, type:AssetType = TEXT, ?library:String){
         return getPath('$mod/$file', type, library);
@@ -25,7 +25,10 @@ class ModPaths {
     }
 
     inline static public function getModJson(key:String, mod:String, ?library:String){
-		return getPath('$mod/data/$key.json',TEXT,library);
+        if(mod != null)
+            return getPath('$mod/data/$key.json', TEXT, library);
+        else
+            return getPath('data/$key.json',TEXT,library);
 	}
 
     static public function getModSound(key:String, mod:String, ?library:String)

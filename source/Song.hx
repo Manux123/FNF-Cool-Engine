@@ -44,13 +44,15 @@ class Song
 		this.modchart = modchart;
 	}
 
-	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong
+	public static function loadFromJson(jsonInput:String, ?folder:String, ?useMods:Bool = false):SwagSong
 	{
 		var rawJson = null;
-		var loadingJSON:Bool = true;
 
-		if(Assets.exists(Paths.json('songs/' + folder.toLowerCase() + '/' + jsonInput.toLowerCase())))
-			rawJson = Assets.getText(Paths.json('songs/' + folder.toLowerCase() + '/' + jsonInput.toLowerCase())).trim();
+		var songShit:String = ('songs/' + folder.toLowerCase() + '/' + jsonInput.toLowerCase());
+		var json:String = useMods?ModPaths.getModJson(songShit,states.ModsFreeplayState.mod):Paths.json(songShit);
+
+		if(Assets.exists(json))
+			rawJson = Assets.getText(json).trim();
 		else{
 			trace('you are dumm, chek out the root than you select');
 			trace('loading tutorial-hard');
@@ -63,22 +65,6 @@ class Song
 		}
 
 		return parseJSONshit(rawJson);
-
-		// FIX THE CASTING ON WINDOWS/NATIVE
-		// Windows???
-		// trace(songData);
-
-		// trace('LOADED FROM JSON: ' + songData.notes);
-		/* 
-			for (i in 0...songData.notes.length)
-			{
-				trace('LOADED FROM JSON: ' + songData.notes[i].sectionNotes);
-				// songData.notes[i].sectionNotes = songData.notes[i].sectionNotes
-			}
-
-				daNotes = songData.notes;
-				daSong = songData.song;
-				daBpm = songData.bpm; */
 	}
 
 	public static function parseJSONshit(rawJson:String):SwagSong

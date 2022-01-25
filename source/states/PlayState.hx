@@ -167,6 +167,8 @@ class PlayState extends MusicBeatState
 	public var iconP2:HealthIcon;
 	public var camHUD:FlxCamera;
 	public var camGame:FlxCamera;
+
+	public var isMod:Bool = false;
 	
 	var dialogue:Array<String> = [':bf:strange code', ':dad:>:]'];
 	var halloweenBG:FlxSprite;
@@ -1394,7 +1396,7 @@ class PlayState extends MusicBeatState
 			lastReportedPlayheadPosition = 0;
 
 			if (!paused)
-				FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), 1, false);
+				FlxG.sound.playMusic(isMod?ModPaths.getModInst(PlayState.SONG.song,ModsFreeplayState.mod):Paths.inst(PlayState.SONG.song), 1, false);
 			FlxG.sound.music.onComplete = endSong;
 			vocals.play();
 
@@ -1422,7 +1424,7 @@ class PlayState extends MusicBeatState
 		curSong = songData.song;
 
 		if (SONG.needsVoices)
-			vocals = new FlxSound().loadEmbedded(Paths.voices(PlayState.SONG.song));
+			vocals = new FlxSound().loadEmbedded(isMod?ModPaths.getModVoices(PlayState.SONG.song,ModsFreeplayState.mod):Paths.voices(PlayState.SONG.song));
 		else
 			vocals = new FlxSound();
 

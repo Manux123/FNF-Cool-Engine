@@ -351,16 +351,16 @@ class TitleState extends states.MusicBeatState
 		return env["USERNAME"];
 	}
 
-	var randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for", "YOU WHAT", "We shouldn't be", "you sussy baka", "._.", "get a brain", "sus", "we are cool", "why are we"];
-	var randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "*dances epicly*", "hardcoding this lmao", "among us", "im not imposter i swear", "for me", "sus", "right?", "hardcoding this"]; // idk man also dis helps me get ur username
+	var randomString = [];
+	var randomString2 = [];
 	var random:Int;
 
 	override function beatHit()
 	{
 		super.beatHit();
 
-		randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for", "YOU WHAT", "We shouldn't be", "you sussy baka", "._.", "get a brain", "sus", "we are cool", userName(), "why are we"];
-		randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "*dances epicly*", "hardcoding this lmao", "among us", "im not imposter i swear", "for me", "sus", "right?", "run", "hardcoding this"];
+		randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for", userName()];//This is for credits, not for funny texts :angry:
+		randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "Thanks for playing B)"];
 
 		logoBl.animation.play('bump');
 		danceLeft = !danceLeft;
@@ -394,7 +394,7 @@ class TitleState extends states.MusicBeatState
 				createCoolText(['Cool Engine Team']);
 			case 7:
 				// I can just put the original engine creator instead of every single fucking person that helps with it
-				//Suck my dick Juan
+				//Sample text
 				// LMFAO OVERCHARGED THAT WAS TO HARSH LOLLLLLLLLLLLLLLLLLLLLLLLLLLL
 				//Yea thx OverchargedDev you are for saying that the first time I came back to the Engine
 				addMoreText('Manux');

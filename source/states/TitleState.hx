@@ -360,7 +360,7 @@ class TitleState extends states.MusicBeatState
 		super.beatHit();
 
 		randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for", userName()];//This is for credits, not for funny texts :angry:
-		randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "Thanks for playing B)"];
+		randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "Thanks for playing B)"]; //But can't we use the txt file version instead of this hardcoded ver? :cries:
 
 		logoBl.animation.play('bump');
 		danceLeft = !danceLeft;

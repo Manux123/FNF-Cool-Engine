@@ -35,6 +35,8 @@ class ModsState extends states.MusicBeatState
 	var nameSongs:String = '';
 	var grpMods:FlxTypedGroup<Alphabet>;
 
+	public static var modLoaded:Bool = false;
+
 	override function create(){
 		#if desktop
 		DiscordClient.changePresence("In the Mods Menu", null);
@@ -116,6 +118,7 @@ class ModsState extends states.MusicBeatState
 			if(controls.ACCEPT){
 				LoadingState.loadAndSwitchState(new ModsFreeplayState());
 				ModsFreeplayState.mod = modsFolders[curSelected];
+				modLoaded = true;
 			}
 		#else
 		LoadingState.loadAndSwitchState(new MainMenuState());

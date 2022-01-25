@@ -1,5 +1,6 @@
 package;
 
+import states.ModsState;
 import Section.SwagSection;
 import haxe.Json;
 import haxe.format.JsonParser;
@@ -44,12 +45,11 @@ class Song
 		this.modchart = modchart;
 	}
 
-	public static function loadFromJson(jsonInput:String, ?folder:String, ?useMods:Bool = false):SwagSong
+	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong
 	{
 		var rawJson = null;
-
-		var songShit:String = ('songs/' + folder.toLowerCase() + '/' + jsonInput.toLowerCase());
-		var json:String = useMods?ModPaths.getModJson(songShit,states.ModsFreeplayState.mod):Paths.json(songShit);
+		var songShit:String = ModsState.modLoaded?('songs/' + folder.toLowerCase() + '/' + jsonInput.toLowerCase()):('${ModsState.modsFolders}/songs/' + folder.toLowerCase() + '/' + jsonInput.toLowerCase());
+		var json:String = ModsState.modLoaded?ModPaths.getModJson(songShit, states.ModsFreeplayState.mod):Paths.json(songShit);
 
 		if(Assets.exists(json))
 			rawJson = Assets.getText(json).trim();

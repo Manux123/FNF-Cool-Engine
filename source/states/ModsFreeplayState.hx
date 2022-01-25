@@ -20,7 +20,7 @@ import openfl.utils.Assets as OpenFlAssets;
 
 using StringTools;
 
-//Just a edited vercion of FreeplayState.hx
+//Just a edited version of FreeplayState.hx
 class ModsFreeplayState extends states.MusicBeatState
 {
 	var toBeFinished = 0;
@@ -29,7 +29,7 @@ class ModsFreeplayState extends states.MusicBeatState
 	//now you need to add the music to the file cache-music, in the path `mods/data/cache-music.txt`
 	public var musicgame:Array<String> = CoolUtil.coolTextFile(Paths.txt('cache-music'));
 
-	var songs:Array<FreeplayState.SongMetadata> = [];
+	var songs:Array<states.FreeplayState.SongMetadata> = [];
 
 	var selector:FlxText;
 	var discSpr:FlxSprite;
@@ -253,7 +253,7 @@ class ModsFreeplayState extends states.MusicBeatState
 		{
 			destroyFreeplayVocals();
 			var poop:String = Highscore.formatSong(songs[curSelected].songName.toLowerCase(), curDifficulty);
-			states.PlayState.SONG = Song.loadFromJson(poop, songs[curSelected].songName.toLowerCase(),true);
+			states.PlayState.SONG = Song.loadFromJson(poop, songs[curSelected].songName.toLowerCase());
 			if (states.PlayState.SONG.needsVoices)
 				vocals = new FlxSound().loadEmbedded(ModPaths.getModVoices(states.PlayState.SONG.song,mod));
 			else
@@ -274,7 +274,7 @@ class ModsFreeplayState extends states.MusicBeatState
 			discSpr.animation.play('idle');
 			discSpr.x += 750;
 			vibing = true;
-			bpmSong = (60/Song.loadFromJson(initSonglist[curSelected] + difficultyStuff[curDifficulty],initSonglist[curSelected],true).bpm)/1;
+			bpmSong = (60/Song.loadFromJson(initSonglist[curSelected] + difficultyStuff[curDifficulty],initSonglist[curSelected]).bpm)/1;
 			bpmtime = 0;
 
 			//disc.y += 880;
@@ -331,7 +331,7 @@ class ModsFreeplayState extends states.MusicBeatState
 		//FlxTween.tween(songText.isMenuItem, {y: songText.y - 2000}, 0.6, {ease: FlxEase.quadIn, type: ONESHOT});
 		trace(poop);
 
-		states.PlayState.SONG = Song.loadFromJson(poop, songLowercase,true);
+		states.PlayState.SONG = Song.loadFromJson(poop, songLowercase);
 		states.PlayState.isStoryMode = false;
 		states.PlayState.storyDifficulty = difficulty;
 

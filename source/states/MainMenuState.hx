@@ -30,7 +30,7 @@ class MainMenuState extends MusicBeatState
 	var optionShit:Array<String> = ['story-mode', 'freeplay', 'mods' #if !switch ,'options', 'donate'#end];
 	var optionMap:Map<String,MusicBeatState> = [
 		'story-mode' => new StoryMenuState(),
-		'freeplay' => new FreeplayState(),
+		'freeplay' => new ModsFreeplayState(),
 		'mods' => new ModsState(),
 		'options' => new OptionsMenuState()
 	];

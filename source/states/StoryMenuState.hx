@@ -32,8 +32,8 @@ class StoryMenuState extends states.MusicBeatState
 		['Spookeez', 'South', "Monster"],
 		['Pico', 'Philly', "Blammed"],
 		['Satin-Panties', "High", "Milf"],
-		['Cocoa', 'Eggnog', 'Winter-Horrorland']
-		//['Senpai', 'Roses', 'Thorns']
+		['Cocoa', 'Eggnog', 'Winter-Horrorland'],
+		['Senpai', 'Roses', 'Thorns']
 	];
 	var curDifficulty:Int = 1;
 	private var difficultyMap:Map<Int,String> = [
@@ -50,8 +50,8 @@ class StoryMenuState extends states.MusicBeatState
 		['spooky', 'bf', 'gf'],
 		['pico', 'bf', 'gf'],
 		['mom', 'bf', 'gf'],
-		['parents-christmas', 'bf', 'gf']
-		// ['senpai', 'bf', 'gf']
+		['parents-christmas', 'bf', 'gf'],
+		['senpai', 'bf', 'gf']
 	];
 
 	var weekNames:Array<String> = [
@@ -60,8 +60,8 @@ class StoryMenuState extends states.MusicBeatState
 		"Spooky Month",
 		"PICO",
 		"MOMMY MUST MURDER",
-		"RED SNOW"
-		//"hating simulator ft. moawling"
+		"RED SNOW",
+		"hating simulator ft. moawling"
 	];
 
 	var txtWeekTitle:FlxText;
@@ -109,7 +109,7 @@ class StoryMenuState extends states.MusicBeatState
 			StoryMenuState.weekUnlocked[3] = true;
 			StoryMenuState.weekUnlocked[4] = true;
 			StoryMenuState.weekUnlocked[5] = true;
-		//	StoryMenuState.weekUnlocked[6] = true;
+			StoryMenuState.weekUnlocked[6] = true;
 		}
 
 		persistentUpdate = persistentDraw = true;

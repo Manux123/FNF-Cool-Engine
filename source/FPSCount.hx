@@ -39,7 +39,7 @@ class FPSCount extends TextField
 		currentFPS = 0;
 		selectable = false;
 		mouseEnabled = false;
-		defaultTextFormat = new TextFormat(openfl.utils.Assets.getFont("assets/fonts/vcr.ttf").fontName, 12, color);
+		defaultTextFormat = new TextFormat(openfl.utils.Assets.getFont(Paths.font("Funkin.tff")).fontName, 12, color);
 		visible = false;
 		text = "FPS: ";
 

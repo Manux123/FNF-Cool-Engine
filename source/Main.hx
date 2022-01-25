@@ -120,7 +120,7 @@ class DataText extends TextField{
 		x = inX;
 		y = inY;
 		selectable = false;
-		defaultTextFormat = new TextFormat(openfl.utils.Assets.getFont("assets/fonts/vcr.ttf").fontName, 12, 0xFFFFFF);
+		defaultTextFormat = new TextFormat(openfl.utils.Assets.getFont(Paths.font("Funkin.tff")).fontName, 12, 0xFFFFFF);
 		visible = false;
 
 		addEventListener(Event.ENTER_FRAME, onEnter);

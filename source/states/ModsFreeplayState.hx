@@ -20,7 +20,7 @@ import openfl.utils.Assets as OpenFlAssets;
 
 using StringTools;
 
-//Just a edited version of FreeplayState.hx
+//Just a edited vercion of FreeplayState.hx
 class ModsFreeplayState extends states.MusicBeatState
 {
 	var toBeFinished = 0;
@@ -29,7 +29,7 @@ class ModsFreeplayState extends states.MusicBeatState
 	//now you need to add the music to the file cache-music, in the path `mods/data/cache-music.txt`
 	public var musicgame:Array<String> = CoolUtil.coolTextFile(Paths.txt('cache-music'));
 
-	var songs:Array<states.FreeplayState.SongMetadata> = [];
+	var songs:Array<FreeplayState.SongMetadata> = [];
 
 	var selector:FlxText;
 	var discSpr:FlxSprite;
@@ -58,9 +58,12 @@ class ModsFreeplayState extends states.MusicBeatState
 	private var initSonglist:Array<String>;
 
 	public static var mod:String;
+	public static var onMods:Bool = false;
 
 	override function create()
 	{
+		onMods = true;
+
 		initSonglist = CoolUtil.coolTextFile(ModPaths.getModTxt('songList',mod));
 
 		transIn = FlxTransitionableState.defaultTransIn;
@@ -245,7 +248,8 @@ class ModsFreeplayState extends states.MusicBeatState
 				colorTween.cancel();
 			}
 			FlxG.sound.play(Paths.sound('cancelMenu'));
-			FlxG.switchState(new MainMenuState());
+			FlxG.switchState(new ModsState());
+			onMods = false;
 		}
 
 		#if PRELOAD_ALL

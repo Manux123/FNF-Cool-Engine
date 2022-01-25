@@ -1,9 +1,9 @@
 package;
 
+import states.ModsFreeplayState;
 import states.ModsState;
 import Section.SwagSection;
 import haxe.Json;
-import haxe.format.JsonParser;
 import lime.utils.Assets;
 
 using StringTools;
@@ -48,15 +48,16 @@ class Song
 	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong
 	{
 		var rawJson = null;
-		var songShit:String = ModsState.modLoaded?('songs/' + folder.toLowerCase() + '/' + jsonInput.toLowerCase()):('${ModsState.modsFolders}/songs/' + folder.toLowerCase() + '/' + jsonInput.toLowerCase());
-		var json:String = ModsState.modLoaded?ModPaths.getModJson(songShit, states.ModsFreeplayState.mod):Paths.json(songShit);
+		var songShit:String = ('assets/data/songs/${folder.toLowerCase()}/${jsonInput.toLowerCase()}.json');
+		if(ModsFreeplayState.onMods && ModsState.usableMods[ModsState.modsFolders.indexOf(ModsFreeplayState.mod)] == true)
+			songShit = ('mods/${ModsFreeplayState.mod!=null?ModsFreeplayState.mod:'example_mod'}/data/songs/${folder.toLowerCase()}/${jsonInput.toLowerCase()}.json');
 
-		if(Assets.exists(json))
-			rawJson = Assets.getText(json).trim();
+		if(Assets.exists(songShit))
+			rawJson = Assets.getText(songShit).trim();
 		else{
 			trace('you are dumm, chek out the root than you select');
 			trace('loading tutorial-hard');
-			rawJson = Assets.getText(Paths.json('songs/tutorial/tutorial-hard'));
+			rawJson = Assets.getText(Paths.json('songs/tutorial/tutorial-hard')).trim();
 		}
 
 		while (!rawJson.endsWith("}")){

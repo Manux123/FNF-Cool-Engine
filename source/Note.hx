@@ -37,6 +37,8 @@ class Note extends FlxSprite
 
 	public var noteRating:String = 'sick';
 
+	public var dataColor:Array<String> = ['purple', 'blue', 'green', 'red'];
+
 	public function new(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false)
 	{
 		super();
@@ -56,69 +58,48 @@ class Note extends FlxSprite
 
 		//var noteSkin:String = states.NoteSkinDetectorState.noteskindetector;
 		var daStage:String = states.PlayState.curStage;
-		//if (noteSkin) {
-			switch (daStage)
-			{
-				case 'school' | 'schoolEvil':
-					if(Assets.exists(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin)))
-						loadGraphic(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin));
-					else{
-						loadGraphic(Paths.image('skins_arrows/pixels/arrows-pixels'));
-						trace('Assets Path: ' + NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin) + " Dosn't Exist");
-					}
-			
-					animation.add('greenScroll', [6]);
-					animation.add('redScroll', [7]);
-					animation.add('blueScroll', [5]);
-					animation.add('purpleScroll', [4]);
+		
+		switch (daStage)
+		{
+			case 'school' | 'schoolEvil':
+				loadGraphic(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin), true, 17, 17);
+				if (isSustainNote)
+					loadGraphic(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin), true, 7, 6);
 
-					if (isSustainNote)
-					{
-						if(Assets.exists(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin)))
-							loadGraphic(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin));
-						else{
-							loadGraphic(Paths.image('skins_arrows/pixels/arrows-pixels'));
-							trace('Assets Path: ' + NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin) + " Dosn't Exist");
-						}
+				for (i in 0...4)
+				{
+					animation.add(dataColor[i] + 'Scroll', [i + 4]); // Normal notes
+					animation.add(dataColor[i] + 'hold', [i]); // Holds
+					animation.add(dataColor[i] + 'holdend', [i + 4]); // Tails
+				}
 
-						animation.add('purpleholdend', [4]);
-						animation.add('greenholdend', [6]);
-						animation.add('redholdend', [7]);
-						animation.add('blueholdend', [5]);
+				setGraphicSize(Std.int(width * states.PlayState.daPixelZoom));
+				updateHitbox();
 
-						animation.add('purplehold', [0]);
-						animation.add('greenhold', [2]);
-						animation.add('redhold', [3]);
-						animation.add('bluehold', [1]);
-					}
+			default:
+				loadAnimationsFromTextFile(Std.string(FlxG.save.data.noteSkin));
+				/*frames = NoteSkinDetector.noteSkinNormal();
 
-					setGraphicSize(Std.int(width * states.PlayState.daPixelZoom));
-					updateHitbox();
+				animation.addByPrefix('greenScroll', 'green alone');
+				animation.addByPrefix('redScroll', 'red alone');
+				animation.addByPrefix('blueScroll', 'blue alone');
+				animation.addByPrefix('purpleScroll', 'purple alone');
 
-				default:
-					loadAnimationsFromTextFile(Std.string(FlxG.save.data.noteSkin));
-					/*frames = NoteSkinDetector.noteSkinNormal();
+				animation.addByPrefix('purpleholdend', 'purple tail');
+				animation.addByPrefix('greenholdend', 'green tail');
+				animation.addByPrefix('redholdend', 'red tail');
+				animation.addByPrefix('blueholdend', 'blue tail');
 
-					animation.addByPrefix('greenScroll', 'green alone');
-					animation.addByPrefix('redScroll', 'red alone');
-					animation.addByPrefix('blueScroll', 'blue alone');
-					animation.addByPrefix('purpleScroll', 'purple alone');
+				animation.addByPrefix('purplehold', 'purple hold');
+				animation.addByPrefix('greenhold', 'green hold');
+				animation.addByPrefix('redhold', 'red hold');
+				animation.addByPrefix('bluehold', 'blue hold');*/
 
-					animation.addByPrefix('purpleholdend', 'purple tail');
-					animation.addByPrefix('greenholdend', 'green tail');
-					animation.addByPrefix('redholdend', 'red tail');
-					animation.addByPrefix('blueholdend', 'blue tail');
-
-					animation.addByPrefix('purplehold', 'purple hold');
-					animation.addByPrefix('greenhold', 'green hold');
-					animation.addByPrefix('redhold', 'red hold');
-					animation.addByPrefix('bluehold', 'blue hold');*/
-
-					setGraphicSize(Std.int(width * 0.7));
-					updateHitbox();
-					antialiasing = true;
-			}
-		//}
+				setGraphicSize(Std.int(width * 0.7));
+				updateHitbox();
+				antialiasing = true;
+		}
+		
 
 		switch (noteData)
 		{

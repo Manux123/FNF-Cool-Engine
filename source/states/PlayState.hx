@@ -651,7 +651,7 @@ class PlayState extends MusicBeatState
 
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "FNF Cool Engine - v" + Application.current.meta.get('version'), 12);
 		versionShit.scrollFactor.set();
-		versionShit.setFormat("Friday Night Funkin Regular", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionShit.setFormat("assets/fonts/Funkin.otf", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 
 		var grpDataShit:FlxTypedGroup<FlxText> = new FlxTypedGroup<FlxText>();
@@ -1525,12 +1525,7 @@ class PlayState extends MusicBeatState
 			switch (curStage)
 			{
 				case 'school' | 'schoolEvil':
-					if(Assets.exists(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin)))
-						babyArrow.loadGraphic(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin));
-					else{
-						babyArrow.loadGraphic(Paths.image('skins_arrows/pixels/arrows-pixels'));
-						trace('Assets Path: ' + NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin) + " Dosn't Exist");
-					}
+					babyArrow.loadGraphic(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin));
 
 					babyArrow.animation.add('green', [6]);
 					babyArrow.animation.add('red', [7]);
@@ -2267,7 +2262,7 @@ class PlayState extends MusicBeatState
 		persistentUpdate = false;
 		persistentDraw = true;
 		paused = true;
-		Debug.logTrace("Fucking idiot");
+		Debug.logTrace("Paused!"); //Idk why that but k
 		// 1 / 1000 chance for Gitaroo Man easter egg
 		if (FlxG.random.bool(0.1))
 		{

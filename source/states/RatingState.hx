@@ -110,8 +110,9 @@ class RatingState extends FlxSubState
 
                 new FlxTimer().start(2, function(tmr:FlxTimer)
                     {
-                    //Strexx was here - Strexx
-                    //Its not like u did something incredibly important - Juanen100
+                    // Strexx was here - Strexx
+                    // Its not like u did something incredibly important - Juanen100
+		    // you*    
         
                         if (PlayState.isStoryMode)
                         {

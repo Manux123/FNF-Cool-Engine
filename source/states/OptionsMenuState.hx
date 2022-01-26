@@ -508,7 +508,7 @@ class DebugOptions extends MusicBeatState{
 		optionsBG.screenCenter(X);
 	    add(optionsBG);
 
-		versionShit = new FlxText(5, FlxG.height - 18, 0, "Offset (Left, Right): " + FlxG.save.data.offset, 12);
+		versionShit = new FlxText(5, FlxG.height - 18, 0, "Lol, Debug Menu", 12);
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);

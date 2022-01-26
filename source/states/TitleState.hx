@@ -100,7 +100,7 @@ class TitleState extends states.MusicBeatState
 		#end
 	}
 
-	var logoBl:FlxSprite;
+	var logo:FlxSprite;
 	var gfDance:FlxSprite;
 	var danceLeft:Bool = false;
 	var titleText:FlxSprite;
@@ -109,24 +109,21 @@ class TitleState extends states.MusicBeatState
 	{
 		persistentUpdate = true;
 
-		logoBl = new FlxSprite(-150, -100);
-		logoBl.frames = Paths.getSparrowAtlas('titlestate/logoBumpin');
-		logoBl.antialiasing = true;
-		logoBl.animation.addByPrefix('bump', 'logo bumpin', 24);
-		logoBl.animation.play('bump');
-		logoBl.updateHitbox();
-		// logoBl.screenCenter();
-		// logoBl.color = FlxColor.BLACK;
-
-		// FlxTween.tween(logoBl, {y: logoBl.y + 50}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
-
 		gfDance = new FlxSprite(FlxG.width * 0.4, FlxG.height * 0.07);
 		gfDance.frames = Paths.getSparrowAtlas('titlestate/gfDanceTitle');
 		gfDance.animation.addByIndices('danceLeft', 'gfDance', [30, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], "", 24, false);
 		gfDance.animation.addByIndices('danceRight', 'gfDance', [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], "", 24, false);
 		gfDance.antialiasing = true;
 		add(gfDance);
-		add(logoBl);
+
+		logo = new FlxSprite(-150, -100);
+		logo.frames = Paths.getSparrowAtlas('titlestate/logoBumpin');
+		logo.antialiasing = true;
+		logo.animation.addByPrefix('bump', 'logo bumpin', 24);
+		logo.animation.play('bump');
+		logo.updateHitbox();
+
+		add(logo);
 
 		titleText = new FlxSprite(100, FlxG.height * 0.8);
 		titleText.frames = Paths.getSparrowAtlas('titlestate/titleEnter');
@@ -351,11 +348,15 @@ class TitleState extends states.MusicBeatState
 	}
 
 	function userName():String {
+		#if cpp
 		var env = Sys.environment();
 		if (!env.exists("USERNAME")) {
 			return "Couldnt find computa name";
 		}
 		return env["USERNAME"];
+		#else
+		return 'Player';
+		#end
 	}
 
 	var randomString = [];
@@ -368,9 +369,7 @@ class TitleState extends states.MusicBeatState
 
 		randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for", userName()];//This is for credits, not for funny texts :angry:
 		randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "Thanks for playing B)"];
-		//Q: But can't we use the txt file version instead of this hardcoded ver? :cries:
-		//A: Cuz is for CREDITS to give thanks to peapole than dont do to much in this project :/
-		logoBl.animation.play('bump');
+		logo.animation.play('bump');
 		danceLeft = !danceLeft;
 
 		if (danceLeft)
@@ -455,16 +454,16 @@ class TitleState extends states.MusicBeatState
 			FlxG.camera.flash(FlxColor.WHITE, 4);
 			remove(credGroup);
 
-			FlxTween.tween(logoBl,{y: -100}, 1.4, {ease: FlxEase.expoInOut});
+			FlxTween.tween(logo,{y: -100}, 1.4, {ease: FlxEase.expoInOut});
 
-			logoBl.angle = -4;
+			logo.angle = -4;
 
 			new FlxTimer().start(0.01, function(tmr:FlxTimer)
 				{
-					if(logoBl.angle == -4) 
-						FlxTween.angle(logoBl, logoBl.angle, 4, 4, {ease: FlxEase.quartInOut});
-					if (logoBl.angle == 4) 
-						FlxTween.angle(logoBl, logoBl.angle, -4, 4, {ease: FlxEase.quartInOut});
+					if(logo.angle == -4) 
+						FlxTween.angle(logo, logo.angle, 4, 4, {ease: FlxEase.quartInOut});
+					if (logo.angle == 4) 
+						FlxTween.angle(logo, logo.angle, -4, 4, {ease: FlxEase.quartInOut});
 				}, 0);
 
 			skippedIntro = true;

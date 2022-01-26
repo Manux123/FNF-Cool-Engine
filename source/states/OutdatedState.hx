@@ -6,6 +6,7 @@ import flixel.FlxSubState;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import lime.app.Application;
+import states.TitleState;
 #if sys
 import sys.FileSystem;
 #end
@@ -14,10 +15,10 @@ class OutdatedState extends MusicBeatState
 {
 	public static var leftState:Bool = false;
 
-	public static var daVersionNeeded:String = "If i knew the lastest version i'll say it, i promise";
+	public static var daVersionNeeded:String = "";
 	
-        public static var daChangelogNeeded:String = "If i knew the lastests features i'll say it, i promise";
-	   
+    public static var daChangelogNeeded:String = "";
+	
 	function userName():String {
 	
 		var env = Sys.environment();

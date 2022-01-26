@@ -58,10 +58,10 @@ class ModPaths {
 		var loadingSong:Bool = true;
 		if(loadingSong) {
 			trace('Done Loading VOICES!');
-			return 'songs:mods/$mod/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';}
+			return 'mods/$mod/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';}
 		else {
 			trace('ERROR Loading INST :c');
-			return 'defaultsong:mods/$mod/defaultsong/Voices.$SOUND_EXT';}
+			return 'mods/$mod/defaultsong/Voices.$SOUND_EXT';}
 	}
 
     inline static public function getModInst(song:String, mod:String)
@@ -70,10 +70,10 @@ class ModPaths {
 		var loadingSong:Bool = true;
 		if(loadingSong) {
 			trace('Done Loading INST!');
-			return 'songs:mods/$mod/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';}
+			return 'mods/$mod/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';}
 		else {
 			trace('ERROR Loading INST :c');
-			return 'defaultsong:mods/$mod/defaultsong/Inst.$SOUND_EXT';}
+			return 'mods/$mod/defaultsong/Inst.$SOUND_EXT';}
 	}
     
     inline static public function getModImage(key:String, mod:String, ?library:String){

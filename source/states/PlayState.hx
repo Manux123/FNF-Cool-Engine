@@ -1397,7 +1397,7 @@ class PlayState extends MusicBeatState
 
 			if (!paused){
 				if(isMod)
-					FlxG.sound.playMusic(ModPaths.getModInst(PlayState.SONG.song,ModsFreeplayState.mod), 1, false);
+					FlxG.sound.playMusic(ModPaths.getModInst(PlayState.SONG.song, ModsFreeplayState.mod), 1, false);
 				else
 					FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), 1, false);
 			}

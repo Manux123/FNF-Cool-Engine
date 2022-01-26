@@ -363,6 +363,7 @@ class TitleState extends states.MusicBeatState
 		randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "Thanks for playing B)"];
 		//Q: But can't we use the txt file version instead of this hardcoded ver? :cries:
 		//A: Cuz is for CREDITS to give thanks to peapole than dont do to much in this project :/
+		//if this is for credits that why is it called random also we have already wrote the credits in line 396-406 /:
 		logoBl.animation.play('bump');
 		danceLeft = !danceLeft;
 

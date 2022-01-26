@@ -21,6 +21,13 @@ class Character extends FlxSprite
 	public var holdTimer:Float = 0;
 	public var healthBarColor:Int;
 
+	public static final animationsMap:Map<Int,String> = [
+		0 => 'singLEFT',
+		1 => 'singDOWN',
+		2 => 'singUP',
+		3 => 'singRIGHT'
+	];
+
 	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false)
 	{
 		super(x, y);

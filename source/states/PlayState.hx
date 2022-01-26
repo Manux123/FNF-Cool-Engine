@@ -2015,30 +2015,10 @@ class PlayState extends MusicBeatState
 							spawnNoteSplashOnNote(daNote,0);*/
 	
 					if (dad.canSing)
-						switch (Math.abs(daNote.noteData))
-						{
-							case 2:
-								dad.playAnim('singUP' + altAnim, true);
-							case 3:
-								dad.playAnim('singRIGHT' + altAnim, true);
-							case 1:
-								dad.playAnim('singDOWN' + altAnim, true);
-							case 0:
-								dad.playAnim('singLEFT' + altAnim, true);
-						}
+						dad.playAnim(Character.animationsMap[daNote.noteData] + altAnim, true);
 
 					if (gf.canSing)
-						switch (Math.abs(daNote.noteData))
-						{
-							case 2:
-								gf.playAnim('singUP' + altAnim, true);
-							case 3:
-								gf.playAnim('singRIGHT' + altAnim, true);
-							case 1:
-								gf.playAnim('singDOWN' + altAnim, true);
-							case 0:
-								gf.playAnim('singLEFT' + altAnim, true);
-						}
+						gf.playAnim(Character.animationsMap[daNote.noteData] + altAnim, true);
 
 						callOnLuas('opponentNoteHit', [notes.members.indexOf(daNote), Math.abs(daNote.noteData), daNote.isSustainNote]);
 				
@@ -2706,7 +2686,7 @@ class PlayState extends MusicBeatState
 			{
 				if (boyfriend.animation.curAnim.name.startsWith('sing') && !boyfriend.animation.curAnim.name.endsWith('miss'))
 				{
-					boyfriend.playAnim('idle');
+					boyfriend.dance();
 				}
 			}
 	
@@ -2818,26 +2798,13 @@ class PlayState extends MusicBeatState
 					rating.destroy();
 				},
 				startDelay: Conductor.crochet * 0.001
-			});	
-	//End of Miss Sprite thing
+			});
 
 			songScore -= 10;
 
 			FlxG.sound.play(Paths.soundRandom('missnote', 1, 3), FlxG.random.float(0.1, 0.2));
-			// FlxG.sound.play(Paths.sound('missnote1'), 1, false);
-			// FlxG.log.add('played imss note');
 
-			switch (direction)
-			{
-				case 0:
-					boyfriend.playAnim('singLEFTmiss', true);
-				case 1:
-					boyfriend.playAnim('singDOWNmiss', true);
-				case 2:
-					boyfriend.playAnim('singUPmiss', true);
-				case 3:
-					boyfriend.playAnim('singRIGHTmiss', true);
-			}
+			boyfriend.playAnim(Character.animationsMap[direction] + 'miss',true);
 
 			updateAccuracy();
 		}
@@ -2942,18 +2909,9 @@ class PlayState extends MusicBeatState
 					else
 						totalNotesHit += 1;
 	
-					if (boyfriend.canSing){
-						switch (note.noteData)
-						{
-							case 2:
-								boyfriend.playAnim('singUP', true);
-							case 3:
-								boyfriend.playAnim('singRIGHT', true);
-							case 1:
-								boyfriend.playAnim('singDOWN', true);
-							case 0:
-								boyfriend.playAnim('singLEFT', true);
-						}
+					if (boyfriend.canSing)
+						boyfriend.playAnim(Character.animationsMap[note.noteData],true);
+
 					if (!curStage.startsWith('schoolEvil')){
 						switch (note.noteData)
 						{
@@ -2971,7 +2929,6 @@ class PlayState extends MusicBeatState
 								bfnoteMovementYoffset = 0;
 						}
 					}
-				}
 		
 					playerStrums.forEach(function(spr:FlxSprite)
 					{
@@ -3179,7 +3136,6 @@ class PlayState extends MusicBeatState
 		if (!boyfriend.animation.curAnim.name.startsWith("sing") && boyfriend.canSing)
 		{
 			boyfriend.dance();
-			//boyfriend.playAnim('idle');
 			specialAnim = true;
 		}
 
@@ -3202,7 +3158,6 @@ class PlayState extends MusicBeatState
 					}*/
 				default: 
 					dad.dance();
-			boyfriend.playAnim('idle');
 		}
 
 		if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing)

@@ -264,7 +264,7 @@ class TitleState extends states.MusicBeatState
 
 			new FlxTimer().start(2, function(tmr:FlxTimer)
 			{
-				// Check if version and changelog is outdated
+				// Check if version is outdated
 				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/ver.thing");
 				var returnedData:Array<String> = [];
 				var version:String = Application.current.meta.get('version');
@@ -273,12 +273,12 @@ class TitleState extends states.MusicBeatState
 				{
 					returnedData[0] = data.substring(0, data.indexOf('-'));
 					returnedData[1] = data.substring(data.indexOf('+'), data.length);
-					if (!version.contains(returnedData[0].trim()) && !OutdatedSubState.leftState)
+					if (!version.contains(returnedData[0].trim()) && !OutdatedState.leftState)
 					{
 						trace('Poor guy, he is outdated');
-						OutdatedSubState.daVersionNeeded = returnedData[0];
-						OutdatedSubState.daChangelogNeeded = returnedData[1];
-						FlxG.switchState(new OutdatedSubState());
+						OutdatedState.daVersionNeeded = returnedData[0];
+						OutdatedState.daChangelogNeeded = returnedData[1];
+						FlxG.switchState(new OutdatedState());
 					}
 					else
 					{

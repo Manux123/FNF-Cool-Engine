@@ -10,13 +10,13 @@ import lime.app.Application;
 import sys.FileSystem;
 #end
 
-class OutdatedSubState extends states.MusicBeatState
+class OutdatedSubState extends MusicBeatState
 {
 	public static var leftState:Bool = false;
 
 	public static var daVersionNeeded:String = "If i knew the lastest version i'll say it, i promise";
 	
-    public static var daChangelogNeeded:String = "If i knew the lastests features i'll say it, i promise";
+        public static var daChangelogNeeded:String = "If i knew the lastests features i'll say it, i promise";
 	   
 	function userName():String {
 	

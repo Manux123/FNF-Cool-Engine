@@ -168,7 +168,7 @@ class PlayState extends MusicBeatState
 	public var camHUD:FlxCamera;
 	public var camGame:FlxCamera;
 
-	public var isMod:Bool = false;
+	public static var isMod:Bool = false;
 	
 	var dialogue:Array<String> = [':bf:strange code', ':dad:>:]'];
 	var halloweenBG:FlxSprite;
@@ -653,7 +653,7 @@ class PlayState extends MusicBeatState
 
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "FNF Cool Engine - v" + Application.current.meta.get('version'), 12);
 		versionShit.scrollFactor.set();
-		versionShit.setFormat(Paths.font("FridayNightFunkin-Regular.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionShit.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 
 		var grpDataShit:FlxTypedGroup<FlxText> = new FlxTypedGroup<FlxText>();
@@ -1395,8 +1395,12 @@ class PlayState extends MusicBeatState
 			previousFrameTime = FlxG.game.ticks;
 			lastReportedPlayheadPosition = 0;
 
-			if (!paused)
-				FlxG.sound.playMusic(isMod?ModPaths.getModInst(PlayState.SONG.song,ModsFreeplayState.mod):Paths.inst(PlayState.SONG.song), 1, false);
+			if (!paused){
+				if(isMod)
+					FlxG.sound.playMusic(ModPaths.getModInst(PlayState.SONG.song,ModsFreeplayState.mod), 1, false);
+				else
+					FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), 1, false);
+			}
 			FlxG.sound.music.onComplete = endSong;
 			vocals.play();
 
@@ -1423,8 +1427,12 @@ class PlayState extends MusicBeatState
 
 		curSong = songData.song;
 
-		if (SONG.needsVoices)
-			vocals = new FlxSound().loadEmbedded(isMod?ModPaths.getModVoices(PlayState.SONG.song,ModsFreeplayState.mod):Paths.voices(PlayState.SONG.song));
+		if (SONG.needsVoices){
+			if(isMod)
+				vocals = new FlxSound().loadEmbedded(ModPaths.getModVoices(PlayState.SONG.song,ModsFreeplayState.mod));
+			else
+				vocals = new FlxSound().loadEmbedded(Paths.voices(PlayState.SONG.song));
+		}
 		else
 			vocals = new FlxSound();
 

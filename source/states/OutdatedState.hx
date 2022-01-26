@@ -10,7 +10,7 @@ import lime.app.Application;
 import sys.FileSystem;
 #end
 
-class OutdatedSubState extends MusicBeatState
+class OutdatedState extends MusicBeatState
 {
 	public static var leftState:Bool = false;
 

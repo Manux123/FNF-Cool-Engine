@@ -3,7 +3,6 @@ package;
 import states.ModsFreeplayState;
 import states.ModsState;
 import Section.SwagSection;
-import haxe.Json;
 import lime.utils.Assets;
 
 using StringTools;
@@ -68,10 +67,8 @@ class Song
 		return parseJSONshit(rawJson);
 	}
 
-	public static function parseJSONshit(rawJson:String):SwagSong
+	public static function parseJSONshit(jsonFile:String):SwagSong
 	{
-		var swagShit:SwagSong = cast Json.parse(rawJson).song;
-		swagShit.validScore = true;
-		return swagShit;
+		return (cast haxe.Json.parse(jsonFile).song);
 	}
 }

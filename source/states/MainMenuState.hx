@@ -100,12 +100,12 @@ class MainMenuState extends MusicBeatState
 		
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Friday Night Funkin v0.2.7.1", 12);
 		versionShit.scrollFactor.set();
-		versionShit.setFormat(Paths.font("FridayNightFunkin-Regular.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionShit.setFormat(Paths.font("Friday Night Funkin Regular"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 
 		var versionShit2:FlxText = new FlxText(5, FlxG.height - 19, 0, 'Cool Engine - V${Application.current.meta.get('version')}', 12);
 		versionShit2.scrollFactor.set();
-		versionShit2.setFormat(Paths.font("FridayNightFunkin-Regular.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionShit2.setFormat(Paths.font("Friday Night Funkin Regular"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		versionShit2.y -= 20;
 		add(versionShit2);
 

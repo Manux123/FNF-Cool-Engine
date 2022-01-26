@@ -299,19 +299,13 @@ class AnimationDebug extends FlxState
 				camFollow.velocity.x = 0;
 		}
 		else
-		{
 			camFollow.velocity.set();
-		}
 
-		if (FlxG.keys.justPressed.W)
-		{
+		if (controls.UP_P)
 			curAnim -= 1;
-		}
 
-		if (FlxG.keys.justPressed.S)
-		{
+		if (controls.DOWN_P)
 			curAnim += 1;
-		}
 
 		if (curAnim < 0)
 			curAnim = animList.length - 1;
@@ -319,7 +313,7 @@ class AnimationDebug extends FlxState
 		if (curAnim >= animList.length)
 			curAnim = 0;
 
-		if (FlxG.keys.justPressed.S || FlxG.keys.justPressed.W || FlxG.keys.justPressed.SPACE)
+		if (controls.DOWN_P || controls.UP_P || FlxG.keys.justPressed.SPACE)
 		{
 			char.playAnim(animList[curAnim]);
 			ghostBF.playAnim(animList[0]);

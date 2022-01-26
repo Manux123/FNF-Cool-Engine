@@ -1,5 +1,6 @@
 package;
 
+import states.ModsFreeplayState;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.animation.FlxBaseAnimation;
@@ -27,6 +28,7 @@ class Character extends FlxSprite
 		2 => 'singUP',
 		3 => 'singRIGHT'
 	];
+	var cum:FlxAtlasFrames;
 
 	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false)
 	{
@@ -434,8 +436,8 @@ class Character extends FlxSprite
 			else {
 				switch(curCharacter) {
 					default:
-						tex = Paths.getSparrowAtlas('characters/week1/DADDY_DEAREST');
-						frames = tex;
+						loadTextureFile(curCharacter);
+						frames = cum;
 						animation.addByPrefix('idle', 'Dad idle dance', 24, false);
 						animation.addByPrefix('singUP', 'Dad Sing Note UP', 24, false);
 						animation.addByPrefix('singRIGHT', 'Dad Sing Note RIGHT', 24, false);
@@ -446,7 +448,7 @@ class Character extends FlxSprite
 	
 						playAnim('idle');
 					
-						healthBarColor = 0xFFFF0000;
+						healthBarColor = 0xFFa5004d;
 				}
 			}
 		}
@@ -487,6 +489,28 @@ class Character extends FlxSprite
 		}
 	}
 
+	public function loadTextureFile(character:String)
+	{
+		var texture:Array<String> = CoolUtil.coolTextFile(ModPaths.getModTxt('characters/texture/' + character + "Texture", ModsFreeplayState.mod));
+
+		for (i in 0...texture.length)
+		{
+			var data:Array<String> = texture[i].split(' ');
+			cum = Paths.getSparrowAtlas(data[0], Std.string(data[1]));
+		}
+	}
+
+	/*public function loadHealthColorFile(character:String) Shitty test that didn't worked
+		{
+			var color:Array<String> = CoolUtil.coolTextFile(ModPaths.getModTxt('characters/healthbarColor/' + character + "HealthColor", ModsFreeplayState.mod));
+		
+			for (i in 0...color.length)
+			{
+				var data:Array<String> = color[i].split(' ');
+				healthBarColor = Std.parseInt(data[0]);
+			}
+		} */
+
 	public function loadAnimations(){
 		var coolFile:Array<String> = CoolUtil.coolTextFile(Paths.txt('characters/animations/$curCharacter'+'Animations'));
 
@@ -498,10 +522,10 @@ class Character extends FlxSprite
 			else
 				looped = false;
 
-			if(animations[0] == 'texture')
+			/*if(animations[0] == 'texture')
 				frames = Paths.getPackerAtlas(animations[1]);
 			else
-				animation.addByPrefix(animations[0],animations[1],24,looped);
+				animation.addByPrefix(animations[0],animations[1],24,looped); */
 		}
 	}
 

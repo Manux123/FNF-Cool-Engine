@@ -19,6 +19,7 @@ import flixel.addons.ui.FlxUITabMenu;
 import flixel.addons.ui.FlxUITooltip.FlxUITooltipStyle;
 import openfl.net.FileReference;
 import openfl.events.Event;
+import states.MusicBeatSubstate;
 import openfl.events.IOErrorEvent;
 import states.PlayState;
 import flixel.text.FlxText;
@@ -29,7 +30,7 @@ using StringTools;
 /**
 	*DEBUG MODE
  */
-class AnimationDebug extends FlxState
+class AnimationDebug extends MusicBeatSubstate
 {
 	var UI_box:FlxUITabMenu;
 	var bf:Boyfriend;

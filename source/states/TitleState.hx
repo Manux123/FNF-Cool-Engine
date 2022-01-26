@@ -359,8 +359,10 @@ class TitleState extends states.MusicBeatState
 	{
 		super.beatHit();
 
-		randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for", "YOU WHAT", "We shouldn't be", "you sussy baka", "._.", "get a brain", "sus", "we are cool", userName(), "why are we", userName()];
-		randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "*dances epicly*", "hardcoding this lmao", "among us", "im not imposter i swear", "for me", "sus", "right?", "run", "hardcoding this", "thanks for playing"];
+		randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for", userName()];//This is for credits, not for funny texts :angry:
+		randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "Thanks for playing B)"];
+		//Q: But can't we use the txt file version instead of this hardcoded ver? :cries:
+		//A: Cuz is for CREDITS to give thanks to peapole than dont do to much in this project :/
 		logoBl.animation.play('bump');
 		danceLeft = !danceLeft;
 

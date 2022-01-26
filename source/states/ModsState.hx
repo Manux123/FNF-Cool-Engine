@@ -113,7 +113,7 @@ class ModsState extends states.MusicBeatState
 			FlxG.camera.flash(FlxColor.WHITE);
 		}
 		if(modsFolders.length != 0 || modsFolders != []) 
-			if(controls.ACCEPT){
+			if(controls.ACCEPT && usableMods[curSelected]){
 				LoadingState.loadAndSwitchState(new ModsFreeplayState());
 				ModsFreeplayState.mod = modsFolders[curSelected];
 			}

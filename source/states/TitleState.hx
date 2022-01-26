@@ -43,6 +43,7 @@ class TitleState extends states.MusicBeatState
 	var credTextShit:Alphabet;
 	var textGroup:FlxGroup;
 	var ngSpr:FlxSprite;
+	var updateRequired:Bool = false;
 
 	//var curWacky:Array<String> = [];
 
@@ -267,7 +268,7 @@ class TitleState extends states.MusicBeatState
 				// Check if version is outdated
 				var http = new haxe.Http("https://raw.githubusercontent.com/Manux123/FNF-Cool-Engine/master/ver.thing");
 				var returnedData:Array<String> = [];
-				var version:String = Application.current.meta.get('version');
+				var version:String = "0.3.5B";
 
 				http.onData = function(data:String)
 				{
@@ -276,6 +277,7 @@ class TitleState extends states.MusicBeatState
 					if (!version.contains(returnedData[0].trim()) && !OutdatedState.leftState)
 					{
 						trace('Poor guy, he is outdated');
+						updateRequired = true;
 						OutdatedState.daVersionNeeded = returnedData[0];
 						OutdatedState.daChangelogNeeded = returnedData[1];
 						FlxG.switchState(new OutdatedState());
@@ -297,6 +299,11 @@ class TitleState extends states.MusicBeatState
 			});
 			// FlxG.sound.play(Paths.music('titleShoot'), 0.7);
 		}
+
+		if (pressedEnter && !updateRequired)
+	{		
+			FlxG.switchState(new OutdatedState());
+	}
             
 		if (pressedEnter && !skippedIntro)
 		{
@@ -363,10 +370,6 @@ class TitleState extends states.MusicBeatState
 		randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "Thanks for playing B)"];
 		//Q: But can't we use the txt file version instead of this hardcoded ver? :cries:
 		//A: Cuz is for CREDITS to give thanks to peapole than dont do to much in this project :/
-		//Q: if this is for credits that why is it called random also we have already wrote the credits in line 396-406 /:
-		//A: Le puse "RandomString" porque no tenia un nombre mas original, igual super XD la pregunta de porque lo llame asi.
-		//Y lo de que escribiste una wea en la linea 396... eres tonto o te haces?, literal, dije que era para CREDITOS ADICIONALES
-		//PARA GENTE QUE CASI NO HIZO NADA, ademas de que en lo de la linea 396-406 no queda mas espacio en la pantall BRUH
 		logoBl.animation.play('bump');
 		danceLeft = !danceLeft;
 

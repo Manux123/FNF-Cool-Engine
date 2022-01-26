@@ -9,6 +9,7 @@ using StringTools;
 typedef CharacterData =
 {
 	var char:String;
+    var texture:String;
     var xOffset:Int;
     var yOffset:Int;
     var anims:Array<String>;
@@ -16,6 +17,7 @@ typedef CharacterData =
 
 class CharacterFile{
     public var char:String = 'dad';
+    public var texture:String = 'nu c, que lo ponga el juan xd';
     public var xOffset:Int = 0;
     public var yOffset:Int = 0;
     public var anims:Array<String> = [];

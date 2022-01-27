@@ -28,9 +28,6 @@ class Character extends FlxSprite
 		2 => 'singUP',
 		3 => 'singRIGHT'
 	];
-	var cum:FlxAtlasFrames;
-
-	//TODO: IMPLEMENT CharacterFile.hx IN THIS SCRIPT
 
 	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false)
 	{
@@ -44,11 +41,11 @@ class Character extends FlxSprite
 		antialiasing = true;
 
 		if(states.ModsFreeplayState.onMods){
-			var characterFile:CharacterFile;
-			characterFile.loadFromJson(curCharacter);
-			tex = ModPaths.getSparrowAtlas(characterFile.texture);
-			for(i in characterFile.anims){
-				var split = i.split(':');
+			var characterFile:CharacterFile.CharacterData = CharacterFile.loadFromJson(curCharacter);
+			frames = ModPaths.getSparrowAtlas(characterFile.texture,states.ModsFreeplayState.mod);
+			var fuck:Array<String> = characterFile.anims;
+			for(i in 0... fuck.length){
+				var split = fuck[i].split(':');
 				animation.addByPrefix(split[0],split[1],24,false);
 			}
 			loadOffsetFile(characterFile.char);
@@ -246,7 +243,7 @@ class Character extends FlxSprite
 				healthBarColor = 0xFFb7d855;
 
 			case 'bf':
-				var tex = Paths.getSparrowAtlas('characters/BOYFRIEND');
+				tex = Paths.getSparrowAtlas('characters/BOYFRIEND');
 				frames = tex;
 				boyfriendAnimation();
 
@@ -257,7 +254,7 @@ class Character extends FlxSprite
 				flipX = true;
 
 			case 'bf-christmas':
-				var tex = Paths.getSparrowAtlas('christmas/bfChristmas');
+				tex = Paths.getSparrowAtlas('christmas/bfChristmas');
 				frames = tex;
 				boyfriendAnimation();
 
@@ -268,7 +265,7 @@ class Character extends FlxSprite
 				flipX = true;
 
 			case 'bf-car':
-				var tex = Paths.getSparrowAtlas('characters/week4/bfCar');
+				tex = Paths.getSparrowAtlas('characters/week4/bfCar');
 				frames = tex;
 				boyfriendAnimation();
 
@@ -431,10 +428,9 @@ class Character extends FlxSprite
 				flipX = true;
 				healthBarColor = 0xFF7bd6f6;
 
-			if (isPlayer) {
-				switch(curCharacter) {
-					default:
-						var tex = Paths.getSparrowAtlas('characters/BOYFRIEND');
+			default:
+				if(isPlayer) {
+					tex = Paths.getSparrowAtlas('characters/BOYFRIEND');
 						frames = tex;
 						boyfriendAnimation();
 
@@ -446,25 +442,20 @@ class Character extends FlxSprite
 						
 						healthBarColor = 0xFF7bd6f6;
 				}
-			}
-			else {
-				switch(curCharacter) {
-					default:
-						loadTextureFile(curCharacter);
-						frames = cum;
-						animation.addByPrefix('idle', 'Dad idle dance', 24, false);
-						animation.addByPrefix('singUP', 'Dad Sing Note UP', 24, false);
-						animation.addByPrefix('singRIGHT', 'Dad Sing Note RIGHT', 24, false);
-						animation.addByPrefix('singDOWN', 'Dad Sing Note DOWN', 24, false);
-						animation.addByPrefix('singLEFT', 'Dad Sing Note LEFT', 24, false);
-	
-						loadOffsetFile(curCharacter);
-	
-						playAnim('idle');
-					
-						healthBarColor = 0xFFa5004d;
+				else {
+					tex = Paths.getSparrowAtlas('characters/week1/DADDY_DEAREST');
+					frames = tex;
+					animation.addByPrefix('idle', 'Dad idle dance', 24, false);
+					animation.addByPrefix('singUP', 'Dad Sing Note UP', 24, false);
+					animation.addByPrefix('singRIGHT', 'Dad Sing Note RIGHT', 24, false);
+					animation.addByPrefix('singDOWN', 'Dad Sing Note DOWN', 24, false);
+					animation.addByPrefix('singLEFT', 'Dad Sing Note LEFT', 24, false);
+
+					loadOffsetFile(curCharacter);
+
+					playAnim('idle');
+					healthBarColor = 0xFFa5004d;
 				}
-			}
 		}
 
 		dance();
@@ -495,7 +486,7 @@ class Character extends FlxSprite
 	public function loadOffsetFile(character:String)
 	{
 		var fucked:String = 'assets/data/characters/offsets/${character}Offsets';
-		if(states.ModsFreeplayState.onMods && states.ModsState.modsFolders.indexOf(ModsFreeplayState.mod))
+		if(states.ModsFreeplayState.onMods && states.ModsState.usableMods[states.ModsState.modsFolders.indexOf(ModsFreeplayState.mod)])
 			fucked = 'mods/${states.ModsFreeplayState.mod}/data/characters/offsets/${character}Offsets';
 		var offset:Array<String> = CoolUtil.coolTextFile(fucked);
 

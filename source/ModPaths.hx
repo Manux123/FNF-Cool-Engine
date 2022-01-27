@@ -8,8 +8,8 @@ class ModPaths {
     static final currentLevel:String = Paths.currentLevel;
     private static final SOUND_EXT = Paths.SOUND_EXT;
 
-    inline static public function getModFile(file:String, mod:String, type:AssetType = TEXT, ?library:String){
-        return getPath('$mod/$file', type, library);
+    inline static public function getModFile(file:String, mod:String, type:AssetType = TEXT){
+        return getPath(file, type, mod);
     }
 
     inline static public function getModTxt(key:String, mod:String, ?library:String){
@@ -123,4 +123,9 @@ class ModPaths {
             return 'mods/$mod/$file';
         return 'mods/$file';
 	}
+
+    inline static public function getSparrowAtlas(key:String, ?mod:String)
+    {
+        return flixel.graphics.frames.FlxAtlasFrames.fromSparrow(getModImage(key, mod), getModFile('images/$key.xml', mod));
+    }
 }

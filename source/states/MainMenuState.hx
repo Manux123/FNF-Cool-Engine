@@ -72,7 +72,7 @@ class MainMenuState extends MusicBeatState
 
 		#if !MAINMENU
 		if (!FlxG.sound.music.playing){
-			if(ModsFreeplayState.onMods)
+			if(ModsFreeplayState.onMods && music_main != null)
 				FlxG.sound.playMusic(ModPaths.getModMusic(music_main, ModsFreeplayState.mod));
 			else
 				FlxG.sound.playMusic(Paths.music('freakyMenu'));
@@ -81,7 +81,7 @@ class MainMenuState extends MusicBeatState
 
 		persistentUpdate = persistentDraw = true; bg = new FlxSprite(-80);
 
-		if(ModsFreeplayState.onMods)
+		if(ModsFreeplayState.onMods && lol != null)
 			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-main',  ModsFreeplayState.mod));
 		else
 			bg.loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBG')));
@@ -174,15 +174,13 @@ class MainMenuState extends MusicBeatState
 				changeItem(1);
 			}
 
-			if (controls.BACK)
+			if (ModsFreeplayState.onMods && controls.BACK)
 			{
-				FlxG.switchState(new TitleState());
-			}
-
-			if(ModsFreeplayState.onMods == true && controls.BACK){
 				FlxG.switchState(new ModsState());
 				ModsFreeplayState.onMods = false;
 			}
+			else if(controls.BACK && !ModsFreeplayState.onMods)
+				FlxG.switchState(new TitleState());
 
 			if (controls.ACCEPT)
 			{

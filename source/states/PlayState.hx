@@ -1107,27 +1107,27 @@ class PlayState extends MusicBeatState
 			{
 				defaultCamZoom = 0.65;
 				curStage = 'flippy';
-				var sky:FlxSprite = new FlxSprite(-600, -225).loadGraphic(ModPaths.modBGImage('sky'));
+				var sky:FlxSprite = new FlxSprite(-600, -225).loadGraphic(ModPaths.modBGImage('sky'), ModsFreeplayState.mod);
 				sky.antialiasing = true;
 				sky.scrollFactor.set(0.5, 0.5);
 				sky.active = false;
 				add(sky);
 		
-				var backTrees:FlxSprite = new FlxSprite(-625, -200).loadGraphic(ModPaths.modBGImage('backtrees'));
+				var backTrees:FlxSprite = new FlxSprite(-625, -200).loadGraphic(ModPaths.modBGImage('backtrees'), ModsFreeplayState.mod);
 				backTrees.updateHitbox();
 				backTrees.antialiasing = true;
 				backTrees.scrollFactor.set(0.7, 0.7);
 				backTrees.active = false;
 				add(backTrees);
 			
-				var trees:FlxSprite = new FlxSprite(-625, -225).loadGraphic(ModPaths.modBGImage('trees'));
+				var trees:FlxSprite = new FlxSprite(-625, -225).loadGraphic(ModPaths.modBGImage('trees'), ModsFreeplayState.mod);
 				trees.updateHitbox();
 				trees.antialiasing = true;
 				trees.scrollFactor.set(0.8, 0.8);
 				trees.active = false;
 				add(trees);
 			
-				var ground:FlxSprite = new FlxSprite(-700, -150).loadGraphic(ModPaths.modBGImage('ground'));
+				var ground:FlxSprite = new FlxSprite(-700, -150).loadGraphic(ModPaths.modBGImage('ground'), ModsFreeplayState.mod);
 				ground.updateHitbox();
 				ground.antialiasing = true;
 				ground.active = false;
@@ -1147,7 +1147,7 @@ class PlayState extends MusicBeatState
 				campfire.animation.play('idle');
 				add(campfire);
 			
-				table = new FlxSprite(-850, -225).loadGraphic(ModPaths.modBGImage('table'));
+				table = new FlxSprite(-850, -225).loadGraphic(ModPaths.modBGImage('table'), ModsFreeplayState.mod);
 				table.setGraphicSize(Std.int(table.width * 1.1));
 				table.updateHitbox();
 				table.antialiasing = true;

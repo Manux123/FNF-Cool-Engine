@@ -41,7 +41,7 @@ class HealthIcon extends FlxSprite
 
 		antialiasing = true;
 		if(ModsState.modsFolders.length != 0 || ModsState.modsFolders != []) 
-			loadGraphic(ModPaths.modIconImage('icon-' + char), true, 150, 150);
+			loadGraphic(ModPaths.modIconImage('icon-' + char, ModsFreeplayState.mod), true, 150, 150);
 		else
 			loadGraphic(Paths.image('icons/icon-' + char), true, 150, 150);
 		animation.add('icon', [0, 1], 0, false, isPlayer);

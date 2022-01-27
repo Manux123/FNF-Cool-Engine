@@ -164,6 +164,7 @@ class USure extends states.MusicBeatSubstate
 	var selected:Int = 0;
 
 	var blackBox:FlxSprite;
+	var restart:Bool;
 
 	override function create()
 	{

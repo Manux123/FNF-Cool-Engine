@@ -351,7 +351,7 @@ class TitleState extends states.MusicBeatState
 		#if cpp
 		var env = Sys.environment();
 		if (!env.exists("USERNAME")) {
-			return "Couldnt find computa name";
+			return "Player";
 		}
 		return env["USERNAME"];
 		#else

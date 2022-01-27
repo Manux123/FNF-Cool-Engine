@@ -13,6 +13,7 @@ typedef CharacterData =
     var xOffset:Int;
     var yOffset:Int;
     var anims:Array<String>;
+	var healthBarColor:Int;
 };
 
 class CharacterFile{
@@ -21,6 +22,7 @@ class CharacterFile{
     public var xOffset:Int = 0;
     public var yOffset:Int = 0;
     public var anims:Array<String> = [];
+	public var healthBarColor:Int;
 
     public static function loadFromJson(character:String):CharacterData
 	{

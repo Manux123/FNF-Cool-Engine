@@ -30,16 +30,30 @@ class Character extends FlxSprite
 	];
 	var cum:FlxAtlasFrames;
 
+	//TODO: IMPLEMENT CharacterFile.hx IN THIS SCRIPT
+
 	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false)
 	{
 		super(x, y);
-
+		
 		animOffsets = new Map<String, Array<Dynamic>>();
 		curCharacter = character;
 		this.isPlayer = isPlayer;
 
 		var tex:FlxAtlasFrames;
 		antialiasing = true;
+
+		if(states.ModsFreeplayState.onMods){
+			var characterFile:CharacterFile;
+			characterFile.loadFromJson(curCharacter);
+			tex = ModPaths.getSparrowAtlas(characterFile.texture);
+			for(i in characterFile.anims){
+				var split = i.split(':');
+				animation.addByPrefix(split[0],split[1],24,false);
+			}
+			loadOffsetFile(characterFile.char);
+			healthBarColor = characterFile.healthBarColor;
+		}
 
 		switch (curCharacter)
 		{
@@ -480,7 +494,10 @@ class Character extends FlxSprite
 
 	public function loadOffsetFile(character:String)
 	{
-		var offset:Array<String> = CoolUtil.coolTextFile(Paths.txt('characters/offsets/' + character + "Offsets"));
+		var fucked:String = 'assets/data/characters/offsets/${character}Offsets';
+		if(states.ModsFreeplayState.onMods && states.ModsState.modsFolders.indexOf(ModsFreeplayState.mod))
+			fucked = 'mods/${states.ModsFreeplayState.mod}/data/characters/offsets/${character}Offsets';
+		var offset:Array<String> = CoolUtil.coolTextFile(fucked);
 
 		for (i in 0...offset.length)
 		{
@@ -488,28 +505,6 @@ class Character extends FlxSprite
 			addOffset(data[0], Std.parseInt(data[1]), Std.parseInt(data[2]));
 		}
 	}
-
-	public function loadTextureFile(character:String)
-	{
-		var texture:Array<String> = CoolUtil.coolTextFile(ModPaths.getModTxt('characters/texture/' + character + "Texture", ModsFreeplayState.mod));
-
-		for (i in 0...texture.length)
-		{
-			var data:Array<String> = texture[i].split(' ');
-			cum = Paths.getSparrowAtlas(data[0], Std.string(data[1]));
-		}
-	}
-
-	/*public function loadHealthColorFile(character:String) Shitty test that didn't worked
-		{
-			var color:Array<String> = CoolUtil.coolTextFile(ModPaths.getModTxt('characters/healthbarColor/' + character + "HealthColor", ModsFreeplayState.mod));
-		
-			for (i in 0...color.length)
-			{
-				var data:Array<String> = color[i].split(' ');
-				healthBarColor = Std.parseInt(data[0]);
-			}
-		} */
 
 	public function loadAnimations(){
 		var coolFile:Array<String> = CoolUtil.coolTextFile(Paths.txt('characters/animations/$curCharacter'+'Animations'));

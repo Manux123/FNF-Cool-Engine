@@ -69,8 +69,8 @@ class ModsState extends states.MusicBeatState
 			grpMods = new FlxTypedGroup<Alphabet>();
 
 			for(i in 0... modsFolders.length){
-				if(usableMods.length == 0)
-					usableMods.push(OpenflAssets.exists(ModPaths.getModCool(modsFolders[i]))?true:false);
+				if(usableMods.length == 0 || usableMods == [])
+					usableMods.push(OpenflAssets.exists(ModPaths.getModCool(modsFolders[i])));
 
 				var modText:Alphabet = new Alphabet(0,(i + 1) * 100, modsFolders[i],false);
 				modText.isMenuItem = true;
@@ -82,11 +82,9 @@ class ModsState extends states.MusicBeatState
 			}
 		}
 		else{
-			var modText:Alphabet = new Alphabet(0, 1 * 100, 'The folder is empty',false);
-			modText.isMenuItem = true;
-			modText.targetY = 0;					
+			var modText:FlxText = new FlxText(0, 1 * 100, 'The folder is empty',false);
 			modText.screenCenter(X);
-			grpMods.add(modText);
+			add(modText);
 		}
 		add(grpMods);
 		#end
@@ -119,7 +117,6 @@ class ModsState extends states.MusicBeatState
 			}
 		#else
 		LoadingState.loadAndSwitchState(new MainMenuState());
-		FlxG.camera.flash(FlxColor.WHITE);
 		#end
 		super.update(elapsed);
 	}

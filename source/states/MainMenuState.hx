@@ -30,8 +30,7 @@ class MainMenuState extends MusicBeatState
 	var optionShit:Array<String> = ['story-mode', 'freeplay', 'mods' #if !switch ,'options', 'donate'#end];
 	var optionMap:Map<String,MusicBeatState> = [
 		'story-mode' => new StoryMenuState(),
-		'freeplay' => new FreeplayState(),//SACO WEA, LO DE MODSFREEPLAY ES SOLO PARA EL MODSTATE, NO PARA EL MAIN MENU
-		//CAGO EN LA HOSTIA, SE ME OLVIDO CAMBIARLO Y YA
+		'freeplay' => new FreeplayState(),
 		'mods' => new ModsState(),
 		'options' => new OptionsMenuState()
 	];
@@ -48,6 +47,15 @@ class MainMenuState extends MusicBeatState
 	{
 		//LOAD CUZ THIS SHIT DONT DO IT SOME IN THE CACHESTATE.HX FUCK
 		PlayerSettings.player1.controls.loadKeyBinds();
+
+		if(ModsFreeplayState.onMods == true){
+			optionMap = [
+				'story-mode' => new StoryMenuState(),
+				'freeplay' => new ModsFreeplayState(),
+				'options' => new OptionsMenuState()
+			];
+		}
+			
 
 		#if desktop
 		// Updating Discord Rich Presence
@@ -110,6 +118,15 @@ class MainMenuState extends MusicBeatState
 		versionShit2.y -= 20;
 		add(versionShit2);
 
+		var versionShit3:FlxText = new FlxText(5, FlxG.height - 19, 0, 'Mod ${ModsFreeplayState.mod} Loaded!', 12);
+		versionShit3.scrollFactor.set();
+		versionShit3.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionShit3.y -= 40;
+		add(versionShit3);
+		versionShit3.visible = false;
+		if(ModsFreeplayState.onMods == true)
+			versionShit3.visible = true;
+
 		// NG.core.calls.event.logEvent('swag').send();
 
 		changeItem();
@@ -149,6 +166,11 @@ class MainMenuState extends MusicBeatState
 			if (controls.BACK)
 			{
 				FlxG.switchState(new TitleState());
+			}
+
+			if(ModsFreeplayState.onMods == true && controls.BACK){
+				FlxG.switchState(new ModsState());
+				ModsFreeplayState.onMods = false;
 			}
 
 			if (controls.ACCEPT)
@@ -200,6 +222,10 @@ class MainMenuState extends MusicBeatState
 										{
 											var daChoice:String = optionShit[curSelected];
 											FlxG.switchState(optionMap[daChoice]);
+
+											if(ModsFreeplayState.onMods == true && daChoice == 'mods'){
+												openSubState(new UnloadModState());
+											}
 										});
 									}
 								});

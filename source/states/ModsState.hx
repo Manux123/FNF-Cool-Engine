@@ -215,9 +215,11 @@ class USure extends states.MusicBeatSubstate
 			switch (selected)
 			{
 				case 0:
-					FlxG.switchState(new ModsFreeplayState());
+					FlxG.switchState(new MainMenuState());
+					ModsFreeplayState.onMods = true;
 				case 1:
 					FlxG.switchState(new MainMenuState());
+					ModsFreeplayState.onMods = false;
 			}
 		}
 

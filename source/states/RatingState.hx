@@ -119,6 +119,7 @@ class RatingState extends FlxSubState
                     // Strexx was here - Strexx
                     // Its not like u did something incredibly important - Juanen100
 		    // you*    
+            //Yeah thx sus for correcting me (don't correct the thx or i'll kill you)
         
                         if (PlayState.isStoryMode)
                         {

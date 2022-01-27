@@ -1,10 +1,22 @@
 package;
 
-import states.ModsFreeplayState;
 import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
+import openfl.utils.Assets;
+import states.ModsState;
+import states.ModsFreeplayState;
 
 using StringTools;
+
+typedef CharacterData =
+{
+	var char:String;
+    var texture:String;
+    var xOffset:Int;
+    var yOffset:Int;
+    var anims:Array<String>;
+	var healthBarColor:Int;
+};
 
 class Character extends FlxSprite
 {
@@ -27,6 +39,8 @@ class Character extends FlxSprite
 		3 => 'singRIGHT'
 	];
 
+	var tex:FlxAtlasFrames;
+
 	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false)
 	{
 		super(x, y);
@@ -34,21 +48,8 @@ class Character extends FlxSprite
 		animOffsets = new Map<String, Array<Dynamic>>();
 		curCharacter = character;
 		this.isPlayer = isPlayer;
-
-		var tex:FlxAtlasFrames;
+		
 		antialiasing = true;
-
-		if(states.ModsFreeplayState.onMods){
-			var characterFile:CharacterFile.CharacterData = CharacterFile.loadFromJson(curCharacter);
-			frames = ModPaths.getSparrowAtlas(characterFile.texture,states.ModsFreeplayState.mod);
-			var fuck:Array<String> = characterFile.anims;
-			for(i in 0... fuck.length){
-				var split = fuck[i].split(':');
-				animation.addByPrefix(split[0],split[1],24,false);
-			}
-			loadOffsetFile(characterFile.char);
-			healthBarColor = Std.parseInt("0x" + characterFile.healthBarColor);
-		}
 
 		switch (curCharacter)
 		{
@@ -441,6 +442,19 @@ class Character extends FlxSprite
 						healthBarColor = 0xFF7bd6f6;
 				}
 				else {
+					if(states.ModsFreeplayState.onMods){
+						var characterFile:CharacterData = loadFromJson(curCharacter);
+						frames = ModPaths.getSparrowAtlas(characterFile.texture,states.ModsFreeplayState.mod);
+						var fuck:Array<String> = characterFile.anims;
+						for(i in 0... fuck.length){
+							var split = fuck[i].split(':');
+							animation.addByPrefix(split[0],split[1],24,false);
+						}
+						loadOffsetFile(characterFile.char);
+						healthBarColor = Std.parseInt("0x" + characterFile.healthBarColor);
+					}
+					
+					//If its in the mods it assumes its a custom character, if not, it says its dad
 					tex = Paths.getSparrowAtlas('characters/week1/DADDY_DEAREST');
 					frames = tex;
 					animation.addByPrefix('idle', 'Dad idle dance', 24, false);
@@ -483,16 +497,32 @@ class Character extends FlxSprite
 
 	public function loadOffsetFile(character:String)
 	{
-		var fucked:String = 'assets/data/characters/offsets/${character}Offsets';
+		var offset:Array<String> = CoolUtil.coolTextFile('assets/data/characters/offsets/${character}Offsets');
 		if(states.ModsFreeplayState.onMods && states.ModsState.usableMods[states.ModsState.modsFolders.indexOf(ModsFreeplayState.mod)])
-			fucked = 'mods/${states.ModsFreeplayState.mod}/data/characters/offsets/${character}Offsets';
-		var offset:Array<String> = CoolUtil.coolTextFile(fucked);
+			offset = CoolUtil.coolTextFile('mods/${states.ModsFreeplayState.mod}/data/characters/offsets/${character}Offsets');
 
 		for (i in 0...offset.length)
 		{
 			var data:Array<String> = offset[i].split(' ');
 			addOffset(data[0], Std.parseInt(data[1]), Std.parseInt(data[2]));
 		}
+	}
+
+	public static function loadFromJson(character:String):CharacterData
+	{
+		var rawJson = null;
+		var jsonRawFile:String = ('assets/data/characters/$character.json');
+		if(ModsFreeplayState.onMods && ModsState.usableMods[ModsState.modsFolders.indexOf(ModsFreeplayState.mod)] == true)
+			jsonRawFile = ('mods/${ModsFreeplayState.mod}/data/characters/$character.json');
+
+		if(Assets.exists(jsonRawFile))
+			rawJson = Assets.getText(jsonRawFile).trim();
+
+		while (!rawJson.endsWith("}")){
+			rawJson = rawJson.substr(0, rawJson.length - 1);
+		}
+
+		return (cast haxe.Json.parse(rawJson).character);
 	}
 
 	public function loadAnimations(){

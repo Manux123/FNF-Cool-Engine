@@ -196,8 +196,8 @@ class ModsFreeplayState extends MusicBeatState
 		if (controls.BACK)
 		{
 			FlxG.sound.play(Paths.sound('cancelMenu'));
-			FlxG.switchState(new ModsState());
-			onMods = false;
+			FlxG.switchState(new MainMenuState());
+			onMods = true;
 		}
 
 		if (accepted)

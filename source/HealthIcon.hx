@@ -40,7 +40,7 @@ class HealthIcon extends FlxSprite
 			char = char.substring(0, char.indexOf('-'));
 
 		antialiasing = true;
-		if(ModsState.modsFolders.length != 0 || ModsState.modsFolders != []) 
+		if(states.ModsFreeplayState.onMods) 
 			loadGraphic(ModPaths.modIconImage('icon-' + char, states.ModsFreeplayState.mod), true, 150, 150);
 		else
 			loadGraphic(Paths.image('icons/icon-' + char), true, 150, 150);

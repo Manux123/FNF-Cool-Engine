@@ -68,7 +68,7 @@ class ModsFreeplayState extends MusicBeatState
 
 		// LOAD CHARACTERS
 
-		if(ModsState.modsFolders.length != 0 || ModsState.modsFolders != []) 
+		if(ModsFreeplayState.onMods) 
 			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-freeplay', ModsFreeplayState.mod));
 		else 
 			bg.loadGraphic(Paths.image('menu/menuBGBlue'));

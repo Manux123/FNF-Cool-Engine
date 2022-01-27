@@ -122,6 +122,15 @@ class ModsState extends states.MusicBeatState
 		#else
 		LoadingState.loadAndSwitchState(new MainMenuState());
 		#end
+
+		if(controls.UP_P)
+		{
+			changeSelection(-1);
+		}		
+		if(controls.DOWN_P)
+		{
+			changeSelection(-1);
+		}
 		super.update(elapsed);
 	}
 

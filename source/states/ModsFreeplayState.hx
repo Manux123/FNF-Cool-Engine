@@ -50,15 +50,8 @@ class ModsFreeplayState extends MusicBeatState
 		// Updating Discord Rich Presence
 		Discord.DiscordClient.changePresence("In the ModsPlay Menu", null);
 		#end
-		if(openfl.utils.Assets.exists(ModPaths.modBGVideo('preview-video',mod))){
-			var bg:FlxVideo = new FlxVideo(-80,0,FlxG.width,FlxG.height);
-			bg.playVideo(ModPaths.modBGVideo('preview-video',mod),true,false);
-			add(bg);
-		}
-		else {
-			var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGBlue'));
-			add(bg);
-		}
+		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGBlue'));
+		add(bg);
 
 		grpSongs = new FlxTypedGroup<Alphabet>();
 		add(grpSongs);

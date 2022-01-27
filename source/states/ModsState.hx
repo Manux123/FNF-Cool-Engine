@@ -1,5 +1,6 @@
 package states;
 
+import mp4.FlxVideo;
 import flixel.util.FlxTimer;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.text.FlxText;
@@ -29,6 +30,8 @@ class ModsState extends states.MusicBeatState
 	var nameSongs:String = '';
 	var grpMods:FlxTypedGroup<Alphabet>;
 
+	final bg:FlxVideo = new FlxVideo(-80,0,FlxG.width,FlxG.height);
+
 	override function create(){
 		#if windows
 		// Updating Discord Rich Presence
@@ -37,12 +40,14 @@ class ModsState extends states.MusicBeatState
 
 		modsFolders = CoolUtil.coolTextFile("mods/modsList.txt");
 
-		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGBlue'));
-		bg.scrollFactor.x = 0;
-		bg.scrollFactor.y = 0.18;
-		bg.screenCenter();
-		bg.antialiasing = true;
-		add(bg);
+		if(openfl.utils.Assets.exists(ModPaths.modBGVideo('preview-video',modsFolders[curSelected]))){
+			bg.scrollFactor.x = 0;
+			bg.scrollFactor.y = 0.18;
+			bg.screenCenter();
+			bg.antialiasing = true;
+			bg.playVideo(ModPaths.modBGVideo('preview-video',modsFolders[curSelected]),true,false);
+			add(bg);
+		}
 
 		var	black:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		black.screenCenter(X);
@@ -130,6 +135,9 @@ class ModsState extends states.MusicBeatState
 		
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
 		FlxG.sound.playMusic('mods/${modsFolders[curSelected]}/music/freakyMenu.ogg');
+
+		if(openfl.utils.Assets.exists(ModPaths.modBGVideo('preview-video',modsFolders[curSelected])))
+			bg.playVideo(ModPaths.modBGVideo('preview-video',modsFolders[curSelected]),true,false);
 
 		curSelected+=change;
 		if (curSelected < 0)

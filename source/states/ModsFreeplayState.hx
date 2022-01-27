@@ -126,21 +126,6 @@ class ModsFreeplayState extends MusicBeatState
 		songs.push(new FreeplayState.SongMetadata(songName, weekNum, songCharacter));
 	}
 
-	public function addWeek(songs:Array<String>, weekNum:Int, ?songCharacters:Array<String>)
-	{
-		if (songCharacters == null)
-			songCharacters = ['bf'];
-
-		var num:Int = 0;
-		for (song in songs)
-		{
-			addSong(song, weekNum, songCharacters[num]);
-
-			if (songCharacters.length != 1)
-				num++;
-		}
-	}
-
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);

@@ -67,9 +67,14 @@ class MainMenuState extends MusicBeatState
 		transIn = FlxTransitionableState.defaultTransIn;
 		transOut = FlxTransitionableState.defaultTransOut;
 
+		var music_main:String;
+
 		#if !MAINMENU
 		if (!FlxG.sound.music.playing){
-			FlxG.sound.playMusic(Paths.music('freakyMenu'));
+			if(modsFolders.length == 0 || modsFolders == [])
+				FlxG.sound.playMusic(ModPaths.getModMusic(music_main));
+			else
+				FlxG.sound.playMusic(Paths.music('freakyMenu'));
 		}
 		#end
 

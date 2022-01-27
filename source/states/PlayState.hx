@@ -456,6 +456,8 @@ class PlayState extends MusicBeatState
 				gf.visible = false;
 			case 'school' | 'schoolEvil':
 				gfVersion = 'gf-pixel';
+			case 'flippy':
+				gf.visible = false;
            	default:
 				gfVersion = 'gf';}
 		switch (SONG.song.toLowerCase()){
@@ -467,6 +469,8 @@ class PlayState extends MusicBeatState
 				gf.visible = false;
 			case 'senpai' | 'roses' | 'thorns':
 				gfVersion = 'gf-pixel';
+			case 'overkill':
+				gf.visible = false;
            	default:
 				gfVersion = 'gf';}
 

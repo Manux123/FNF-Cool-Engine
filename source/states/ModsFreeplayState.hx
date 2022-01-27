@@ -29,14 +29,14 @@ class ModsFreeplayState extends MusicBeatState
 	private var iconArray:Array<HealthIcon> = [];
 
 	private var initSonglist:Array<String>;
-	var lol:String;
+	var lol:String; var bg:FlxSprite; 
 
 	public static var mod:String;
 	public static var onMods:Bool = false;
 
 	override function create()
 	{
-		onMods = true;
+		onMods = true; bg = new FlxSprite(-80);
 		
 		initSonglist = CoolUtil.coolTextFile(ModPaths.getModTxt('songList', mod));
 
@@ -50,7 +50,10 @@ class ModsFreeplayState extends MusicBeatState
 		// Updating Discord Rich Presence
 		Discord.DiscordClient.changePresence("In the ModsPlay Menu", null);
 		#end
-		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGBlue'));
+		if(ModsFreeplayState.onMods) 
+			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-freeplay', ModsFreeplayState.mod));
+		else 
+			bg.loadGraphic(Paths.image('menu/menuBGBlue'));
 		add(bg);
 
 		grpSongs = new FlxTypedGroup<Alphabet>();

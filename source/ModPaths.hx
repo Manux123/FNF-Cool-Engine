@@ -136,4 +136,9 @@ class ModPaths {
     {
         return flixel.graphics.frames.FlxAtlasFrames.fromSparrow(getModImage(key, mod), getModFile('images/$key.xml', mod));
     }
+
+    inline static public function getBGsAnimated(key:String, ?mod:String)
+    {
+        return flixel.graphics.frames.FlxAtlasFrames.fromSparrow(getModImage(key, mod), getModFile('images/BGs/$key.xml', mod));
+    }
 }

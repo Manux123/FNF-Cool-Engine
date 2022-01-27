@@ -210,6 +210,9 @@ class PlayState extends MusicBeatState
 	public static var theFunne:Bool = true;
 	var funneEffect:FlxSprite;
 	var inCutscene:Bool = false;
+	var boombox:FlxSprite;
+	var campfire:FlxSprite;
+	var table:FlxSprite;
 
 	public static var timeCurrently:Float = 0;
 	public static var timeCurrentlyR:Float = 0;
@@ -365,6 +368,9 @@ class PlayState extends MusicBeatState
 
 			case 'thorns': //week 6 spirit
 				curStage = 'schoolEvil';
+
+			case 'overkill': //flippy mod lol
+				curStage = 'flippy';
 
 			default: //default stage
 				curStage = 'stage_week1';
@@ -553,6 +559,11 @@ class PlayState extends MusicBeatState
 				boyfriend.y += 220;
 				gf.x += 180;
 				gf.y += 300;
+			case 'flippy':
+				boyfriend.x += 200;
+				boyfriend.y -= 250;
+				dad.x -= 200;
+				dad.y += 100;
 		}
 		if(SONG.song.toLowerCase() == 'test'){
 			dad.y += 510;
@@ -570,6 +581,8 @@ class PlayState extends MusicBeatState
 
 		add(dad);
 		add(boyfriend);
+		if (curStage == 'flippy')
+			add(table);
 
 		var dialogueBox:DialogueBox = new DialogueBox(false, dialogue);
 		// doof.x += 70;
@@ -1089,6 +1102,57 @@ class PlayState extends MusicBeatState
 				bg.scrollFactor.set(0.8, 0.9);
 				bg.scale.set(6, 6);
 				add(bg);
+			}
+			case 'overkill':
+			{
+				defaultCamZoom = 0.65;
+				curStage = 'flippy';
+				var sky:FlxSprite = new FlxSprite(-600, -225).loadGraphic(ModPaths.modBGImage('sky'));
+				sky.antialiasing = true;
+				sky.scrollFactor.set(0.5, 0.5);
+				sky.active = false;
+				add(sky);
+		
+				var backTrees:FlxSprite = new FlxSprite(-625, -200).loadGraphic(ModPaths.modBGImage('backtrees'));
+				backTrees.updateHitbox();
+				backTrees.antialiasing = true;
+				backTrees.scrollFactor.set(0.7, 0.7);
+				backTrees.active = false;
+				add(backTrees);
+			
+				var trees:FlxSprite = new FlxSprite(-625, -225).loadGraphic(ModPaths.modBGImage('trees'));
+				trees.updateHitbox();
+				trees.antialiasing = true;
+				trees.scrollFactor.set(0.8, 0.8);
+				trees.active = false;
+				add(trees);
+			
+				var ground:FlxSprite = new FlxSprite(-700, -150).loadGraphic(ModPaths.modBGImage('ground'));
+				ground.updateHitbox();
+				ground.antialiasing = true;
+				ground.active = false;
+				add(ground);
+		
+				boombox = new FlxSprite(925, 515);
+				boombox.frames = ModPaths.getBGsAnimated("speaker");
+				boombox.animation.addByPrefix('idle', 'boombox', 16, true);
+				boombox.animation.play('idle');
+				boombox.setGraphicSize(Std.int(boombox.width * 1));
+				add(boombox);
+		
+				campfire = new FlxSprite(500, 360);
+				campfire.frames = ModPaths.getBGsAnimated("fire");
+				campfire.animation.addByPrefix('idle', 'fire idle', 12, true);
+				campfire.alpha = 0.8;
+				campfire.animation.play('idle');
+				add(campfire);
+			
+				table = new FlxSprite(-850, -225).loadGraphic(ModPaths.modBGImage('table'));
+				table.setGraphicSize(Std.int(table.width * 1.1));
+				table.updateHitbox();
+				table.antialiasing = true;
+				table.scrollFactor.set(1.3, 1.3);
+				table.active = false;
 			}
 			default: //default stage
 			{

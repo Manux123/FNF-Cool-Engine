@@ -1,9 +1,7 @@
 package;
 
 import states.ModsFreeplayState;
-import flixel.FlxG;
 import flixel.FlxSprite;
-import flixel.animation.FlxBaseAnimation;
 import flixel.graphics.frames.FlxAtlasFrames;
 
 using StringTools;
@@ -49,7 +47,7 @@ class Character extends FlxSprite
 				animation.addByPrefix(split[0],split[1],24,false);
 			}
 			loadOffsetFile(characterFile.char);
-			healthBarColor = characterFile.healthBarColor;
+			healthBarColor = Std.parseInt("0x" + characterFile.healthBarColor);
 		}
 
 		switch (curCharacter)

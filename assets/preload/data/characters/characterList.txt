@@ -16,4 +16,4 @@ bf-pixel
 senpai
 senpai-angry
 spirit
-bf-pixel-enemy
+boyfriend_cool

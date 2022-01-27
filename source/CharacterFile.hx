@@ -22,14 +22,14 @@ class CharacterFile{
     public var xOffset:Int = 0;
     public var yOffset:Int = 0;
     public var anims:Array<String> = [];
-	public var healthBarColor:Int;
+	public var healthBarColor:String;
 
     public static function loadFromJson(character:String):CharacterData
 	{
 		var rawJson = null;
 		var jsonRawFile:String = ('assets/data/characters/$character.json');
 		if(ModsFreeplayState.onMods && ModsState.usableMods[ModsState.modsFolders.indexOf(ModsFreeplayState.mod)] == true)
-			jsonRawFile = ('mods/${ModsFreeplayState.mod!=null?ModsFreeplayState.mod:'example_mod'}/data/characters/$character.json');
+			jsonRawFile = ('mods/${ModsFreeplayState.mod}/data/characters/$character.json');
 
 		if(Assets.exists(jsonRawFile))
 			rawJson = Assets.getText(jsonRawFile).trim();

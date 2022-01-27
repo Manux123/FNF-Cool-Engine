@@ -40,6 +40,8 @@ class MainMenuState extends MusicBeatState
 	var camFollow:FlxObject;
 	var newInput:Bool = true;
 	var menuItem:FlxSprite;
+	var bg:FlxSprite;
+	var lol:String;
 	public static var firstStart:Bool = true;
 
 	public static var finishedFunnyMove:Bool = false;
@@ -63,9 +65,12 @@ class MainMenuState extends MusicBeatState
 		}
 		#end
 
-		persistentUpdate = persistentDraw = true;
+		persistentUpdate = persistentDraw = true; bg = new FlxSprite(-80);
 
-		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBG')));
+		if(modsFolders.length != 0 || modsFolders != []) 
+			bg.loadGraphic(modBGImage('menu/' + lol + '-main'));
+		else
+			bg.loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBG')));
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0.18;
 		bg.screenCenter();

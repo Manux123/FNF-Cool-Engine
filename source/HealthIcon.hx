@@ -39,7 +39,10 @@ class HealthIcon extends FlxSprite
 			char = char.substring(0, char.indexOf('-'));
 
 		antialiasing = true;
-		loadGraphic(Paths.image('icons/icon-' + char), true, 150, 150);
+		if(modsFolders.length != 0 || modsFolders != []) 
+			loadGraphic(ModPaths.modIconImage('icon-' + char), true, 150, 150);
+		else
+			loadGraphic(Paths.image('icons/icon-' + char), true, 150, 150);
 		animation.add('icon', [0, 1], 0, false, isPlayer);
 		animation.play('icon');
 		scrollFactor.set();

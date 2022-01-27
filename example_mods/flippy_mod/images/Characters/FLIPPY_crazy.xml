@@ -1,0 +1,145 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="FLP3_Moves.png">
+	<!-- Created with Adobe Animate version 21.0.1.37179 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="FLP3 Alt Idle0000" x="10" y="10" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt Idle0001" x="10" y="10" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt Idle0002" x="859" y="10" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt Idle0003" x="859" y="10" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt Idle0004" x="1708" y="10" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt Idle0005" x="1708" y="10" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt Idle0006" x="2557" y="10" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt Idle0007" x="2557" y="10" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt Idle0008" x="10" y="644" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt Idle0009" x="10" y="644" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt Idle0010" x="10" y="644" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt Idle0011" x="10" y="644" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt Idle0012" x="10" y="644" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt Idle0013" x="10" y="644" width="839" height="624"/>
+	<SubTexture name="FLP3 Alt M DOWN0000" x="859" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M DOWN0001" x="859" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M DOWN0002" x="1724" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M DOWN0003" x="1724" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M DOWN0004" x="1724" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M DOWN0005" x="1724" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M DOWN0006" x="1724" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M DOWN0007" x="1724" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M DOWN0008" x="1724" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M DOWN0009" x="1724" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M DOWN0010" x="1724" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M DOWN0011" x="1724" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M DOWN0012" x="1724" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M DOWN0013" x="1724" y="644" width="855" height="612"/>
+	<SubTexture name="FLP3 Alt M LEFT0000" x="2589" y="644" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M LEFT0001" x="2589" y="644" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M LEFT0002" x="10" y="1298" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M LEFT0003" x="10" y="1298" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M LEFT0004" x="10" y="1298" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M LEFT0005" x="10" y="1298" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M LEFT0006" x="10" y="1298" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M LEFT0007" x="10" y="1298" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M LEFT0008" x="10" y="1298" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M LEFT0009" x="10" y="1298" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M LEFT0010" x="10" y="1298" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M LEFT0011" x="10" y="1298" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M LEFT0012" x="10" y="1298" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M LEFT0013" x="10" y="1298" width="806" height="644"/>
+	<SubTexture name="FLP3 Alt M RIGHT0000" x="826" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M RIGHT0001" x="826" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M RIGHT0002" x="1801" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M RIGHT0003" x="1801" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M RIGHT0004" x="1801" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M RIGHT0005" x="1801" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M RIGHT0006" x="1801" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M RIGHT0007" x="1801" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M RIGHT0008" x="1801" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M RIGHT0009" x="1801" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M RIGHT0010" x="1801" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M RIGHT0011" x="1801" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M RIGHT0012" x="1801" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M RIGHT0013" x="1801" y="1298" width="965" height="646"/>
+	<SubTexture name="FLP3 Alt M UP0000" x="2776" y="1298" width="827" height="711"/>
+	<SubTexture name="FLP3 Alt M UP0001" x="2776" y="1298" width="827" height="711"/>
+	<SubTexture name="FLP3 Alt M UP0002" x="10" y="2019" width="827" height="711"/>
+	<SubTexture name="FLP3 Alt M UP0003" x="10" y="2019" width="827" height="711"/>
+	<SubTexture name="FLP3 Alt M UP0004" x="847" y="2019" width="827" height="711"/>
+	<SubTexture name="FLP3 Alt M UP0005" x="847" y="2019" width="827" height="711"/>
+	<SubTexture name="FLP3 Alt M UP0006" x="10" y="2019" width="827" height="711"/>
+	<SubTexture name="FLP3 Alt M UP0007" x="10" y="2019" width="827" height="711"/>
+	<SubTexture name="FLP3 Alt M UP0008" x="847" y="2019" width="827" height="711"/>
+	<SubTexture name="FLP3 Alt M UP0009" x="847" y="2019" width="827" height="711"/>
+	<SubTexture name="FLP3 Alt M UP0010" x="10" y="2019" width="827" height="711"/>
+	<SubTexture name="FLP3 Alt M UP0011" x="10" y="2019" width="827" height="711"/>
+	<SubTexture name="FLP3 Alt M UP0012" x="847" y="2019" width="827" height="711"/>
+	<SubTexture name="FLP3 Alt M UP0013" x="847" y="2019" width="827" height="711"/>
+	<SubTexture name="FLP3 M DOWN0000" x="1684" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M DOWN0001" x="1684" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M DOWN0002" x="2300" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M DOWN0003" x="2300" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M DOWN0004" x="2300" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M DOWN0005" x="2300" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M DOWN0006" x="2300" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M DOWN0007" x="2300" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M DOWN0008" x="2300" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M DOWN0009" x="2300" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M DOWN0010" x="2300" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M DOWN0011" x="2300" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M DOWN0012" x="2300" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M DOWN0013" x="2300" y="2019" width="606" height="552"/>
+	<SubTexture name="FLP3 M LEFT0000" x="2916" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M LEFT0001" x="2916" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M LEFT0002" x="3482" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M LEFT0003" x="3482" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M LEFT0004" x="3482" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M LEFT0005" x="3482" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M LEFT0006" x="3482" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M LEFT0007" x="3482" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M LEFT0008" x="3482" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M LEFT0009" x="3482" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M LEFT0010" x="3482" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M LEFT0011" x="3482" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M LEFT0012" x="3482" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M LEFT0013" x="3482" y="2019" width="556" height="642"/>
+	<SubTexture name="FLP3 M RIGHT0000" x="10" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M RIGHT0001" x="10" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M RIGHT0002" x="655" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M RIGHT0003" x="655" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M RIGHT0004" x="655" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M RIGHT0005" x="655" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M RIGHT0006" x="655" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M RIGHT0007" x="655" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M RIGHT0008" x="655" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M RIGHT0009" x="655" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M RIGHT0010" x="655" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M RIGHT0011" x="655" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M RIGHT0012" x="655" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M RIGHT0013" x="655" y="2740" width="635" height="576"/>
+	<SubTexture name="FLP3 M UP0000" x="1300" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 M UP0001" x="1300" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 M UP0002" x="1854" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 M UP0003" x="1854" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 M UP0004" x="2408" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 M UP0005" x="2408" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 M UP0006" x="1854" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 M UP0007" x="1854" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 M UP0008" x="2408" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 M UP0009" x="2408" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 M UP0010" x="1854" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 M UP0011" x="1854" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 M UP0012" x="2408" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 M UP0013" x="2408" y="2740" width="544" height="712"/>
+	<SubTexture name="FLP3 idle0000" x="2962" y="2740" width="568" height="576"/>
+	<SubTexture name="FLP3 idle0001" x="2962" y="2740" width="568" height="576"/>
+	<SubTexture name="FLP3 idle0002" x="10" y="3462" width="568" height="576"/>
+	<SubTexture name="FLP3 idle0003" x="10" y="3462" width="568" height="576"/>
+	<SubTexture name="FLP3 idle0004" x="588" y="3462" width="568" height="576"/>
+	<SubTexture name="FLP3 idle0005" x="588" y="3462" width="568" height="576"/>
+	<SubTexture name="FLP3 idle0006" x="1166" y="3462" width="568" height="576"/>
+	<SubTexture name="FLP3 idle0007" x="1166" y="3462" width="568" height="576"/>
+	<SubTexture name="FLP3 idle0008" x="1744" y="3462" width="568" height="576"/>
+	<SubTexture name="FLP3 idle0009" x="1744" y="3462" width="568" height="576"/>
+	<SubTexture name="FLP3 idle0010" x="1744" y="3462" width="568" height="576"/>
+	<SubTexture name="FLP3 idle0011" x="1744" y="3462" width="568" height="576"/>
+	<SubTexture name="FLP3 idle0012" x="1744" y="3462" width="568" height="576"/>
+	<SubTexture name="FLP3 idle0013" x="1744" y="3462" width="568" height="576"/>
+</TextureAtlas>

@@ -35,6 +35,7 @@ class ModsFreeplayState extends MusicBeatState
 	private var iconArray:Array<HealthIcon> = [];
 
 	private var initSonglist:Array<String>;
+	var lol:String; var bg:FlxSprite; 
 
 	public static var mod:String;
 	public static var onMods:Bool = false;
@@ -56,7 +57,7 @@ class ModsFreeplayState extends MusicBeatState
 		DiscordClient.changePresence("In the Freeplay Menu", null);
 		#end
 
-		var isDebug:Bool = false;
+		var isDebug:Bool = false; bg = new FlxSprite();
 
 		#if debug
 		isDebug = true;
@@ -66,7 +67,10 @@ class ModsFreeplayState extends MusicBeatState
 
 		// LOAD CHARACTERS
 
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGBlue'));
+		if(modsFolders.length != 0 || modsFolders != []) 
+			bg.loadGraphic(modBGImage('menu/' + lol + '-freeplay'));
+		else 
+			bg.loadGraphic(Paths.image('menu/menuBGBlue'));
 		add(bg);
 
 		grpSongs = new FlxTypedGroup<Alphabet>();

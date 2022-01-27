@@ -80,6 +80,14 @@ class ModPaths {
 		return getPath('$mod/data/$key.json', IMAGE, mod, library);
 	}
 
+    inline static public function modBGImage(key:String, mod:String, ?library:String){
+		return getPath('$mod/images/BGs/$key.png', IMAGE, mod, library);
+	}
+
+    inline static public function modIconImage(key:String, mod:String, ?library:String){
+		return getPath('$mod/images/Icons/$key.png', IMAGE, mod, library);
+	}
+
     inline static public function getModFont(key:String,mod:String)
 	{
 		return 'mods/$mod/fonts/$key';

@@ -13,6 +13,7 @@ import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.text.FlxText;
 import flixel.tweens.FlxEase;
 import flixel.util.FlxTimer;
+import states.ModsState;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 import lime.app.Application;
@@ -71,7 +72,7 @@ class MainMenuState extends MusicBeatState
 
 		#if !MAINMENU
 		if (!FlxG.sound.music.playing){
-			if(modsFolders.length == 0 || modsFolders == [])
+			if(ModsState.modsFolders.length == 0 || ModsState.modsFolders == [])
 				FlxG.sound.playMusic(ModPaths.getModMusic(music_main));
 			else
 				FlxG.sound.playMusic(Paths.music('freakyMenu'));
@@ -80,8 +81,8 @@ class MainMenuState extends MusicBeatState
 
 		persistentUpdate = persistentDraw = true; bg = new FlxSprite(-80);
 
-		if(modsFolders.length != 0 || modsFolders != []) 
-			bg.loadGraphic(modBGImage('menu/' + lol + '-main'));
+		if(ModsState.modsFolders.length != 0 || ModsState.modsFolders != []) 
+			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-main'));
 		else
 			bg.loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBG')));
 		bg.scrollFactor.x = 0;

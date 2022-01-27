@@ -2,6 +2,7 @@ package;
 
 import lime.utils.Assets;
 import flixel.FlxSprite;
+import states.ModsState;
 
 using StringTools;
 
@@ -39,7 +40,7 @@ class HealthIcon extends FlxSprite
 			char = char.substring(0, char.indexOf('-'));
 
 		antialiasing = true;
-		if(modsFolders.length != 0 || modsFolders != []) 
+		if(ModsState.modsFolders.length != 0 || ModsState.modsFolders != []) 
 			loadGraphic(ModPaths.modIconImage('icon-' + char), true, 150, 150);
 		else
 			loadGraphic(Paths.image('icons/icon-' + char), true, 150, 150);

@@ -8,6 +8,7 @@ import flixel.math.FlxMath;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import lime.utils.Assets;
+import states.ModsState;
 
 
 #if windows
@@ -67,8 +68,8 @@ class ModsFreeplayState extends MusicBeatState
 
 		// LOAD CHARACTERS
 
-		if(modsFolders.length != 0 || modsFolders != []) 
-			bg.loadGraphic(modBGImage('menu/' + lol + '-freeplay'));
+		if(ModsState.modsFolders.length != 0 || ModsState.modsFolders != []) 
+			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-freeplay'));
 		else 
 			bg.loadGraphic(Paths.image('menu/menuBGBlue'));
 		add(bg);

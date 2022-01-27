@@ -1147,7 +1147,7 @@ class PlayState extends MusicBeatState
 				campfire.animation.play('idle');
 				add(campfire);
 			
-				table = new FlxSprite(-850, -225).loadGraphic(ModPaths.modBGImage('table'), ModsFreeplayState.mod);
+				table = new FlxSprite(-850, -225).loadGraphic(ModPaths.modBGImage('table',  ModsFreeplayState.mod), ModsFreeplayState.mod);
 				table.setGraphicSize(Std.int(table.width * 1.1));
 				table.updateHitbox();
 				table.antialiasing = true;

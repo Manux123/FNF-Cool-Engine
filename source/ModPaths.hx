@@ -8,52 +8,42 @@ class ModPaths {
     static final currentLevel:String = Paths.currentLevel;
     private static final SOUND_EXT = Paths.SOUND_EXT;
 
-    inline static public function getModFile(file:String, mod:String, type:AssetType = TEXT){
-        return getPath(file, type, mod);
-    }
-
-    inline static public function modBGImage(key:String, mod:String, ?library:String){
-		return getPath('$mod/images/BGs/$key.png', IMAGE, mod, library);
+    inline static public function modBGImage(key:String, mod:String){
+		return getPath('$mod/images/BGs/$key.png', IMAGE, mod);
 	}
 
-    inline static public function getModTxt(key:String, mod:String, ?library:String){
-        if(mod != null)
-            return getPath('$mod/data/$key.txt',TEXT,library);
-        else
-            return getPath('$key.txt',TEXT,library);
+    inline static public function getModTxt(key:String, mod:String){
+        return getPath('data/$key.txt',TEXT,mod);
 	}
 
-    inline static public function getModXml(key:String, mod:String ,?library:String)
+    inline static public function getModXml(key:String, mod:String )
     {
-        return getPath('data/$key.xml', TEXT, library);
+        return getPath('data/$key.xml', TEXT,mod);
     }
 
-    inline static public function getModJson(key:String, mod:String, ?library:String){
-        if(mod != null)
-            return getPath('$mod/data/$key.json', TEXT, library);
-        else
-            return getPath('data/$key.json',TEXT,library);
+    inline static public function getModJson(key:String, mod:String){
+            return getPath('data/$key.json',TEXT,mod);
 	}
 
-    static public function getModSound(key:String, mod:String, ?library:String)
+    static public function getModSound(key:String, mod:String)
 	{
-		return getPath('$mod/sounds/$key.$SOUND_EXT', SOUND, mod, library);
+		return getPath('sounds/$key.$SOUND_EXT', SOUND, mod);
 	}
 
-    inline static public function soundRandom(key:String, min:Int, max:Int, ?library:String)
+    inline static public function soundRandom(key:String, min:Int, max:Int, ?mod:String)
     {
-        return getModSound(key + FlxG.random.int(min, max), library);
+        return getModSound(key + FlxG.random.int(min, max), mod);
     }
 
-    inline static public function getModVideo(key:String, mod:String, ?library:String)
+    inline static public function getModVideo(key:String, mod:String)
 	{
 		trace('mods/$mod/videos/$key.mp4');
-		return getPath('$mod/videos/$key.mp4', BINARY, mod, library);
+		return getPath('videos/$key.mp4', BINARY, mod);
 	}
 
-    inline static public function getModMusic(key:String, mod:String, ?library:String)
+    inline static public function getModMusic(key:String, mod:String)
 	{
-		return getPath('$mod/music/$key.$SOUND_EXT',MUSIC, mod, library);
+		return getPath('music/$key.$SOUND_EXT',MUSIC, mod);
 	}
 
     inline static public function getModVoices(song:String, mod:String)
@@ -80,69 +70,47 @@ class ModPaths {
 			return 'mods/$mod/defaultsong/Inst.$SOUND_EXT';}
 	}
     
-    inline static public function getModImage(key:String, mod:String, ?library:String){
-		return getPath('$mod/data/$key.json', IMAGE, mod, library);
+    inline static public function getModImage(key:String, mod:String){
+		return getPath('data/$key.json', IMAGE, mod);
 	}
 
     inline static public function modBGVideo(key:String, mod:String){
-		return getPath('$mod/videos/freeplay/$key.mp4', BINARY, mod, null);
+		return getPath('videos/freeplay/$key.mp4', BINARY, mod);
 	}
 
-    inline static public function modIconImage(key:String, mod:String, ?library:String){
-		return getPath('$mod/images/Icons/$key.png', IMAGE, mod, library);
+    inline static public function modIconImage(key:String, mod:String){
+		return getPath('images/Icons/$key.png', IMAGE, mod);
 	}
 
     inline static public function getModFont(key:String,mod:String)
 	{
-		return 'mods/$mod/fonts/$key';
+        return getPath('fonts/$key',BINARY,mod);
 	}
 
-    static public function getPath(file:String, type:AssetType, ?mod:String, ?library:String)
+    static public function getPath(file:String, type:AssetType, ?mod:String)
     {
-        if (library != null)
-            return getModLibPath(file, mod, library);
-        
-        if (currentLevel != null)
-        {
-            var path = getLibraryMod(file,mod);
-            if (OpenflAssets.exists(path, type))
-                return path;
-        }
-        
-        return getPreloadMod(file,null);
-    }
-
-    static public function getModLibPath(file:String, mod:String, library = "images")
-    {
-        return if (library == "images" || library == "default") getPreloadMod(file,mod); else getLibraryMod(file, mod);
-    }
-
-    static public function getModCool(mod:String){
-        return 'mods/$mod/mod.cool';
-    }
-
-    inline static function getLibraryMod(file:String, ?mod:String = null)
-    {
+        var path = "";
         if(mod != null)
-            return 'mods/$mod/$file';
+            path = 'mods/$mod/$file';
         else
-            return 'mods/$file';
+            path = 'mods/$file';
+        if(OpenflAssets.exists(path,type))
+            return path;
+
+        return 'mods';
     }
 
-    inline static public function getPreloadMod(file:String,?mod:String = null)
-	{
-        if(mod != null)
-            return 'mods/$mod/$file';
-        return 'mods/$file';
-	}
+    static public function checkModCool(mod:String){
+        return openfl.utils.Assets.exists('mods/$mod/mod.cool');
+    }
 
     inline static public function getSparrowAtlas(key:String, ?mod:String)
     {
-        return flixel.graphics.frames.FlxAtlasFrames.fromSparrow(getModImage(key, mod), getModFile('images/$key.xml', mod));
+        return flixel.graphics.frames.FlxAtlasFrames.fromSparrow(getModImage(key, mod), getPath('images/$key.xml', TEXT, mod));
     }
 
     inline static public function getBGsAnimated(key:String, ?mod:String)
     {
-        return flixel.graphics.frames.FlxAtlasFrames.fromSparrow(getModImage(key, mod), getModFile('images/BGs/$key.xml', mod));
+        return flixel.graphics.frames.FlxAtlasFrames.fromSparrow(getModImage(key, mod), getPath('images/BGs/$key.xml', TEXT, mod));
     }
 }

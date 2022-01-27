@@ -51,14 +51,6 @@ class MainMenuState extends MusicBeatState
 		//LOAD CUZ THIS SHIT DONT DO IT SOME IN THE CACHESTATE.HX FUCK
 		PlayerSettings.player1.controls.loadKeyBinds();
 
-		if(ModsFreeplayState.onMods == true){
-			optionMap = [
-				'story-mode' => new StoryMenuState(),
-				'freeplay' => new ModsFreeplayState(),
-				'options' => new OptionsMenuState()
-			];
-		}
-
 		#if desktop
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("In the Menu", null);
@@ -67,16 +59,8 @@ class MainMenuState extends MusicBeatState
 		transIn = FlxTransitionableState.defaultTransIn;
 		transOut = FlxTransitionableState.defaultTransOut;
 
-		var music_main:String;
-		music_main = ModPaths.getModMusic('freakyMenu', ModsFreeplayState.mod);
-
 		#if !MAINMENU
-		if (!FlxG.sound.music.playing){
-			if(ModsFreeplayState.onMods && music_main != null)
-				FlxG.sound.playMusic(ModPaths.getModMusic(music_main, ModsFreeplayState.mod));
-			else
-				FlxG.sound.playMusic(Paths.music('freakyMenu'));
-		}
+		if (!FlxG.sound.music.playing)FlxG.sound.playMusic(Paths.music('freakyMenu'));
 		#end
 
 		persistentUpdate = persistentDraw = true; bg = new FlxSprite(-80);

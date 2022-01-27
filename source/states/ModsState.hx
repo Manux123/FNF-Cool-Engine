@@ -61,11 +61,12 @@ class ModsState extends states.MusicBeatState
 		
 		#if MOD_ALL
 		if(modsFolders.length != 0 || modsFolders != []){
+			FlxG.sound.playMusic('mods/${modsFolders[curSelected]}/music/freakyMenu.ogg');
 			grpMods = new FlxTypedGroup<Alphabet>();
 
 			for(i in 0... modsFolders.length){
 				if(usableMods.length == 0 || usableMods == [])
-					usableMods.push(OpenflAssets.exists(ModPaths.getModCool(modsFolders[i])));
+					usableMods.push(ModPaths.checkModCool(modsFolders[i]));
 
 				var modText:Alphabet = new Alphabet(0,(i + 1) * 100, modsFolders[i],false);
 				modText.isMenuItem = true;
@@ -127,7 +128,8 @@ class ModsState extends states.MusicBeatState
 
 	private function changeSelection(change:Int):Void{
 		
-		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+		FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
+		FlxG.sound.playMusic('mods/${modsFolders[curSelected]}/music/freakyMenu.ogg');
 
 		curSelected+=change;
 		if (curSelected < 0)
@@ -216,10 +218,10 @@ class USure extends states.MusicBeatSubstate
 			switch (selected)
 			{
 				case 0:
-					FlxG.switchState(new MainMenuState());
+					FlxG.switchState(new ModsFreeplayState());
 					ModsFreeplayState.onMods = true;
 				case 1:
-					FlxG.switchState(new MainMenuState());
+					FlxG.state.closeSubState();
 					ModsFreeplayState.onMods = false;
 			}
 		}

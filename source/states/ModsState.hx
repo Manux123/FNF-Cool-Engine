@@ -1,22 +1,12 @@
 package states;
 
+import flixel.util.FlxTimer;
 import flixel.group.FlxGroup.FlxTypedGroup;
-import openfl.display.Sprite;
-#if desktop
-import Discord.DiscordClient;
-#end
 import flixel.text.FlxText;
 import flixel.FlxSprite;
-import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 import states.MusicBeatState;
 import flixel.FlxG;
-import flixel.graphics.frames.FlxAtlasFrames;
-import openfl.utils.AssetType;
-import openfl.display.BitmapData as Bitmap;
-import flixel.input.keyboard.FlxKey;
-import flixel.util.FlxTimer;
-import lime.utils.Assets;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.addons.display.shapes.FlxShapeArrow;
@@ -40,8 +30,9 @@ class ModsState extends states.MusicBeatState
 	var grpMods:FlxTypedGroup<Alphabet>;
 
 	override function create(){
-		#if desktop
-		DiscordClient.changePresence("In the Mods Menu", null);
+		#if windows
+		// Updating Discord Rich Presence
+		Discord.DiscordClient.changePresence("In the Mod Selector Menu", null);
 		#end
 
 		modsFolders = CoolUtil.coolTextFile("mods/modsList.txt");

@@ -1,5 +1,6 @@
 package states;
 
+import mp4.FlxVideo;
 import lime.utils.Assets;
 import states.MusicBeatState;
 import flixel.FlxState;
@@ -21,20 +22,15 @@ class VideoState extends MusicBeatState
     }
 
     #if (windows || web)
-    var video:MP4Handler = new MP4Handler();
+    var video:FlxVideo = new FlxVideo(0,0,FlxG.width,FlxG.height);
     #end
 
     public override function create(){
         FlxG.autoPause = true;
-        
-        if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
 
         #if (windows || web)
         if(Assets.exists(Paths.video(videoPath))){
-            video.playMP4(Paths.video(videoPath));
+            video.playVideo(Paths.video(videoPath),false,true);
     		video.finishCallback = function(){
                 FlxG.sound.music.stop();
                 LoadingState.loadAndSwitchState(nextState);

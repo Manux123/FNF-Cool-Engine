@@ -12,6 +12,10 @@ class ModPaths {
         return getPath(file, type, mod);
     }
 
+    inline static public function modBGImage(key:String, mod:String, ?library:String){
+		return getPath('$mod/images/BGs/$key.png', IMAGE, mod, library);
+	}
+
     inline static public function getModTxt(key:String, mod:String, ?library:String){
         if(mod != null)
             return getPath('$mod/data/$key.txt',TEXT,library);
@@ -80,8 +84,8 @@ class ModPaths {
 		return getPath('$mod/data/$key.json', IMAGE, mod, library);
 	}
 
-    inline static public function modBGImage(key:String, mod:String, ?library:String){
-		return getPath('$mod/images/BGs/$key.png', IMAGE, mod, library);
+    inline static public function modBGVideo(key:String, mod:String){
+		return getPath('$mod/videos/freeplay/$key.mp4', BINARY, mod, null);
 	}
 
     inline static public function modIconImage(key:String, mod:String, ?library:String){

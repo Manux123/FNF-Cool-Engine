@@ -344,11 +344,15 @@ class TitleState extends states.MusicBeatState
 	}
 
 	function userName():String {
+		#if sys
 		var env = Sys.environment();
 		if (!env.exists("USERNAME")) {
 			return "Couldnt find computa name";
 		}
 		return env["USERNAME"];
+		#else
+		return "Player";
+		#end
 	}
 
 	var randomString = [];

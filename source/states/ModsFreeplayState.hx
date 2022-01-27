@@ -1,19 +1,12 @@
 package states;
 
+import mp4.FlxVideo;
 import flixel.FlxG;
 import flixel.FlxSprite;
-import flixel.addons.display.FlxGridOverlay;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
-import lime.utils.Assets;
-import states.ModsState;
-
-
-#if windows
-import Discord.DiscordClient;
-#end
 
 using StringTools;
 
@@ -36,7 +29,7 @@ class ModsFreeplayState extends MusicBeatState
 	private var iconArray:Array<HealthIcon> = [];
 
 	private var initSonglist:Array<String>;
-	var lol:String; var bg:FlxSprite; 
+	var lol:String;
 
 	public static var mod:String;
 	public static var onMods:Bool = false;
@@ -55,24 +48,17 @@ class ModsFreeplayState extends MusicBeatState
 
 		#if windows
 		// Updating Discord Rich Presence
-		DiscordClient.changePresence("In the Freeplay Menu", null);
+		Discord.DiscordClient.changePresence("In the ModsPlay Menu", null);
 		#end
-
-		var isDebug:Bool = false; bg = new FlxSprite();
-
-		#if debug
-		isDebug = true;
-		#end
-
-		// LOAD MUSIC
-
-		// LOAD CHARACTERS
-
-		if(ModsFreeplayState.onMods) 
-			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-freeplay', ModsFreeplayState.mod));
-		else 
-			bg.loadGraphic(Paths.image('menu/menuBGBlue'));
-		add(bg);
+		if(openfl.utils.Assets.exists(ModPaths.modBGVideo('preview-video',mod))){
+			var bg:FlxVideo = new FlxVideo(-80,0,FlxG.width,FlxG.height);
+			bg.playVideo(ModPaths.modBGVideo('preview-video',mod),true,false);
+			add(bg);
+		}
+		else {
+			var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGBlue'));
+			add(bg);
+		}
 
 		grpSongs = new FlxTypedGroup<Alphabet>();
 		add(grpSongs);

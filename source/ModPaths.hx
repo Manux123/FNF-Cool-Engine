@@ -74,8 +74,8 @@ class ModPaths {
 		return getPath('data/$key.json', IMAGE, mod);
 	}
 
-    inline static public function modBGVideo(key:String, mod:String){
-		return getPath('videos/freeplay/$key.mp4', BINARY, mod);
+    inline static public function modBGVideo(mod:String){
+        return getModVideo('preview-video',mod);
 	}
 
     inline static public function modIconImage(key:String, mod:String){

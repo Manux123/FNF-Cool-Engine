@@ -38,14 +38,16 @@ class ModsState extends states.MusicBeatState
 		Discord.DiscordClient.changePresence("In the Mod Selector Menu", null);
 		#end
 
+		trace(ModPaths.modBGVideo(modsFolders[curSelected]));
+
 		modsFolders = CoolUtil.coolTextFile("mods/modsList.txt");
 
-		if(openfl.utils.Assets.exists(ModPaths.modBGVideo('preview-video',modsFolders[curSelected]))){
+		if(openfl.utils.Assets.exists(ModPaths.modBGVideo(modsFolders[curSelected]))){
 			bg.scrollFactor.x = 0;
 			bg.scrollFactor.y = 0.18;
 			bg.screenCenter();
 			bg.antialiasing = true;
-			bg.playVideo(ModPaths.modBGVideo('preview-video',modsFolders[curSelected]),true,false);
+			bg.playVideo(ModPaths.modBGVideo(modsFolders[curSelected]),true,false);
 			add(bg);
 		}
 
@@ -136,8 +138,8 @@ class ModsState extends states.MusicBeatState
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
 		FlxG.sound.playMusic('mods/${modsFolders[curSelected]}/music/freakyMenu.ogg');
 
-		if(openfl.utils.Assets.exists(ModPaths.modBGVideo('preview-video',modsFolders[curSelected])))
-			bg.playVideo(ModPaths.modBGVideo('preview-video',modsFolders[curSelected]),true,false);
+		if(openfl.utils.Assets.exists(ModPaths.modBGVideo(modsFolders[curSelected])))
+			bg.playVideo(ModPaths.modBGVideo(modsFolders[curSelected]),true,false);
 
 		curSelected+=change;
 		if (curSelected < 0)

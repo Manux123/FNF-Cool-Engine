@@ -1,6 +1,5 @@
 package states;
 
-import mp4.FlxVideo;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxGroup.FlxTypedGroup;
@@ -50,9 +49,9 @@ class ModsFreeplayState extends MusicBeatState
 		// Updating Discord Rich Presence
 		Discord.DiscordClient.changePresence("In the ModsPlay Menu", null);
 		#end
-		if(ModsFreeplayState.onMods) 
-			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-freeplay', ModsFreeplayState.mod));
-		else 
+		if(openfl.utils.Assets.exists(ModPaths.modBGImage('menu/' + lol + '-freeplay', mod)))
+			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-freeplay', mod));
+		else
 			bg.loadGraphic(Paths.image('menu/menuBGBlue'));
 		add(bg);
 

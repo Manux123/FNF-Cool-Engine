@@ -174,9 +174,9 @@ class USure extends states.MusicBeatSubstate
 
 		marker = new FlxShapeArrow(0, 0, FlxPoint.weak(0, 0), FlxPoint.weak(0, 1), 24, {color: FlxColor.WHITE});
 
-		areYouSure.setFormat(null, 176, FlxColor.WHITE, FlxTextAlign.CENTER);
+		areYouSure.setFormat(Paths.font("Funkin.otf"), 36, FlxColor.WHITE, FlxTextAlign.CENTER);
 		areYouSure.text = "Are you sure you want to load this mod?";
-		areYouSure.y = 1;
+		areYouSure.y = 176;
 		areYouSure.screenCenter(X);
 		add(areYouSure);
 
@@ -187,7 +187,7 @@ class USure extends states.MusicBeatSubstate
 
 		for (i in 0...theText.length)
 		{
-			theText[i].setFormat(null, 24, FlxColor.WHITE, FlxTextAlign.CENTER);
+			theText[i].setFormat(Paths.font("Funkin.otf"), 24, FlxColor.WHITE, FlxTextAlign.CENTER);
 			theText[i].screenCenter(Y);
 			theText[i].x = (i * FlxG.width / theText.length + FlxG.width / theText.length / 2) - theText[i].width / 2;
 			add(theText[i]);
@@ -208,9 +208,6 @@ class USure extends states.MusicBeatSubstate
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
-
-		/*Debug.quickWatch(areYouSure, 'x');
-		Debug.quickWatch(areYouSure, 'y');*/
 
 		if (FlxG.keys.justPressed.ENTER && !wasPressed)
 		{

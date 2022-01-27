@@ -58,7 +58,6 @@ class MainMenuState extends MusicBeatState
 				'options' => new OptionsMenuState()
 			];
 		}
-			
 
 		#if desktop
 		// Updating Discord Rich Presence
@@ -69,6 +68,7 @@ class MainMenuState extends MusicBeatState
 		transOut = FlxTransitionableState.defaultTransOut;
 
 		var music_main:String;
+		music_main = ModPaths.getModMusic('freakyMenu', ModsFreeplayState.mod);
 
 		#if !MAINMENU
 		if (!FlxG.sound.music.playing){

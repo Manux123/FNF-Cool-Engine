@@ -1,1 +1,2 @@
-OverKill:flippy:0:0xFFa5004d
+Overkill:flippy_lol:0:0xFFa5004d
+Fallout:flippy_lol:0:0xFFa5004d

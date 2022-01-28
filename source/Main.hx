@@ -1,7 +1,6 @@
 package;
 
 import haxe.Int32;
-import states.TitleState;
 import flixel.FlxGame;
 import flixel.FlxState;
 import openfl.Assets;
@@ -10,7 +9,6 @@ import openfl.display.FPS;
 import openfl.display.Sprite;
 import openfl.events.Event;
 import states.CacheState;
-
 import openfl.events.Event;
 import openfl.system.System;
 import openfl.text.TextField;

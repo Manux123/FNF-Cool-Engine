@@ -1319,7 +1319,11 @@ class PlayState extends MusicBeatState
 			boyfriend.dance();
 
 			introAssets = new Map<String, Array<String>>();
-			introAssets.set('default', ['ready', "set", "go"]);
+			introAssets.set('default', [
+				'UI/swagCounter/ready', 
+				"UI/swagCounter/set", 
+				"UI/swagCounter/go"
+			]);
 			introAssets.set('school', [
 				'weeb/pixelUI/ready-pixel',
 				'weeb/pixelUI/set-pixel',
@@ -2455,13 +2459,14 @@ class PlayState extends MusicBeatState
 			var pixelShitPart1:String = "";
 			var pixelShitPart2:String = '';
 	
-			if (curStage.startsWith('school'))
-			{
+			if (curStage.startsWith('school')){
 				pixelShitPart1 = 'weeb/pixelUI/';
 				pixelShitPart2 = '-pixel';
-			}
+			} else
+				folderNormal = 'UI/rating/';
 	
-			rating.loadGraphic(Paths.image(pixelShitPart1 + daNote.noteRating + pixelShitPart2));
+	
+			rating.loadGraphic(Paths.image(pixelShitPart1 + folderNormal + daNote.noteRating + pixelShitPart2));
 			//rating.screenCenter();
 			rating.x = coolText.x - 40;
 			if(!FlxG.save.data.middlescroll) rating.x -= 210; else rating.x += 200;

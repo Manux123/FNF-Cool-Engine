@@ -26,8 +26,7 @@ class ModsState extends states.MusicBeatState
 	public static var modsFolders:Array<String>;
 	var exitState:FlxText;
 	var warning:FlxText;
-
-	var nameSongs:String = '';
+	
 	var grpMods:FlxTypedGroup<Alphabet>;
 
 	final bg:FlxVideo = new FlxVideo(-80,0,FlxG.width,FlxG.height);
@@ -40,6 +39,13 @@ class ModsState extends states.MusicBeatState
 
 		modsFolders = CoolUtil.coolTextFile("mods/modsList.txt");
 
+		var bg_but_not_vid:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGBlue'));
+		bg_but_not_vid.scrollFactor.x = 0;
+		bg_but_not_vid.scrollFactor.y = 0.18;
+		bg_but_not_vid.screenCenter();
+		bg_but_not_vid.antialiasing = true;
+		add(bg_but_not_vid);
+
 		if(openfl.utils.Assets.exists(ModPaths.modBGVideo(modsFolders[curSelected]))){
 			bg.scrollFactor.x = 0;
 			bg.scrollFactor.y = 0.18;
@@ -50,11 +56,6 @@ class ModsState extends states.MusicBeatState
 		}
 
 		trace(ModPaths.modBGVideo(modsFolders[curSelected]));
-
-		var	black:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
-		black.screenCenter(X);
-		black.alpha = 0.7;
-		add(black);
 
 		exitState = new FlxText(0, 0, 0, "ESC to exit", 12);
 		exitState.size = 28;
@@ -68,7 +69,11 @@ class ModsState extends states.MusicBeatState
 		
 		#if MOD_ALL
 		if(modsFolders.length != 0 || modsFolders != []){
-			FlxG.sound.playMusic('mods/${modsFolders[curSelected]}/music/freakyMenu.ogg');
+			var freakyMenu:String = 'mods/${modsFolders[curSelected]}/music/freakyMenu.ogg';
+			if(FileSystem.exists(freakyMenu))
+				FlxG.sound.playMusic(freakyMenu);
+			else
+				FlxG.sound.playMusic(Paths.music('freakyMenu'));
 			grpMods = new FlxTypedGroup<Alphabet>();
 
 			for(i in 0... modsFolders.length){

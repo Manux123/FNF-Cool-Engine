@@ -388,7 +388,13 @@ class TitleState extends states.MusicBeatState
 			case 0:
 				deleteCoolText();
 			case 1:
-				createCoolText(['ninjamuffin99', 'phantomArcade', 'kawaisprite', 'evilsk8er']);
+				//createCoolText(['ninjamuffin99', 'phantomArcade', 'kawaisprite', 'evilsk8er']);
+				createCoolText(['Cool Engine Team\n
+                                               Manux\n
+                                               MrClogsworthYT\n
+                                               JloorMc\n
+                                               Juanen100\n
+                                               OverChargedDev']); // \n is a line break lel so it makes a new line in a text xdxd
 			// credTextShit.visible = true;
 			case 3:
 				addMoreText('present');
@@ -400,18 +406,25 @@ class TitleState extends states.MusicBeatState
 			// credTextShit.text = 'In association \nwith';
 			// credTextShit.screenCenter();
 			case 5:
-				createCoolText(['Cool Engine Team']);
+				createCoolText(['game made by\n
+                                               Ninjamuffin\n
+                                               PhantomArcade\n
+                                               Evilsk8r\n
+                                               Kawai Sprite']);
 			case 7:
-				// I can just put the original engine creator instead of every single fucking person that helps with it
+				//i can put the original engine creator instead of every single fucking person that helps with it
 				//Sample text
 				// LMFAO OVERCHARGED THAT WAS TO HARSH LOLLLLLLLLLLLLLLLLLLLLLLLLLLL
 				//Yea thx OverchargedDev you are for saying that the first time I came back to the Engine
-				addMoreText('Manux');
-				addMoreText('Juanen100');
-				addMoreText('MrClogsworthYt');
-				addMoreText('JloorMC');
-				addMoreText('Overcharged Dev');
+				//addMoreText('Manux');
+				//addMoreText('Juanen100');
+				//addMoreText('MrClogsworthYt');
+				//addMoreText('JloorMC');
+				//addMoreText('Overcharged Dev');
 			// credTextShit.text += '\nNewgrounds';
+			createCoolText(['we are not']);
+			addMoreText('associated with newgrounds')
+			ngSpr.visable = true;	
 			case 8:
 				deleteCoolText();
 				ngSpr.visible = false;

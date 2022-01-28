@@ -4,11 +4,11 @@
          "texture": "FLIPPY_crazy",
          "xOffset": 0,"yOffset": 200,
         "anims":[
-        "idle:"FLP3 Alt Idle",
-        "singUP:"FLP3 Alt M UP",
-        "singRIGHT:"FLP3 Alt M RIGHT",
-        "singDOWN:"FLP3 Alt M DOWN",
-        "singLEFT:"FLP3 Alt M LEFT"],
+        "idle:FLP3 Alt Idle",
+        "singUP:FLP3 Alt M UP",
+        "singRIGHT:FLP3 Alt M RIGHT",
+        "singDOWN:FLP3 Alt M DOWN",
+        "singLEFT:FLP3 Alt M LEFT"],
         "healthBarColor": "ADFF2F"
      }
 }

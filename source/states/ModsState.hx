@@ -26,8 +26,7 @@ class ModsState extends states.MusicBeatState
 	public static var modsFolders:Array<String>;
 	var exitState:FlxText;
 	var warning:FlxText;
-
-	var nameSongs:String = '';
+	
 	var grpMods:FlxTypedGroup<Alphabet>;
 
 	final bg:FlxVideo = new FlxVideo(-80,0,FlxG.width,FlxG.height);
@@ -68,7 +67,11 @@ class ModsState extends states.MusicBeatState
 		
 		#if MOD_ALL
 		if(modsFolders.length != 0 || modsFolders != []){
-			FlxG.sound.playMusic('mods/${modsFolders[curSelected]}/music/freakyMenu.ogg');
+			var freakyMenu:String = 'mods/${modsFolders[curSelected]}/music/freakyMenu.ogg';
+			if(FileSystem.exists(freakyMenu))
+				FlxG.sound.playMusic(freakyMenu);
+			else
+				FlxG.sound.playMusic(Paths.music('freakyMenu'));
 			grpMods = new FlxTypedGroup<Alphabet>();
 
 			for(i in 0... modsFolders.length){

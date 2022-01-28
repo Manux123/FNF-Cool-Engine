@@ -424,7 +424,7 @@ class TitleState extends states.MusicBeatState
 			// credTextShit.text += '\nNewgrounds';
 			createCoolText(['we are not']);
 			addMoreText('associated with newgrounds');
-			ngSpr.visable = true;	
+			ngSpr.visible = true;	
 			case 8:
 				deleteCoolText();
 				ngSpr.visible = false;

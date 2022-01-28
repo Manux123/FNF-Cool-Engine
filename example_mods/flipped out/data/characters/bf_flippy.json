@@ -1,8 +1,8 @@
 {
     "character":{
-         "char":"bf_flippy",
-         "texture": "BF_Carry",
-         "xOffset": 0,"yOffset": 0,
+      "char":"bf_flippy",
+      "texture": "BF_Carry",
+      "xOffset": 0,"yOffset": 0,
         "anims":[
           "idle:BF idle dance",
           "singUP:BF NOTE UP",
@@ -15,5 +15,5 @@
           "singLEFTmiss:BF NOTE LEFT MISS"
           ], 
         "healthBarColor": "FF7bd6f6"
-     }
+    }
 }

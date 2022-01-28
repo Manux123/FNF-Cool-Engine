@@ -38,8 +38,6 @@ class ModsState extends states.MusicBeatState
 		Discord.DiscordClient.changePresence("In the Mod Selector Menu", null);
 		#end
 
-		trace(ModPaths.modBGVideo(modsFolders[curSelected]));
-
 		modsFolders = CoolUtil.coolTextFile("mods/modsList.txt");
 
 		if(openfl.utils.Assets.exists(ModPaths.modBGVideo(modsFolders[curSelected]))){
@@ -50,6 +48,8 @@ class ModsState extends states.MusicBeatState
 			bg.playVideo(ModPaths.modBGVideo(modsFolders[curSelected]),true,false);
 			add(bg);
 		}
+
+		trace(ModPaths.modBGVideo(modsFolders[curSelected]));
 
 		var	black:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		black.screenCenter(X);

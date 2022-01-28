@@ -68,7 +68,7 @@ class ModsState extends states.MusicBeatState
 		
 		#if MOD_ALL
 		if(modsFolders.length != 0 || modsFolders != []){
-			//FlxG.sound.playMusic('mods/${modsFolders[curSelected]}/music/freakyMenu.ogg');
+			FlxG.sound.playMusic('mods/${modsFolders[curSelected]}/music/freakyMenu.ogg');
 			grpMods = new FlxTypedGroup<Alphabet>();
 
 			for(i in 0... modsFolders.length){

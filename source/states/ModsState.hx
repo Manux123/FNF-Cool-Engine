@@ -39,6 +39,13 @@ class ModsState extends states.MusicBeatState
 
 		modsFolders = CoolUtil.coolTextFile("mods/modsList.txt");
 
+		var bg_but_not_vid:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGBlue'));
+		bg_but_not_vid.scrollFactor.x = 0;
+		bg_but_not_vid.scrollFactor.y = 0.18;
+		bg_but_not_vid.screenCenter();
+		bg_but_not_vid.antialiasing = true;
+		add(bg_but_not_vid);
+
 		if(openfl.utils.Assets.exists(ModPaths.modBGVideo(modsFolders[curSelected]))){
 			bg.scrollFactor.x = 0;
 			bg.scrollFactor.y = 0.18;
@@ -49,11 +56,6 @@ class ModsState extends states.MusicBeatState
 		}
 
 		trace(ModPaths.modBGVideo(modsFolders[curSelected]));
-
-		var	black:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
-		black.screenCenter(X);
-		black.alpha = 0.7;
-		add(black);
 
 		exitState = new FlxText(0, 0, 0, "ESC to exit", 12);
 		exitState.size = 28;

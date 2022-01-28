@@ -56,7 +56,7 @@ class Song
 		else{
 			trace('you are dumm, chek out the root than you select');
 			trace('loading tutorial-hard');
-			rawJson = Assets.getText(Paths.json('songs/tutorial/tutorial-hard')).trim();
+			rawJson = Assets.getText(Paths.json('songs/bopeebo/bopeebo-hard')).trim();
 		}
 
 		while (!rawJson.endsWith("}")){

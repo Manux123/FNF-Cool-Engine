@@ -55,7 +55,7 @@ class ModPaths {
 			return 'mods/$mod/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';}
 		else {
 			trace('ERROR Loading INST :c');
-			return 'mods/$mod/defaultsong/Voices.$SOUND_EXT';}
+			return 'songs:assets/songs/bopeebo/Voices.$SOUND_EXT';}
 	}
 
     inline static public function getModInst(song:String, mod:String)
@@ -67,7 +67,7 @@ class ModPaths {
 			return 'mods/$mod/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';}
 		else {
 			trace('ERROR Loading INST :c');
-			return 'mods/$mod/defaultsong/Inst.$SOUND_EXT';}
+			return 'songs:assets/songs/bopeebo/Inst.$SOUND_EXT';}
 	}
     
     inline static public function getModImage(key:String, mod:String){

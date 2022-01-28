@@ -102,7 +102,7 @@ class Paths
 			return 'songs:assets/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';}
 		else {
 			trace('ERROR Loading INST :c');
-			return 'defaultsong:assets/defaultsong/Voices.$SOUND_EXT';}
+			return 'songs:assets/songs/bopeebo/Voices.$SOUND_EXT';}
 	}
 
 	inline static public function inst(song:String)
@@ -114,7 +114,7 @@ class Paths
 			return 'songs:assets/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';}
 		else {
 			trace('ERROR Loading INST :c');
-			return 'defaultsong:assets/defaultsong/Inst.$SOUND_EXT';}
+			return 'songs:assets/songs/bopeebo/Inst.$SOUND_EXT';}
 	}
 
 	inline static public function image(key:String, ?library:String)

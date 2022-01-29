@@ -5,16 +5,16 @@ import flixel.FlxG;
 import flixel.util.FlxSave;
 import flixel.math.FlxPoint;
 
-/*
-/*Just for the Android Build
-**/
+/**
+ * Just for the Android Build
+ */
 class Config {
     var save:FlxSave;
 
     public function new() 
     {
         save = new FlxSave();
-    	save.bind("saveconrtol","Cool-Engine/controls");
+		save.bind("saveconrtol","Cool-Engine/controls");
     }
 
     public function setdownscroll(?value:Bool):Bool {

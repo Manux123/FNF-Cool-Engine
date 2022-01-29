@@ -500,9 +500,9 @@ class Character extends FlxSprite
 
 	public function loadOffsetFile(character:String)
 	{
-		var offset:Array<String> = CoolUtil.coolTextFile('assets/data/characters/offsets/${character}Offsets');
+		var offset:Array<String> = CoolUtil.coolTextFile(Paths.txt('characters/offsets/' + character + "Offsets"));
 		if(states.ModsFreeplayState.onMods && states.ModsState.usableMods[states.ModsState.modsFolders.indexOf(ModsFreeplayState.mod)])
-			offset = CoolUtil.coolTextFile('mods/${states.ModsFreeplayState.mod}/data/characters/offsets/${character}Offsets');
+			offset = CoolUtil.coolTextFile(ModPaths.yxt('characters/offsets/' + character + "Offsets", ModsFreeplayState.mod));
 
 		for (i in 0...offset.length)
 		{

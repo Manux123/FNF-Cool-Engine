@@ -16,6 +16,11 @@ class ModPaths {
         return getPath('data/$key.txt',TEXT,mod);
 	}
 
+    inline static public function yxt(key:String, ?library:String)
+    {
+        return getPath('data/$key.txt', TEXT, library);
+    }
+
     inline static public function getModXml(key:String, mod:String )
     {
         return getPath('data/$key.xml', TEXT,mod);

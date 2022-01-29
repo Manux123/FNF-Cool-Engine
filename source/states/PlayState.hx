@@ -2836,7 +2836,7 @@ class PlayState extends MusicBeatState
 			coolText.screenCenter();
 			coolText.x = FlxG.width * 0.55;
 
-			var rating:FlxSprite = new FlxSprite().loadGraphic(Paths.image('miss', 'shared'));
+			var rating:FlxSprite = new FlxSprite().loadGraphic(Paths.image('UI/rating/miss', 'shared'));
 			//rating.screenCenter();
 			rating.x = coolText.x - 40;
 			if(!FlxG.save.data.middlescroll) rating.x -= 180; else rating.x += 200;

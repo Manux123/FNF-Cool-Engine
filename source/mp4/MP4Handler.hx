@@ -72,7 +72,10 @@ class MP4Handler extends vlc.VlcBitmap
 
 	function onVLCError()
 	{
-		// TODO: Catch the error
+		/** 
+			* TODO Catch the error 
+			*  Catch the VLC error
+		*/ 
 		throw "VLC caught an error!";
 	}
 

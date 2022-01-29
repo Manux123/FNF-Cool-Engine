@@ -6,14 +6,13 @@ import flixel.util.FlxSave;
 import flixel.math.FlxPoint;
 
 /**
- * Just for the Android Build
+ * Use just for the Android Build
  */
 class Config {
-    var save:FlxSave;
+    @:noCompletion final save:FlxSave = new FlxSave();
 
     public function new() 
     {
-        save = new FlxSave();
 		save.bind("saveconrtol","Cool-Engine/controls");
     }
 

@@ -1,5 +1,6 @@
 package mp4;
 
+import haxe.Exception;
 import openfl.events.Event;
 import flixel.FlxG;
 
@@ -50,6 +51,7 @@ class MP4Handler extends vlc.VlcBitmap
 	#if sys
 	function checkFile(fileName:String):String
 	{
+		try{
 		var pDir = "";
 		var appDir = "file:///" + Sys.getCwd() + "/";
 
@@ -59,6 +61,11 @@ class MP4Handler extends vlc.VlcBitmap
 			pDir = "file:///";
 
 		return pDir + fileName;
+		}catch(e){
+			if(onError != null)
+				onError();
+			return null;
+		}
 	}
 	#end
 
@@ -73,7 +80,7 @@ class MP4Handler extends vlc.VlcBitmap
 	function onVLCError()
 	{
 		// TODO: Catch the error
-		throw "VLC caught an error!";
+		throw new Exception("VLC caught an error!");
 	}
 
 	public function finishVideo()
@@ -89,8 +96,9 @@ class MP4Handler extends vlc.VlcBitmap
 		{
 			FlxG.game.removeChild(this);
 
-			if (finishCallback != null)
+			if(finishCallback != null){
 				finishCallback();
+			}
 		}
 	}
 
@@ -108,7 +116,8 @@ class MP4Handler extends vlc.VlcBitmap
 			FlxG.sound.music.pause();
 
 		#if sys
-		play(checkFile(path));
+		if(checkFile(path) != null)
+			play(checkFile(path));
 
 		this.repeat = repeat ? -1 : 0;
 		#else

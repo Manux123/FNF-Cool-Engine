@@ -5,7 +5,7 @@ import flixel.FlxG;
 import flixel.util.FlxSave;
 import flixel.math.FlxPoint;
 
-/**
+/*
 /*Just for the Android Build
 **/
 class Config {

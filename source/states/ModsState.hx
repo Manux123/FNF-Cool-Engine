@@ -112,6 +112,7 @@ class ModsState extends states.MusicBeatState
 			add(warning);
 			new FlxTimer().start(1, function (tmrr:FlxTimer){
 			FlxTween.tween(warning, {alpha: 0}, 1, {type:PINGPONG});});
+			trace("u dum fuck");
 		}
 
 		if(controls.BACK) {
@@ -193,7 +194,7 @@ class USure extends states.MusicBeatSubstate
 		marker = new FlxShapeArrow(0, 0, FlxPoint.weak(0, 0), FlxPoint.weak(0, 1), 24, {color: FlxColor.WHITE});
 
 		areYouSure.setFormat(Paths.font("Funkin.otf"), 36, FlxColor.WHITE, FlxTextAlign.CENTER);
-		areYouSure.text = "Are you sure you want to load this mod?";
+		areYouSure.text = "Are you sure you wanna to load this mod?";
 		areYouSure.y = 176;
 		areYouSure.screenCenter(X);
 		add(areYouSure);

@@ -53,7 +53,10 @@ class ModsState extends states.MusicBeatState
 			bg.antialiasing = true;
 			bg.playVideo(ModPaths.modBGVideo(modsFolders[curSelected]),true,false);
 			add(bg);
+			bg_but_not_vid.visible = false;
 		}
+		else
+			bg_but_not_vid.visible = true;
 
 		trace(ModPaths.modBGVideo(modsFolders[curSelected]));
 

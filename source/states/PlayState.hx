@@ -10,6 +10,7 @@ import flixel.FlxBasic;
 import flixel.FlxCamera;
 import flixel.FlxG;
 import lime.app.Application;
+import StageData;
 import states.RatingState;
 import flixel.FlxGame;
 import flixel.FlxObject;
@@ -369,14 +370,26 @@ class PlayState extends MusicBeatState
 			case 'thorns': //week 6 spirit
 				curStage = 'schoolEvil';
 
-			case 'overkill': //flippy mod lol
+			case 'overkill' | 'fallout': //flippy mod lol
 				curStage = 'flippy';
 
 			default: //default stage
 				curStage = 'stage_week1';
 		}
 
-		setCurrentStage();
+		if(states.ModsFreeplayState.onMods){ var STAGE:StageFile = StageData.loadFromJson(curStage);
+        	for(i in 0... STAGE.stagePices.length){
+            	var object:FlxSprite = new FlxSprite(0,0);
+            	var curPice = STAGE.stagePices[i][0];
+           		object.loadGraphic(Paths.image(curPice));
+           	 	var offsets = STAGE.picesOffsets[i];
+            	object.x += offsets[0]; 
+				object.y += offsets[1];
+            	defaultCamZoom = STAGE.defaultZoom;
+            	add(object);
+			}
+		} else
+			setCurrentStage();
 
 		#if LUA_ALLOWED
 		var doPush:Bool = false;
@@ -475,7 +488,7 @@ class PlayState extends MusicBeatState
 				gf.visible = false;
 			case 'senpai' | 'roses' | 'thorns':
 				gfVersion = 'gf-pixel';
-			case 'overkill':
+			case 'overkill' | 'fallout':
 				gf.visible = false;
            	default:
 				gfVersion = 'gf';}
@@ -571,9 +584,7 @@ class PlayState extends MusicBeatState
 		}
 
 		if (!FlxG.save.data.gfbye) 
-			{
-				add(gf);
-			}
+			add(gf);
 
 		// Shitty layering but whatev it works LOL
 		if (curStage == 'limo')
@@ -1983,34 +1994,31 @@ class PlayState extends MusicBeatState
 		FlxG.watch.addQuick("beats", curBeat);
 		FlxG.watch.addQuick("steps", curStep);
 
-		if (curSong == 'Fresh')
-		{
-			switch (curBeat)
-			{
-				case 16:
-					camZooming = true;
-					gfSpeed = 2;
-				case 48:
-					gfSpeed = 1;
-				case 80:
-					gfSpeed = 2;
-				case 112:
-					gfSpeed = 1;
-				case 163:
-					// FlxG.sound.music.stop();
-					// FlxG.switchState(new TitleState());
-			}
-		}
-
-		if (curSong == 'Bopeebo')
-		{
-			switch (curBeat)
-			{
-				case 128, 129, 130:
-					vocals.volume = 0;
-					// FlxG.sound.music.stop();
-					// FlxG.switchState(new PlayState());
-			}
+		switch (curSong) {
+			case 'Bopeebo':
+				switch (curBeat)
+				{
+					case 128, 129, 130:
+						vocals.volume = 0;
+						// FlxG.sound.music.stop();
+						// FlxG.switchState(new PlayState());
+				}
+			case 'Fresh':
+				switch (curBeat)
+				{
+					case 16:
+						camZooming = true;
+						gfSpeed = 2;
+					case 48:
+						gfSpeed = 1;
+					case 80:
+						gfSpeed = 2;
+					case 112:
+						gfSpeed = 1;
+					case 163:
+						// FlxG.sound.music.stop();
+						// FlxG.switchState(new TitleState());
+				}
 		}
 
 		if (health <= 0)
@@ -2248,10 +2256,8 @@ class PlayState extends MusicBeatState
 				{
 					Highscore.saveWeekScore(storyWeek, campaignScore, storyDifficulty);
 				}
-				if(FlxG.save.data.weekLocked)
-				{
-					switch(StoryMenuState.curWeek) 
-					{
+				if(FlxG.save.data.weekLocked){
+					switch (StoryMenuState.curWeek){
 						case 1:
 							StoryMenuState.weekUnlocked[2] = true;
 							trace("week 2 unlocked BOIIIIIIII");
@@ -2760,7 +2766,7 @@ class PlayState extends MusicBeatState
 			{
 				if (boyfriend.animation.curAnim.name.startsWith('sing') && !boyfriend.animation.curAnim.name.endsWith('miss'))
 				{
-					boyfriend.dance();
+					boyfriend.playAnim('idle');
 				}
 			}
 	

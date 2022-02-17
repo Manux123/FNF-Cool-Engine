@@ -119,7 +119,7 @@ class FreeplayState extends states.MusicBeatState
 
 		#if desktop
 		// Updating Discord Rich Presence
-		DiscordClient.changePresence("In the FreePlay", null);
+		DiscordClient.changePresence("In the Freeplay", null);
 		#end
 
 		//addSong('Test', 7,'bf-pixel');

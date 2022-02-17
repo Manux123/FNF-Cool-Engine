@@ -3,6 +3,7 @@ package states;
 #if desktop
 import Discord.DiscordClient;
 #end
+import CacheState.ImageCache;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
@@ -68,7 +69,7 @@ class MainMenuState extends MusicBeatState
 		if(ModsFreeplayState.onMods && lol != null)
 			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-main',  ModsFreeplayState.mod));
 		else
-			bg.loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBG')));
+			bg.loadGraphic(ImageCache.get(Paths.image('menu/menuBG')));
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0.18;
 		bg.screenCenter();
@@ -85,7 +86,7 @@ class MainMenuState extends MusicBeatState
 		{
 			var offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;
 			var menuItem:FlxSprite = new FlxSprite(70, (i * 140)  + offset);
-			menuItem.frames = Paths.getSparrowAtlas('mainmenu/menu_' + optionShit[i]);
+			menuItem.frames = Paths.getSparrowAtlas(ImageCache.get('mainmenu/menu_' + optionShit[i]));
 			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
 			menuItem.animation.play('idle');

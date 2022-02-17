@@ -108,58 +108,36 @@ class CacheState extends MusicBeatState
 
     function preloadAssets(){
         for(x in characters){
-            if(#if sys sys.FileSystem.exists(Paths.image(x))
-                #else Assets.exists(Paths.image(x))#end){
-                ImageCache.add(Paths.image(x));
-                trace("Chached " + x);
-            }
-            else
-                trace("Error while loading\nImage in path " + Paths.image(x));
+		try{ImageCache.add(Paths.image(x));trace("Chached " + x);}
+		catch(e){throw "Unabled to cache in memory " + x;}
             finished++;
-            charactersloading = true;
         }
+	charactersloading = true;
     }
 
     function objectsAssets(){
         for(x in objects){
-            if(#if sys sys.FileSystem.exists(Paths.image(x))
-                #else Assets.exists(Paths.image(x))#end){
-                ImageCache.add(Paths.image(x));
-                trace("Chached " + x);
-            }
-            else{
-                trace("Error while loading\nImage in path " + Paths.image(x));
-            }
+		try{ImageCache.add(Paths.image(x));trace("Chached " + x);}
+		catch(e){throw "Unabled to cache in memory " + x;}
             finished++;
         }
         objectsloading = true;
     }
     function soundsAssets(){
         for(x in sounds){
-            if(#if sys sys.FileSystem.exists(Paths.sound(x))
-                #else Assets.exists(Paths.sound(x)) #end){
-                FlxG.sound.cache(Paths.sound(x));
-                trace("Chached " + x);
-            }
-            else
-                trace("Error while loading\nSound in path " + Paths.sound(x));
+		try{FlxG.sound.cache(Paths.sound(x));trace("Chached " + x);
+		}catch(e){throw "Unabled to cache in memory " + x;}
             finished++;
         }
         soundsloading = true;
     }
     function preloadMusic(){
         for(x in music){
-			if(#if sys sys.FileSystem.exists(Paths.inst(x)) || sys.FileSystem.exists(Paths.voices(x))
-                #else Assets.exists(Paths.inst(x)) || Assets.exists(Paths.voices(x))#end){
-				FlxG.sound.cache(Paths.inst(x));
-        	    FlxG.sound.cache(Paths.voices(x));
-			}
-            else
-                trace("Error while loading\nSound in path " + Paths.sound(x));
+		try{FlxG.sound.cache(Paths.inst(x));FlxG.sound.cache(Paths.voices(x));trace("Chached " + x)}
+		catch(e){throw "Unabled to cache in memory " + x;}
             finished++;
         }
         musicloading = true;
-	}
 }
 
 //End of Loading and Start of Image Caching

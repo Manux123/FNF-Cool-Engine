@@ -133,7 +133,7 @@ class CacheState extends MusicBeatState
     }
     function preloadMusic(){
         for(x in music){
-		try{FlxG.sound.cache(Paths.inst(x));FlxG.sound.cache(Paths.voices(x));trace("Chached " + x);}
+		try{FlxG.sound.cache(Paths.inst(x));FlxG.sound.cache(Paths.voices(x));trace("Chached " + x);
 		catch(e){throw "Unabled to cache in memory " + x;}
             finished++;
         }

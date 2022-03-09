@@ -3,7 +3,8 @@ package states;
 #if desktop
 import Discord.DiscordClient;
 #end
-import CacheState.ImageCache;
+import states.CacheState;
+import states.CacheState.ImageCache;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;

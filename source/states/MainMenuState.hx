@@ -3,7 +3,7 @@ package states;
 #if desktop
 import Discord.DiscordClient;
 #end
-import CacheState.ImageCache;
+import states.CacheState.ImageCache;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
@@ -18,6 +18,7 @@ import states.ModsState;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 import lime.app.Application;
+import flash.display.BitmapData;
 import openfl.display.BitmapData as Bitmap;
 import states.MusicBeatState;
 
@@ -29,7 +30,14 @@ class MainMenuState extends MusicBeatState
 
 	var menuItems:FlxTypedGroup<FlxSprite>;
 
-	var optionShit:Array<String> = ['story-mode', 'freeplay', 'mods' #if !switch ,'options', 'donate'#end];
+	var optionShit:Array<String> = [
+		'story-mode', 
+		'freeplay', 
+		'mods' #if !switch ,
+		'options', 
+		'donate'#end
+	];
+
 	var optionMap:Map<String,MusicBeatState> = [
 		'story-mode' => new StoryMenuState(),
 		'freeplay' => new FreeplayState(),
@@ -69,7 +77,7 @@ class MainMenuState extends MusicBeatState
 		if(ModsFreeplayState.onMods && lol != null)
 			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-main',  ModsFreeplayState.mod));
 		else
-			bg.loadGraphic(ImageCache.get(Paths.image('menu/menuBG')));
+			bg.loadGraphic(BitmapData.fromFile(Paths.image('menu/menuBG')));
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0.18;
 		bg.screenCenter();
@@ -86,7 +94,7 @@ class MainMenuState extends MusicBeatState
 		{
 			var offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;
 			var menuItem:FlxSprite = new FlxSprite(70, (i * 140)  + offset);
-			menuItem.frames = Paths.getSparrowAtlas(ImageCache.get('mainmenu/menu_' + optionShit[i]));
+			menuItem.frames = Paths.getSparrowAtlas('mainmenu/menu_' + optionShit[i]);
 			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
 			menuItem.animation.play('idle');
@@ -179,7 +187,7 @@ class MainMenuState extends MusicBeatState
 				}
 				else
 				{
-					//FlxTween.tween(menuItem, {x: menuItem.x + 200}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
+					FlxTween.tween(menuItem, {y: menuItem.y + 1000}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
 					selectedSomethin = true;
 					FlxG.sound.play(Paths.sound('confirmMenu'));
 					FlxG.camera.flash(FlxColor.WHITE);

@@ -1205,7 +1205,7 @@ class PlayState extends MusicBeatState
 		red.scrollFactor.set();
 
 		var senpaiEvil:FlxSprite = new FlxSprite();
-		senpaiEvil.frames = Paths.getSparrowAtlas('weeb/senpaiCrazy');
+		senpaiEvil.frames = Paths.getSparrowAtlas('custcenes/senpaiCrazy','shared');
 		senpaiEvil.animation.addByPrefix('idle', 'Senpai Pre Explosion', 24, false);
 		senpaiEvil.setGraphicSize(Std.int(senpaiEvil.width * 6));
 		senpaiEvil.scrollFactor.set();
@@ -1323,152 +1323,131 @@ class PlayState extends MusicBeatState
 
 		var swagCounter:Int = 0;
 
-		startTimer = new FlxTimer().start(Conductor.crochet / 1000, function(tmr:FlxTimer)
-		{
-			dad.dance();
-			gf.dance();
-			boyfriend.dance();
+		introAssets = new Map<String, Array<String>>();
+		introAssets.set('default', [
+			'UI/swagCounter/ready', 
+			"UI/swagCounter/set", 
+			"UI/swagCounter/go"
+		]);
+		introAssets.set('school', [
+			'weeb/pixelUI/ready-pixel',
+			'weeb/pixelUI/set-pixel',
+			'weeb/pixelUI/date-pixel'
+		]);
+		introAssets.set('schoolEvil', [
+			'weeb/pixelUI/ready-pixel',
+			'weeb/pixelUI/set-pixel',
+			'weeb/pixelUI/date-pixel'
+		]);
 
-			introAssets = new Map<String, Array<String>>();
-			introAssets.set('default', [
-				'UI/swagCounter/ready', 
-				"UI/swagCounter/set", 
-				"UI/swagCounter/go"
-			]);
-			introAssets.set('school', [
-				'weeb/pixelUI/ready-pixel',
-				'weeb/pixelUI/set-pixel',
-				'weeb/pixelUI/date-pixel'
-			]);
-			introAssets.set('schoolEvil', [
-				'weeb/pixelUI/ready-pixel',
-				'weeb/pixelUI/set-pixel',
-				'weeb/pixelUI/date-pixel'
-			]);
+		var introAlts:Array<String> = introAssets.get('default');
+		var altSuffix:String = "";
 
-			var introAlts:Array<String> = introAssets.get('default');
-			var altSuffix:String = "";
-
-				for (value in introAssets.keys())
+			for (value in introAssets.keys())
+			{
+				if (value == curStage)
 				{
-					if (value == curStage)
-					{
-						introAlts = introAssets.get(value);
-						altSuffix = '-pixel';
-					}
+					introAlts = introAssets.get(value);
+					altSuffix = '-pixel';
 				}
+			}
 
-				switch (swagCounter)
+		FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
+		var ready1:FlxSprite = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
+		ready1.scrollFactor.set();
+		ready1.updateHitbox();
+
+		if (curStage.startsWith('school'))
+			ready1.setGraphicSize(Std.int(ready1.width * daPixelZoom));
+
+		ready1.screenCenter();
+		add(ready1);
+
+		if (FlxG.keys.pressed.ENTER) {
+				startTimer = new FlxTimer().start(Conductor.crochet / 1000, function(tmr:FlxTimer)
 				{
-					case 0:
-						FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
-					case 1:
-						initready();
-					case 2:
-						initset();
-					case 3:
-						initgo();
-				}
-				callOnLuas('onCountdownTick', [swagCounter]);
-				swagCounter += 1;
-				// generateSong('fresh');
-			}, 5);
+					dad.dance();
+					gf.dance();
+					boyfriend.dance();
+		
+						switch (swagCounter)
+						{
+							case 0:
+								FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
+								FlxTween.tween(ready1, {y: ready1.y += 100, alpha: 0}, Conductor.crochet / 1000, {
+								ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween)
+									{
+										ready1.destroy();
+									}
+								});
+							case 1:
+								ready = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
+								ready.scrollFactor.set();
+								ready.updateHitbox();
+						
+								if (curStage.startsWith('school'))
+									ready.setGraphicSize(Std.int(ready.width * daPixelZoom));
+						
+								ready.screenCenter();
+								add(ready);
+								FlxTween.tween(ready, {y: ready.y += 100, alpha: 0}, Conductor.crochet / 1000, {
+								ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween)
+									{
+										ready.destroy();
+									}
+								});
+								FlxG.sound.play(Paths.sound('intro2' + altSuffix), 0.6);
+							case 2:
+								set = new FlxSprite().loadGraphic(Paths.image(introAlts[1]));
+								set.scrollFactor.set();
+						
+								if (curStage.startsWith('school'))
+									set.setGraphicSize(Std.int(set.width * daPixelZoom));
+						
+								set.screenCenter();
+								add(set);
+								FlxTween.tween(set, {y: set.y += 100, alpha: 0}, Conductor.crochet / 1000, {
+								ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween) {
+										set.destroy(); }});
+								FlxG.sound.play(Paths.sound('intro1' + altSuffix), 0.6);
+							case 3:
+								go = new FlxSprite().loadGraphic(Paths.image(introAlts[2]));
+								go.scrollFactor.set();
+						
+								if (curStage.startsWith('school'))
+									go.setGraphicSize(Std.int(go.width * daPixelZoom));
+						
+								go.updateHitbox();
+						
+								go.screenCenter();
+								add(go);
+								FlxTween.tween(go, {y: go.y += 100, alpha: 0}, Conductor.crochet / 1000, {
+								ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween) {
+									go.destroy(); }
+								});
+								FlxG.sound.play(Paths.sound('introGo' + altSuffix), 0.6);
+								boyfriend.playAnim('hey', false);
+								if(dad.curCharacter.startsWith('bf') || dad.curCharacter.startsWith('gf')){
+									dad.playAnim('hey', false);
+								}
+								gf.playAnim('cheer', false);
+								FlxG.camera.flash(FlxColor.WHITE, 1);
+						}
+						callOnLuas('onCountdownTick', [swagCounter]);
+						swagCounter += 1;
+						// generateSong('fresh');
+					}, 5);	
+		}
+
+		
+
+		
 		}
 	}
 
 	var previousFrameTime:Int = 0;
 	var lastReportedPlayheadPosition:Int = 0;
 	var songTime:Float = 0;
-
-	function initready():Void {
-		var introAlts:Array<String> = introAssets.get('default');
-		var altSuffix:String = "";
-
-		for (value in introAssets.keys())
-		{
-			if (value == curStage)
-			{
-				introAlts = introAssets.get(value);
-				altSuffix = '-pixel';
-			}
-		}
-		ready = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
-		ready.scrollFactor.set();
-		ready.updateHitbox();
-
-		if (curStage.startsWith('school'))
-			ready.setGraphicSize(Std.int(ready.width * daPixelZoom));
-
-		ready.screenCenter();
-		add(ready);
-		FlxTween.tween(ready, {y: ready.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-		ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween)
-			{
-				ready.destroy();
-			}
-		});
-		FlxG.sound.play(Paths.sound('intro2' + altSuffix), 0.6);
-	}
-
-	function initset():Void {
-		var introAlts:Array<String> = introAssets.get('default');
-		var altSuffix:String = "";
-
-		for (value in introAssets.keys())
-		{
-			if (value == curStage)
-			{
-				introAlts = introAssets.get(value);
-				altSuffix = '-pixel';
-			}
-		}
-		set = new FlxSprite().loadGraphic(Paths.image(introAlts[1]));
-		set.scrollFactor.set();
-
-		if (curStage.startsWith('school'))
-			set.setGraphicSize(Std.int(set.width * daPixelZoom));
-
-		set.screenCenter();
-		add(set);
-		FlxTween.tween(set, {y: set.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-		ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween) {
-				set.destroy(); }});
-		FlxG.sound.play(Paths.sound('intro1' + altSuffix), 0.6); }
-
-	function initgo():Void {
-		var introAlts:Array<String> = introAssets.get('default');
-		var altSuffix:String = "";
-
-		for (value in introAssets.keys())
-		{
-			if (value == curStage)
-			{
-				introAlts = introAssets.get(value);
-				altSuffix = '-pixel';
-			}
-		}
-		go = new FlxSprite().loadGraphic(Paths.image(introAlts[2]));
-		go.scrollFactor.set();
-
-		if (curStage.startsWith('school'))
-			go.setGraphicSize(Std.int(go.width * daPixelZoom));
-
-		go.updateHitbox();
-
-		go.screenCenter();
-		add(go);
-		FlxTween.tween(go, {y: go.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-		ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween) {
-			go.destroy(); }
-		});
-		FlxG.sound.play(Paths.sound('introGo' + altSuffix), 0.6);
-		boyfriend.playAnim('hey', false);
-		if(dad.curCharacter.startsWith('bf') || dad.curCharacter.startsWith('gf')){
-			dad.playAnim('hey', false);
-		}
-		gf.playAnim('cheer', false);
-		FlxG.camera.flash(FlxColor.WHITE, 1);
-	}
 
 	function startSong():Void
 	{

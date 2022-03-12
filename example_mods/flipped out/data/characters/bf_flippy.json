@@ -1,7 +1,7 @@
 {
     "character":{
       "char":"bf_flippy",
-      "texture": "BF_Carry",
+      "texture": "Characters/BF_Carry",
       "xOffset": 0,"yOffset": 0,
         "anims":[
           "idle:BF idle dance",

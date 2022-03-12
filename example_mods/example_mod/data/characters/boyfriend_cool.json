@@ -1,7 +1,7 @@
 {
     "character":{
          "char":"boyfriend_cool",
-         "texture": "bfCool",
+         "texture": "Characters/bfCool",
          "xOffset": 0,"yOffset": 0,
         "anims":[
         "idle:BF IDLE",

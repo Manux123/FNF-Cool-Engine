@@ -1,7 +1,7 @@
 {
     "character":{
          "char":"flippy_fallout",
-         "texture": "FLIPPY_crazy",
+         "texture": "Characters/FLIPPY_crazy",
          "xOffset": 0,"yOffset": 200,
         "anims":[
         "idle:FLP3 Alt Idle",

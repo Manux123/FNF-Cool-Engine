@@ -1693,6 +1693,7 @@ class PlayState extends MusicBeatState
 				readyCL.visible = true;
 				readya.visible = false;
 				if(FlxG.mouse.justPressed){
+					FlxG.mouse.visible = false;
 					readyCL.destroy();
 					readya.destroy();
 					startCountdown();

@@ -47,7 +47,6 @@ import openfl.display.BlendMode;
 import openfl.display.StageQuality;
 import openfl.filters.ShaderFilter;
 import states.MusicBeatState;
-import FunkinLua;
 import controls.KeyBindMenu;
 #if mobileC
 import ui.Mobilecontrols;
@@ -109,7 +108,6 @@ class PlayState extends MusicBeatState
 	var detailsPausedText:String = "";
 	#end
 
-	private var luaArray:Array<FunkinLua> = [];
 	private var modsArray:Array<ModsState> = [];
 
 	public var vocals:FlxSound;
@@ -397,67 +395,6 @@ class PlayState extends MusicBeatState
 			}
 		} else
 			setCurrentStage();
-
-		#if LUA_ALLOWED
-		var doPush:Bool = false;
-		var luaFile2:String = 'data/songs/' + Paths.formatToSongPath(SONG.song) + '/script.lua';
-		if(FileSystem.exists(Paths.modFolders(luaFile2))) {
-			luaFile2 = Paths.modFolders(luaFile2);
-			doPush = true;
-		} else {
-			luaFile2 = Paths.getPreloadPath(luaFile2);
-			if(FileSystem.exists(luaFile2)) {
-				doPush = true;
-			}
-		}
-
-		var luaFile:String = 'stages/' + curStage + '.lua';
-		if(FileSystem.exists(Paths.modFolders(luaFile))) {
-			luaFile = Paths.modFolders(luaFile);
-			doPush = true;
-		} 
-		else 
-		{
-			luaFile = Paths.getPreloadPath(luaFile);
-			if(FileSystem.exists(luaFile)) {
-				doPush = true;
-			}
-		}
-
-		if(doPush) 
-			luaArray.push(new FunkinLua(luaFile));
-		#end
-
-		#if (MOD_ALL && LUA_ALLOWED)
-		var doPush:Bool = false;
-		var luaFile2:String = 'data/songs/' + Paths.formatToSongPath(SONG.song) + '/script.lua';
-		if(FileSystem.exists(ModsState.getPreloadMod(luaFile2))) {
-			luaFile2 = ModsState.getPreloadMod(luaFile2);
-			doPush = true;
-		} else {
-			luaFile2 = Paths.getPreloadPath(luaFile2);
-			if(FileSystem.exists(luaFile2)) {
-				doPush = true;
-			}
-		}
-
-		var luaFile:String = 'data/stages/' + curStage + '.lua';
-		if(FileSystem.exists(ModsState.getPreloadMod(luaFile))) {
-			luaFile = ModsState.getPreloadMod(luaFile);
-			doPush = true;
-		} 
-		else 
-		{
-			luaFile = Paths.getPreloadPath(luaFile);
-			if(FileSystem.exists(luaFile)) {
-				doPush = true;
-			}
-		}
-
-		if(doPush) 
-			luaArray.push(new FunkinLua(luaFile));
-		#end
-
 
 		var gfVersion:String = 'gf';
 /*
@@ -1323,18 +1260,6 @@ class PlayState extends MusicBeatState
 		#end
 
 		inCutscene = false;
-		var ret:Dynamic = callOnLuas('onStartCountdown', []);
-		if(ret != FunkinLua.Function_Stop) {
-			generateStaticArrows(0);
-			generateStaticArrows(1);
-		for (i in 0...playerStrums.length) {
-			setOnLuas('defaultPlayerStrumX' + i, playerStrums.members[i].x);
-			setOnLuas('defaultPlayerStrumY' + i, playerStrums.members[i].y);
-		}
-		for (i in 0...cpuStrums.length) {
-			setOnLuas('defaultOpponentStrumX' + i, cpuStrums.members[i].x);
-			setOnLuas('defaultOpponentStrumY' + i, cpuStrums.members[i].y);
-		}
 
 		generateStaticArrows(0);
 		generateStaticArrows(1);
@@ -2216,19 +2141,6 @@ class PlayState extends MusicBeatState
 			luaArray[i].set(variable, arg);
 		}
 		#end
-	}
-
-	public function callOnLuas(event:String, args:Array<Dynamic>):Dynamic {
-		var returnVal:Dynamic = FunkinLua.Function_Continue;
-		#if LUA_ALLOWED
-		for (i in 0...luaArray.length) {
-			var ret:Dynamic = luaArray[i].call(event, args);
-			if(ret != FunkinLua.Function_Continue) {
-				returnVal = ret;
-			}
-		}
-		#end
-		return returnVal;
 	}
 
 	var songEnd:Bool = false;

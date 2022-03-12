@@ -18,7 +18,7 @@ typedef CharacterData =
 
 class CharacterFile{
     public var char:String = 'dad';
-    public var texture:String = 'nu c, que lo ponga el juan xd'; //abueno po lo pongo yo que quieres que te diga
+    public var texture:String = ''; //abueno po lo pongo yo que quieres que te diga
     public var xOffset:Int = 0;
     public var yOffset:Int = 0;
     public var anims:Array<String> = [];

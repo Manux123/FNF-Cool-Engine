@@ -50,7 +50,6 @@ class ModsState extends states.MusicBeatState
 			bg.scrollFactor.x = 0;
 			bg.scrollFactor.y = 0.18;
 			bg.screenCenter();
-			bg.antialiasing = true;
 			bg.playVideo(ModPaths.modBGVideo(modsFolders[curSelected]),true,false);
 			add(bg);
 			bg_but_not_vid.visible = false;

@@ -21,7 +21,7 @@ class HealthIcon extends FlxSprite
 
 	//this shit is for week 4 DX
 	public function loadChar4(char:String){
-		if(char.startsWith('bf') && !char.endsWith('pixel'))
+		if(char.startsWith('bf') && !char.endsWith('pixel') && !char.endsWith('pixel-enemy'))
 			char = 'bf';
 		if(char.startsWith('mom'))
 			char = 'mom';

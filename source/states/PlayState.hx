@@ -2616,11 +2616,10 @@ class PlayState extends MusicBeatState
 				});
 			}
 	
-			if (boyfriend.holdTimer > Conductor.stepCrochet * 4 * 0.01 && !up && !down && !right && !left)
-			{
-				if (boyfriend.animation.curAnim.name.startsWith('sing') && !boyfriend.animation.curAnim.name.endsWith('miss'))
+			if (boyfriend.holdTimer > Conductor.stepCrochet * 4 * 0.001 && !up && !down && !left && !right){
 				{
-					boyfriend.playAnim('idle',true);
+					if (boyfriend.animation.curAnim.name.startsWith('sing') && !boyfriend.animation.curAnim.name.endsWith('miss'))
+						boyfriend.playAnim('idle');
 				}
 			}
 	

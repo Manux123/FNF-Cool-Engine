@@ -40,7 +40,7 @@ class ModPaths {
         return getModSound(key + FlxG.random.int(min, max), mod);
     }
 
-    inline static public function getModVideo(key:String, mod:String)
+    inline static public function getModVideo(key:String, ?mod:String)
 	{
 		trace('mods/$mod/videos/$key.mp4');
 		return getPath('videos/$key.mp4', BINARY, mod);
@@ -77,10 +77,6 @@ class ModPaths {
     
     inline static public function getModImage(key:String, mod:String){
 		return getPath('data/$key.json', IMAGE, mod);
-	}
-
-    inline static public function modBGVideo(mod:String){
-        return getModVideo('preview-video',mod);
 	}
 
     inline static public function modIconImage(key:String, mod:String){

@@ -224,8 +224,15 @@ class PlayState extends MusicBeatState
 	public static var bfnoteMovementXoffset:Int = 0;
 	public static var bfnoteMovementYoffset:Int = 0;
 
+	//ready bs
+	var readya:FlxSprite;
+	var readyCL:FlxSprite;
+	var readyaIsntDestroyed:Bool = true;
+
 	override public function create()
 	{
+		if(FlxG.save.data.noteSkin == null)
+			FlxG.save.data.noteSkin = 'Arrows'; //L M A O
 		instance = this;
 
 		KeyBindMenu.isPlaying = true;
@@ -599,7 +606,7 @@ class PlayState extends MusicBeatState
 		// doof.x += 70;
 		// doof.y = FlxG.height * 0.5;
 		dialogueBox.scrollFactor.set();
-		dialogueBox.finishThing = startCountdown;
+		dialogueBox.finishThing = vsReady;
 
 		Conductor.songPosition = -5000;
 
@@ -789,7 +796,7 @@ class PlayState extends MusicBeatState
 								ease: FlxEase.quadInOut,
 								onComplete: function(twn:FlxTween)
 								{
-									startCountdown();
+									vsReady();
 								}
 							});
 						});
@@ -801,7 +808,7 @@ class PlayState extends MusicBeatState
 						schoolIntro(dialogueBox);
 
 				default:
-					startCountdown();
+					vsReady();
 			}
 		}
 		else
@@ -809,11 +816,28 @@ class PlayState extends MusicBeatState
 			switch (curSong.toLowerCase())
 			{
 				default:
-					startCountdown();
+					vsReady();
 			}
 		}
 
 		super.create();
+	}
+
+	function vsReady() 
+	{
+		FlxG.mouse.visible = true;
+		readya = new FlxSprite().loadGraphic(Paths.image('UI/swagCounter/ready'));
+		readya.scrollFactor.set();
+		readya.updateHitbox();
+		readya.screenCenter();
+		add(readya);
+
+		readyCL = new FlxSprite().loadGraphic(Paths.image('UI/swagCounter/readyCL'));
+		readyCL.scrollFactor.set();
+		readyCL.updateHitbox();
+		readyCL.screenCenter();
+		readyCL.visible = false;
+		add(readyCL);
 	}
 
 	function setCurrentStage(){
@@ -1272,7 +1296,7 @@ class PlayState extends MusicBeatState
 					}
 				}
 				else
-					startCountdown();
+					vsReady();
 
 				remove(black);
 			}
@@ -1316,6 +1340,7 @@ class PlayState extends MusicBeatState
 		generateStaticArrows(1);
 
 		talking = false;
+		readyaIsntDestroyed = false; //This make so readya IS destroyed so it doesn't crashes the fucking game
 		startedCountdown = true;
 		Conductor.songPosition = 0;
 		Conductor.songPosition -= Conductor.crochet * 5;
@@ -1361,87 +1386,84 @@ class PlayState extends MusicBeatState
 			ready1.setGraphicSize(Std.int(ready1.width * daPixelZoom));
 
 		ready1.screenCenter();
-		add(ready1);
+		//add(ready1);
 
-		if (FlxG.keys.pressed.ENTER) {
-				startTimer = new FlxTimer().start(Conductor.crochet / 1000, function(tmr:FlxTimer)
-				{
-					dad.dance();
-					gf.dance();
-					boyfriend.dance();
+		startTimer = new FlxTimer().start(Conductor.crochet / 1000, function(tmr:FlxTimer)
+		{
+			dad.dance();
+			gf.dance();
+			boyfriend.dance();
 		
-						switch (swagCounter)
+			switch (swagCounter)
+			{
+				case 0:
+					FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
+					ready1.visible = false;
+					//remove(readya);
+					readya.visible = false;
+					FlxTween.tween(ready1, {y: ready1.y += 100, alpha: 0}, Conductor.crochet / 1000, {
+					ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween)
 						{
-							case 0:
-								FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
-								FlxTween.tween(ready1, {y: ready1.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-								ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween)
-									{
-										ready1.destroy();
-									}
-								});
-							case 1:
-								ready = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
-								ready.scrollFactor.set();
-								ready.updateHitbox();
-						
-								if (curStage.startsWith('school'))
-									ready.setGraphicSize(Std.int(ready.width * daPixelZoom));
-						
-								ready.screenCenter();
-								add(ready);
-								FlxTween.tween(ready, {y: ready.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-								ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween)
-									{
-										ready.destroy();
-									}
-								});
-								FlxG.sound.play(Paths.sound('intro2' + altSuffix), 0.6);
-							case 2:
-								set = new FlxSprite().loadGraphic(Paths.image(introAlts[1]));
-								set.scrollFactor.set();
-						
-								if (curStage.startsWith('school'))
-									set.setGraphicSize(Std.int(set.width * daPixelZoom));
-						
-								set.screenCenter();
-								add(set);
-								FlxTween.tween(set, {y: set.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-								ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween) {
-										set.destroy(); }});
-								FlxG.sound.play(Paths.sound('intro1' + altSuffix), 0.6);
-							case 3:
-								go = new FlxSprite().loadGraphic(Paths.image(introAlts[2]));
-								go.scrollFactor.set();
-						
-								if (curStage.startsWith('school'))
-									go.setGraphicSize(Std.int(go.width * daPixelZoom));
-						
-								go.updateHitbox();
-						
-								go.screenCenter();
-								add(go);
-								FlxTween.tween(go, {y: go.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-								ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween) {
-									go.destroy(); }
-								});
-								FlxG.sound.play(Paths.sound('introGo' + altSuffix), 0.6);
-								boyfriend.playAnim('hey', false);
-								if(dad.curCharacter.startsWith('bf') || dad.curCharacter.startsWith('gf')){
-									dad.playAnim('hey', false);
-								}
-								gf.playAnim('cheer', false);
-								FlxG.camera.flash(FlxColor.WHITE, 1);
+							ready1.destroy();
 						}
-						callOnLuas('onCountdownTick', [swagCounter]);
-						swagCounter += 1;
-						// generateSong('fresh');
-					}, 5);	
-		}
-
-		
-
-		
+					});
+				case 1:
+					ready = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
+					ready.scrollFactor.set();
+					ready.updateHitbox();
+			
+					if (curStage.startsWith('school'))
+						ready.setGraphicSize(Std.int(ready.width * daPixelZoom));
+			
+					ready.screenCenter();
+					add(ready);
+					FlxTween.tween(ready, {y: ready.y += 100, alpha: 0}, Conductor.crochet / 1000, {
+					ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween)
+						{
+							ready.destroy();
+						}
+					});
+					FlxG.sound.play(Paths.sound('intro2' + altSuffix), 0.6);
+				case 2:
+					set = new FlxSprite().loadGraphic(Paths.image(introAlts[1]));
+					set.scrollFactor.set();
+			
+					if (curStage.startsWith('school'))
+						set.setGraphicSize(Std.int(set.width * daPixelZoom));
+			
+					set.screenCenter();
+					add(set);
+					FlxTween.tween(set, {y: set.y += 100, alpha: 0}, Conductor.crochet / 1000, {
+					ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween) {
+							set.destroy(); }});
+					FlxG.sound.play(Paths.sound('intro1' + altSuffix), 0.6);
+				case 3:
+					go = new FlxSprite().loadGraphic(Paths.image(introAlts[2]));
+					go.scrollFactor.set();
+			
+					if (curStage.startsWith('school'))
+						go.setGraphicSize(Std.int(go.width * daPixelZoom));
+			
+					go.updateHitbox();
+			
+					go.screenCenter();
+					add(go);
+					FlxTween.tween(go, {y: go.y += 100, alpha: 0}, Conductor.crochet / 1000, {
+					ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween) {
+						go.destroy(); }
+					});
+					FlxG.sound.play(Paths.sound('introGo' + altSuffix), 0.6);
+					boyfriend.playAnim('hey', false);
+					if(dad.curCharacter.startsWith('bf') || dad.curCharacter.startsWith('gf')){
+						dad.playAnim('hey', false);
+					}
+					gf.playAnim('cheer', false);
+					FlxG.camera.flash(FlxColor.WHITE, 1);
+			}
+			callOnLuas('onCountdownTick', [swagCounter]);
+			swagCounter += 1;
+			// generateSong('fresh');
+			}, 5);
 		}
 	}
 
@@ -1713,7 +1735,7 @@ class PlayState extends MusicBeatState
 	}
 	
 
-	override function openSubState(SubState:FlxSubState)
+	override function openSubState(subState:FlxSubState)
 	{
 		if (paused)
 		{
@@ -1727,11 +1749,11 @@ class PlayState extends MusicBeatState
 			DiscordClient.changePresence("PAUSED on " + SONG.song + " (" + storyDifficultyText + ")", "Acc: " + Mathf.getPercentage(accuracy, 2) + "% | Score: " + songScore + " | Misses: " + misses  , iconRPC);
 			#end
 
-			if (!startTimer.finished)
-				startTimer.active = false;
+			/*if (!startTimer.finished)
+				startTimer.active = false;*/
 		}
 
-		super.openSubState(SubState);
+		super.openSubState(subState);
 	}
 
 	override function closeSubState()
@@ -1743,19 +1765,12 @@ class PlayState extends MusicBeatState
 				resyncVocals();
 			}
 
-			if (!startTimer.finished)
-				startTimer.active = true;
+			/*if (!startTimer.finished)
+				startTimer.active = true;*/
 			paused = false;
 
 			#if desktop
-			if (startTimer.finished)
-			{
-				DiscordClient.changePresence(detailsText + " " + SONG.song + " (" + storyDifficultyText + ")", "\nAcc: " + Mathf.getPercentage(accuracy, 2) + "% | Score: " + songScore + " | Misses: " + misses, iconRPC, true, songLength - Conductor.songPosition);
-			}
-			else
-			{
-				DiscordClient.changePresence(detailsText, SONG.song + " (" + storyDifficultyText + ")", iconRPC);
-			}
+			DiscordClient.changePresence(detailsText + " " + SONG.song + " (" + storyDifficultyText + ")", "\nAcc: " + Mathf.getPercentage(accuracy, 2) + "% | Score: " + songScore + " | Misses: " + misses, iconRPC, true, songLength - Conductor.songPosition);
 			#end
 		}
 
@@ -1789,6 +1804,22 @@ class PlayState extends MusicBeatState
 
 	override public function update(elapsed:Float)
 	{
+		if(readyaIsntDestroyed){
+			if(FlxG.mouse.overlaps(readya)){
+				readyCL.visible = true;
+				readya.visible = false;
+				if(FlxG.mouse.justPressed){
+					readyCL.destroy();
+					readya.destroy();
+					startCountdown();
+				}
+			}
+			else if(!FlxG.mouse.overlaps(readya)){
+				readyCL.visible = false;
+				readya.visible = true;
+			}
+		}
+
 		if(FlxG.keys.justPressed.CONTROL)
 			CPUvsCPUMode = false;
 		songPositionBar = Conductor.songPosition;

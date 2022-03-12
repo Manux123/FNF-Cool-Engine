@@ -93,7 +93,7 @@ class MainMenuState extends MusicBeatState
 		for (i in 0...optionShit.length)
 		{
 			var offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;
-			var menuItem:FlxSprite = new FlxSprite(70, (i * 140)  + offset);
+			menuItem = new FlxSprite(70, (i * 140)  + offset);
 			menuItem.frames = Paths.getSparrowAtlas('mainmenu/menu_' + optionShit[i]);
 			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
@@ -187,7 +187,7 @@ class MainMenuState extends MusicBeatState
 				}
 				else
 				{
-					FlxTween.tween(menuItem, {y: menuItem.y + 1000}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
+					//FlxTween.tween(menuItems, {y: menuItem.y + 1000}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
 					selectedSomethin = true;
 					FlxG.sound.play(Paths.sound('confirmMenu'));
 					FlxG.camera.flash(FlxColor.WHITE);

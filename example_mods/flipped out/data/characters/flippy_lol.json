@@ -1,7 +1,7 @@
 {
     "character":{
          "char":"flippy_lol",
-         "texture": "Characters/FLIPPY_crazy",
+         "texture": "FLIPPY_crazy",
          "xOffset": 0,"yOffset": 200,
         "anims":[
         "idle:FLP3 idle",

@@ -444,7 +444,7 @@ class Character extends FlxSprite
 				else {
 					if(states.ModsFreeplayState.onMods){
 						var characterFile:CharacterData = loadFromJson(curCharacter);
-						frames = ModPaths.getSparrowAtlas(characterFile.texture,states.ModsFreeplayState.mod);
+						frames = ModPaths.getSparrowAtlas('mods/${ModsFreeplayState.mod}/images/Characters' + characterFile.texture,states.ModsFreeplayState.mod);
 						var fuck:Array<String> = characterFile.anims;
 						for(i in 0... fuck.length){
 							var split = fuck[i].split(':');

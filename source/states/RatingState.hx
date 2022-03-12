@@ -50,7 +50,7 @@ class RatingState extends FlxSubState
         \nShits: ${PlayState.shits}
         \nMisses: ${PlayState.misses}');
 
-        comboText.size = 28; comboText.y += 100; comboText.x += 25;
+        comboText.size = 28; comboText.y += 75; comboText.x += 25;
         comboText.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);
         comboText.color = FlxColor.WHITE;
         comboText.scrollFactor.set();

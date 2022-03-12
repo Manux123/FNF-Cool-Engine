@@ -163,7 +163,6 @@ class PlayState extends MusicBeatState
 	var trainSound:FlxSound;
 
 	var daNote:Note;
-	var specialAnim:Bool = false;
 
 	var limo:FlxSprite;
 	var grpLimoDancers:FlxTypedGroup<BackgroundDancer>;
@@ -1224,7 +1223,7 @@ class PlayState extends MusicBeatState
 			}
 		});
 	}
-
+	
 	var startTimer:FlxTimer;
 	var CPUvsCPUMode:Bool = false;
 	var ready:FlxSprite;
@@ -1253,7 +1252,6 @@ class PlayState extends MusicBeatState
 		startedCountdown = true;
 		Conductor.songPosition = 0;
 		Conductor.songPosition -= Conductor.crochet * 5;
-		setOnLuas('startedCountdown', true);
 
 		var swagCounter:Int = 0;
 
@@ -1286,16 +1284,7 @@ class PlayState extends MusicBeatState
 				}
 			}
 
-		FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
-		var ready1:FlxSprite = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
-		ready1.scrollFactor.set();
-		ready1.updateHitbox();
-
-		if (curStage.startsWith('school'))
-			ready1.setGraphicSize(Std.int(ready1.width * daPixelZoom));
-
-		ready1.screenCenter();
-		//add(ready1);
+		//FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
 
 		startTimer = new FlxTimer().start(Conductor.crochet / 1000, function(tmr:FlxTimer)
 		{
@@ -1307,15 +1296,7 @@ class PlayState extends MusicBeatState
 			{
 				case 0:
 					FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
-					ready1.visible = false;
-					//remove(readya);
 					readya.visible = false;
-					FlxTween.tween(ready1, {y: ready1.y += 100, alpha: 0}, Conductor.crochet / 1000, {
-					ease: FlxEase.cubeInOut, onComplete: function(twn:FlxTween)
-						{
-							ready1.destroy();
-						}
-					});
 				case 1:
 					ready = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
 					ready.scrollFactor.set();
@@ -1362,11 +1343,11 @@ class PlayState extends MusicBeatState
 						go.destroy(); }
 					});
 					FlxG.sound.play(Paths.sound('introGo' + altSuffix), 0.6);
-					boyfriend.playAnim('hey', false);
+					boyfriend.playAnim('hey', true);
 					if(dad.curCharacter.startsWith('bf') || dad.curCharacter.startsWith('gf')){
-						dad.playAnim('hey', false);
+						dad.playAnim('hey', true);
 					}
-					gf.playAnim('cheer', false);
+					gf.playAnim('cheer', true);
 					FlxG.camera.flash(FlxColor.WHITE, 1);
 			}
 			swagCounter += 1;
@@ -2115,14 +2096,6 @@ class PlayState extends MusicBeatState
 			keyShit();
 	}
 
-	public function setOnLuas(variable:String, arg:Dynamic) {
-		#if LUA_ALLOWED
-		for (i in 0...luaArray.length) {
-			luaArray[i].set(variable, arg);
-		}
-		#end
-	}
-
 	var songEnd:Bool = false;
 
 	public function endSong():Void
@@ -2647,7 +2620,7 @@ class PlayState extends MusicBeatState
 			{
 				if (boyfriend.animation.curAnim.name.startsWith('sing') && !boyfriend.animation.curAnim.name.endsWith('miss'))
 				{
-					boyfriend.playAnim('idle');
+					boyfriend.playAnim('idle',true);
 				}
 			}
 	
@@ -2711,7 +2684,7 @@ class PlayState extends MusicBeatState
 			health -= 0.04;
 			if (combo > 5 && gf.animOffsets.exists('sad'))
 			{
-				gf.playAnim('sad');
+				gf.playAnim('sad',true);
 			}
 			combo = 0;
 			misses++;
@@ -2969,7 +2942,7 @@ class PlayState extends MusicBeatState
 		if (trainSound.time >= 4700)
 		{
 			startedMoving = true;
-			gf.playAnim('hairBlow');
+			gf.playAnim('hairBlow',true);
 		}
 
 		if (startedMoving)
@@ -2993,7 +2966,7 @@ class PlayState extends MusicBeatState
 
 	function trainReset():Void
 	{
-		gf.playAnim('hairFall');
+		gf.playAnim('hairFall',true);
 		phillyTrain.x = FlxG.width + 200;
 		trainMoving = false;
 		// trainSound.stop();
@@ -3096,8 +3069,7 @@ class PlayState extends MusicBeatState
 
 		if (!boyfriend.animation.curAnim.name.startsWith("sing") && boyfriend.canSing)
 		{
-			boyfriend.dance();
-			specialAnim = true;
+			boyfriend.playAnim('idle',true);
 		}
 
 		if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing)
@@ -3142,11 +3114,9 @@ class PlayState extends MusicBeatState
 		if (curBeat % 8 == 7 && curSong == 'Bopeebo')
 		{
 			boyfriend.playAnim('hey', true);
-			specialAnim = true;
 			if (SONG.song == 'Tutorial' && dad.curCharacter == 'gf')
 			{
 				dad.playAnim('cheer', true);
-				specialAnim = true;
 			}
 		}
 

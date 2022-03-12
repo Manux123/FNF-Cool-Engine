@@ -1251,7 +1251,6 @@ class PlayState extends MusicBeatState
 	function startCountdown():Void
 	{
 		if(startedCountdown) {
-			callOnLuas('onStartCountdown', []);
 			return;
 		}
 
@@ -1385,11 +1384,9 @@ class PlayState extends MusicBeatState
 					gf.playAnim('cheer', false);
 					FlxG.camera.flash(FlxColor.WHITE, 1);
 			}
-			callOnLuas('onCountdownTick', [swagCounter]);
 			swagCounter += 1;
 			// generateSong('fresh');
 			}, 5);
-		}
 	}
 
 	var previousFrameTime:Int = 0;
@@ -2034,8 +2031,6 @@ class PlayState extends MusicBeatState
 
 					if (gf.canSing)
 						gf.playAnim(Character.animationsMap[daNote.noteData] + altAnim, true);
-
-						callOnLuas('opponentNoteHit', [notes.members.indexOf(daNote), Math.abs(daNote.noteData), daNote.isSustainNote]);
 				
 						cpuStrums.forEach(function(spr:FlxSprite)
 							{
@@ -2623,28 +2618,7 @@ class PlayState extends MusicBeatState
 					{	
 						noteCheck(controlArray, daNote);
 					}
-					/* 
-						if (controlArray[daNote.noteData])
-							goodNoteHit(daNote);
-					 */
-					// trace(daNote.noteData);
-					/* 
-						switch (daNote.noteData)
-						{
-							case 2: // NOTES YOU JUST PRESSED
-								if (upP || rightP || downP || leftP)
-									noteCheck(upP, daNote);
-							case 3:
-								if (upP || rightP || downP || leftP)
-									noteCheck(rightP, daNote);
-							case 1:
-								if (upP || rightP || downP || leftP)
-									noteCheck(downP, daNote);
-							case 0:
-								if (upP || rightP || downP || leftP)
-									noteCheck(leftP, daNote);
-						}
-					 */
+				
 					if (daNote.wasGoodHit)
 					{
 						daNote.kill();

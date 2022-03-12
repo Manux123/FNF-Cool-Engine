@@ -46,19 +46,19 @@ class ModsState extends states.MusicBeatState
 		bg_but_not_vid.antialiasing = true;
 		add(bg_but_not_vid);
 
-		if(openfl.utils.Assets.exists(ModPaths.getModVideo('preview-video'))){
+		if(openfl.utils.Assets.exists(ModPaths.getModVideo('preview-video',states.ModsFreeplayState.mod))){
 			bg = new FlxVideo(-80,0,FlxG.width,FlxG.height);
 /*			bg.scrollFactor.x = 0;
 			bg.scrollFactor.y = 0.18;
 			bg.screenCenter();*/
-			bg.playVideo(ModPaths.getModVideo('preview-video'),true,false);
+			bg.playVideo(ModPaths.getModVideo('preview-video',states.ModsFreeplayState.mod),true,false);
 			add(bg);
 			bg_but_not_vid.visible = false;
 		}
 		else
 			bg_but_not_vid.visible = true;
 
-		trace(ModPaths.getModVideo('preview-video'));
+		trace(ModPaths.getModVideo('preview-video',states.ModsFreeplayState.mod));
 
 		exitState = new FlxText(0, 0, 0, "ESC to exit", 12);
 		exitState.size = 28;
@@ -147,8 +147,8 @@ class ModsState extends states.MusicBeatState
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
 		FlxG.sound.playMusic('mods/${modsFolders[curSelected]}/music/freakyMenu.ogg');
 
-		if(openfl.utils.Assets.exists(ModPaths.getModVideo('preview-video')))
-			bg.playVideo(ModPaths.getModVideo('preview-video'),true,false);
+		if(openfl.utils.Assets.exists(ModPaths.getModVideo('preview-video',states.ModsFreeplayState.mod)))
+			bg.playVideo(ModPaths.getModVideo('preview-video',states.ModsFreeplayState.mod),true,false);
 
 		curSelected+=change;
 		if (curSelected < 0)

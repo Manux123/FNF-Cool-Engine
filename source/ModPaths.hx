@@ -12,6 +12,10 @@ class ModPaths {
 		return getPath('$mod/images/BGs/$key.png', IMAGE, mod);
 	}
 
+    inline static public function modIconImage(key:String, mod:String){
+		return getPath('$mod/images/Icons/$key.png', IMAGE, mod);
+	}
+
     inline static public function getModTxt(key:String, mod:String){
         return getPath('data/$key.txt',TEXT,mod);
 	}
@@ -40,7 +44,7 @@ class ModPaths {
         return getModSound(key + FlxG.random.int(min, max), mod);
     }
 
-    inline static public function getModVideo(key:String, ?mod:String)
+    inline static public function getModVideo(key:String, mod:String)
 	{
 		trace('mods/$mod/videos/$key.mp4');
 		return getPath('videos/$key.mp4', BINARY, mod);
@@ -77,10 +81,6 @@ class ModPaths {
     
     inline static public function getModImage(key:String, mod:String){
 		return getPath('data/$key.json', IMAGE, mod);
-	}
-
-    inline static public function modIconImage(key:String, mod:String){
-		return getPath('images/Icons/$key.png', IMAGE, mod);
 	}
 
     inline static public function getModFont(key:String,mod:String)

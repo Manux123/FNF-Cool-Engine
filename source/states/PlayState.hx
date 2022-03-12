@@ -380,48 +380,21 @@ class PlayState extends MusicBeatState
 		} else
 			setCurrentStage();
 
-		var gfVersion:String = 'gf';
-/*
-		if (SONG.gfVersion == null) {
-			switch(storyWeek)
-			{
-				case 4: gfCheck = 'gf-car';
-				case 5: gfCheck = 'gf-christmas';
-				case 6: gfCheck = 'gf-pixel';
-			}
-		} else {gfCheck = SONG.gfVersion;}
-
-		switch (gfCheck) {}
-
-			customizable GF Type*/
 		switch (curStage){
 			case 'limo':
-				gfVersion = 'gf-car';
+				SONG.gfVersion = 'gf-car';
 			case 'mall':
-				gfVersion = 'gf-christmas';
+				SONG.gfVersion = 'gf-christmas';
 			case 'mallEvil':
 				gf.visible = false;
 			case 'school' | 'schoolEvil':
-				gfVersion = 'gf-pixel';
+				SONG.gfVersion = 'gf-pixel';
 			case 'flippy':
 				gf.visible = false;
            	default:
-				gfVersion = 'gf';}
-		switch (SONG.song.toLowerCase()){
-			case 'satin-panties' | 'high' | 'milf':
-				gfVersion = 'gf-car';
-			case 'eggnog' | 'cocoa':
-				gfVersion = 'gf-christmas';
-			case 'winter-horrorland':
-				gf.visible = false;
-			case 'senpai' | 'roses' | 'thorns':
-				gfVersion = 'gf-pixel';
-			case 'overkill' | 'fallout':
-				gf.visible = false;
-           	default:
-				gfVersion = 'gf';}
+				SONG.gfVersion = 'gf';}
 
-		gf = new Character(400, 130, gfVersion);
+		gf = new Character(400, 130, SONG.gfVersion);
 		gf.scrollFactor.set(0.95, 0.95);
 
 		dad = new Character(100, 100, SONG.player2);
@@ -429,7 +402,6 @@ class PlayState extends MusicBeatState
 		camPos = new FlxPoint(dad.getGraphicMidpoint().x, dad.getGraphicMidpoint().y);
 
 		switch (SONG.player2){
-
 			case 'gf':
 				dad.setPosition(gf.x, gf.y);
 				gf.visible = false;
@@ -517,6 +489,30 @@ class PlayState extends MusicBeatState
 		// Shitty layering but whatev it works LOL
 		if (curStage == 'limo')
 			add(limo);
+
+		if (states.ModsFreeplayState.onMods)
+		{
+			switch (SONG.player1) {
+				default:
+					var characterFile:Character.CharacterData = Character.loadFromJson(boyfriend.curCharacter);
+					boyfriend.x = characterFile.xOffset;
+					boyfriend.y = characterFile.xOffset;
+			}
+
+			switch (SONG.player2) {
+				default:
+					var characterFile:Character.CharacterData = Character.loadFromJson(dad.curCharacter);
+					dad.x = characterFile.xOffset;
+					dad.y = characterFile.xOffset;
+			}
+
+			switch (SONG.gfVersion) {
+				default:
+					var characterFile:Character.CharacterData = Character.loadFromJson(gf.curCharacter);
+					gf.x = characterFile.xOffset;
+					gf.y = characterFile.xOffset;
+			}
+		}
 
 		add(dad);
 		add(boyfriend);

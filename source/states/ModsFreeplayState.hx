@@ -52,7 +52,8 @@ class ModsFreeplayState extends MusicBeatState
 		if(openfl.utils.Assets.exists(ModPaths.modBGImage('menu/' + lol + '-freeplay', mod)))
 			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-freeplay', mod));
 		else
-			bg.loadGraphic(Paths.image('menu/menuBGBlue'));
+			bg.loadGraphic(Paths.image('menu/menuDesat'));
+		bg.screenCenter(X);
 		add(bg);
 
 		grpSongs = new FlxTypedGroup<Alphabet>();

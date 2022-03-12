@@ -85,7 +85,7 @@ class ModsState extends states.MusicBeatState
 
 				var modText:Alphabet = new Alphabet(0,(i + 1) * 100, modsFolders[i],false);
 				modText.isMenuItem = true;
-				modText.targetY = i;					
+				modText.targetY = i;
 				modText.screenCenter(X);
 				grpMods.add(modText);
 				if(!usableMods[i])
@@ -106,18 +106,6 @@ class ModsState extends states.MusicBeatState
 	var curSelected:Int = 0;
 	override function update(elapsed:Float){
 		#if MOD_ALL
-		if(modsFolders.length == 0 || modsFolders == []){
-			warning = new FlxText(0, 0, 0, "NO MODS IN THE MODS FOLDER", 36);
-			warning.size = 36;
-			warning.scrollFactor.set();
-			warning.screenCenter(X);
-			warning.setFormat("VCR OSD Mono", 36, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-			add(warning);
-			new FlxTimer().start(1, function (tmrr:FlxTimer){
-			FlxTween.tween(warning, {alpha: 0}, 1, {type:PINGPONG});});
-			trace("u dum fuck");
-		}
-
 		if(controls.BACK) {
 			LoadingState.loadAndSwitchState(new MainMenuState());
 			FlxG.camera.flash(FlxColor.WHITE);

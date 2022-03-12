@@ -313,7 +313,7 @@ class FreeplayState extends states.MusicBeatState
 			FlxG.switchState(new MainMenuState());
 			if (FlxG.sound.music != null)
 				FlxG.sound.music.stop();
-			vocals.stop();
+			destroyFreeplayVocals();
 		}
 
 		#if PRELOAD_ALL

@@ -311,6 +311,9 @@ class FreeplayState extends states.MusicBeatState
 			}
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 			FlxG.switchState(new MainMenuState());
+			if (FlxG.sound.music != null)
+				FlxG.sound.music.stop();
+			vocals.stop();
 		}
 
 		#if PRELOAD_ALL
@@ -332,6 +335,7 @@ class FreeplayState extends states.MusicBeatState
 			vocals.volume = 0.7;
 			instPlaying = curSelected;
 
+			destroyDisc();
 			discSpr = new FlxSprite(750, 280);
 			discSpr.frames = Paths.getSparrowAtlas('freeplay/record player freeplay'); // made by zero B) is very cool.
 			discSpr.antialiasing = true;
@@ -369,6 +373,13 @@ class FreeplayState extends states.MusicBeatState
 			vocals.destroy();
 		}
 		vocals = null;
+	}
+
+	public function destroyDisc() {
+		if(discSpr != null) {
+			discSpr.destroy();
+		}
+		discSpr = null;
 	}
 
 	function changeDiff(change:Int = 0)

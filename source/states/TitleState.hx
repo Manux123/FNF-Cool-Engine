@@ -327,11 +327,11 @@ class TitleState extends states.MusicBeatState
 		credGroup.add(coolText);
 		textGroup.add(coolText);
 		
-		FlxTween.tween(coolText,{y: coolText.y + (textGroup.length * 60) + 150},0.4,{ease: FlxEase.expoInOut, onComplete: function(flxTween:FlxTween) 
-			{ 
-			}});
-
-
+		if(coolText != null && textGroup != null){
+			FlxTween.tween(coolText,{y: coolText.y + (textGroup.length * 60) + 150},0.4,{ease: FlxEase.expoInOut, onComplete: function(flxTween:FlxTween) 
+				{ 
+				}});
+		}
 	}
 
 	function deleteCoolText()
@@ -451,9 +451,11 @@ class TitleState extends states.MusicBeatState
 			FlxG.camera.flash(FlxColor.WHITE, 4);
 			remove(credGroup);
 
-			FlxTween.tween(logoBl,{y: -100}, 1.4, {ease: FlxEase.expoInOut});
+			if(logoBl != null){
+				FlxTween.tween(logoBl,{y: -100}, 1.4, {ease: FlxEase.expoInOut});
 
-			logoBl.angle = -4;
+				logoBl.angle = -4;
+			}	
 
 			new FlxTimer().start(0.01, function(tmr:FlxTimer)
 				{

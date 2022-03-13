@@ -26,10 +26,12 @@ class ModsState extends states.MusicBeatState
 	public static var modsFolders:Array<String>;
 	var exitState:FlxText;
 	var warning:FlxText;
+	var curMod:String;
 	
 	var grpMods:FlxTypedGroup<Alphabet>;
 
 	var bg:FlxVideo;
+	var bg_but_not_vid:FlxSprite;
 
 	override function create(){
 		#if windows
@@ -39,26 +41,26 @@ class ModsState extends states.MusicBeatState
 
 		modsFolders = CoolUtil.coolTextFile("mods/modsList.txt");
 
-		var bg_but_not_vid:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGBlue'));
+		bg_but_not_vid = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGBlue'));
 		bg_but_not_vid.scrollFactor.x = 0;
 		bg_but_not_vid.scrollFactor.y = 0.18;
 		bg_but_not_vid.screenCenter();
 		bg_but_not_vid.antialiasing = true;
 		add(bg_but_not_vid);
 
-		if(openfl.utils.Assets.exists(ModPaths.getModVideo('preview-video',modsFolders[curSelected]))){
+		if(openfl.utils.Assets.exists(ModPaths.getPreviewVideo('preview-video',modsFolders[curSelected]))){
 			bg = new FlxVideo(-80,0,FlxG.width,FlxG.height);
 /*			bg.scrollFactor.x = 0;
 			bg.scrollFactor.y = 0.18;
 			bg.screenCenter();*/
-			bg.playVideo(ModPaths.getModVideo('preview-video',modsFolders[curSelected]),true,false);
+			bg.playVideo(ModPaths.getPreviewVideo('preview-video',modsFolders[curSelected]),true,false);
 			add(bg);
 			bg_but_not_vid.visible = false;
 		}
 		else
 			bg_but_not_vid.visible = true;
 
-		trace(ModPaths.getModVideo('preview-video',modsFolders[curSelected]));
+		trace(ModPaths.getPreviewVideo('preview-video',modsFolders[curSelected]));
 
 		exitState = new FlxText(0, 0, 0, "ESC to exit", 12);
 		exitState.size = 28;
@@ -131,14 +133,21 @@ class ModsState extends states.MusicBeatState
 	}
 
 	private function changeSelection(change:Int):Void{
-		
+
+		curMod = modsFolders[curSelected - 1];
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
-		FlxG.sound.playMusic('mods/' + modsFolders[curSelected] + '/music/freakyMenu.ogg');
+		if(openfl.utils.Assets.exists('mods/' + modsFolders[curSelected + 1] + '/music/freakyMenu.ogg'))
+			FlxG.sound.playMusic('mods/' + modsFolders[curSelected + 1] + '/music/freakyMenu.ogg');
+		else
+			FlxG.sound.playMusic(Paths.music('freakyMenu'));
 
-		if(openfl.utils.Assets.exists(ModPaths.getModVideo('preview-video',modsFolders[curSelected])))
-			bg.playVideo(ModPaths.getModVideo('preview-video',modsFolders[curSelected]),true,false);
+		if(openfl.utils.Assets.exists(ModPaths.getPreviewVideo('preview-video', modsFolders[curSelected])))
+			bg.playVideo(ModPaths.getPreviewVideo('preview-video', curMod), true);
+		else
+			bg_but_not_vid.visible = true;
 
-		curSelected+=change;
+		curSelected += change;
+
 		if (curSelected < 0)
 			curSelected = modsFolders.length - 1;
 		if (curSelected >= modsFolders.length)

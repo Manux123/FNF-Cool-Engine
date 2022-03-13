@@ -304,6 +304,14 @@ class PlayState extends MusicBeatState
 
 		Conductor.mapBPMChanges(SONG);
 		Conductor.changeBPM(SONG.bpm);
+		
+		if (SONG.player1 == null) //To prevent the application from closing.
+			SONG.player1 == 'bf';
+		if (SONG.player2 == null)
+			SONG.player2 == 'dad';
+		if (SONG.gfVersion == null)
+			SONG.gfVersion == 'gf';
+		trace('Loading characters: ${SONG.player1}, ${SONG.player2}, ${SONG.gfVersion}.');
 
 		switch (SONG.song.toLowerCase())
 		{

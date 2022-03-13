@@ -61,11 +61,15 @@ As for Mac, `lime test mac -debug` will work,
 
 ADDITIONS IN 0.3.5
 
+- Support Mods
+- Eliminated luazzz
+- VS Online startCountDown lol
 - Functions Switch Characters!
 - More Fixed Bugs
 - New Notes in Txt
 - New Splashes in Txt
 - Best ubication in the folders
+- Controls in the menu of pause
 
 ----------------------------------------------
 Thanks for checking out our Engine! Do you have any question? Go to the [discussions](https://github.com/Manux123/FNF-Cool-Engine/discussions) tab!

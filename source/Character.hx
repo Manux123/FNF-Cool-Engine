@@ -3,6 +3,7 @@ package;
 import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
 import openfl.utils.Assets;
+import lime.utils.Assets;
 import states.ModsState;
 import states.ModsFreeplayState;
 
@@ -500,7 +501,7 @@ class Character extends FlxSprite
 
 	public function loadOffsetFile(character:String)
 	{
-		if(openfl.utils.Assets.exists(Paths.txt('characters/offsets/' + character + "Offsets")) || openfl.utils.Assets.exists(ModPaths.getModTxt('characters/offsets/' + character + "Offsets", ModsFreeplayState.mod))){
+		if(!Assets.exists(Paths.txt('characters/offsets/' + character + "Offsets")) || openfl.utils.Assets.exists(ModPaths.getModTxt('characters/offsets/' + character + "Offsets", ModsFreeplayState.mod))){
 			addOffset('idle');
 			addOffset("singUP");
 			addOffset("singRIGHT");

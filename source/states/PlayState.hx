@@ -138,7 +138,6 @@ class PlayState extends MusicBeatState
 
 	private var healthBarBG:FlxSprite;
 	private var healthBar:FlxBar;
-	private var songPositionBar:Float = 0;
 
 	var fullCombo:FlxText;
 	var sickMode:FlxText;
@@ -166,7 +165,6 @@ class PlayState extends MusicBeatState
 	var limo:FlxSprite;
 	var grpLimoDancers:FlxTypedGroup<BackgroundDancer>;
 	var fastCar:FlxSprite;
-	var songName:FlxText;
 	var upperBoppers:FlxSprite;
 	var bottomBoppers:FlxSprite;
 	var santa:FlxSprite;
@@ -198,12 +196,6 @@ class PlayState extends MusicBeatState
 
 	public static var timeCurrently:Float = 0;
 	public static var timeCurrentlyR:Float = 0;
-
-	public static var dadnoteMovementXoffset:Int = 0;
-	public static var dadnoteMovementYoffset:Int = 0;
-
-	public static var bfnoteMovementXoffset:Int = 0;
-	public static var bfnoteMovementYoffset:Int = 0;
 
 	//ready bs
 	var readya:FlxSprite;
@@ -277,8 +269,6 @@ class PlayState extends MusicBeatState
 		DiscordClient.changePresence(detailsText + " " + SONG.song + " (" + storyDifficultyText + ")", "\nAcc: " + Mathf.getPercentage(accuracy, 2) + "% | Score: " + songScore + " | Misses: " + misses  , iconRPC);
 		#end
 
-
-		// var gameCam:FlxCamera = FlxG.camera;
 		camGame = new FlxCamera();
 		camHUD = new FlxCamera();
 		camHUD.bgColor.alpha = 0;
@@ -290,12 +280,6 @@ class PlayState extends MusicBeatState
 
 		persistentUpdate = true;
 		persistentDraw = true;
-
-		dadnoteMovementXoffset = 0;
-		dadnoteMovementYoffset = 0;
-
-		bfnoteMovementXoffset = 0;
-		bfnoteMovementYoffset = 0;
 		
 		if (SONG == null)
 			SONG = Song.loadFromJson('tutorial');
@@ -304,14 +288,6 @@ class PlayState extends MusicBeatState
 
 		Conductor.mapBPMChanges(SONG);
 		Conductor.changeBPM(SONG.bpm);
-		
-		if (SONG.player1 == null) //To prevent the application from closing.
-			SONG.player1 == 'bf';
-		if (SONG.player2 == null)
-			SONG.player2 == 'dad';
-		if (SONG.gfVersion == null)
-			SONG.gfVersion == 'gf';
-		trace('Loading characters: ${SONG.player1}, ${SONG.player2}, ${SONG.gfVersion}.');
 
 		switch (SONG.song.toLowerCase())
 		{
@@ -340,7 +316,14 @@ class PlayState extends MusicBeatState
 				dialogue = dialogueFile('thornsDialogue');
 		}
 
-		if(states.ModsFreeplayState.onMods){ 
+		if(states.ModsFreeplayState.onMods){
+			if (SONG.player1 == null) //To prevent the application from closing.
+				SONG.player1 = 'bf';
+			if (SONG.player2 == null)
+				SONG.player2 = 'dad';
+			if (SONG.gfVersion == null)
+				SONG.gfVersion = 'gf';
+
 			if (SONG.stage != null)
 			{
 				var STAGE:StageData.StageFile = StageData.loadFromJson(SONG.stage);
@@ -351,18 +334,23 @@ class PlayState extends MusicBeatState
 					object.loadGraphic(ModPaths.modBGImage(curPice, ModsFreeplayState.mod));
 					var offsets = STAGE.picesOffsets[i];
 					var offsetsScroll = STAGE.scrollOffsets[i];
-					object.x += offsets[0];
-					object.y += offsets[1];
 					if (STAGE.screenCenter)
 						object.screenCenter();
+					object.x += offsets[0];
+					object.y += offsets[1];
 					object.antialiasing = STAGE.antialiasing;
 					object.scrollFactor.set(offsetsScroll[0],offsetsScroll[1]);
 					defaultCamZoom = STAGE.defaultZoom;
 					add(object); //BETA
 				}
 			}
+			else
+				SONG.stage = 'stage_week1';
 		} else
 			setCurrentStage();
+
+		trace('Loading characters: ${SONG.player1}, ${SONG.player2}, ${SONG.gfVersion}.');
+		trace('Stage: ${SONG.stage}');
 
 		switch (SONG.stage){
 			case 'limo':
@@ -410,11 +398,11 @@ class PlayState extends MusicBeatState
 			case 'senpai' | 'senpai-angry':
 				dad.x += 150;
 				dad.y += 360;
-				camPos.set(dad.getGraphicMidpoint().x + 300 + dadnoteMovementXoffset, dad.getGraphicMidpoint().y + dadnoteMovementYoffset);
+				camPos.set(dad.getGraphicMidpoint().x + 300, dad.getGraphicMidpoint().y);
 			case 'spirit':
 				dad.x -= 150;
 				dad.y += 100;
-				camPos.set(dad.getGraphicMidpoint().x + 300 + dadnoteMovementXoffset, dad.getGraphicMidpoint().y + dadnoteMovementYoffset);
+				camPos.set(dad.getGraphicMidpoint().x + 300, dad.getGraphicMidpoint().y);
 		}
 
 
@@ -476,25 +464,22 @@ class PlayState extends MusicBeatState
 
 		if (states.ModsFreeplayState.onMods)
 		{
-			switch (SONG.player1) {
-				default:
-					var characterFile:Character.CharacterData = Character.loadFromJson(boyfriend.curCharacter);
-					boyfriend.x = characterFile.xOffset;
-					boyfriend.y = characterFile.xOffset;
+			if (SONG.player1 != null) {
+				var characterFile:Character.CharacterData = Character.loadFromJson(boyfriend.curCharacter);
+				boyfriend.x = characterFile.xOffset;
+				boyfriend.y = characterFile.yOffset;
 			}
 
-			switch (SONG.player2) {
-				default:
-					var characterFile:Character.CharacterData = Character.loadFromJson(dad.curCharacter);
-					dad.x = characterFile.xOffset;
-					dad.y = characterFile.xOffset;
+			if (SONG.player2 != null) {
+				var characterFile:Character.CharacterData = Character.loadFromJson(dad.curCharacter);
+				dad.x = characterFile.xOffset;
+				dad.y = characterFile.yOffset;
 			}
 
-			switch (SONG.gfVersion) {
-				default:
-					var characterFile:Character.CharacterData = Character.loadFromJson(gf.curCharacter);
-					gf.x = characterFile.xOffset;
-					gf.y = characterFile.xOffset;
+			if (SONG.gfVersion != null) {
+				var characterFile:Character.CharacterData = Character.loadFromJson(gf.curCharacter);
+				gf.x = characterFile.xOffset;
+				gf.y = characterFile.yOffset;
 			}
 		}
 
@@ -587,7 +572,7 @@ class PlayState extends MusicBeatState
 			add(scoreTxt);
 		}
 
-		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "FNF Cool Engine - v" + Application.current.meta.get('version'), 12);
+		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "FNF Cool Engine - v" + Application.current.meta.get('version') + ' Song: ' + SONG.song, 12);
 		versionShit.scrollFactor.set();
 		versionShit.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
@@ -1173,7 +1158,6 @@ class PlayState extends MusicBeatState
 	}
 	
 	var startTimer:FlxTimer;
-	var CPUvsCPUMode:Bool = false;
 	var ready:FlxSprite;
 	var set:FlxSprite;
 	var go:FlxSprite;
@@ -1657,10 +1641,6 @@ class PlayState extends MusicBeatState
 			}
 		}
 
-		if(FlxG.keys.justPressed.CONTROL)
-			CPUvsCPUMode = false;
-		songPositionBar = Conductor.songPosition;
-
 		switch (SONG.stage)
 		{
 			case 'philly':
@@ -1785,12 +1765,12 @@ class PlayState extends MusicBeatState
 				switch (dad.curCharacter)
 				{
 					case 'mom':
-						camFollow.y = dad.getMidpoint().y + dadnoteMovementYoffset;
+						camFollow.y = dad.getMidpoint().y;
 					case 'senpai' | 'senpai-angry':
-						camFollow.y = dad.getMidpoint().y - 430 + dadnoteMovementYoffset;
-						camFollow.x = dad.getMidpoint().x - 100 + dadnoteMovementXoffset;
+						camFollow.y = dad.getMidpoint().y - 430;
+						camFollow.x = dad.getMidpoint().x - 100;
 					case 'bf-pixel-enemy':
-						camFollow.y = dad.getMidpoint().y - 150 + dadnoteMovementXoffset;
+						camFollow.y = dad.getMidpoint().y - 150;
 				}
 
 				if (dad.curCharacter == 'mom')
@@ -1811,25 +1791,20 @@ class PlayState extends MusicBeatState
 				switch (SONG.stage)
 				{
 					case 'limo':
-						camFollow.x = boyfriend.getMidpoint().x - 300 + bfnoteMovementXoffset;
+						camFollow.x = boyfriend.getMidpoint().x - 300;
 					case 'mall':
-						camFollow.y = boyfriend.getMidpoint().y - 200 + bfnoteMovementYoffset;
+						camFollow.y = boyfriend.getMidpoint().y - 200;
 					case 'spooky':
 						camFollow.y = boyfriend.getMidpoint().y - 150;
 					case 'school' | 'schoolEvil':
-						camFollow.x = boyfriend.getMidpoint().x - 200 + bfnoteMovementXoffset;
-						camFollow.y = boyfriend.getMidpoint().y - 200 + bfnoteMovementYoffset;
+						camFollow.x = boyfriend.getMidpoint().x - 200;
+						camFollow.y = boyfriend.getMidpoint().y - 200;
 				}
 
 				if (SONG.song.toLowerCase() == 'tutorial') {
 					FlxTween.tween(FlxG.camera, {zoom: 1}, (Conductor.stepCrochet * 4 / 1000), {ease: FlxEase.elasticInOut});
 				}
 			}
-		}
-
-		if (boyfriend.animation.curAnim.name.startsWith('idle')) {
-			bfnoteMovementYoffset = 0;
-			bfnoteMovementXoffset = 0;
 		}
 
 		if (camZooming)
@@ -1885,11 +1860,6 @@ class PlayState extends MusicBeatState
 				var index:Int = unspawnNotes.indexOf(dunceNote);
 				unspawnNotes.splice(index, 1);
 			}
-		}
-
-		if (dad.animation.curAnim.name.startsWith('idle')) {
-			dadnoteMovementYoffset = 0;
-			dadnoteMovementXoffset = 0;
 		}
 		
 		if (generatedMusic)
@@ -2793,24 +2763,6 @@ class PlayState extends MusicBeatState
 	
 					if (boyfriend.canSing)
 						boyfriend.playAnim(Character.animationsMap[note.noteData],true);
-
-					if (!SONG.stage.startsWith('schoolEvil')){
-						switch (note.noteData)
-						{
-							case 2:
-								bfnoteMovementYoffset = -50;
-								bfnoteMovementXoffset = 0;
-							case 3:
-								bfnoteMovementXoffset = 50;
-								bfnoteMovementYoffset = 0;
-							case 1:
-								bfnoteMovementYoffset = 50;
-								bfnoteMovementXoffset = 0;
-							case 0:
-								bfnoteMovementXoffset = -50;
-								bfnoteMovementYoffset = 0;
-						}
-					}
 		
 					playerStrums.forEach(function(spr:FlxSprite)
 					{

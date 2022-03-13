@@ -39,6 +39,7 @@ class OptionsMenuState extends MusicBeatState
 	private var grpControls:FlxTypedGroup<Alphabet>;
 	override function create()
 	{
+		KeyBindMenu.isPlaying = false;
 		menuBG = new FlxSprite().loadGraphic(Paths.image('menu/menuBG'));
 		controlsStrings = CoolUtil.coolStringFile(
 			("\n" + 'Preferences') +
@@ -328,6 +329,7 @@ class MenuGameOptions extends MusicBeatState
 	public static var versionShit:FlxText;
 	override function create()
 	{
+		KeyBindMenu.isPlaying = false;
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGBlue'));
 
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
@@ -469,6 +471,7 @@ class DebugOptions extends MusicBeatState{
 	var versionShit:FlxText;
 	override function create()
 	{
+		KeyBindMenu.isPlaying = false;
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 
 		menuBG.color = 0xFF453F3F;
@@ -613,6 +616,7 @@ class OptimizationOptions extends MusicBeatState
 	var versionShit:FlxText;
 	override function create()
 	{
+		KeyBindMenu.isPlaying = false;
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 
 		menuBG.color = 0xFF453F3F;

@@ -158,8 +158,8 @@ class ChartingState extends states.MusicBeatState
 				player1: 'bf',
 				player2: 'dad',
                 gfVersion: 'gf',
+				stage: 'stage_week1',
 				speed: 1,
-				modchart: false,
 				validScore: false
 			};
 		}
@@ -192,7 +192,6 @@ class ChartingState extends states.MusicBeatState
 		var tabs = [
 			{name: "Song", label: 'Song'},
 			{name: "Section", label: 'Section'},
-			//{name: "ModCharts", label: 'ModCharts'},
 			{name: "Note", label: 'Note'}
 		];
 
@@ -266,6 +265,7 @@ class ChartingState extends states.MusicBeatState
 		stepperBPM.name = 'song_bpm';
 
 		var characters:Array<String> = CoolUtil.coolTextFile(Paths.txt('characters/characterList'));
+		var stages:Array<String> = CoolUtil.coolTextFile(Paths.txt('stages/stagesList'));
 
 		var player1DropDown = new FlxUIDropDownMenu(10, 100, FlxUIDropDownMenu.makeStrIdLabelArray(characters, true), function(character:String)
 		{
@@ -277,6 +277,12 @@ class ChartingState extends states.MusicBeatState
 		{
 			_song.player2 = characters[Std.parseInt(character)];
 		});
+
+		var stagesDropDown = new FlxUIDropDownMenu(10, 125, FlxUIDropDownMenu.makeStrIdLabelArray(stages, true), function(stage:String)
+		{
+			_song.stage = stages[Std.parseInt(stage)];
+		});
+		stagesDropDown.selectedLabel = _song.stage;
 
 		gfDropDown = new FlxUIDropDownMenu(10, 140, FlxUIDropDownMenu.makeStrIdLabelArray(gfs, true), function(gf:String)			{				_song.gfVersion = gfs[Std.parseInt(gf)];			});		gfDropDown.selectedLabel = _song.gfVersion;
 		gfDropDown = new FlxUIDropDownMenu(10, 140, FlxUIDropDownMenu.makeStrIdLabelArray(gfs, true), function(gf:String)
@@ -301,6 +307,7 @@ class ChartingState extends states.MusicBeatState
 		tab_group_song.add(stepperSpeed);
 		tab_group_song.add(player1DropDown);
 		tab_group_song.add(player2DropDown);
+		tab_group_song.add(stagesDropDown);
 		tab_group_song.add(gfDropDown);
 		//tab_group_song.add(player3DropDown);
 
@@ -316,7 +323,6 @@ class ChartingState extends states.MusicBeatState
 	var check_changeBPM:FlxUICheckBox;
 	var stepperSectionBPM:FlxUINumericStepper;
 	var check_altAnim:FlxUICheckBox;
-	var check_modchart:FlxUICheckBox;
 	var check_gfSing:FlxUICheckBox;
 	var check_bothSing:FlxUICheckBox;
     var gfs:Array<String> = CoolUtil.coolTextFile('assets/data/characters/gfList.txt');
@@ -872,7 +878,6 @@ class ChartingState extends states.MusicBeatState
 		check_altAnim.checked = sec.altAnim;
 		check_changeBPM.checked = sec.changeBPM;
 		stepperSectionBPM.value = sec.bpm;
-		//check_modchart.checked = sec.modchart; fuck
 
 		updateHeads();
 	}
@@ -988,7 +993,6 @@ class ChartingState extends states.MusicBeatState
 			sectionNotes: [],
 			typeOfSection: 0,
 			altAnim: false,
-			modchart: false,
 			gfSing: false,
 			bothSing: false
 		};

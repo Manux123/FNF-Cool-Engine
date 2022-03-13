@@ -14,6 +14,10 @@ typedef StageFile = {
     var stagePices:Array<Dynamic>;
     var animationsData:Array<String>;
     var picesOffsets:Array<Dynamic>;
+    var scrollOffsets:Array<Dynamic>;
+    var antialiasing:Bool;
+    var screenCenter:Bool;
+    var center:Array<String>;
 }
 
 class StageData {
@@ -22,16 +26,22 @@ class StageData {
     public var stagePices:Array<Dynamic>;
     public var animationsData:Array<String>;
     public var picesOffsets:Array<Dynamic>;
+    public var scrollOffsets:Array<Dynamic>;
+    public var antialiasing:Bool = true;
+    public var screenCenter:Bool = false;
+    public var center:Array<String> = ['X', 'Y'];
 
-    public function new(name,defaultZoom,stagePices){
+    public function new(name,defaultZoom,stagePices,screenCenter,center){
         this.name = name;
         this.defaultZoom = defaultZoom;
         this.stagePices = stagePices;
+        this.screenCenter = screenCenter;
+        this.center = center;
     }
 
     public static function loadFromJson(stage:String):StageFile {
         var rawJson = null;
-		var jsonRawFile:String = ('assets/stages/$stage.json');
+		var jsonRawFile:String = ('assets/data/stages/$stage.json');
 		if(ModsFreeplayState.onMods && ModsState.usableMods[ModsState.modsFolders.indexOf(ModsFreeplayState.mod)] == true)
 			jsonRawFile = ('mods/${ModsFreeplayState.mod}/data/stages/$stage.json');
 

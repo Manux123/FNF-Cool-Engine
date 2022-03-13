@@ -15,11 +15,10 @@ typedef SwagSong =
 	var needsVoices:Bool;
 	var speed:Float;
 
-	var modchart:Bool;
-
 	var player1:String;
 	var player2:String;
     var gfVersion:String;
+	var stage:String;
 	var validScore:Bool;
 }
 
@@ -28,20 +27,19 @@ class Song
 	public var song:String;
 	public var notes:Array<SwagSection>;
 	public var bpm:Float;
-	public var modchart:Array<SwagSection>;
 	public var needsVoices:Bool = true;
 	public var speed:Float = 1;
 
 	public var player1:String = 'bf';
 	public var player2:String = 'dad';
     public var gfVersion:String = 'gf';
+	public var stage:String = 'stage_week1';
 
-	public function new(song, notes, bpm, modchart)
+	public function new(song, notes, bpm)
 	{
 		this.song = song;
 		this.notes = notes;
 		this.bpm = bpm;
-		this.modchart = modchart;
 	}
 
 	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong

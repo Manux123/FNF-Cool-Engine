@@ -57,7 +57,7 @@ class Note extends FlxSprite
 		this.noteData = noteData;
 
 		//var noteSkin:String = states.NoteSkinDetectorState.noteskindetector;
-		var daStage:String = states.PlayState.curStage;
+		var daStage:String = states.PlayState.SONG.stage;
 		
 		switch (daStage)
 		{
@@ -78,23 +78,6 @@ class Note extends FlxSprite
 
 			default:
 				loadAnimationsFromTextFile(Std.string(FlxG.save.data.noteSkin));
-				/*frames = NoteSkinDetector.noteSkinNormal();
-
-				animation.addByPrefix('greenScroll', 'green alone');
-				animation.addByPrefix('redScroll', 'red alone');
-				animation.addByPrefix('blueScroll', 'blue alone');
-				animation.addByPrefix('purpleScroll', 'purple alone');
-
-				animation.addByPrefix('purpleholdend', 'purple tail');
-				animation.addByPrefix('greenholdend', 'green tail');
-				animation.addByPrefix('redholdend', 'red tail');
-				animation.addByPrefix('blueholdend', 'blue tail');
-
-				animation.addByPrefix('purplehold', 'purple hold');
-				animation.addByPrefix('greenhold', 'green hold');
-				animation.addByPrefix('redhold', 'red hold');
-				animation.addByPrefix('bluehold', 'blue hold');*/
-
 				setGraphicSize(Std.int(width * 0.7));
 				updateHitbox();
 				antialiasing = true;

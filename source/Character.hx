@@ -500,14 +500,23 @@ class Character extends FlxSprite
 
 	public function loadOffsetFile(character:String)
 	{
-		var offset:Array<String> = CoolUtil.coolTextFile(Paths.txt('characters/offsets/' + character + "Offsets"));
-		if(states.ModsFreeplayState.onMods && states.ModsState.usableMods[states.ModsState.modsFolders.indexOf(ModsFreeplayState.mod)])
-			offset = CoolUtil.coolTextFile(ModPaths.getModTxt('characters/offsets/' + character + "Offsets", ModsFreeplayState.mod));
-
-		for (i in 0...offset.length)
-		{
-			var data:Array<String> = offset[i].split(' ');
-			addOffset(data[0], Std.parseInt(data[1]), Std.parseInt(data[2]));
+		if(openfl.utils.Assets.exists(Paths.txt('characters/offsets/' + character + "Offsets")) || openfl.utils.Assets.exists(ModPaths.getModTxt('characters/offsets/' + character + "Offsets", ModsFreeplayState.mod))){
+			addOffset('idle');
+			addOffset("singUP");
+			addOffset("singRIGHT");
+			addOffset("singLEFT");
+			addOffset("singDOWN");
+		}
+		else{
+			var offset:Array<String> = CoolUtil.coolTextFile(Paths.txt('characters/offsets/' + character + "Offsets"));
+			if(states.ModsFreeplayState.onMods && states.ModsState.usableMods[states.ModsState.modsFolders.indexOf(ModsFreeplayState.mod)])
+				offset = CoolUtil.coolTextFile(ModPaths.getModTxt('characters/offsets/' + character + "Offsets", ModsFreeplayState.mod));
+	
+			for (i in 0...offset.length)
+			{
+				var data:Array<String> = offset[i].split(' ');
+				addOffset(data[0], Std.parseInt(data[1]), Std.parseInt(data[2]));
+			}
 		}
 	}
 

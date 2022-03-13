@@ -341,11 +341,7 @@ class PlayState extends MusicBeatState
 		}
 
 		if(states.ModsFreeplayState.onMods){ 
-			if (SONG.stage == null)
-			{
-				SONG.stage == 'stage_week1';
-			}
-			else
+			if (SONG.stage != null)
 			{
 				var STAGE:StageData.StageFile = StageData.loadFromJson(SONG.stage);
 				STAGE.name = SONG.stage;

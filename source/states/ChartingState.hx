@@ -278,14 +278,14 @@ class ChartingState extends states.MusicBeatState
 			_song.player2 = characters[Std.parseInt(character)];
 		});
 
-		var stagesDropDown = new FlxUIDropDownMenu(10, 125, FlxUIDropDownMenu.makeStrIdLabelArray(stages, true), function(stage:String)
+		var stagesDropDown = new FlxUIDropDownMenu(140, 125, FlxUIDropDownMenu.makeStrIdLabelArray(stages, true), function(stage:String)
 		{
 			_song.stage = stages[Std.parseInt(stage)];
 		});
 		stagesDropDown.selectedLabel = _song.stage;
 
-		gfDropDown = new FlxUIDropDownMenu(10, 140, FlxUIDropDownMenu.makeStrIdLabelArray(gfs, true), function(gf:String)			{				_song.gfVersion = gfs[Std.parseInt(gf)];			});		gfDropDown.selectedLabel = _song.gfVersion;
-		gfDropDown = new FlxUIDropDownMenu(10, 140, FlxUIDropDownMenu.makeStrIdLabelArray(gfs, true), function(gf:String)
+		gfDropDown = new FlxUIDropDownMenu(10, 125, FlxUIDropDownMenu.makeStrIdLabelArray(gfs, true), function(gf:String)			{				_song.gfVersion = gfs[Std.parseInt(gf)];			});		gfDropDown.selectedLabel = _song.gfVersion;
+		gfDropDown = new FlxUIDropDownMenu(10, 125, FlxUIDropDownMenu.makeStrIdLabelArray(gfs, true), function(gf:String)
 		{
 			_song.gfVersion = gfs[Std.parseInt(gf)];
 		});

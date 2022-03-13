@@ -21,7 +21,7 @@ class GameOverSubstate extends MusicBeatSubstate
 		if(PlayState.instance.vocals.playing)
 			PlayState.instance.vocals.stop();
 
-		var daStage = states.PlayState.curStage;
+		var daStage = states.PlayState.SONG.stage;
 		var daBf:String = '';
 		switch (daStage)
 		{

@@ -333,20 +333,24 @@ class PlayState extends MusicBeatState
 		}
 
 		if(states.ModsFreeplayState.onMods){ 
-			if (!SONG.stage == null)
+			if (SONG.stage == null)
+			{
+				SONG.stage == 'stage_week1';
+			}
+			else
 			{
 				var STAGE:StageData.StageFile = StageData.loadFromJson(SONG.stage);
 				STAGE.name = SONG.stage;
 				for(i in 0... STAGE.stagePices.length){
 					var object:FlxSprite = new FlxSprite(0,0);
 					var curPice = STAGE.stagePices[i][0];
-					   object.loadGraphic(ModPaths.modBGImage(curPice, ModsFreeplayState.mod));
-						var offsets = STAGE.picesOffsets[i];
+					object.loadGraphic(ModPaths.modBGImage(curPice, ModsFreeplayState.mod));
+					var offsets = STAGE.picesOffsets[i];
 					var offsetsScroll = STAGE.scrollOffsets[i];
 					object.x += offsets[0];
 					object.y += offsets[1];
 					if (STAGE.screenCenter)
-						object.screenCenter(STAGE.center);
+						object.screenCenter();
 					object.antialiasing = STAGE.antialiasing;
 					object.scrollFactor.set(offsetsScroll[0],offsetsScroll[1]);
 					defaultCamZoom = STAGE.defaultZoom;

@@ -17,7 +17,6 @@ typedef StageFile = {
     var scrollOffsets:Array<Dynamic>;
     var antialiasing:Bool;
     var screenCenter:Bool;
-    var center:Array<String>;
 }
 
 class StageData {
@@ -29,14 +28,12 @@ class StageData {
     public var scrollOffsets:Array<Dynamic>;
     public var antialiasing:Bool = true;
     public var screenCenter:Bool = false;
-    public var center:Array<String> = ['X', 'Y'];
 
-    public function new(name,defaultZoom,stagePices,screenCenter,center){
+    public function new(name,defaultZoom,stagePices,screenCenter){
         this.name = name;
         this.defaultZoom = defaultZoom;
         this.stagePices = stagePices;
         this.screenCenter = screenCenter;
-        this.center = center;
     }
 
     public static function loadFromJson(stage:String):StageFile {

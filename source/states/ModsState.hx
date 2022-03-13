@@ -141,7 +141,7 @@ class ModsState extends states.MusicBeatState
 		else
 			FlxG.sound.playMusic(Paths.music('freakyMenu'));
 
-		if(openfl.utils.Assets.exists(ModPaths.getPreviewVideo('preview-video', modsFolders[curSelected])))
+		if(openfl.utils.Assets.exists(ModPaths.getPreviewVideo('preview-video', curMod)))
 			bg.playVideo(ModPaths.getPreviewVideo('preview-video', curMod), true);
 		else
 			bg_but_not_vid.visible = true;

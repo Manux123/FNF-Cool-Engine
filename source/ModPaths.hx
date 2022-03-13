@@ -18,11 +18,6 @@ class ModPaths {
 
     inline static public function getModTxt(key:String, mod:String){
         return getPath('data/$key.txt',TEXT,mod);
-	}
-
-    inline static public function yxt(key:String, ?library:String)
-    {
-        return getPath('data/$key.txt', TEXT, library);
     }
 
     inline static public function getModXml(key:String, mod:String )
@@ -49,6 +44,12 @@ class ModPaths {
 		trace('mods/$mod/videos/$key.mp4');
 		return getPath('videos/$key.mp4', BINARY, mod);
 	}
+
+    inline static public function getPreviewVideo(key:String, mod:String)
+    {
+        trace('mods/previewVids/$mod/$key.mp4');
+        return 'mods/previewVids/$mod/$key.mp4';
+    }
 
     inline static public function getModMusic(key:String, mod:String)
 	{

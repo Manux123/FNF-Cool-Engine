@@ -113,6 +113,7 @@ class RatingState extends FlxSubState
                 FlxG.camera.flash(FlxColor.WHITE, 2.5);
                 FlxG.sound.playMusic(Paths.music('freakyMenu'));
                 //FlxG.sound.music.stop();
+                pressedEnter = false;
 
                 new FlxTimer().start(2, function(tmr:FlxTimer)
                     {

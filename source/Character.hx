@@ -444,6 +444,7 @@ class Character extends FlxSprite
 				}
 				else {
 					if(states.ModsFreeplayState.onMods){
+						states.PlayState.SONG.player2 = curCharacter;
 						var characterFile:CharacterData = loadFromJson(curCharacter);
 						frames = ModPaths.getSparrowAtlas('mods/${ModsFreeplayState.mod}/images/Characters/' + characterFile.texture,states.ModsFreeplayState.mod);
 						var fuck:Array<String> = characterFile.anims;
@@ -501,7 +502,7 @@ class Character extends FlxSprite
 
 	public function loadOffsetFile(character:String)
 	{
-		if(!Assets.exists(Paths.txt('characters/offsets/' + character + "Offsets")) || openfl.utils.Assets.exists(ModPaths.getModTxt('characters/offsets/' + character + "Offsets", ModsFreeplayState.mod))){
+		if(!Assets.exists(Paths.txt('characters/offsets/' + character + "Offsets")) || !openfl.utils.Assets.exists(ModPaths.getModTxt('characters/offsets/' + character + "Offsets", ModsFreeplayState.mod))){
 			addOffset('idle');
 			addOffset("singUP");
 			addOffset("singRIGHT");
@@ -526,7 +527,7 @@ class Character extends FlxSprite
 		var rawJson = null;
 		var jsonRawFile:String = ('assets/data/characters/$character.json');
 		if(ModsFreeplayState.onMods && ModsState.usableMods[ModsState.modsFolders.indexOf(ModsFreeplayState.mod)] == true)
-			jsonRawFile = ('mods/${ModsFreeplayState.mod}/data/characters/$character.json');
+			jsonRawFile = (ModPaths.getCharJson(character, ModsFreeplayState.mod));
 
 		if(Assets.exists(jsonRawFile))
 			rawJson = Assets.getText(jsonRawFile).trim();

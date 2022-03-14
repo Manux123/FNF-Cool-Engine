@@ -28,6 +28,10 @@ class ModPaths {
     inline static public function getModJson(key:String, mod:String){
             return getPath('data/$key.json',TEXT,mod);
 	}
+    
+    inline static public function getCharJson(key:String, mod:String){
+        return getPath('$mod/data/characters/$key.json',TEXT,mod);
+}
 
     static public function getModSound(key:String, mod:String)
 	{

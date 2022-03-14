@@ -476,25 +476,34 @@ class PlayState extends MusicBeatState
 		if (SONG.stage == 'limo')
 			add(limo);
 
+		//TODO: Reimplement gf and bf custom json support when we have the default ones
+
 		if (states.ModsFreeplayState.onMods)
 		{
-			if (SONG.player1 != null) {
+			/*if (SONG.player1 != null) {
 				var characterFile:Character.CharacterData = Character.loadFromJson(boyfriend.curCharacter);
 				boyfriend.x = characterFile.xOffset;
 				boyfriend.y = characterFile.yOffset;
-			}
+
+				trace('Loaded custom bf json');
+			}*/
 
 			if (SONG.player2 != null) {
+				SONG.player2 = dad.curCharacter;
 				var characterFile:Character.CharacterData = Character.loadFromJson(dad.curCharacter);
 				dad.x = characterFile.xOffset;
 				dad.y = characterFile.yOffset;
+
+				trace('Loaded custom dad json');
 			}
 
-			if (SONG.gfVersion != null) {
+			/*if (SONG.gfVersion != null) {
 				var characterFile:Character.CharacterData = Character.loadFromJson(gf.curCharacter);
 				gf.x = characterFile.xOffset;
 				gf.y = characterFile.yOffset;
-			}
+				
+				trace('Loaded custom gf json');
+			}*/
 		}
 
 		add(dad);

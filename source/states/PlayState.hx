@@ -331,13 +331,26 @@ class PlayState extends MusicBeatState
 				for(i in 0... STAGE.stagePices.length){
 					var object:FlxSprite = new FlxSprite(0,0);
 					var curPice = STAGE.stagePices[i][0];
-					object.loadGraphic(ModPaths.modBGImage(curPice, ModsFreeplayState.mod));
+					var framesAnim = STAGE.intFrameslol[i];
+					var animData = STAGE.animationsData[i];
+					if (STAGE.animated[i]) {
+						for(i in 0... animData.length){
+							object.frames = ModPaths.getBGsAnimated(curPice);
+							var split = STAGE.animationsData[i].split(':');
+							object.animation.addByPrefix(split[0],split[1],framesAnim[0],true);
+							object.animation.play(split[0]);
+						}
+					}
+					else
+						object.loadGraphic(ModPaths.modBGImage(curPice, ModsFreeplayState.mod));
 					var offsets = STAGE.picesOffsets[i];
 					var offsetsScroll = STAGE.scrollOffsets[i];
+					var alphaLol = STAGE.alpha[i];
 					if (STAGE.screenCenter)
 						object.screenCenter();
 					object.x += offsets[0];
 					object.y += offsets[1];
+					object.alpha = alphaLol[0];
 					object.antialiasing = STAGE.antialiasing;
 					object.scrollFactor.set(offsetsScroll[0],offsetsScroll[1]);
 					defaultCamZoom = STAGE.defaultZoom;
@@ -1021,29 +1034,6 @@ class PlayState extends MusicBeatState
 				bg.scrollFactor.set(0.8, 0.9);
 				bg.scale.set(6, 6);
 				add(bg);
-			}
-			case 'flippy':
-			{
-				boombox = new FlxSprite(925, 515);
-				boombox.frames = ModPaths.getBGsAnimated("speaker");
-				boombox.animation.addByPrefix('idle', 'boombox', 16, true);
-				boombox.animation.play('idle');
-				boombox.setGraphicSize(Std.int(boombox.width * 1));
-				add(boombox);
-		
-				campfire = new FlxSprite(500, 360);
-				campfire.frames = ModPaths.getBGsAnimated("fire");
-				campfire.animation.addByPrefix('idle', 'fire idle', 12, true);
-				campfire.alpha = 0.8;
-				campfire.animation.play('idle');
-				add(campfire);
-			
-				table = new FlxSprite(-850, -225).loadGraphic(ModPaths.modBGImage('table',  ModsFreeplayState.mod));
-				table.setGraphicSize(Std.int(table.width * 1.1));
-				table.updateHitbox();
-				table.antialiasing = true;
-				table.scrollFactor.set(1.3, 1.3);
-				table.active = false;
 			}
 			default: //default stage
 			{

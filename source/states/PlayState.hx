@@ -419,8 +419,6 @@ class PlayState extends MusicBeatState
 				camPos.set(dad.getGraphicMidpoint().x + 300, dad.getGraphicMidpoint().y);
 		}
 
-
-		
 		boyfriend = new Boyfriend(770, 450, SONG.player1);
 
 		// REPOSITIONING PER STAGE
@@ -476,17 +474,15 @@ class PlayState extends MusicBeatState
 		if (SONG.stage == 'limo')
 			add(limo);
 
-		//TODO: Reimplement gf and bf custom json support when we have the default ones
-
 		if (states.ModsFreeplayState.onMods)
 		{
-			/*if (SONG.player1 != null) {
+			if (SONG.player1 != null || openfl.utils.Assets.exists('mods/${ModsFreeplayState.mod}/data/characters/${boyfriend.curCharacter}.json')) {
 				var characterFile:Character.CharacterData = Character.loadFromJson(boyfriend.curCharacter);
 				boyfriend.x = characterFile.xOffset;
 				boyfriend.y = characterFile.yOffset;
 
 				trace('Loaded custom bf json');
-			}*/
+			}
 
 			if (SONG.player2 != null) {
 				SONG.player2 = dad.curCharacter;
@@ -497,13 +493,13 @@ class PlayState extends MusicBeatState
 				trace('Loaded custom dad json');
 			}
 
-			/*if (SONG.gfVersion != null) {
+			if (SONG.gfVersion != null || openfl.utils.Assets.exists('mods/${ModsFreeplayState.mod}/data/characters/${gf.curCharacter}.json')) {
 				var characterFile:Character.CharacterData = Character.loadFromJson(gf.curCharacter);
 				gf.x = characterFile.xOffset;
 				gf.y = characterFile.yOffset;
 				
 				trace('Loaded custom gf json');
-			}*/
+			}
 		}
 
 		add(dad);

@@ -56,14 +56,14 @@ To run it from your desktop (Windows, Mac, Linux) it can be a bit more involved.
 
 Once that is done you can open up a command line in the project's directory and run `lime test windows -debug`. Once that command finishes (it takes forever even on a higher end PC), you can run FNF from the .exe file under export\release\windows\bin
 
-As for Mac, `lime test mac -debug` will work,
+As for Mac, `lime test mac -debug` will work
 ----------------------------------------------
 
 ADDITIONS IN 0.3.5
 
-- Support Mods
-- Eliminated luazzz
-- VS Online startCountDown lol
+- Mods Support 
+- Eliminated lua
+- VS Online Ready
 - Functions Switch Characters!
 - More Fixed Bugs
 - New Notes in Txt

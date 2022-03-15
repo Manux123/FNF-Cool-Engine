@@ -447,11 +447,7 @@ class Character extends FlxSprite
 						states.PlayState.SONG.player2 = curCharacter;
 						var characterFile:CharacterData = loadFromJson(curCharacter);
 						frames = ModPaths.getSparrowAtlas('mods/${ModsFreeplayState.mod}/images/Characters/' + characterFile.texture,states.ModsFreeplayState.mod);
-						var fuck:Array<String> = characterFile.anims;
-						for(i in 0... fuck.length){
-							var split = fuck[i].split(':');
-							animation.addByPrefix(split[0],split[1],24,false);
-						}
+						loadAnimations();
 						loadOffsetFile(characterFile.char);
 						healthBarColor = characterFile.healthBarColor;
 					}
@@ -527,7 +523,9 @@ class Character extends FlxSprite
 		var rawJson = null;
 		var jsonRawFile:String = ('assets/data/characters/$character.json');
 		if(ModsFreeplayState.onMods && ModsState.usableMods[ModsState.modsFolders.indexOf(ModsFreeplayState.mod)] == true)
-			jsonRawFile = (ModPaths.getCharJson(character, ModsFreeplayState.mod));
+			jsonRawFile = ('mods/${ModsFreeplayState.mod}/data/characters/$character.json');
+
+		trace(jsonRawFile);
 
 		if(Assets.exists(jsonRawFile))
 			rawJson = Assets.getText(jsonRawFile).trim();
@@ -540,20 +538,11 @@ class Character extends FlxSprite
 	}
 
 	public function loadAnimations(){
-		var coolFile:Array<String> = CoolUtil.coolTextFile(Paths.txt('characters/animations/$curCharacter'+'Animations'));
-
-		for(i in 0...coolFile.length){
-			var animations:Array<String> = coolFile[i].split(', ');
-			var looped:Bool = false;
-			if(animations[2] == 'true')
-				looped = true;
-			else
-				looped = false;
-
-			/*if(animations[0] == 'texture')
-				frames = Paths.getPackerAtlas(animations[1]);
-			else
-				animation.addByPrefix(animations[0],animations[1],24,looped); */
+		var characterFile:CharacterData = loadFromJson(curCharacter);
+		var fuck:Array<String> = characterFile.anims;
+		for(i in 0... fuck.length){
+			var split = fuck[i].split(':');
+			animation.addByPrefix(split[0],split[1],24,false);
 		}
 	}
 

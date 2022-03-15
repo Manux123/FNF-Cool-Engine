@@ -1,4 +1,4 @@
-//Code by ThadRozedubDude(https://github.com/ThatRozebudDude) thanks a lot budy :D
+//Code by ThatRozedubDude(https://github.com/ThatRozebudDude) thanks a lot bud :D
 //Edited by OverchargedDev
 
 package controls;

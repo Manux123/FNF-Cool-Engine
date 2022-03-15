@@ -21,7 +21,7 @@
 ## FNF
 - [Kawaisprite](https://twitter.com/kawaisprite) - Musician of fnf
 - [ninjamuffin99](https://twitter.com/ninja_muffin99) - Programmer of fnf
-- [PhantomArcade3K](https://twitter.com/phantomarcade3k) - Animator of of fnf
+- [PhantomArcade3K](https://twitter.com/phantomarcade3k) - Animator of fnf
 - [Evilsk8r](https://twitter.com/evilsk8r)  - Artist of fnf
 
 ## mp4 stuff

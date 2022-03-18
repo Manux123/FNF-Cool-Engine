@@ -21,6 +21,7 @@ class MenuDebug extends MusicBeatState
 		FlxG.mouse.visible = true;
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
+		FlxG.sound.playMusic(Paths.music('configurator'));
 
 		bg = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 		bg.color = 0xFFaa00ff;
@@ -30,6 +31,7 @@ class MenuDebug extends MusicBeatState
 		daMenuButton.loadGraphic(Paths.image('UI/button', 'shared'));
 		daMenuButton.color = 0xFFad217F;
 		daMenuButton.scale.set(0.3, 0.3);
+		daMenuButton.updateHitbox();
 		add(daMenuButton);
 
 		super.create();
@@ -55,8 +57,6 @@ class SelectCharacters extends MusicBeatState
 	override public function create() 
 	{
 		FlxG.mouse.visible = true;
-		if (FlxG.sound.music != null)
-			FlxG.sound.music.stop();
 		nose = new FlxButton(100, 450, "Boyfriend", clickNose);
 		nose.scale.set(1.8, 1.8);
 		add(nose);

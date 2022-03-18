@@ -499,7 +499,7 @@ class Character extends FlxSprite
 
 	public function loadOffsetFile(character:String)
 	{
-		if(!Assets.exists(Paths.txt('characters/offsets/' + character + "Offsets")) || !Assets.exists(ModPaths.getModTxt('characters/offsets/' + character + "Offsets", ModsFreeplayState.mod))){
+		if(!Assets.exists(Paths.txt('characters/offsets/' + character + "Offsets")) || ModsFreeplayState.onMods && !Assets.exists(ModPaths.getModTxt('characters/offsets/' + character + "Offsets", ModsFreeplayState.mod))){
 			addOffset('idle');
 			addOffset("singUP");
 			addOffset("singRIGHT");

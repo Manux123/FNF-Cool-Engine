@@ -151,9 +151,9 @@ class AnimationDebug extends MusicBeatSubstate
 			saveLevel();
 		});
 
+		characterTab.add(saveButton);
 		characterTab.add(cumfart);
 		characterTab.add(player);
-		characterTab.add(saveButton);
 		UI_box.addGroup(characterTab);
 		dumbTexts = new FlxTypedGroup<FlxText>();
 		dumbTexts.cameras = [camHUD];
@@ -302,10 +302,10 @@ class AnimationDebug extends MusicBeatSubstate
 		else
 			camFollow.velocity.set();
 
-		if (controls.UP_P)
+		if (FlxG.keys.justPressed.W)
 			curAnim -= 1;
 
-		if (controls.DOWN_P)
+		if (FlxG.keys.justPressed.S)
 			curAnim += 1;
 
 		if (curAnim < 0)
@@ -314,7 +314,7 @@ class AnimationDebug extends MusicBeatSubstate
 		if (curAnim >= animList.length)
 			curAnim = 0;
 
-		if (controls.DOWN_P || controls.UP_P || FlxG.keys.justPressed.SPACE)
+		if (FlxG.keys.justPressed.S || FlxG.keys.justPressed.W || FlxG.keys.justPressed.SPACE)
 		{
 			char.playAnim(animList[curAnim]);
 			ghostBF.playAnim(animList[0]);

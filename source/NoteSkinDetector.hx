@@ -7,13 +7,13 @@ import flixel.FlxG;
 class NoteSkinDetector
 {
 	inline static public function noteSkinPixel(path:String) {
-		var returnPath:String='skins_arrows/pixels/arrows-pixels';
+		var returnPath:String='UI/arrows-pixels';
 		if(FlxG.save.data.noteSkin == null)
-			returnPath = Paths.image('skins_arrows/pixels/arrows-pixels');
+			returnPath = Paths.image('UI/arrows-pixels');
 		else if (FlxG.save.data.noteSkin == 'Circles')
-			returnPath = Paths.image('skins_arrows/pixels/Circles-pixels');
+			returnPath = Paths.image('UI/Circles-pixels');
 		else
-			returnPath = Paths.image('skins_arrows/pixels/${path}-pixels');
+			returnPath = Paths.image('UI/${path}-pixels');
 		return returnPath;
 	}
 

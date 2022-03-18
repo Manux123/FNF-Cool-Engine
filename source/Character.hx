@@ -539,11 +539,13 @@ class Character extends FlxSprite
 	}
 
 	public function loadAnimations(){
+		trace('Loading Anims');
 		var characterFile:CharacterData = loadFromJson(curCharacter);
 		var fuck:Array<String> = characterFile.anims;
 		for(i in 0... fuck.length){
 			var split = fuck[i].split(':');
 			animation.addByPrefix(split[0],split[1],24,false);
+			trace('Loaded Anim ' + split[0]);
 		}
 	}
 

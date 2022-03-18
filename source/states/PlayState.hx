@@ -480,6 +480,7 @@ class PlayState extends MusicBeatState
 				var characterFile:Character.CharacterData = Character.loadFromJson(boyfriend.curCharacter);
 				boyfriend.x = characterFile.xOffset;
 				boyfriend.y = characterFile.yOffset;
+				boyfriend.bfDefaultColor = characterFile.healthBarColor;
 
 				trace('Loaded custom bf json');
 			}
@@ -572,7 +573,7 @@ class PlayState extends MusicBeatState
 		healthBar = new FlxBar(healthBarBG.x + 4, healthBarBG.y + 4, RIGHT_TO_LEFT, Std.int(healthBarBG.width - 8), Std.int(healthBarBG.height - 8), this,
 			'health', 0, 2);
 		healthBar.scrollFactor.set();
-		healthBar.createFilledBar(FlxColor.fromString(dad.healthBarColor), 0xFF31b0d1);
+		healthBar.createFilledBar(FlxColor.fromString(dad.healthBarColor), FlxColor.fromString(boyfriend.bfDefaultColor));
 
 		// healthBar
 		add(healthBar);
@@ -627,6 +628,7 @@ class PlayState extends MusicBeatState
 
 		iconP1 = new HealthIcon(SONG.player1, true);
 		iconP1.y = healthBar.y - (iconP1.height / 2);
+		iconP1.antiCrash();
 		add(iconP1);
 
 		iconP2 = new HealthIcon(SONG.player2, false);

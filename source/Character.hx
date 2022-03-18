@@ -32,6 +32,7 @@ class Character extends FlxSprite
 
 	public var holdTimer:Float = 0;
 	public var healthBarColor:String;
+	public var bfDefaultColor:String = "FF31b0d1";
 
 	public static final animationsMap:Map<Int,String> = [
 		0 => 'singLEFT',

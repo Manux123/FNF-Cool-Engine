@@ -1,0 +1,14 @@
+{
+    "character":{
+         "char":"gf",
+         "texture": "GF_assets",
+         "xOffset": 0,"yOffset": 0,
+        "anims":[
+        "idle:GF Dancing Beat",
+        "singUP:GF Up Note",
+        "singRIGHT:GF Right Note",
+        "singDOWN:Bf Down Note",
+        "singLEFT:GF left note"],
+        "healthBarColor": "FF31b0d1"
+     }
+}

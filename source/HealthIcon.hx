@@ -32,6 +32,8 @@ class HealthIcon extends FlxSprite
 	public function antiCrash(char:String){
 		if(char == null || !Assets.exists(Paths.image('icons/icon-' + char)))
 			char = 'face';
+		if(char == null || !Assets.exists(ModPaths.modIconImage('icon-' + char, states.ModsFreeplayState.mod)) && states.ModsFreeplayState.onMods)
+			char = 'face';
 	}
 
 	public function updateIcon(char:String = 'bf', isPlayer:Bool = false)

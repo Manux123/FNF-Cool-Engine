@@ -1,5 +1,6 @@
 package states;
 
+import states.CacheState.ImageCache;
 import openfl.display.BitmapData;
 import flixel.text.FlxText;
 import states.PlayState;
@@ -25,10 +26,10 @@ class RatingState extends FlxSubState
 			openfl.Lib.current.stage.frameRate = 240;
         
         FlxG.camera.fade(FlxColor.BLACK, 0.8, true);
-        var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGBlue'));
+        var bg:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuBGBlue')));
 		add(bg);
 
-        var bg2:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/blackslines_finalrating'));
+        var bg2:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/blackslines_finalrating')));
 		add(bg2);
 
         FlxG.sound.playMusic(Paths.music('configurator'));
@@ -62,7 +63,7 @@ class RatingState extends FlxSubState
         helpText.size = 28;
         add(helpText);
 
-        var daRank:FlxSprite = new FlxSprite(600, 400).loadGraphic(Paths.image('ratings/${Ranking.generateLetterRank()}'));
+        var daRank:FlxSprite = new FlxSprite(600, 400).loadGraphic(ImageCache.get(Paths.image('ratings/${Ranking.generateLetterRank()}')));
         daRank.scale.x = 1.5; //I tried other method but this is the one it worked
         daRank.scale.y = 1.5;
         daRank.antialiasing = true;
@@ -75,7 +76,7 @@ class RatingState extends FlxSubState
         if(PlayState.misses == 0)
             add(daFC);*/
 
-        var daLogo:FlxSprite = new FlxSprite(600, 200).loadGraphic(Paths.image('titlestate/daLogo'));
+        var daLogo:FlxSprite = new FlxSprite(600, 200).loadGraphic(ImageCache.get(Paths.image('titlestate/daLogo')));
         daLogo.scale.x = 0.5;
         daLogo.scale.y = 0.5;   
         add(daLogo);

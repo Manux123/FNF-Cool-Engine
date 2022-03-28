@@ -15,20 +15,10 @@ class Mathf {
 		num = num * 100;
         return Math.round(num);
     }
-    
-    //i dont even need to explain this
-    public static function clamp(value,min,max){
-        if(value > max)
-            value = max;
-        else if(value < min)
-            value = min;
-
-        return value;
-    }
 
     //Returns the largest integer smaller to or equal to value
     public static function floor2int(value){
-        return Std.int(Math.floor(Math.abs(value)));
+        return Std.int(Math.floor(value));
     }
 
     //this functions are for angles and rotations
@@ -38,13 +28,5 @@ class Mathf {
 
     public static function degrees2radiants(value:Float){
         return value * (Math.PI/180);
-    }
-
-    static var sineShit:Float;
-    //just put this in on functions than are called per frame
-    //like override function update
-    public static function sineByTime(elapsed:Float, ?multi:Float = 1){
-        sineShit+=elapsed;
-        return Math.sin(Math.abs(sineShit * multi));
     }
 }

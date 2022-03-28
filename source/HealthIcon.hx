@@ -1,5 +1,6 @@
 package;
 
+import states.CacheState.ImageCache;
 import lime.utils.Assets;
 import flixel.FlxSprite;
 import states.ModsState;
@@ -43,12 +44,12 @@ class HealthIcon extends FlxSprite
 
 		antialiasing = true;
 		if(!states.ModsFreeplayState.onMods) 
-			loadGraphic(Paths.image('icons/icon-' + char), true, 150, 150);
+			loadGraphic(ImageCache.get(Paths.image('icons/icon-' + char)), true, 150, 150);
 		else 
 			loadGraphic(ModPaths.modIconImage('icon-' + char, states.ModsFreeplayState.mod), true, 150, 150);
 
 		if (char.startsWith('bf'))
-			loadGraphic(Paths.image('icons/icon-bf'), true, 150, 150);
+			loadGraphic(ImageCache.get(Paths.image('icons/icon-bf')), true, 150, 150);
 		
 		animation.add('icon', [0, 1], 0, false, isPlayer);
 		animation.play('icon');

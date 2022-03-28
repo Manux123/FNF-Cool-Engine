@@ -1,22 +1,15 @@
 package states;
 
+import states.CacheState.ImageCache;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
-import flixel.FlxState;
 import flixel.FlxCamera;
-import flixel.addons.display.FlxGridOverlay;
 import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.addons.ui.FlxInputText;
-import flixel.addons.ui.FlxUI9SliceSprite;
 import flixel.addons.ui.FlxUI;
-import flixel.addons.ui.FlxUIGroup;
 import flixel.addons.ui.FlxUICheckBox;
 import flixel.addons.ui.FlxUIDropDownMenu;
-import flixel.addons.ui.FlxUIInputText;
-import flixel.addons.ui.FlxUINumericStepper;
 import flixel.addons.ui.FlxUITabMenu;
-import flixel.addons.ui.FlxUITooltip.FlxUITooltipStyle;
 import openfl.net.FileReference;
 import openfl.events.Event;
 import states.MusicBeatSubstate;
@@ -25,7 +18,6 @@ import states.PlayState;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flixel.ui.FlxButton;
-import flixel.ui.FlxSpriteButton;
 using StringTools;
 /**
 	*DEBUG MODE
@@ -104,7 +96,7 @@ class AnimationDebug extends MusicBeatSubstate
 	{
 		FlxG.mouse.visible = true;
 
-		var gridBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
+		var gridBG:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuDesat')));
 		gridBG.scrollFactor.set(0.5, 0.5);
 		add(gridBG);
 

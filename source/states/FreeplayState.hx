@@ -1,5 +1,6 @@
 package states;
 
+import states.CacheState.ImageCache;
 #if desktop
 import Discord.DiscordClient;
 #end
@@ -131,11 +132,7 @@ class FreeplayState extends states.MusicBeatState
 				addWeek(weekData[i], i, songsHeads[i-1]);
 		}
 
-		// LOAD MUSIC
-
-		// LOAD CHARACTERS
-
-		bg = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
+		bg = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuDesat')));
 		add(bg);
 
 		grpSongs = new FlxTypedGroup<Alphabet>();

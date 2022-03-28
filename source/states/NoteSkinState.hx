@@ -1,5 +1,6 @@
 package states;
 
+import states.CacheState.ImageCache;
 import Controls.KeyboardScheme;
 import Controls.Control;
 import flash.text.TextField;
@@ -33,7 +34,7 @@ class NoteSkinState extends states.MusicBeatState
 	var daNoteSkins:Array<String>;
 	override function create()
 	{
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
+		var menuBG:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuDesat')));
 		daNoteSkins = CoolUtil.coolTextFile(Paths.txt('noteSkinList'));
 
 		menuBG.color = 0xFFea71fd;

@@ -1,5 +1,6 @@
 package states;
 
+import states.CacheState.ImageCache;
 import mp4.MP4Handler;
 import lime.utils.Assets;
 #if desktop
@@ -67,7 +68,7 @@ class StoryMenuState extends states.MusicBeatState
 	var txtWeekTitle:FlxText;
 
 	public static var curWeek:Int = 0;
-	var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
+	var bg:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuDesat')));
 	
 	public static var bgcol:FlxColor = 0xFF0A0A0A;
 
@@ -224,7 +225,7 @@ class StoryMenuState extends states.MusicBeatState
 		add(grpWeekCharacters);
 
 
-		tracksMenu = new FlxSprite(FlxG.width * 0.07, yellowBG.y + 435).loadGraphic(Paths.image('storymenu/campaign_menu/tracksMenu'));
+		tracksMenu = new FlxSprite(FlxG.width * 0.07, yellowBG.y + 435).loadGraphic(ImageCache.get(Paths.image('storymenu/campaign_menu/tracksMenu')));
 		tracksMenu.antialiasing = true;
 		add(tracksMenu);
 

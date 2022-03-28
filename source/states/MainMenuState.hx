@@ -76,7 +76,7 @@ class MainMenuState extends MusicBeatState
 		if(ModsFreeplayState.onMods && lol != null)
 			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-main',  ModsFreeplayState.mod));
 		else
-			bg.loadGraphic(BitmapData.fromFile(Paths.image('menu/menuBG')));
+			bg.loadGraphic(ImageCache.get(Paths.image('menu/menuBG')));
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0.18;
 		bg.screenCenter();

@@ -23,3 +23,13 @@ titlestate/newgrounds_logo
 titlestate/titleEnter
 titlestate/titlestateBG
 UI/checkboxThingie
+UI/healthBar
+UI/swagCounter/ready
+UI/swagCounter/readyCL
+backgrounds/week1/stageback
+backgrounds/week1/stagefront
+backgrounds/week1/stagecurtains
+UI/swagCounter/ready
+UI/swagCounter/set
+UI/swagCounter/go
+UI/rating/miss

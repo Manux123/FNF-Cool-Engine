@@ -1,5 +1,6 @@
 package states;
 
+import states.CacheState.ImageCache;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxGroup.FlxTypedGroup;
@@ -52,7 +53,7 @@ class ModsFreeplayState extends MusicBeatState
 		if(openfl.utils.Assets.exists(ModPaths.modBGImage('menu/' + lol + '-freeplay', mod)))
 			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-freeplay', mod));
 		else
-			bg.loadGraphic(Paths.image('menu/menuDesat'));
+			bg.loadGraphic(ImageCache.get(Paths.image('menu/menuDesat')));
 		bg.screenCenter(X);
 		add(bg);
 

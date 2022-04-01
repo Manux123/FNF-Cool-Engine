@@ -40,12 +40,12 @@ class OptionsMenuState extends MusicBeatState
 	private var grpControls:FlxTypedGroup<Alphabet>;
 	override function create()
 	{
-<<<<<<< Updated upstream
+// <<<<<<< Updated upstream
 		KeyBindMenu.isPlaying = false;
 		menuBG = new FlxSprite().loadGraphic(Paths.image('menu/menuBG'));
-=======
+//=======
 		menuBG = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuBG')));
->>>>>>> Stashed changes
+//>>>>>>> Stashed changes
 		controlsStrings = CoolUtil.coolStringFile(
 			("\n" + 'Preferences') +
 			("\n" + 'Game Options') +

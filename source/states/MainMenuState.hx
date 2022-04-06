@@ -129,6 +129,9 @@ class MainMenuState extends MusicBeatState
 		versionShit3.visible = false;
 		if(ModsFreeplayState.onMods == true)
 			versionShit3.visible = true;
+		
+		final b = new Button(0,0);
+		add(b);
 
 		// NG.core.calls.event.logEvent('swag').send();
 

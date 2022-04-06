@@ -75,7 +75,7 @@ class Character extends FlxSprite
 				loadOffsetFile(curCharacter);
 
 				playAnim('danceRight');
-
+				
 			healthBarColor = "FFa5004d";
 
 			case 'gf-car':

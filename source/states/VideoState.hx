@@ -47,7 +47,7 @@ class VideoState extends MusicBeatState
         super.update(elapsed);
         if(controls.ACCEPT)endVideo();
     }
-    private inline function endVideo(?kill:bool = true):Void{
+    private inline function endVideo(?kill:bool == true):Void{
         if(kill)video.kill();
         FlxG.sound.music.stop();
         LoadingState.loadAndSwitchState(nextState);

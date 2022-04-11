@@ -5,47 +5,39 @@ import lime.utils.Assets;
 import states.MusicBeatState;
 import flixel.FlxState;
 import flixel.FlxG;
-#if (windows || web)
 import mp4.MP4Handler;
-#end
+
 
 class VideoState extends MusicBeatState
 {
-    var videoPath:String;
-    var nextState:FlxState;
+    var path:String;
+    var state:FlxState;
 
     public function new(path:String,state:FlxState){
         super();
 
-        this.videoPath = path;
-        this.nextState = state;
+        this.path = path;
+        this.state = state;
     }
 
-    #if (windows || web)
-    var video:FlxVideo = new FlxVideo(0,0,FlxG.width,FlxG.height);
-    #end
+    final video:FlxVideo = new FlxVideo(0,0,FlxG.width,FlxG.height);
 
     public override function create(){
         FlxG.autoPause = true;
 
-        #if (windows || web)
         if(Assets.exists(Paths.video(videoPath))){
             video.playVideo(Paths.video(videoPath),false,true);
     		video.finishCallback = function(){
-                FlxG.sound.music.stop();
-                LoadingState.loadAndSwitchState(nextState);
+                endVideo(false);
             }
         }
         else{
             trace('Not existing path: ' + Paths.video(videoPath));
-            video.kill();
-            FlxG.sound.music.stop();
-            LoadingState.loadAndSwitchState(nextState);
+            endVideo();
         }
-        #else
+        #if !(windows || web)
         trace('DUM ASS, THIS ONLY WORKS ON WINDOWS/HTML XDDDD');
-        FlxG.sound.music.stop();
-        LoadingState.loadAndSwitchState(nextState);
+        endVideo();
         #end
 
         super.create();
@@ -53,16 +45,11 @@ class VideoState extends MusicBeatState
 
     public override function update(elapsed:Float){
         super.update(elapsed);
-        #if (windows || web)
-        if(controls.ACCEPT){
-            video.kill();
-            FlxG.sound.music.stop();
-            LoadingState.loadAndSwitchState(nextState);
-        }
-        #else
-        video.kill();
+        if(controls.ACCEPT)endVideo();
+    }
+    private inline function endVideo(?kill:bool == true):Void{
+        if(kill)video.kill();
         FlxG.sound.music.stop();
         LoadingState.loadAndSwitchState(nextState);
-        #end
     }
 }

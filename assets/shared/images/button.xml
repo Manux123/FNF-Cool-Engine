@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="button.png">
+	<!-- Created with Adobe Animate version 21.0.1.37179 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="default-anim0000" x="0" y="0" width="297" height="177"/>
+	<SubTexture name="overllap-anim0000" x="297" y="0" width="297" height="177"/>
+	<SubTexture name="press-anim0000" x="0" y="0" width="297" height="177"/>
+	<SubTexture name="press-anim0001" x="594" y="170" width="279" height="166" frameX="-9" frameY="-5" frameWidth="297" frameHeight="177"/>
+	<SubTexture name="press-anim0002" x="273" y="177" width="261" height="155" frameX="-18" frameY="-11" frameWidth="297" frameHeight="177"/>
+	<SubTexture name="press-anim0003" x="0" y="177" width="273" height="162" frameX="-12" frameY="-7" frameWidth="297" frameHeight="177"/>
+	<SubTexture name="press-anim0004" x="594" y="0" width="285" height="170" frameX="-6" frameY="-3" frameWidth="297" frameHeight="177"/>
+	<SubTexture name="press-anim0005" x="0" y="0" width="297" height="177"/>
+	<SubTexture name="press-anim0006" x="0" y="0" width="297" height="177"/>
+</TextureAtlas>

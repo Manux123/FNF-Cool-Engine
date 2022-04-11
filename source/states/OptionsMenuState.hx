@@ -40,12 +40,8 @@ class OptionsMenuState extends MusicBeatState
 	private var grpControls:FlxTypedGroup<Alphabet>;
 	override function create()
 	{
-<<<<<<< Updated upstream
 		KeyBindMenu.isPlaying = false;
-		menuBG = new FlxSprite().loadGraphic(Paths.image('menu/menuBG'));
-=======
 		menuBG = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuBG')));
->>>>>>> Stashed changes
 		controlsStrings = CoolUtil.coolStringFile(
 			("\n" + 'Preferences') +
 			("\n" + 'Game Options') +
@@ -334,12 +330,8 @@ class MenuGameOptions extends MusicBeatState
 	public static var versionShit:FlxText;
 	override function create()
 	{
-<<<<<<< Updated upstream
 		KeyBindMenu.isPlaying = false;
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGBlue'));
-=======
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuBGBlue')));
->>>>>>> Stashed changes
 
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
 		menuBG.updateHitbox();
@@ -480,12 +472,8 @@ class DebugOptions extends MusicBeatState{
 	var versionShit:FlxText;
 	override function create()
 	{
-<<<<<<< Updated upstream
 		KeyBindMenu.isPlaying = false;
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
-=======
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuDesat')));
->>>>>>> Stashed changes
 
 		menuBG.color = 0xFF453F3F;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
@@ -629,12 +617,8 @@ class OptimizationOptions extends MusicBeatState
 	var versionShit:FlxText;
 	override function create()
 	{
-<<<<<<< Updated upstream
 		KeyBindMenu.isPlaying = false;
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
-=======
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuDesat')));
->>>>>>> Stashed changes
 
 		menuBG.color = 0xFF453F3F;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));

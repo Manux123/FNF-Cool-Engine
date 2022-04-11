@@ -1,5 +1,6 @@
 package states;
 
+import flixel.ui.FlxBar;
 import flixel.util.FlxTimer;
 import lime.utils.Assets;
 import flixel.FlxG;
@@ -49,10 +50,15 @@ class CacheState extends MusicBeatState
         var bg:FlxSprite = new FlxSprite().loadGraphic(BitmapData.fromFile(Paths.image('menu/menuBG')));
         add(bg);
 
-        loading = new FlxText(0, 680, 'Loading...');
+        final loadingBar:FlxBar = new FlxBar(0,680,RIGHT_TO_LEFT,FlxG.width,20,this,'math',0, toBeFinished,true);
+        loadingBar.createFilledBar(0xBBCFD3,0xD2F8FF);
+        add(loadingBar);
+
+        loading = new FlxText(-450, 680, 'Loading...');
         loading.screenCenter(X);
         loading.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, RIGHT, OUTLINE,FlxColor.BLACK);
         loading.size = 20;
+
         add(loading);
 
 		preload();

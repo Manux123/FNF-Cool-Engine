@@ -183,7 +183,7 @@ class PlayState extends MusicBeatState
 	
 	public static var campaignScore:Int = 0;
 
-	var defaultCamZoom:Float = 1.05;
+	public static var defaultCamZoom:Float = 1.05;
 
 	public static var daPixelZoom:Float = 6;
 
@@ -778,6 +778,7 @@ class PlayState extends MusicBeatState
 			}
 			case 'spooky': //Spooky stage
 			{
+				defaultCamZoom = 1.05;
 				halloweenLevel = true;
 
 				var hallowTex = Paths.getSparrowAtlas('halloween_bg');
@@ -794,6 +795,7 @@ class PlayState extends MusicBeatState
 			}
 			case 'philly': //Pico shit
 			{
+				defaultCamZoom = 1.05;
 				var bg:FlxSprite = new FlxSprite(-100).loadGraphic(Paths.image('philly/sky'));
 				bg.scrollFactor.set(0.1, 0.1);
 				add(bg);
@@ -943,6 +945,7 @@ class PlayState extends MusicBeatState
 			}
 			case 'mallEvil': //tu quiere mi pinga en tu culo
 			{
+				defaultCamZoom = 1.05;
 				var bg:FlxSprite = new FlxSprite(-400, -500).loadGraphic(Paths.image('christmas/evilBG'));
 				bg.antialiasing = true;
 				bg.scrollFactor.set(0.2, 0.2);
@@ -1029,6 +1032,7 @@ class PlayState extends MusicBeatState
 			}
 			case 'schoolEvil': //eee u a eueue eee uu aa e ue ue
 			{
+				defaultCamZoom = 1.05;
 				var waveEffectBG = new FlxWaveEffect(FlxWaveMode.ALL, 2, -1, 3, 2);
 				var waveEffectFG = new FlxWaveEffect(FlxWaveMode.ALL, 2, -1, 5, 2);
 

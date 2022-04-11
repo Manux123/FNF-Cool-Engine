@@ -14,6 +14,7 @@ class MenuDebug extends MusicBeatState
 {
 	var bg:FlxSprite;
 	var daMenuButton:FlxButton;
+	var dabuttonstage:FlxButton;
 	var ola:FlxButton;
 
 	override public function create() 
@@ -25,14 +26,21 @@ class MenuDebug extends MusicBeatState
 
 		bg = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 		bg.color = 0xFFaa00ff;
-		add(bg);
+		//add(bg);
 
-		daMenuButton = new FlxButton(450, 450, "Menu Characters", clickNose);
-		daMenuButton.loadGraphic(Paths.image('UI/button', 'shared'));
-		daMenuButton.color = 0xFFad217F;
-		daMenuButton.scale.set(0.3, 0.3);
+		daMenuButton = new FlxButton(250, 450, "Menu Characters", clickNose);
+		//daMenuButton.loadGraphic(Paths.image('UI/button', 'shared'));
+		//daMenuButton.color = 0xFFad217F;
+		//daMenuButton.scale.set(0, 0.5);
 		daMenuButton.updateHitbox();
 		add(daMenuButton);
+
+		dabuttonstage = new FlxButton(650, 450, "Stage Debug", clickStage);
+		//daMenuButton.loadGraphic(Paths.image('UI/button', 'shared'));
+		//daMenuButton.color = 0xFFad217F;
+		//dabuttonstage.scale.set(0, 0.5);
+		dabuttonstage.updateHitbox();
+		add(dabuttonstage);
 
 		super.create();
 	}
@@ -46,6 +54,12 @@ class MenuDebug extends MusicBeatState
 		FlxTween.tween(daMenuButton, {"x": -1000}, 1, {ease: FlxEase.elasticInOut});
 		new FlxTimer().start(1, function(tmr:FlxTimer)
 			FlxG.switchState(new SelectCharacters()));
+	}
+
+	private function clickStage(){
+		FlxTween.tween(dabuttonstage, {"x": -1000}, 1, {ease: FlxEase.elasticInOut});
+		new FlxTimer().start(1, function(tmr:FlxTimer)
+			FlxG.switchState(new StageDebug()));
 	}
 }
 

@@ -1,4 +1,3 @@
-#if windows
 package states;
 
 import mp4.FlxVideo;
@@ -7,6 +6,7 @@ import states.MusicBeatState;
 import flixel.FlxState;
 import flixel.FlxG;
 import mp4.MP4Handler;
+import Paths;
 
 
 class VideoState extends MusicBeatState
@@ -34,7 +34,7 @@ class VideoState extends MusicBeatState
         }
         else{
             trace('Not existing path: ' + Paths.video(videoPath));
-            endVideo();
+            endVideo(false);
         }
         #if !(windows || web)
         trace('DUM ASS, THIS ONLY WORKS ON WINDOWS/HTML XDDDD');
@@ -46,13 +46,11 @@ class VideoState extends MusicBeatState
 
     public override function update(elapsed:Float){
         super.update(elapsed);
-        if(controls.ACCEPT)endVideo();
+        if(controls.ACCEPT)endVideo(false);
     }
-    private inline function endVideo(?kill:bool true):Void{
+    private inline function endVideo(kill:Bool):Void{
         if(kill)video.kill();
         FlxG.sound.music.stop();
-        LoadingState.loadAndSwitchState(nextState);
+        LoadingState.loadAndSwitchState(new PlayState());
     }
 }
-
-#end

@@ -33,7 +33,7 @@ class VideoState extends MusicBeatState
             }
         }
         else{
-            trace('Not existing path: ' + Paths.video(videoPath));
+            trace('Not existing path');
             endVideo(false);
         }
         #if !(windows || web)

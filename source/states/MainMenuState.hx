@@ -35,7 +35,8 @@ class MainMenuState extends MusicBeatState
 		'freeplay', 
 		'mods' #if !switch ,
 		'options', 
-		'donate'#end
+		'donate', #end
+		'credits'
 	];
 
 	var optionMap:Map<String,MusicBeatState> = [
@@ -186,6 +187,10 @@ class MainMenuState extends MusicBeatState
 					#else
 					FlxG.openURL('https://www.kickstarter.com/projects/funkin/friday-night-funkin-the-full-ass-game');
 					#end
+				}
+				if (optionShit[curSelected] == 'credits')
+				{
+					FlxG.switchState(new CreditState());
 				}
 				else
 				{

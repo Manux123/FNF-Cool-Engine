@@ -33,7 +33,7 @@ class VideoState extends MusicBeatState
             }
         }
         else{
-            trace('Cant find video')
+            trace('Cant find video');
             endVideo(false);
         }
         #if !(windows || web)

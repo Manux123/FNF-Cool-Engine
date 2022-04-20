@@ -1,4 +1,4 @@
-package debug;
+/*package debug;
 
 import flixel.*;
 import flixel.util.*;
@@ -197,3 +197,4 @@ class StageDebug extends MusicBeatState
 		}
 	}
 }
+*/ //temporarly closing dis

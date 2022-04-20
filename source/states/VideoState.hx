@@ -13,7 +13,7 @@ class VideoState extends MusicBeatState
 {
     var path:String;
     var state:FlxState;
-    var videoPath:String = Paths.video;
+    var videoPath:String = "" + Paths.video;
 
     public function new(path:String,state:FlxState){
         super();

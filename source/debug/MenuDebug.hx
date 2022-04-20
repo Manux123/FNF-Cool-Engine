@@ -1,4 +1,4 @@
-package debug;
+/*package debug;
 
 import states.MusicBeatState;
 import flixel.group.FlxGroup.FlxTypedGroup;
@@ -94,3 +94,4 @@ class SelectCharacters extends MusicBeatState
 			FlxG.switchState(new states.AnimationDebug(states.PlayState.SONG.player2)));
 	}
 }
+*/ // forgor dis

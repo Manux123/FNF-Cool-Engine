@@ -13,6 +13,7 @@ class VideoState extends MusicBeatState
 {
     var path:String;
     var state:FlxState;
+    var videoPath:String = Paths.video;
 
     public function new(path:String,state:FlxState){
         super();
@@ -26,7 +27,7 @@ class VideoState extends MusicBeatState
     public override function create(){
         FlxG.autoPause = true;
 
-        if(Assets.exists(Paths.video(videoPath)){
+        if(Assets.exists(videoPath)){
             video.playVideo(Paths.video(videoPath),false,true);
     		video.finishCallback = function(){
                 endVideo(false);

@@ -1704,10 +1704,10 @@ class PlayState extends MusicBeatState
 		/* if (FlxG.keys.justPressed.NINE)
 			FlxG.switchState(new Charting()); */
 
-		if (FlxG.save.data.debugAnim) {
-			if (FlxG.keys.justPressed.EIGHT)
-				FlxG.switchState(new debug.MenuDebug());
-		}
+	//	if (FlxG.save.data.debugAnim) {
+	//		if (FlxG.keys.justPressed.EIGHT)
+	//			FlxG.switchState(new debug.MenuDebug());
+	//	}
 
 		if (startingSong)
 		{

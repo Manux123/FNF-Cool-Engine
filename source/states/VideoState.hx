@@ -26,7 +26,7 @@ class VideoState extends MusicBeatState
     public override function create(){
         FlxG.autoPause = true;
 
-        if(Assets.exists(Paths.video(videoPath))){
+        if(Assets.exists(Paths.video(videoPath)){
             video.playVideo(Paths.video(videoPath),false,true);
     		video.finishCallback = function(){
                 endVideo(false);

@@ -108,7 +108,7 @@ class StageDebug extends MusicBeatState
 		if (FlxG.keys.justPressed.ESCAPE)
 		{
 			FlxG.mouse.visible = false;
-			sLoadingState.loadAndSwitchState(new PlayState());
+			LoadingState.loadAndSwitchState(new PlayState());
 		}
 
 		if (FlxG.mouse.overlaps(boyfriend) && FlxG.mouse.pressed) 

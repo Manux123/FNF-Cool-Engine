@@ -973,15 +973,15 @@ class PlayState extends MusicBeatState
 
 				var repositionShit = -200;
 
-				var bgSchool:FlxSprite = new FlxSprite(repositionShit, 0).loadGraphic(ImageCache.get(Paths.image('weeb/weebSchool')));
+				var bgSchool:FlxSprite = new FlxSprite(repositionShit, 0).loadGraphic(Paths.image('weeb/weebSchool'));
 				bgSchool.scrollFactor.set(0.6, 0.90);
 				add(bgSchool);
 
-				var bgStreet:FlxSprite = new FlxSprite(repositionShit).loadGraphic(ImageCache.get(Paths.image('weeb/weebStreet')));
+				var bgStreet:FlxSprite = new FlxSprite(repositionShit).loadGraphic(Paths.image('weeb/weebStreet'));
 				bgStreet.scrollFactor.set(0.95, 0.95);
 				add(bgStreet);
 
-				var fgTrees:FlxSprite = new FlxSprite(repositionShit + 170, 130).loadGraphic(ImageCache.get(Paths.image('weeb/weebTreesBack')));
+				var fgTrees:FlxSprite = new FlxSprite(repositionShit + 170, 130).loadGraphic(Paths.image('weeb/weebTreesBack'));
 				fgTrees.scrollFactor.set(0.9, 0.9);
 				add(fgTrees);
 
@@ -1047,13 +1047,13 @@ class PlayState extends MusicBeatState
 			default: //default stage
 			{
 				defaultCamZoom = 0.9;
-				var bg:FlxSprite = new FlxSprite(-600, -200).loadGraphic(ImageCache.get(Paths.image('backgrounds/week1/stageback')));
+				var bg:FlxSprite = new FlxSprite(-600, -200).loadGraphic(Paths.image('backgrounds/week1/stageback'));
 				bg.antialiasing = true;
 				bg.scrollFactor.set(0.9, 0.9);
 				bg.active = false;
 				add(bg);
 
-				var stageFront:FlxSprite = new FlxSprite(-650, 600).loadGraphic(ImageCache.get(Paths.image('backgrounds/week1/stagefront')));
+				var stageFront:FlxSprite = new FlxSprite(-650, 600).loadGraphic(Paths.image('backgrounds/week1/stagefront'));
 				stageFront.setGraphicSize(Std.int(stageFront.width * 1.1));
 				stageFront.updateHitbox();
 				stageFront.antialiasing = true;
@@ -1061,7 +1061,7 @@ class PlayState extends MusicBeatState
 				stageFront.active = false;
 				add(stageFront);
 
-				var stageCurtains:FlxSprite = new FlxSprite(-500, -300).loadGraphic(ImageCache.get(Paths.image('backgrounds/week1/stagecurtains')));
+				var stageCurtains:FlxSprite = new FlxSprite(-500, -300).loadGraphic(Paths.image('backgrounds/week1/stagecurtains'));
 				stageCurtains.setGraphicSize(Std.int(stageCurtains.width * 0.9));
 				stageCurtains.updateHitbox();
 				stageCurtains.antialiasing = true;
@@ -1230,7 +1230,7 @@ class PlayState extends MusicBeatState
 					FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
 					readya.visible = false;
 				case 1:
-					ready = new FlxSprite().loadGraphic(ImageCache.get(Paths.image(introAlts[0])));
+					ready = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
 					ready.scrollFactor.set();
 					ready.updateHitbox();
 			
@@ -1247,7 +1247,7 @@ class PlayState extends MusicBeatState
 					});
 					FlxG.sound.play(Paths.sound('intro2' + altSuffix), 0.6);
 				case 2:
-					set = new FlxSprite().loadGraphic(ImageCache.get(Paths.image(introAlts[1])));
+					set = new FlxSprite().loadGraphic(Paths.image(introAlts[1]));
 					set.scrollFactor.set();
 			
 					if (SONG.stage.startsWith('school'))
@@ -1260,7 +1260,7 @@ class PlayState extends MusicBeatState
 							set.destroy(); }});
 					FlxG.sound.play(Paths.sound('intro1' + altSuffix), 0.6);
 				case 3:
-					go = new FlxSprite().loadGraphic(ImageCache.get(Paths.image(introAlts[2])));
+					go = new FlxSprite().loadGraphic(Paths.image(introAlts[2]));
 					go.scrollFactor.set();
 			
 					if (SONG.stage.startsWith('school'))
@@ -1439,7 +1439,7 @@ class PlayState extends MusicBeatState
 			switch (SONG.stage)
 			{
 				case 'school' | 'schoolEvil':
-					babyArrow.loadGraphic(ImageCache.get(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin)));
+					babyArrow.loadGraphic(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin));
 
 					babyArrow.animation.add('green', [6]);
 					babyArrow.animation.add('red', [7]);
@@ -1672,6 +1672,11 @@ class PlayState extends MusicBeatState
 		if (FlxG.keys.justPressed.SEVEN)
 		{
 			FlxG.switchState(new ChartingState());
+		}
+
+		if (FlxG.keys.justPressed.EIGHT)
+		{
+			FlxG.switchState(new AnimationDebug(SONG.player2));
 		}
 
 		// FlxG.watch.addQuick('VOL', vocals.amplitudeLeft);
@@ -2253,7 +2258,7 @@ class PlayState extends MusicBeatState
 				folderNormal = 'UI/rating/';
 	
 	
-			rating.loadGraphic(ImageCache.get(Paths.image(pixelShitPart1 + folderNormal + daNote.noteRating + pixelShitPart2)));
+			rating.loadGraphic(Paths.image(pixelShitPart1 + folderNormal + daNote.noteRating + pixelShitPart2));
 			//rating.screenCenter();
 			rating.x = coolText.x - 40;
 			if(!FlxG.save.data.middlescroll) rating.x -= 210; else rating.x += 200;
@@ -2264,7 +2269,7 @@ class PlayState extends MusicBeatState
 			rating.scrollFactor.set();
 			rating.cameras = [camHUD];
 
-			var comboSpr:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image(pixelShitPart1 + 'combo' + pixelShitPart2)));
+			var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(pixelShitPart1 + 'combo' + pixelShitPart2));
 			comboSpr.screenCenter();
 			comboSpr.x = coolText.x;
 			comboSpr.alpha = 0;
@@ -2306,7 +2311,7 @@ class PlayState extends MusicBeatState
 	
 			for (i in 0... seperatedScore.length)
 			{
-				var numScore:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image(pixelShitPart1 + 'num' + i + pixelShitPart2)));
+				var numScore:FlxSprite = new FlxSprite().loadGraphic(Paths.image(pixelShitPart1 + 'num' + i + pixelShitPart2));
 				numScore.screenCenter();
 				numScore.x = coolText.x + (43 * i) - 90;
 				numScore.scrollFactor.set();
@@ -2597,7 +2602,7 @@ class PlayState extends MusicBeatState
 			coolText.screenCenter();
 			coolText.x = FlxG.width * 0.55;
 
-			var rating:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('UI/rating/miss', 'shared')));
+			var rating:FlxSprite = new FlxSprite().loadGraphic(Paths.image('UI/rating/miss', 'shared'));
 			//rating.screenCenter();
 			rating.x = coolText.x - 40;
 			if(!FlxG.save.data.middlescroll) rating.x -= 180; else rating.x += 200;
@@ -2950,7 +2955,7 @@ class PlayState extends MusicBeatState
 			gf.dance();
 		}
 
-		if (!gf.animation.curAnim.name.startsWith("sing") && gf.canSing)
+		if (!gf.animation.curAnim.name.startsWith("sing"))
 		{
 			gf.dance();
 		}

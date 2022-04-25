@@ -42,7 +42,7 @@ class ModsState extends states.MusicBeatState
 
 		modsFolders = CoolUtil.coolTextFile("mods/modsList.txt");
 
-		bg_but_not_vid = new FlxSprite(-80).loadGraphic(ImageCache.get(Paths.image('menu/menuBGBlue')));
+		bg_but_not_vid = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBGBlue'));
 		bg_but_not_vid.scrollFactor.x = 0;
 		bg_but_not_vid.scrollFactor.y = 0.18;
 		bg_but_not_vid.screenCenter();

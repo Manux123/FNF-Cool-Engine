@@ -63,9 +63,9 @@ class Note extends FlxSprite
 		switch (daStage)
 		{
 			case 'school' | 'schoolEvil':
-				loadGraphic(ImageCache.get(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin)), true, 17, 17);
+				loadGraphic(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin), true, 17, 17);
 				if (isSustainNote)
-					loadGraphic(ImageCache.get(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin)), true, 7, 6);
+					loadGraphic(NoteSkinDetector.noteSkinPixel(FlxG.save.data.noteSkin), true, 7, 6);
 
 				for (i in 0...4)
 				{

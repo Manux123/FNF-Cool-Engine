@@ -232,7 +232,7 @@ class DialogueBox extends FlxSpriteGroup
 				add(portraitLeft);
 				portraitLeft.visible = false; 
 			case 'thorns':
-				portraitLeft = new FlxSprite(xLeft, yLeft).loadGraphic(ImageCache.get(Paths.image(portLeftFile)));
+				portraitLeft = new FlxSprite(xLeft, yLeft).loadGraphic(Paths.image(portLeftFile));
 				portraitLeft.setGraphicSize(Std.int(portraitLeft.width * states.PlayState.daPixelZoom * 0.9));
 				portraitLeft.updateHitbox();
 				portraitLeft.scrollFactor.set();
@@ -256,7 +256,7 @@ class DialogueBox extends FlxSpriteGroup
 		box.screenCenter(X);
 		portraitLeft.screenCenter(X);
 
-		handSelect = new FlxSprite(FlxG.width * 0.9, FlxG.height * 0.9).loadGraphic(ImageCache.get(Paths.image('weeb/pixelUI/hand_textbox')));
+		handSelect = new FlxSprite(FlxG.width * 0.9, FlxG.height * 0.9).loadGraphic(Paths.image('weeb/pixelUI/hand_textbox'));
 		add(handSelect);
 	}
 

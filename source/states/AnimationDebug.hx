@@ -96,7 +96,7 @@ class AnimationDebug extends MusicBeatSubstate
 	{
 		FlxG.mouse.visible = true;
 
-		var gridBG:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuDesat')));
+		var gridBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 		gridBG.scrollFactor.set(0.5, 0.5);
 		add(gridBG);
 

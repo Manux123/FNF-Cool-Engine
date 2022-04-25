@@ -41,7 +41,7 @@ class OptionsMenuState extends MusicBeatState
 	override function create()
 	{
 		KeyBindMenu.isPlaying = false;
-		menuBG = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuBG')));
+		menuBG = new FlxSprite().loadGraphic(Paths.image('menu/menuBG'));
 		controlsStrings = CoolUtil.coolStringFile(
 			("\n" + 'Preferences') +
 			("\n" + 'Game Options') +
@@ -190,7 +190,7 @@ class OptionsMenu extends MusicBeatState
 	override function create()
 	{
 		KeyBindMenu.isPlaying = false;
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuDesat')));
+		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 
 		menuBG.color = 0xFF453F3F;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
@@ -331,7 +331,7 @@ class MenuGameOptions extends MusicBeatState
 	override function create()
 	{
 		KeyBindMenu.isPlaying = false;
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuBGBlue')));
+		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGBlue'));
 
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
 		menuBG.updateHitbox();
@@ -473,7 +473,7 @@ class DebugOptions extends MusicBeatState{
 	override function create()
 	{
 		KeyBindMenu.isPlaying = false;
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuDesat')));
+		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 
 		menuBG.color = 0xFF453F3F;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
@@ -618,7 +618,7 @@ class OptimizationOptions extends MusicBeatState
 	override function create()
 	{
 		KeyBindMenu.isPlaying = false;
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuDesat')));
+		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 
 		menuBG.color = 0xFF453F3F;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
@@ -1048,6 +1048,9 @@ class OptionsData
 		{
 			if (FlxG.save.data.newInput == null)
 				FlxG.save.data.newInput = true;
+
+			if (FlxG.save.data.weekLocked == null)
+				FlxG.save.data.weekLocked = false;
 	
 			if (FlxG.save.data.downscroll == null)
 				FlxG.save.data.downscroll = false;

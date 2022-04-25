@@ -76,7 +76,7 @@ class MainMenuState extends MusicBeatState
 		if(ModsFreeplayState.onMods && lol != null)
 			bg.loadGraphic(ModPaths.modBGImage('menu/' + lol + '-main',  ModsFreeplayState.mod));
 		else
-			bg.loadGraphic(ImageCache.get(Paths.image('menu/menuBG')));
+			bg.loadGraphic(Paths.image('menu/menuBG'));
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0.18;
 		bg.screenCenter();
@@ -129,9 +129,6 @@ class MainMenuState extends MusicBeatState
 		versionShit3.visible = false;
 		if(ModsFreeplayState.onMods == true)
 			versionShit3.visible = true;
-		
-		final b = new Button(0,0);
-		add(b);
 
 		// NG.core.calls.event.logEvent('swag').send();
 

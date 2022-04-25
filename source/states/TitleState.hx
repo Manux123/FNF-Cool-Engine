@@ -56,7 +56,7 @@ class TitleState extends states.MusicBeatState
 
 		//curWacky = FlxG.random.getObject(getIntroTextShit());
 
-		var bg:FlxSprite = new FlxSprite().loadGraphic(ImageCache.get(Paths.image('menu/menuBGtitle')));
+		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuBGtitle'));
 		add(bg);
 
 		// DEBUG BULLSHIT
@@ -65,7 +65,7 @@ class TitleState extends states.MusicBeatState
 
 		FlxG.save.bind('funkin', 'ninjamuffin99');
 
-		//states.OptionsData.initSave();
+		states.OptionsMenuState.OptionsData.initSave();
 		KeyBinds.keyCheck();
 
 		Highscore.load();
@@ -152,7 +152,7 @@ class TitleState extends states.MusicBeatState
 
 		credTextShit.visible = false;
 
-		ngSpr = new FlxSprite(0, FlxG.height * 0.52).loadGraphic(ImageCache.get(Paths.image('titlestate/newgrounds_logo')));
+		ngSpr = new FlxSprite(0, FlxG.height * 0.52).loadGraphic(Paths.image('titlestate/newgrounds_logo'));
 		add(ngSpr);
 		ngSpr.visible = false;
 		ngSpr.setGraphicSize(Std.int(ngSpr.width * 0.8));

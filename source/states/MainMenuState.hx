@@ -36,14 +36,13 @@ class MainMenuState extends MusicBeatState
 		'mods' #if !switch ,
 		'options', 
 		'donate', #end
-		'credits'
 	];
 
 	var optionMap:Map<String,MusicBeatState> = [
 		'story-mode' => new StoryMenuState(),
 		'freeplay' => new FreeplayState(),
 		'mods' => new ModsState(),
-		'options' => new OptionsMenuState()
+		'options' => new OptionsMenuState(),
 	];
 
 	var canSnap:Array<Float> = [];
@@ -111,10 +110,10 @@ class MainMenuState extends MusicBeatState
 		}
 		//FlxG.camera.follow(camFollow, null, 0.06);
 		
-		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Friday Night Funkin v0.2.7.1", 12);
-		versionShit.scrollFactor.set();
-		versionShit.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		add(versionShit);
+		var creditsShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Press C to go to credits!", 12);
+		creditsShit.scrollFactor.set();
+		creditsShit.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		add(creditsShit);
 
 		var versionShit2:FlxText = new FlxText(5, FlxG.height - 19, 0, 'Cool Engine - V${Application.current.meta.get('version')}', 12);
 		versionShit2.scrollFactor.set();
@@ -185,7 +184,7 @@ class MainMenuState extends MusicBeatState
 					FlxG.openURL('https://www.kickstarter.com/projects/funkin/friday-night-funkin-the-full-ass-game');
 					#end
 				}
-				if (optionShit[curSelected] == 'credits')
+				if FlxG.keys.justPressed.C
 				{
 					FlxG.switchState(new CreditState());
 				}

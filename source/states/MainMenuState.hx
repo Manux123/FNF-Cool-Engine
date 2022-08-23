@@ -42,7 +42,7 @@ class MainMenuState extends MusicBeatState
 		'story-mode' => new StoryMenuState(),
 		'freeplay' => new FreeplayState(),
 		'mods' => new ModsState(),
-		'options' => new OptionsMenuState(),
+		'options' => new OptionsMenuState()
 	];
 
 	var canSnap:Array<Float> = [];

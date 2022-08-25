@@ -186,7 +186,7 @@ class MainMenuState extends MusicBeatState
 				}
 				if FlxG.keys.justPressed.C
 				{
-					FlxG.switchState(new CreditState());
+					(FlxG.switchState(new CreditState());
 				}
 				else
 				{

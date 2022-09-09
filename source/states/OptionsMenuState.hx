@@ -49,7 +49,7 @@ class OptionsMenuState extends MusicBeatState
 			("\n" + 'Note Skin') +
 			("\n" + 'Controls')#if DEBUG_BUILD +
 			("\n" + 'Debug')#end) +
-                        ("\n" + 'debug');
+                        ("\n" + 'Credits');
 		
 		//trace(controlsStrings);
 

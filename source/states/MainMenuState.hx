@@ -184,10 +184,6 @@ class MainMenuState extends MusicBeatState
 					FlxG.openURL('https://www.kickstarter.com/projects/funkin/friday-night-funkin-the-full-ass-game');
 					#end
 				}
-				if (FlxG.keys.justPressed.C)
-				{
-					FlxG.switchState(new CreditState());
-				}
 				else
 				{
 					//FlxTween.tween(menuItems, {y: menuItem.y + 1000}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});

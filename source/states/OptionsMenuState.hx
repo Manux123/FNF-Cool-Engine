@@ -48,7 +48,8 @@ class OptionsMenuState extends MusicBeatState
 			("\n" + 'Optimization') +
 			("\n" + 'Note Skin') +
 			("\n" + 'Controls')#if DEBUG_BUILD +
-			("\n" + 'Debug')#end);
+			("\n" + 'Debug')#end) +
+                        ("\n" + 'debug');
 		
 		//trace(controlsStrings);
 
@@ -119,6 +120,8 @@ class OptionsMenuState extends MusicBeatState
 						#end
 					case 5:
 						LoadingState.loadAndSwitchState(new DebugOptions());
+					case 6:
+                                                LoadingState.loadAndSwitchState(new CreditState());	
 				}
 			}
 		FlxG.save.flush();

@@ -152,6 +152,12 @@ class MainMenuState extends MusicBeatState
 		}
 		#end
 
+		if (FlxG.keys.justPressed.C) {
+			FlxG.camera.fade(FlxColor.BLACK, 0.5, false, function() {
+				FlxG.switchState(new CreditState());
+			});
+		}
+
 		if (!selectedSomethin)
 		{
 			if (controls.UP_P)
@@ -173,7 +179,7 @@ class MainMenuState extends MusicBeatState
 			}
 			else if(controls.BACK && !ModsFreeplayState.onMods)
 				FlxG.switchState(new TitleState());
-
+			
 			if (controls.ACCEPT)
 			{
 				if (optionShit[curSelected] == 'donate')
@@ -183,10 +189,6 @@ class MainMenuState extends MusicBeatState
 					#else
 					FlxG.openURL('https://www.kickstarter.com/projects/funkin/friday-night-funkin-the-full-ass-game');
 					#end
-				}
-				if (FlxG.keys.justPressed.C)
-				{
-					FlxG.switchState(new CreditState());
 				}
 				else
 				{

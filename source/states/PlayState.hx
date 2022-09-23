@@ -1537,8 +1537,9 @@ class PlayState extends MusicBeatState
 				babyArrow.x += ((FlxG.width / 2) * player);
 			}
 
-			if (FlxG.save.data.middlescroll)
+			if (FlxG.save.data.middlescroll) {
 				babyArrow.x += 440;
+			}	
 
 			cpuStrums.forEach(function(spr:FlxSprite)
 			{					

@@ -45,7 +45,7 @@ class TitleState extends states.MusicBeatState
 	var textGroup:FlxGroup;
 	var ngSpr:FlxSprite;
 
-	var timerWait:Float = 1;
+	var timerWait:Float = 1.2;
 
 	var start:Bool = false;
 	var startNut = 0;
@@ -227,7 +227,7 @@ class TitleState extends states.MusicBeatState
 		// FlxG.watch.addQuick('amp', FlxG.sound.music.amplitude);
 
 		if (start) {
-			var Timer:FlxTimer = new FlxTimer().start(1.5, function(timer:FlxTimer) {
+			var Timer:FlxTimer = new FlxTimer().start(timerWait, function(timer:FlxTimer) {
 				if (startNut == 0) {
 					credTextShit.visible = true;
 					credTextShit.text = "Manux123\nJloor\nChasetodie\nJontoro\nOverchargedDev\nFairyBoy\nZeroArtist\nXuelDev";

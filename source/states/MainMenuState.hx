@@ -21,6 +21,7 @@ import lime.app.Application;
 import flash.display.BitmapData;
 import openfl.display.BitmapData as Bitmap;
 import states.MusicBeatState;
+import others.Config;
 
 using StringTools;
 
@@ -152,6 +153,20 @@ class MainMenuState extends MusicBeatState
 		}
 		#end
 
+		if (FlxG.keys.justPressed.C) {
+			// FlxG.camera.fade(FlxColor.BLACK, 0.5, false, function() {
+			// 	FlxG.switchState(new CreditState());
+			// });
+			Config.onAccept = new states.CreditState();
+			Config.onDecline = new states.MainMenuState();
+			Config.AcceptText = "Continue.";
+			Config.DeclineText = "Return.";
+			Config.Title = "Alert!";
+			Config.Content = "This menu is still in beta!";
+			FlxG.switchState(new others.MenuMessage());
+	
+		}
+
 		if (!selectedSomethin)
 		{
 			if (controls.UP_P)
@@ -173,7 +188,7 @@ class MainMenuState extends MusicBeatState
 			}
 			else if(controls.BACK && !ModsFreeplayState.onMods)
 				FlxG.switchState(new TitleState());
-
+			
 			if (controls.ACCEPT)
 			{
 				if (optionShit[curSelected] == 'donate')

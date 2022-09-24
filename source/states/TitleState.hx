@@ -227,7 +227,7 @@ class TitleState extends states.MusicBeatState
 		// FlxG.watch.addQuick('amp', FlxG.sound.music.amplitude);
 
 		if (start) {
-			var Timer:FlxTimer = new FlxTimer().start(timerWait, function(timer:FlxTimer) {
+			var Timer:FlxTimer = new FlxTimer().start(0.3, function(timer:FlxTimer) {
 				if (startNut == 0) {
 					credTextShit.visible = true;
 					credTextShit.text = "Manux123\nJloor\nChasetodie\nJontoro\nOverchargedDev\nFairyBoy\nZeroArtist\nXuelDev";
@@ -241,7 +241,7 @@ class TitleState extends states.MusicBeatState
 							credTextShit.text = "The Cool Engine!";
 							credTextShit.screenCenter();
 
-							timer.start(0.3, function(timer:FlxTimer) {
+							timer.start(1, function(timer:FlxTimer) {
 								skipIntro();
 							});
 						});

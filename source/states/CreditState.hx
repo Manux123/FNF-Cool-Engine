@@ -15,7 +15,7 @@ class CreditState extends FlxState {
         ["Manux123", "Main Programmer of Cool-Engine"],
         ["Jloor", "Programmer Friday Night Funkin: Cool Engine"],
         ["Chasetodie", "Programmer Friday Night Funkin: Cool Engine"],
-        ["Jantaro", "Programmer and Composer Friday Night Funkin: Cool Engine"],
+        ["Jotaro Gaming", "Programmer and Composer Friday Night Funkin: Cool Engine"],
         ["Overcharged Dev", "Programmer Friday Night Funkin: Cool Engine"],
         ["FairyBoy", "Artist Friday Night Funkin: Cool Engine"],
         ["Zero Artist", "Artist Friday Night Funkin: Cool Engine"],

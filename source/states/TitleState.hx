@@ -41,10 +41,14 @@ class TitleState extends states.MusicBeatState
 
 	var blackScreen:FlxSprite;
 	var credGroup:FlxGroup;
-	var credTextShit:Alphabet;
+	var credTextShit:FlxText;
 	var textGroup:FlxGroup;
 	var ngSpr:FlxSprite;
 
+	var timerWait:Float = 1.2;
+
+	var start:Bool = false;
+	var startNut = 0;
 	//var curWacky:Array<String> = [];
 
 	var wackyImage:FlxSprite;
@@ -140,13 +144,17 @@ class TitleState extends states.MusicBeatState
 		blackScreen = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		credGroup.add(blackScreen);
 
-		credTextShit = new Alphabet(0, 0, "ninjamuffin99\nPhantomArcade\nkawaisprite\nevilsk8er", true);
+		credTextShit = new FlxText(0,0,0,"", 24);
+		credTextShit.scrollFactor.set();
+		credTextShit.setFormat(Paths.font("Funkin.otf"), 50, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		credTextShit.screenCenter();
 		add(credTextShit);
 
+		start = true;
+
 		// credTextShit.alignment = CENTER;
 
-		credTextShit.visible = false;
+
 
 		ngSpr = new FlxSprite(0, FlxG.height * 0.52).loadGraphic(Paths.image('titlestate/newgrounds_logo'));
 		add(ngSpr);
@@ -156,7 +164,7 @@ class TitleState extends states.MusicBeatState
 		ngSpr.screenCenter(X);
 		ngSpr.antialiasing = true;
 
-		FlxTween.tween(credTextShit, {y: credTextShit.y + 20}, 2.9, {ease: FlxEase.quadInOut, type: PINGPONG});
+		// FlxTween.tween(credTextShit, {y: credTextShit.y + 20}, 2.9, {ease: FlxEase.quadInOut, type: PINGPONG});
 
 		FlxG.mouse.visible = false;
 
@@ -213,9 +221,34 @@ class TitleState extends states.MusicBeatState
 
 	override function update(elapsed:Float)
 	{
-		if (FlxG.sound.music != null)
+		if (FlxG.sound.music != null) {
 			Conductor.songPosition = FlxG.sound.music.time;
+		}
 		// FlxG.watch.addQuick('amp', FlxG.sound.music.amplitude);
+
+		if (start) {
+			var Timer:FlxTimer = new FlxTimer().start(timerWait, function(timer:FlxTimer) {
+				if (startNut == 0) {
+					credTextShit.visible = true;
+					credTextShit.text = "Manux123\nJloor\nChasetodie\nJontoro\nOverchargedDev\nFairyBoy\nZeroArtist\nXuelDev";
+					credTextShit.screenCenter();
+
+					timer.start(timerWait, function(timer:FlxTimer) {
+						credTextShit.text = "Present";
+						credTextShit.screenCenter();
+
+						timer.start(timerWait, function(timer:FlxTimer) {
+							credTextShit.text = "The Cool Engine!";
+							credTextShit.screenCenter();
+
+							timer.start(0.3, function(timer:FlxTimer) {
+								skipIntro();
+							});
+						});
+					});
+				}
+			});
+		}
 
 		if (FlxG.keys.justPressed.F11)
 		{
@@ -358,7 +391,6 @@ class TitleState extends states.MusicBeatState
 
 	override function beatHit()
 	{
-		super.beatHit();
 
 		randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for", userName()];//This is for credits, not for funny texts :angry:
 		randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D", "Thanks for playing B)"];
@@ -441,6 +473,8 @@ class TitleState extends states.MusicBeatState
 
 	function skipIntro():Void
 	{
+		remove(credTextShit);
+
 		if (!skippedIntro)
 		{
 			remove(ngSpr);

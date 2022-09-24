@@ -6,7 +6,7 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flixel.FlxG;
 import others.Config;
-import flixel.group.FlxGroup;
+
 
 class MenuMessage extends FlxState {
     

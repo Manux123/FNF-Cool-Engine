@@ -2,6 +2,7 @@ package scripting;
 
 import flixel.FlxState;
 import API;
+import states.*;
 
 class Script {
 
@@ -15,5 +16,13 @@ class Script {
 
     public static function onDeath() {
         // Runs when boyfriend dies
+    }
+    
+    public static function onNoteHit() {
+        // Runs when boyfriend hits a note
+    }
+
+    public static function onMiss() {
+        // Runs when boyfriend misses a note
     }
 }

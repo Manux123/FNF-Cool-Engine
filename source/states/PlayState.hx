@@ -132,7 +132,7 @@ class PlayState extends MusicBeatState
 
 	private var gfSpeed:Int = 1;
 	public var health:Float = 1;
-	private var combo:Int = 0;
+	public static var combo:Int = 0;
 	public static var accuracy:Float = 0.00;
 	private var totalNotesHit:Float = 0;
 	private var totalPlayed:Int = 0;
@@ -149,8 +149,8 @@ class PlayState extends MusicBeatState
 
 	public var iconP1:HealthIcon;
 	public var iconP2:HealthIcon;
-	public var camHUD:FlxCamera;
-	public var camGame:FlxCamera;
+	public static var camHUD:FlxCamera;
+	public static var camGame:FlxCamera;
 
 	public static var isMod:Bool = false;
 	
@@ -2588,6 +2588,8 @@ class PlayState extends MusicBeatState
 
 	function noteMiss(direction:Int = 1):Void
 	{
+		Script.onMiss();
+		
 		if (!boyfriend.stunned)
 		{
 			if(FlxG.save.data.perfectmode)//Perfect Mode
@@ -2742,6 +2744,8 @@ class PlayState extends MusicBeatState
 
 		function goodNoteHit(note:Note, resetMashViolation = true):Void
 		{
+				Script.onNoteHit();	
+
 				//combo ++;
 				if(mashing != 0)
 					mashing = 0;

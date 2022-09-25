@@ -22,6 +22,7 @@ import flash.display.BitmapData;
 import openfl.display.BitmapData as Bitmap;
 import states.MusicBeatState;
 import others.Config;
+import scripting.Script;
 
 using StringTools;
 
@@ -57,6 +58,8 @@ class MainMenuState extends MusicBeatState
 
 	override function create()
 	{
+
+		
 		//LOAD CUZ THIS SHIT DONT DO IT SOME IN THE CACHESTATE.HX FUCK
 		PlayerSettings.player1.controls.loadKeyBinds();
 
@@ -146,6 +149,7 @@ class MainMenuState extends MusicBeatState
 
 	override function update(elapsed:Float)
 	{
+		
 		#if !MAINMENU
 		if (FlxG.sound.music.volume < 0.8)
 		{

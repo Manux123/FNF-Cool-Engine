@@ -47,7 +47,6 @@ class OptionsMenuState extends MusicBeatState
 			("\n" + 'Game Options') +
 			("\n" + 'Optimization') +
 			("\n" + 'Note Skin') +
-                        ("\n" + 'Credits') +
 			("\n" + 'Controls')#if DEBUG_BUILD +
 			("\n" + 'Debug')#end);
 		
@@ -113,15 +112,15 @@ class OptionsMenuState extends MusicBeatState
 					case 3:
 						LoadingState.loadAndSwitchState(new NoteSkinState());
 					case 4:
-                                                LoadingState.loadAndSwitchState(new CreditState());	
-					case 5:
 						#if mobileC
 						LoadingState.loadAndSwitchState(new CustomControlsState());
 						#else
 						FlxG.state.openSubState(new KeyBindMenu());
 						#end
-					case 6:
+                                        #if DEBUG_BUILD
+					case 5:
 						LoadingState.loadAndSwitchState(new DebugOptions());
+                                        #end
 
 				}
 			}

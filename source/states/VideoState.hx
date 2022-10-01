@@ -39,7 +39,7 @@ class VideoState extends MusicBeatState
         }
         #if !(windows || web)
         trace('DUM ASS, THIS ONLY WORKS ON WINDOWS/HTML XDDDD');
-        endVideo();
+        endVideo(true);
         #end
 
         super.create();

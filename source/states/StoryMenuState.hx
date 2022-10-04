@@ -1,7 +1,6 @@
 package states;
 
 import states.CacheState.ImageCache;
-import mp4.MP4Handler;
 import lime.utils.Assets;
 #if desktop
 import Discord.DiscordClient;
@@ -337,16 +336,6 @@ class StoryMenuState extends states.MusicBeatState
 			PlayState.SONG = Song.loadFromJson(PlayState.storyPlaylist[0].toLowerCase() + difficultyMap[curDifficulty], PlayState.storyPlaylist[0].toLowerCase());
 			PlayState.storyWeek = curWeek;
 			PlayState.campaignScore = 0;
-			if(curWeek == 0)
-				new FlxTimer().start(1, function(tmr:FlxTimer)
-				{
-					LoadingState.loadAndSwitchState(new VideoState('test',new PlayState()),true);
-				});
-			else
-				new FlxTimer().start(1, function(tmr:FlxTimer)
-				{
-					LoadingState.loadAndSwitchState(new PlayState(), true);
-				});
 		}
 	}
 

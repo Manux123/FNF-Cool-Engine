@@ -147,8 +147,8 @@ class PlayState extends MusicBeatState
 	private var generatedMusic:Bool = false;
 	public static var startingSong:Bool = false;
 
-	public var iconP1:HealthIcon;
-	public var iconP2:HealthIcon;
+	public static var iconP1:HealthIcon;
+	public static var iconP2:HealthIcon;
 	public static var camHUD:FlxCamera;
 	public static var camGame:FlxCamera;
 

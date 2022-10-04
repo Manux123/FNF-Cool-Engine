@@ -1,7 +1,6 @@
 package states;
 
 import states.CacheState.ImageCache;
-import mp4.FlxVideo;
 import flixel.util.FlxTimer;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.text.FlxText;
@@ -31,7 +30,6 @@ class ModsState extends states.MusicBeatState
 	
 	var grpMods:FlxTypedGroup<Alphabet>;
 
-	var bg:FlxVideo;
 	var bg_but_not_vid:FlxSprite;
 
 	override function create(){
@@ -49,17 +47,17 @@ class ModsState extends states.MusicBeatState
 		bg_but_not_vid.antialiasing = true;
 		add(bg_but_not_vid);
 
-		if(openfl.utils.Assets.exists(ModPaths.getPreviewVideo('preview-video',modsFolders[curSelected]))){
-			bg = new FlxVideo(-80,0,FlxG.width,FlxG.height);
-/*			bg.scrollFactor.x = 0;
-			bg.scrollFactor.y = 0.18;
-			bg.screenCenter();*/
-			bg.playVideo(ModPaths.getPreviewVideo('preview-video',modsFolders[curSelected]),true,false);
-			add(bg);
-			bg_but_not_vid.visible = false;
-		}
-		else
-			bg_but_not_vid.visible = true;
+// 		if(openfl.utils.Assets.exists(ModPaths.getPreviewVideo('preview-video',modsFolders[curSelected]))){
+// 			bg = new FlxVideo(-80,0,FlxG.width,FlxG.height);
+// /*			bg.scrollFactor.x = 0;
+// 			bg.scrollFactor.y = 0.18;
+// 			bg.screenCenter();*/
+// 			bg.playVideo(ModPaths.getPreviewVideo('preview-video',modsFolders[curSelected]),true,false);
+// 			add(bg);
+// 			bg_but_not_vid.visible = false;
+// 		}
+// 		else
+// 			bg_but_not_vid.visible = true;
 
 		trace(ModPaths.getPreviewVideo('preview-video',modsFolders[curSelected]));
 
@@ -141,11 +139,6 @@ class ModsState extends states.MusicBeatState
 			FlxG.sound.playMusic('mods/' + modsFolders[curSelected + 1] + '/music/freakyMenu.ogg');
 		else
 			FlxG.sound.playMusic(Paths.music('freakyMenu'));
-
-		if(openfl.utils.Assets.exists(ModPaths.getPreviewVideo('preview-video', curMod)))
-			bg.playVideo(ModPaths.getPreviewVideo('preview-video', curMod), true);
-		else
-			bg_but_not_vid.visible = true;
 
 		curSelected += change;
 

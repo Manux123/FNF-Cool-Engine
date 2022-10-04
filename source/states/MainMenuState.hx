@@ -171,6 +171,10 @@ class MainMenuState extends MusicBeatState
 	
 		}
 
+		if (FlxG.keys.justPressed.LBRACKET) {
+			FlxG.switchState(new states.editors.DeveloperMenu());
+		}
+
 		if (!selectedSomethin)
 		{
 			if (controls.UP_P)

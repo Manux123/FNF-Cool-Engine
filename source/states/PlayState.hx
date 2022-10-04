@@ -58,7 +58,7 @@ import Discord.DiscordClient;
 #if sys
 import sys.FileSystem;
 #end
-import scripting.Script;
+
 
 using StringTools;
 
@@ -206,7 +206,6 @@ class PlayState extends MusicBeatState
 
 	override public function create()
 	{
-		Script.onCreate();
 
 		if(FlxG.save.data.noteSkin == null)
 			FlxG.save.data.noteSkin = 'Arrows'; //L M A O
@@ -1628,7 +1627,6 @@ class PlayState extends MusicBeatState
 
 	override public function update(elapsed:Float)
 	{
-		Script.onUpdate();
 
 		if(readyaIsntDestroyed){
 			if(FlxG.mouse.overlaps(readya)){
@@ -2136,7 +2134,6 @@ class PlayState extends MusicBeatState
 	var comboFull:FlxSprite;
 
 	private function gameOver(){
-		Script.onDeath();
 
 		boyfriend.stunned = true;
 	
@@ -2588,7 +2585,6 @@ class PlayState extends MusicBeatState
 
 	function noteMiss(direction:Int = 1):Void
 	{
-		Script.onMiss();
 		
 		if (!boyfriend.stunned)
 		{
@@ -2743,8 +2739,7 @@ class PlayState extends MusicBeatState
 		}
 
 		function goodNoteHit(note:Note, resetMashViolation = true):Void
-		{
-				Script.onNoteHit();	
+		{	
 
 				//combo ++;
 				if(mashing != 0)

@@ -23,7 +23,7 @@ class OutdatedState extends MusicBeatState
 	
 		var env = Sys.environment();
 		if (!env.exists("USERNAME")) {
-			return "Couldnt find computa name";
+			return "Guest";
 		}
 		return env["USERNAME"];
 	}
@@ -31,7 +31,7 @@ class OutdatedState extends MusicBeatState
 	override function create()
 	{
 		super.create();
-		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
+		var bg:FlxSprite = new FlxSprite().loadGraphic("assets/images/menu/menuBGLoading");
 		add(bg);
 		var ver = Application.current.meta.get('version');
 	    var txt:FlxText = new FlxText(0, 0, FlxG.width,

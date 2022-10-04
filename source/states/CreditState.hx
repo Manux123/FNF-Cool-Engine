@@ -36,6 +36,10 @@ class CreditState extends FlxState {
     var ZeroArtist:FlxText;
     var XuelDev:FlxText;
 
+    var size = 30;
+
+    var manuxppsize = 0;
+
     // Color
 
     var NOTSEL = FlxColor.WHITE;
@@ -55,42 +59,42 @@ class CreditState extends FlxState {
 
         Manux123 = new FlxText(0,50,0,pissPoopUwuCred[0][0], 40);
         Manux123.scrollFactor.set();
-		Manux123.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		Manux123.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
         Manux123.color = FlxColor.GREEN;
         
-        Jloor = new FlxText(0,64,0,pissPoopUwuCred[1][0], 40);
+        Jloor = new FlxText(0,70,0,pissPoopUwuCred[1][0], 40);
         Jloor.scrollFactor.set();
-		Jloor.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		Jloor.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
         Jloor.color = FlxColor.WHITE;
 
-        Chasetodie = new FlxText(0,74,0,pissPoopUwuCred[2][0], 40);
+        Chasetodie = new FlxText(0,90,0,pissPoopUwuCred[2][0], 40);
         Chasetodie.scrollFactor.set();
-		Chasetodie.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		Chasetodie.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
         Chasetodie.color = FlxColor.WHITE;
         
-        MrClogsworthYT = new FlxText(0,84,0,pissPoopUwuCred[3][0], 40);
+        MrClogsworthYT = new FlxText(0,110,0,pissPoopUwuCred[3][0], 40);
         MrClogsworthYT.scrollFactor.set();
-		MrClogsworthYT.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		MrClogsworthYT.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
         MrClogsworthYT.color = FlxColor.WHITE;
 
-        OverchargedDev = new FlxText(0,94,0,pissPoopUwuCred[4][0], 40);
+        OverchargedDev = new FlxText(0,130,0,pissPoopUwuCred[4][0], 40);
         OverchargedDev.scrollFactor.set();
-		OverchargedDev.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		OverchargedDev.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
         OverchargedDev.color = FlxColor.WHITE;        
         
-        FairyBoy = new FlxText(0,104,0,pissPoopUwuCred[5][0], 40);
+        FairyBoy = new FlxText(0,150,0,pissPoopUwuCred[5][0], 40);
         FairyBoy.scrollFactor.set();
-		FairyBoy.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		FairyBoy.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
         FairyBoy.color = FlxColor.WHITE;      
         
-        ZeroArtist = new FlxText(0,114,0,pissPoopUwuCred[6][0], 40);
+        ZeroArtist = new FlxText(0,170,0,pissPoopUwuCred[6][0], 40);
         ZeroArtist.scrollFactor.set();
-		ZeroArtist.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		ZeroArtist.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
         ZeroArtist.color = FlxColor.WHITE;
 
-        XuelDev = new FlxText(0,124,0,pissPoopUwuCred[7][0], 40);
+        XuelDev = new FlxText(0,190,0,pissPoopUwuCred[7][0], 40);
         XuelDev.scrollFactor.set();
-		XuelDev.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		XuelDev.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
         XuelDev.color = FlxColor.WHITE;
         
         

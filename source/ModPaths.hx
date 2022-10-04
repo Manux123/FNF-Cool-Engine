@@ -89,6 +89,10 @@ class ModPaths {
         return getPath('fonts/$key',BINARY,mod);
 	}
 
+    inline static public function getModScripts(key:String, mod:String){
+        return getPath('scripts/$key', TEXT,mod);
+    }
+
     static public function getPath(file:String, type:AssetType, ?mod:String)
     {
         var path = "";

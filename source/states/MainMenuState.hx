@@ -22,7 +22,6 @@ import flash.display.BitmapData;
 import openfl.display.BitmapData as Bitmap;
 import states.MusicBeatState;
 import others.Config;
-import scripting.Script;
 
 using StringTools;
 
@@ -35,7 +34,8 @@ class MainMenuState extends MusicBeatState
 	var optionShit:Array<String> = [
 		'story-mode', 
 		'freeplay', 
-		'mods' #if !switch ,
+		// 'mods' 
+		#if !switch
 		'options', 
 		'donate', #end
 	];
@@ -158,18 +158,21 @@ class MainMenuState extends MusicBeatState
 		#end
 
 		if (FlxG.keys.justPressed.C) {
-			// FlxG.camera.fade(FlxColor.BLACK, 0.5, false, function() {
-			// 	FlxG.switchState(new CreditState());
-			// });
-			Config.onAccept = new states.CreditState();
+			FlxG.camera.fade(FlxColor.BLACK, 0.5, false, function() {
+				FlxG.switchState(new CreditState());
+			});
+		}
+
+		if (FlxG.keys.justPressed.SEVEN) {
+			Config.onAccept = new states.editors.DeveloperMenu();
 			Config.onDecline = new states.MainMenuState();
 			Config.AcceptText = "Continue.";
 			Config.DeclineText = "Return.";
 			Config.Title = "Alert!";
-			Config.Content = "This menu is still in beta!";
+			Config.Content = "This menu is in beta!";
 			FlxG.switchState(new others.MenuMessage());
-	
 		}
+
 
 		if (!selectedSomethin)
 		{

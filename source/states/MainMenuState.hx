@@ -22,14 +22,15 @@ import flash.display.BitmapData;
 import openfl.display.BitmapData as Bitmap;
 import states.MusicBeatState;
 import others.Config;
+import scripting.ui.MMScript;
 
 using StringTools;
 
 class MainMenuState extends MusicBeatState
 {
-	var curSelected:Int = 0;
+	public static var curSelected:Int = 0;
 
-	var menuItems:FlxTypedGroup<FlxSprite>;
+	public static var menuItems:FlxTypedGroup<FlxSprite>;
 
 	var optionShit:Array<String> = [
 		'story-mode', 
@@ -50,22 +51,29 @@ class MainMenuState extends MusicBeatState
 	var canSnap:Array<Float> = [];
 	var camFollow:FlxObject;
 	var newInput:Bool = true;
-	var bg:FlxSprite;
+	public var bg:FlxSprite;
 	var lol:String;
 	public static var firstStart:Bool = true;
 
 	public static var finishedFunnyMove:Bool = false;
 
+	public static var creditsShit:FlxText;
+	public static var versionShit3:FlxText;
+	public static var versionShit2:FlxText;
+
+	public static var menuItem:FlxSprite;
+
 	override function create()
 	{
 
+		MMScript.onCreate();
 		
 		//LOAD CUZ THIS SHIT DONT DO IT SOME IN THE CACHESTATE.HX FUCK
 		PlayerSettings.player1.controls.loadKeyBinds();
 
 		#if desktop
 		// Updating Discord Rich Presence
-		DiscordClient.changePresence("In the Menu", null);
+		DiscordClient.changePresence("PreviewMenusIn the Menu", null);
 		#end
 
 		transIn = FlxTransitionableState.defaultTransIn;
@@ -96,7 +104,7 @@ class MainMenuState extends MusicBeatState
 		for (i in 0...optionShit.length)
 		{
 			var offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;
-			var menuItem:FlxSprite = new FlxSprite(70, (i * 140)  + offset);
+			menuItem = new FlxSprite(70, (i * 140)  + offset);
 			menuItem.frames = Paths.getSparrowAtlas('mainmenu/menu_' + optionShit[i]);
 			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
@@ -114,18 +122,18 @@ class MainMenuState extends MusicBeatState
 		}
 		//FlxG.camera.follow(camFollow, null, 0.06);
 		
-		var creditsShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Press C to go to credits!", 12);
+		creditsShit= new FlxText(5, FlxG.height - 19, 0, "Press C to go to credits!", 12);
 		creditsShit.scrollFactor.set();
 		creditsShit.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(creditsShit);
 
-		var versionShit2:FlxText = new FlxText(5, FlxG.height - 19, 0, 'Cool Engine - V${Application.current.meta.get('version')}', 12);
+		versionShit2 = new FlxText(5, FlxG.height - 19, 0, 'Cool Engine - V${Application.current.meta.get('version')}', 12);
 		versionShit2.scrollFactor.set();
 		versionShit2.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		versionShit2.y -= 20;
 		add(versionShit2);
 
-		var versionShit3:FlxText = new FlxText(5, FlxG.height - 19, 0, 'Mod ${ModsFreeplayState.mod} Loaded!', 12);
+		versionShit3 = new FlxText(5, FlxG.height - 19, 0, 'Mod ${ModsFreeplayState.mod} Loaded!', 12);
 		versionShit3.scrollFactor.set();
 		versionShit3.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		versionShit3.y -= 40;
@@ -144,12 +152,14 @@ class MainMenuState extends MusicBeatState
 		
 		super.create();
 	}
-
 	var selectedSomethin:Bool = false;
 
 	override function update(elapsed:Float)
 	{
+
+		MMScript.onUpdate();
 		
+
 		#if !MAINMENU
 		if (FlxG.sound.music.volume < 0.8)
 		{
@@ -158,18 +168,22 @@ class MainMenuState extends MusicBeatState
 		#end
 
 		if (FlxG.keys.justPressed.C) {
+
 			FlxG.camera.fade(FlxColor.BLACK, 0.5, false, function() {
+				MMScript.onNewStateTrigger("CREDITS");
 				FlxG.switchState(new CreditState());
 			});
 		}
 
 		if (FlxG.keys.justPressed.SEVEN) {
+
 			Config.onAccept = new states.editors.DeveloperMenu();
 			Config.onDecline = new states.MainMenuState();
 			Config.AcceptText = "Continue.";
 			Config.DeclineText = "Return.";
 			Config.Title = "Alert!";
 			Config.Content = "This menu is in beta!";
+			MMScript.onNewStateTrigger("DEVMENU");
 			FlxG.switchState(new others.MenuMessage());
 		}
 
@@ -198,6 +212,7 @@ class MainMenuState extends MusicBeatState
 			
 			if (controls.ACCEPT)
 			{
+
 				if (optionShit[curSelected] == 'donate')
 				{
 					#if linux
@@ -270,6 +285,8 @@ class MainMenuState extends MusicBeatState
 	function changeItem(huh:Int = 0)
 	{
 		curSelected += huh;
+
+		MMScript.onItemChange();
 
 		if (curSelected >= menuItems.length)
 			curSelected = 0;

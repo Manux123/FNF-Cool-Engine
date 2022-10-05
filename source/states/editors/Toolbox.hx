@@ -12,7 +12,7 @@ import others.Config;
 
 class Toolbox extends FlxState {
     var bg:FlxSprite;
-    var PreviewMenus:Alphabet;
+    var ConfigMods:Alphabet;
     var ModShit:Alphabet;
 
     var curSelected = 0;
@@ -29,9 +29,9 @@ class Toolbox extends FlxState {
         ModShit.color = FlxColor.GREEN;
         add(ModShit);
 
-        PreviewMenus = new Alphabet(13, 100, "Preview Menus", true, false);
-        PreviewMenus.color = FlxColor.WHITE;
-        add(PreviewMenus);
+        ConfigMods = new Alphabet(13, 100, "Config Mods", true, false);
+        ConfigMods.color = FlxColor.WHITE;
+        add(ConfigMods);
 
         var versionShit1:FlxText = new FlxText(5, FlxG.height - 14, 0, 'Cool Engine - V${Application.current.meta.get('version')}', 12);
 		versionShit1.scrollFactor.set();
@@ -47,10 +47,10 @@ class Toolbox extends FlxState {
         switch (curSelected) {
             case 0:
                 ModShit.color = FlxColor.GREEN;
-                PreviewMenus.color = FlxColor.WHITE;
+                ConfigMods.color = FlxColor.WHITE;
             case 1:
                 ModShit.color = FlxColor.WHITE;
-                PreviewMenus.color = FlxColor.GREEN;
+                ConfigMods.color = FlxColor.GREEN;
         }
 
         if (FlxG.keys.justPressed.UP) {
@@ -71,14 +71,6 @@ class Toolbox extends FlxState {
             switch (curSelected) {
                 case 0:
                     FlxG.switchState(new states.ModsState());
-                case 1:
-                    Config.onAccept = new states.editors.Toolbox();
-                    Config.onDecline = new states.editors.Toolbox();
-                    Config.AcceptText = "Okay.";
-                    Config.DeclineText = "Okay.";
-                    Config.Title = "Alert!";
-                    Config.Content = "This menu has not been developed yet press!";
-                    FlxG.switchState(new others.MenuMessage());
             }
         }
     }

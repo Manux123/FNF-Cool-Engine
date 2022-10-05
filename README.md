@@ -25,7 +25,7 @@
 - [Evilsk8r](https://twitter.com/evilsk8r)  - Artist of fnf
 
 # MP4
-- I got rid of it lol Linux PROO!!! XuelDev:) (I think i should of said that We don't use this anymore oof)
+- I got rid of it lol Linux PROO!!! XuelDev:)
 
 # Building
 THESE INSTRUCTIONS ARE FOR COMPILING THE GAME'S SOURCE CODE!!!

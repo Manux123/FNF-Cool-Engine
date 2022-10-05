@@ -207,6 +207,8 @@ class PlayState extends MusicBeatState
 	override public function create()
 	{
 
+
+
 		if(FlxG.save.data.noteSkin == null)
 			FlxG.save.data.noteSkin = 'Arrows'; //L M A O
 		instance = this;
@@ -1628,6 +1630,8 @@ class PlayState extends MusicBeatState
 	override public function update(elapsed:Float)
 	{
 
+		
+
 		if(readyaIsntDestroyed){
 			if(FlxG.mouse.overlaps(readya)){
 				readyCL.visible = true;
@@ -1666,9 +1670,6 @@ class PlayState extends MusicBeatState
 		if (FlxG.save.data.scoreTxt)
 			scoreTxt.text = 'Score: \n ${songScore}\n\n' + 'Misses: \n ${misses}\n\n' + 'Accuracy: \n ${Mathf.getPercentage(accuracy, 2)}% \n\n';
 		else
-			scoreTxt.text = 'Score: ${songScore}';
-
-		if (FlxG.keys.justPressed.ENTER && startedCountdown && canPause)
 		{
 			pauseGame();
 		}

@@ -1,7 +1,6 @@
 package scripting.ui;
 
 import states.MainMenuState;
-import flixel.FlxSprite;
 
 class MMScript {
     public static function onCreate() {
@@ -9,7 +8,7 @@ class MMScript {
     }
 
     public static function onUpdate() {
-        
+
     }
 
     public static function onItemChange() {

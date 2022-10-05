@@ -58,6 +58,7 @@ import Discord.DiscordClient;
 #if sys
 import sys.FileSystem;
 #end
+import scripting.game.Script;
 
 
 using StringTools;
@@ -206,6 +207,8 @@ class PlayState extends MusicBeatState
 
 	override public function create()
 	{
+
+		Script.onCreate();
 
 		if(FlxG.save.data.noteSkin == null)
 			FlxG.save.data.noteSkin = 'Arrows'; //L M A O
@@ -1628,6 +1631,9 @@ class PlayState extends MusicBeatState
 	override public function update(elapsed:Float)
 	{
 
+		Script.onUpdate();
+		
+
 		if(readyaIsntDestroyed){
 			if(FlxG.mouse.overlaps(readya)){
 				readyCL.visible = true;
@@ -1666,9 +1672,6 @@ class PlayState extends MusicBeatState
 		if (FlxG.save.data.scoreTxt)
 			scoreTxt.text = 'Score: \n ${songScore}\n\n' + 'Misses: \n ${misses}\n\n' + 'Accuracy: \n ${Mathf.getPercentage(accuracy, 2)}% \n\n';
 		else
-			scoreTxt.text = 'Score: ${songScore}';
-
-		if (FlxG.keys.justPressed.ENTER && startedCountdown && canPause)
 		{
 			pauseGame();
 		}
@@ -2135,6 +2138,8 @@ class PlayState extends MusicBeatState
 
 	private function gameOver(){
 
+		Script.onPlayerDeath();
+
 		boyfriend.stunned = true;
 	
 		persistentUpdate = false;
@@ -2585,7 +2590,8 @@ class PlayState extends MusicBeatState
 
 	function noteMiss(direction:Int = 1):Void
 	{
-		
+		Script.onNoteMiss();
+
 		if (!boyfriend.stunned)
 		{
 			if(FlxG.save.data.perfectmode)//Perfect Mode
@@ -2740,6 +2746,7 @@ class PlayState extends MusicBeatState
 
 		function goodNoteHit(note:Note, resetMashViolation = true):Void
 		{	
+				Script.onNoteHit();
 
 				//combo ++;
 				if(mashing != 0)

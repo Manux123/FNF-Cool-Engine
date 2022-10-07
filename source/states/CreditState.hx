@@ -1,219 +1,275 @@
 package states;
 
-import lime.ui.KeyCode;
 import flixel.FlxState;
 import flixel.FlxG;
-import flixel.util.FlxColor;
-import flixel.text.FlxText;
 import flixel.FlxSprite;
+import flixel.util.FlxColor;
+import Alphabet;
+import flixel.text.FlxText;
 
 class CreditState extends FlxState {
-
-    var bg = new FlxSprite().loadGraphic("assets/images/menu/menuBG.png");
-
-    var pissPoopUwuCred:Array<Dynamic> = [ // User's name, Description
-        ["Manux123", "Main Programmer of Cool-Engine"],
-        ["Jloor", "Programmer Friday Night Funkin: Cool Engine"],
-        ["Chasetodie", "Programmer Friday Night Funkin: Cool Engine"],
-        ["Jotaro Gaming", "Programmer and Composer Friday Night Funkin: Cool Engine"],
-        ["Overcharged Dev", "Programmer Friday Night Funkin: Cool Engine"],
-        ["FairyBoy", "Artist Friday Night Funkin: Cool Engine"],
-        ["Zero Artist", "Artist Friday Night Funkin: Cool Engine"],
-        ["XuelDev", "Programmer Friday Night Funkin: Cool Engine"]
-    ];
-
-    var DescriptionBox = new FlxSprite().makeGraphic(1000, 100, FlxColor.BLACK);
-    var DescriptionText = new FlxText(0,0,0,"None",16);
-
-    var selShit = 0;
-
-    var Manux123:FlxText;
-    var Jloor:FlxText;
-    var Chasetodie:FlxText;
-    var MrClogsworthYT:FlxText;
-    var OverchargedDev:FlxText;
-    var FairyBoy:FlxText;
-    var ZeroArtist:FlxText;
-    var XuelDev:FlxText;
-
-    var size = 30;
-
-    var manuxppsize = 0;
-
-    // Color
-
-    var NOTSEL = FlxColor.WHITE;
-    var SELECTED = FlxColor.GREEN;
     
+    var curSelected = 0;
+
+    var Manux123:Alphabet;
+    var Jloor:Alphabet;
+    var Chasetodie:Alphabet;
+    var JotaroGaming:Alphabet;
+    var OverchargedDev:Alphabet;
+    var FairyBoy:Alphabet;
+    var ZeroArtist:Alphabet;
+    var XuelDev:Alphabet;
+
+    var ExitState:FlxText;
+
+    var hidden = false;
+
+    var DescriptionText:FlxText;
+
+    public var descriptions = [
+        "(Retired) Programmer of the Friday Night Funkin: Cool Engine", // Manux123
+        "(Retired) Programmer Friday Night Funkin: Cool Engine", // Jloor
+        "(Retired) Programmer Friday Night Funkin: Cool Engine", // Chasetodie
+        "Programmer and composer Friday Night Funkin: Cool Engine", // JotaroGaming
+        "(Retired) Programmer Friday Night Funkin: Cool Engine", // OverchargedDev
+        "(Retired) Artists Friday Night Funkin: Cool Engine", // Fairy Boy and Zero Artist
+        "Programmer of the Friday Night Funkin: Cool Engine" // XuelDev
+
+    ];
+    
+    public static var maxAmount = 7;
+
+
+    var bg:FlxSprite;
 
     override public function create() {
         super.create();
 
-        DescriptionBox.screenCenter();
-        DescriptionBox.y = 600;
-
-        DescriptionText.screenCenter();
-        DescriptionText.y = 645;
-        
-
-
-        Manux123 = new FlxText(0,50,0,pissPoopUwuCred[0][0], 40);
-        Manux123.scrollFactor.set();
-		Manux123.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-        Manux123.color = FlxColor.GREEN;
-        
-        Jloor = new FlxText(0,70,0,pissPoopUwuCred[1][0], 40);
-        Jloor.scrollFactor.set();
-		Jloor.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-        Jloor.color = FlxColor.WHITE;
-
-        Chasetodie = new FlxText(0,90,0,pissPoopUwuCred[2][0], 40);
-        Chasetodie.scrollFactor.set();
-		Chasetodie.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-        Chasetodie.color = FlxColor.WHITE;
-        
-        MrClogsworthYT = new FlxText(0,110,0,pissPoopUwuCred[3][0], 40);
-        MrClogsworthYT.scrollFactor.set();
-		MrClogsworthYT.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-        MrClogsworthYT.color = FlxColor.WHITE;
-
-        OverchargedDev = new FlxText(0,130,0,pissPoopUwuCred[4][0], 40);
-        OverchargedDev.scrollFactor.set();
-		OverchargedDev.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-        OverchargedDev.color = FlxColor.WHITE;        
-        
-        FairyBoy = new FlxText(0,150,0,pissPoopUwuCred[5][0], 40);
-        FairyBoy.scrollFactor.set();
-		FairyBoy.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-        FairyBoy.color = FlxColor.WHITE;      
-        
-        ZeroArtist = new FlxText(0,170,0,pissPoopUwuCred[6][0], 40);
-        ZeroArtist.scrollFactor.set();
-		ZeroArtist.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-        ZeroArtist.color = FlxColor.WHITE;
-
-        XuelDev = new FlxText(0,190,0,pissPoopUwuCred[7][0], 40);
-        XuelDev.scrollFactor.set();
-		XuelDev.setFormat(Paths.font("Funkin.otf"), size, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-        XuelDev.color = FlxColor.WHITE;
-        
-        
-        
-
-
-
+        bg = new FlxSprite().loadGraphic("assets/images/menu/menuBGloading.png");
+        bg.screenCenter();
         add(bg);
-        add(DescriptionBox);
-        add(DescriptionText);
+
+        Manux123 = new Alphabet(13, 40, "Manux123", true, false);
+        Manux123.color = FlxColor.GREEN;
         add(Manux123);
+
+        Jloor = new Alphabet(13, 100, "Jloor", true, false);
+        Jloor.color = FlxColor.WHITE;
         add(Jloor);
+
+        Chasetodie = new Alphabet(13, 160, "Chasetodie", true, false);
+        Chasetodie.color = FlxColor.WHITE;
         add(Chasetodie);
-        add(MrClogsworthYT);
+
+        JotaroGaming = new Alphabet(13, 220, "Jotaro-Gaming", true, false);
+        JotaroGaming.color = FlxColor.WHITE;
+        add(JotaroGaming);
+
+        OverchargedDev = new Alphabet(13, 280, "Overcharged-Dev", true, false);
+        OverchargedDev.color = FlxColor.WHITE;
         add(OverchargedDev);
+
+        FairyBoy = new Alphabet(13, 340, "FairyBoy", true, false);
+        FairyBoy.color = FlxColor.WHITE;
         add(FairyBoy);
+
+        ZeroArtist = new Alphabet(13, 400, "ZeroArtist", true, false);
+        ZeroArtist.color = FlxColor.WHITE;
         add(ZeroArtist);
+
+        XuelDev = new Alphabet(13, 460, "XuelDev", true, false);
+        XuelDev.color = FlxColor.WHITE;
         add(XuelDev);
+
+        DescriptionText = new FlxText(0,0,0, "Loading...", 30);
+        DescriptionText.screenCenter();
+        DescriptionText.visible = false;
+        add(DescriptionText);
+
+        ExitState = new FlxText(0,0,0, "ESC TO EXIT", 12);
+        ExitState.screenCenter();
+        ExitState.y = 13;
+        ExitState.visible = true;
+        add(ExitState);
     }
 
     override public function update(elapsed) {
         super.update(elapsed);
 
-        DescriptionText.screenCenter();
-        DescriptionText.y = 640;
-
-        switch (selShit) {
+        switch (curSelected) {
             case 0:
-                DescriptionText.text = pissPoopUwuCred[0][1];
+                Manux123.color = FlxColor.GREEN;
+                Jloor.color = FlxColor.WHITE;
+                Chasetodie.color = FlxColor.WHITE;
+                JotaroGaming.color = FlxColor.WHITE;
+                OverchargedDev.color = FlxColor.WHITE;
+                FairyBoy.color = FlxColor.WHITE;
+                ZeroArtist.color = FlxColor.WHITE;
+                XuelDev.color = FlxColor.WHITE;
             case 1:
-                DescriptionText.text = pissPoopUwuCred[1][1];
-            case 2:
-                DescriptionText.text = pissPoopUwuCred[2][1];
-            case 3:
-                DescriptionText.text = pissPoopUwuCred[3][1];
-            case 4:
-                DescriptionText.text = pissPoopUwuCred[4][1];
-            case 5:
-                DescriptionText.text = pissPoopUwuCred[5][1];
-            case 6:
-                DescriptionText.text = pissPoopUwuCred[6][1];
-            case 7:
-                DescriptionText.text = pissPoopUwuCred[7][1];
+                Manux123.color = FlxColor.WHITE;
+                Jloor.color = FlxColor.GREEN;
+                Chasetodie.color = FlxColor.WHITE;
+                JotaroGaming.color = FlxColor.WHITE;
+                OverchargedDev.color = FlxColor.WHITE;
+                FairyBoy.color = FlxColor.WHITE;
+                ZeroArtist.color = FlxColor.WHITE;
+                XuelDev.color = FlxColor.WHITE;
 
+            case 2:
+                Manux123.color = FlxColor.WHITE;
+                Jloor.color = FlxColor.WHITE;
+                Chasetodie.color = FlxColor.GREEN;
+                JotaroGaming.color = FlxColor.WHITE;
+                OverchargedDev.color = FlxColor.WHITE;
+                FairyBoy.color = FlxColor.WHITE;
+                ZeroArtist.color = FlxColor.WHITE;
+                XuelDev.color = FlxColor.WHITE;
+            case 3:
+                Manux123.color = FlxColor.WHITE;
+                Jloor.color = FlxColor.WHITE;
+                Chasetodie.color = FlxColor.WHITE;
+                JotaroGaming.color = FlxColor.GREEN;
+                OverchargedDev.color = FlxColor.WHITE;
+                FairyBoy.color = FlxColor.WHITE;
+                ZeroArtist.color = FlxColor.WHITE;
+                XuelDev.color = FlxColor.WHITE;
+            case 4:
+                Manux123.color = FlxColor.WHITE;
+                Jloor.color = FlxColor.WHITE;
+                Chasetodie.color = FlxColor.WHITE;
+                JotaroGaming.color = FlxColor.WHITE;
+                OverchargedDev.color = FlxColor.GREEN;
+                FairyBoy.color = FlxColor.WHITE;
+                ZeroArtist.color = FlxColor.WHITE;
+                XuelDev.color = FlxColor.WHITE;
+            case 5:
+                Manux123.color = FlxColor.WHITE;
+                Jloor.color = FlxColor.WHITE;
+                Chasetodie.color = FlxColor.WHITE;
+                JotaroGaming.color = FlxColor.WHITE;
+                OverchargedDev.color = FlxColor.WHITE;
+                FairyBoy.color = FlxColor.GREEN;
+                ZeroArtist.color = FlxColor.WHITE;
+                XuelDev.color = FlxColor.WHITE;
+            case 6:
+                Manux123.color = FlxColor.WHITE;
+                Jloor.color = FlxColor.WHITE;
+                Chasetodie.color = FlxColor.WHITE;
+                JotaroGaming.color = FlxColor.WHITE;
+                OverchargedDev.color = FlxColor.WHITE;
+                FairyBoy.color = FlxColor.WHITE;
+                ZeroArtist.color = FlxColor.GREEN;
+                XuelDev.color = FlxColor.WHITE;
+            case 7:
+                Manux123.color = FlxColor.WHITE;
+                Jloor.color = FlxColor.WHITE;
+                Chasetodie.color = FlxColor.WHITE;
+                JotaroGaming.color = FlxColor.WHITE;
+                OverchargedDev.color = FlxColor.WHITE;
+                FairyBoy.color = FlxColor.WHITE;
+                ZeroArtist.color = FlxColor.WHITE;
+                XuelDev.color = FlxColor.GREEN;
         }
 
-        if (FlxG.keys.justPressed.DOWN) {
-            switch (selShit) {
-                case 0:
-                    selShit=1;
-                    Manux123.color = NOTSEL;
-                    Jloor.color = SELECTED;
-                case 1:
-                    Jloor.color = NOTSEL;
-                    Chasetodie.color = SELECTED;
-                    selShit=2;
-                case 2:
-                    Chasetodie.color = NOTSEL;
-                    MrClogsworthYT.color = SELECTED;
-                    selShit=3;
-                case 3:
-                    MrClogsworthYT.color = NOTSEL;
-                    OverchargedDev.color = SELECTED;
-                    selShit=4;
-                case 4:
-                    OverchargedDev.color = NOTSEL;
-                    FairyBoy.color = SELECTED;
-                    selShit=5;
-                case 5:
-                    FairyBoy.color = NOTSEL;
-                    ZeroArtist.color = SELECTED;
-                    selShit=6;
-                case 6:
-                    ZeroArtist.color = NOTSEL;
-                    XuelDev.color = SELECTED;
-                    selShit=7;
-                case 7:
-                    trace("Just No.");
 
+        if (FlxG.keys.justPressed.UP) {
+            if (curSelected == 0) {
+                trace("Hell nah");
+            } else {
+                curSelected = curSelected - 1;
             }
-        } else if (FlxG.keys.justPressed.UP) {
-            switch (selShit) {
-                case 0:
-                    trace("Just No.");
-                case 1:
-                    Jloor.color = NOTSEL;
-                    Manux123.color = SELECTED;
-                    selShit--;
-                case 2:
-                    Chasetodie.color = NOTSEL;
-                    Jloor.color = SELECTED;
-                    selShit--;
-                case 3:
-                    MrClogsworthYT.color = NOTSEL;
-                    Chasetodie.color = SELECTED;
-                    selShit--;
-                case 4:
-                    OverchargedDev.color = NOTSEL;
-                    MrClogsworthYT.color = SELECTED;
-                    selShit--;
-                case 5:
-                    FairyBoy.color = NOTSEL;
-                    OverchargedDev.color = SELECTED;
-                    selShit--;
-                case 6:
-                    ZeroArtist.color = NOTSEL;
-                    FairyBoy.color = SELECTED;
-                    selShit--;
-                case 7:
-                    XuelDev.color = NOTSEL;
-                    ZeroArtist.color = SELECTED;
-                    selShit--;
+        } else if (FlxG.keys.justPressed.DOWN) {
+            if (curSelected == 7) {
+                trace("Hell nah");
+            } else {
+                curSelected = curSelected + 1;
             }
-        } 
-        
-        if (FlxG.keys.justPressed.ESCAPE) {
-            FlxG.camera.fade(FlxColor.BLACK, 0.5, false, function() {
+        }
+
+        if (FlxG.keys.justPressed.ENTER) {
+            if (hidden == false) {
+                hideShit();
+            } 
+        } else if (FlxG.keys.justPressed.ESCAPE) {
+            if (hidden == true) {
+                showShit();
+            } else {
                 FlxG.switchState(new states.MainMenuState());
-            });
+            }
+        }
+
+
+    }
+
+    public function showShit() {
+        Manux123.visible = true;
+        Jloor.visible = true;
+        Chasetodie.visible = true;
+        JotaroGaming.visible = true;
+        OverchargedDev.visible = true;
+        FairyBoy.visible = true;
+        ZeroArtist.visible = true;
+        XuelDev.visible = true;
+        ExitState.text = "ESC TO EXIT";
+        ExitState.screenCenter();
+        ExitState.y = 13;
+        hidden = false;
+        hideDescriptions();
+    }
+
+    public function hideDescriptions() {
+        DescriptionText.visible = false;
+        DescriptionText.text = "Closing..";
+    }
+
+    public function hideShit() {
+        Manux123.visible = false;
+        Jloor.visible = false;
+        Chasetodie.visible = false;
+        JotaroGaming.visible = false;
+        OverchargedDev.visible = false;
+        FairyBoy.visible = false;
+        ZeroArtist.visible = false;
+        XuelDev.visible = false;
+        hidden = true;
+        sortDescriptions();
+    }
+
+    public function sortDescriptions() {
+        DescriptionText.visible = true;
+        ExitState.text = "ESC TO RETURN TO CREDITS";
+        ExitState.screenCenter();
+        ExitState.y = 13;
+        switch (curSelected) {
+            case 0:
+                DescriptionText.text = descriptions[0];
+                DescriptionText.screenCenter();
+            case 1:
+                DescriptionText.text = descriptions[1];
+                DescriptionText.screenCenter();
+            case 2:
+                DescriptionText.text = descriptions[2];
+                DescriptionText.screenCenter();
+            case 3:
+                DescriptionText.text = descriptions[3];
+                DescriptionText.screenCenter();
+            case 4:
+                DescriptionText.text = descriptions[4];
+                DescriptionText.screenCenter();
+            case 5:
+                DescriptionText.text = descriptions[5];
+                DescriptionText.screenCenter();
+            case 6:
+                DescriptionText.text = descriptions[5];
+                DescriptionText.screenCenter();
+            case 7:
+                DescriptionText.text = descriptions[6];
+                DescriptionText.screenCenter();
+                
+            
         }
     }
+
+
 }

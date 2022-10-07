@@ -132,7 +132,7 @@ class FreeplayState extends states.MusicBeatState
 				addWeek(weekData[i], i, songsHeads[i-1]);
 		}
 
-		bg = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
+		bg = new FlxSprite().loadGraphic(Paths.image('menu/menuBGloading'));
 		add(bg);
 
 		grpSongs = new FlxTypedGroup<Alphabet>();

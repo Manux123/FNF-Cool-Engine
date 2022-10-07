@@ -9,7 +9,7 @@ class MMScript {
     }
 
     public static function onUpdate() {
-        
+
     }
 
     public static function onItemChange() {

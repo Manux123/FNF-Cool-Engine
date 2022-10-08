@@ -588,8 +588,9 @@ class PlayState extends MusicBeatState
 			scoreTxt = new FlxText(45, healthBarBG.y + 50, 0, "", 32);
 			scoreTxt.setBorderStyle(FlxTextBorderStyle.OUTLINE,FlxColor.BLACK,4,1);
         	scoreTxt.color = FlxColor.WHITE;
-			scoreTxt.size = 22;
-			scoreTxt.y -= 350;
+			scoreTxt.size = 16;
+			scoreTxt.y = 690;
+			scoreTxt.screenCenter();
 			scoreTxt.scrollFactor.set();
 		} else {
 			scoreTxt = new FlxText(healthBarBG.x + healthBarBG.width - 190, healthBarBG.y + 30, 0, "", 20);
@@ -1669,9 +1670,11 @@ class PlayState extends MusicBeatState
 
 		super.update(elapsed);
 
-		if (FlxG.save.data.scoreTxt)
-			scoreTxt.text = 'Score: \n ${songScore}\n\n' + 'Misses: \n ${misses}\n\n' + 'Accuracy: \n ${Mathf.getPercentage(accuracy, 2)}% \n\n';
-		else
+		if (FlxG.save.data.scoreTxt) {
+			scoreTxt.text = 'Score: ${songScore} ' + 'Misses: ${misses} ' + 'Accuracy: ${Mathf.getPercentage(accuracy, 2)}%';
+			scoreTxt.screenCenter();
+			scoreTxt.y = 690;
+		} else
 		{
 			pauseGame();
 		}
@@ -2747,6 +2750,9 @@ class PlayState extends MusicBeatState
 		function goodNoteHit(note:Note, resetMashViolation = true):Void
 		{	
 				Script.onNoteHit();
+
+				scoreTxt.size = 22;
+				scoreTxt.size = 16;
 
 				//combo ++;
 				if(mashing != 0)

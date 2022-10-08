@@ -33,6 +33,8 @@ class Toolbox extends FlxState {
         ConfigMods.color = FlxColor.WHITE;
         add(ConfigMods);
 
+
+
         var versionShit1:FlxText = new FlxText(5, FlxG.height - 14, 0, 'Cool Engine - V${Application.current.meta.get('version')}', 12);
 		versionShit1.scrollFactor.set();
 		versionShit1.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -71,6 +73,8 @@ class Toolbox extends FlxState {
             switch (curSelected) {
                 case 0:
                     FlxG.switchState(new states.ModsState());
+                case 1:
+                    trace("Not complete");
             }
         }
     }

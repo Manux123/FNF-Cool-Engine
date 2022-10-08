@@ -49,7 +49,6 @@ class ModsState extends states.MusicBeatState
 
 		trace(ModPaths.getPreviewVideo('preview-video',modsFolders[curSelected]));
 
-		trace(ModPaths.getModScripts('Script',modsFolders[curSelected]));
 
 		exitState = new FlxText(0, 0, 0, "ESC to exit", 12);
 		exitState.size = 28;
@@ -123,6 +122,7 @@ class ModsState extends states.MusicBeatState
 
 	private function changeSelection(change:Int):Void{
 
+
 		curMod = modsFolders[curSelected - 1];
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
 		if(openfl.utils.Assets.exists('mods/' + modsFolders[curSelected + 1] + '/music/freakyMenu.ogg'))
@@ -151,6 +151,8 @@ class ModsState extends states.MusicBeatState
 				item.alpha = 1;
 			}
 		}
+		trace(ModPaths.getModScripts('Script.hx',modsFolders[curSelected]));
+
 	}
 }
 

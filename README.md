@@ -13,7 +13,7 @@
 - [Jotaro-Gaming](https://youtube.com/c/JotaroGamingg) - Programmer and composer Friday Night Funkin: Cool Engine V2 and V1
 - [Overcharged Dev](https://www.youtube.com/channel/UCkcscIIXyUsfj2DsnNDWQbg/) - retired Programmer Friday Night Funkin: Cool Engine
 - [FairyBoy](https://twitter.com/JulianSamwise?s=09) and [Zero Artist](https://twitter.com/zero_artist02) - retired Artists Friday Night Funkin: Cool Engine
-- [XuelDev](https://discord.gg/utF3djrjcg) - Programmer Friday Night Funkin: Cool Engine V1 and V2
+- [XuelDev](https://www.instagram.com/xueldev/) - Programmer Friday Night Funkin: Cool Engine V1 and V2
 - [Juanen100](https://twitter.com/Juanen1001) - Programmer Friday Night Funkin : Cool Engine V2 and V1
 
 ## Funkin android credits

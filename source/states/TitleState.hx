@@ -230,7 +230,7 @@ class TitleState extends states.MusicBeatState
 			var Timer:FlxTimer = new FlxTimer().start(0.1, function(timer:FlxTimer) {
 				if (startNut == 0) {
 					credTextShit.visible = true;
-					credTextShit.text = "Manux123\nJloor\nChasetodie\nJontoro\nOverchargedDev\nFairyBoy\nZeroArtist\nXuelDev";
+					credTextShit.text = "Manux123\nJloor\nChasetodie\nJontoro\nOverchargedDev\nFairyBoy\nZeroArtist\nJuanen100\nXuelDev";
 					credTextShit.screenCenter();
 
 					timer.start(timerWait, function(timer:FlxTimer) {

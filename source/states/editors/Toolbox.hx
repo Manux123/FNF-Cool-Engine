@@ -1,81 +1,137 @@
 package states.editors;
 
-import Alphabet;
-import flixel.FlxG;
-import flixel.FlxSprite;
-import flixel.FlxState;
-import flixel.text.FlxText;
+import others.Notify;
 import flixel.util.FlxColor;
-import lime.app.Application;
-import Paths;
-import others.Config;
+import flixel.FlxG;
+import flixel.FlxState;
+import flixel.FlxSprite;
+import flixel.text.FlxText;
+import flixel.group.FlxSpriteGroup;
+import Alphabet;
 
 class Toolbox extends FlxState {
-    var bg:FlxSprite;
-    var ConfigMods:Alphabet;
-    var ModShit:Alphabet;
+    
+    // Config Shit 
 
-    var curSelected = 0;
+    public var OptionsShit = [
+        "Load Mods",
+        "Config Mods"
+    ];
+
+    public var minCur = 1;
+    public var maxCur = 2;
+
+    // Pos shit
+
+
+    public var yShit = 40;
+    public var addBy = 60;
+    public var fuckMeSideways = 0;
+
+    public var curSelected = 1;
+
+    public var idShit = 1;
+
+    public var firstOption = true;
+
+    // Group Shit 
+
+    public var OptionGroup = new FlxSpriteGroup();
+
+    // Edit this function for adding custom menu buttons 
+
+    public function loadState() {
+        switch (curSelected) {
+            case 1:
+                FlxG.switchState(new states.ModsState());
+            case 2:
+                trace("Menu Not Complete!");
+        }
+    }
 
     override public function create() {
         super.create();
 
-        bg = new FlxSprite().loadGraphic("assets/images/menu/menuDesat.png");
+        Notify.NText = "This Menu is in Beta.";
+        openSubState(new others.Notify());
+
+        var bg = new FlxSprite().loadGraphic("assets/images/menu/menuDesat.png");
         bg.screenCenter();
         bg.color = 0xFF453F3F;
         add(bg);
 
-        ModShit = new Alphabet(13, 40, "Load Mods", true, false);
-        ModShit.color = FlxColor.GREEN;
-        add(ModShit);
+        for (i in OptionsShit) {
+            if (firstOption) {
+                var OptionShit = new Alphabet(0,yShit,i, true, false);
+                OptionGroup.add(OptionShit);
+                add(OptionShit);
+                OptionShit.ID = idShit;
 
-        ConfigMods = new Alphabet(13, 100, "Config Mods", true, false);
-        ConfigMods.color = FlxColor.WHITE;
-        add(ConfigMods);
+                trace("ID : " + OptionShit.ID);
 
+                idShit++;
+                firstOption = false;
+                fuckMeSideways++;
+            } else {
+                var OptionShit = new Alphabet(0,yShit + addBy * fuckMeSideways, i, true, false);
+                OptionGroup.add(OptionShit);
+                add(OptionShit);
+                OptionShit.ID = idShit;
 
-
-        var versionShit1:FlxText = new FlxText(5, FlxG.height - 14, 0, 'Cool Engine - V${Application.current.meta.get('version')}', 12);
-		versionShit1.scrollFactor.set();
-		versionShit1.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		versionShit1.y -= 20;
-		add(versionShit1);
-
+                trace("ID : " + OptionShit.ID);
+                
+                fuckMeSideways++;
+                idShit++;
+            }
+        }
     }
 
     override public function update(elapsed) {
         super.update(elapsed);
 
-        switch (curSelected) {
-            case 0:
-                ModShit.color = FlxColor.GREEN;
-                ConfigMods.color = FlxColor.WHITE;
-            case 1:
-                ModShit.color = FlxColor.WHITE;
-                ConfigMods.color = FlxColor.GREEN;
+        if (FlxG.keys.justPressed.DOWN) {
+            changeItem("DOWN");
         }
 
         if (FlxG.keys.justPressed.UP) {
-            if (curSelected == 0) {
-                trace("Cant");
+            changeItem("UP");
+        }
+
+        if (FlxG.keys.justPressed.ENTER) {
+            loadState();
+        }
+
+        if (FlxG.keys.justPressed.ESCAPE) {
+            Notify.removeNotification();
+            FlxG.switchState(new states.MainMenuState());
+        }
+
+        OptionGroup.screenCenter(X);
+    }
+
+    public function changeItem(way:String) {
+        if (way.toLowerCase() == "down") {
+            if (curSelected == maxCur) {
+                curSelected = minCur;
             } else {
-                curSelected = curSelected - 1;
-            }
-        } else if (FlxG.keys.justPressed.DOWN) {
-            if (curSelected == 1) {
-                trace("Cant");
-            } else {
-                curSelected = curSelected + 1;
-            }
-        } else if (FlxG.keys.justPressed.ESCAPE) {
-            FlxG.switchState(new states.editors.DeveloperMenu());
-        } else if (FlxG.keys.justPressed.ENTER) {
-            switch (curSelected) {
-                case 0:
-                    FlxG.switchState(new states.ModsState());
-                case 1:
-                    trace("Not complete");
+                curSelected++;
             }
         }
+
+        if (way.toLowerCase() == "up") {
+            if (curSelected == minCur) {
+                curSelected = maxCur;
+            } else {
+                curSelected = curSelected -1;
+            }
+        }
+
+        OptionGroup.forEach(function(spr:FlxSprite) {
+            if (spr.ID == curSelected) {
+                spr.color = FlxColor.GREEN;
+            } else {
+                spr.color = FlxColor.WHITE;
+            }
+        });
     }
 }

@@ -114,14 +114,14 @@ class RatingState extends FlxSubState
                 FlxG.camera.flash(FlxColor.WHITE, 2.5);
                 FlxG.sound.playMusic(Paths.music('freakyMenu'));
                 //FlxG.sound.music.stop();
+                FlxG.sound.play(Paths.sound('confirmMenu'));
                 pressedEnter = false;
 
                 new FlxTimer().start(2, function(tmr:FlxTimer)
                     {
-                    // Strexx was here - Strexx
-                    // Its not like u did something incredibly important - Juanen100
-		    // you*    
-            //Yeah thx sus for correcting me (don't correct the thx or i'll kill you)
+                        // Strexx was here - Strexx
+                        // Its not like u did something incredibly important - Juanen100 
+                        // Nah jit trippin' - XuelDev
         
                         if (PlayState.isStoryMode)
                         {

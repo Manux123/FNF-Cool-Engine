@@ -1,5 +1,6 @@
 package states;
 
+import others.Notify;
 #if desktop
 import Discord.DiscordClient;
 #end
@@ -176,15 +177,7 @@ class MainMenuState extends MusicBeatState
 		}
 
 		if (FlxG.keys.justPressed.SEVEN) {
-
-			Config.onAccept = new states.editors.DeveloperMenu();
-			Config.onDecline = new states.MainMenuState();
-			Config.AcceptText = "Continue.";
-			Config.DeclineText = "Return.";
-			Config.Title = "Alert!";
-			Config.Content = "This menu is in beta!";
-			MMScript.onNewStateTrigger("DEVMENU");
-			FlxG.switchState(new others.MenuMessage());
+FlxG.switchState(new states.editors.Toolbox());
 		}
 
 

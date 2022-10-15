@@ -1,80 +1,105 @@
 package states;
 
-import lime.app.Application;
-import states.OptionsMenuState.OptionsData;
-import flixel.FlxG;
-import flixel.util.FlxColor;
-import flixel.FlxState;
-import flixel.text.FlxText;
-import flixel.FlxSprite;
+import states.CreditsDescriptionState;
+import flixel.FlxCamera.FlxCameraFollowStyle;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
 import flixel.group.FlxSpriteGroup;
+import flixel.FlxState;
+import flixel.FlxG;
+import flixel.FlxSprite;
+import Alphabet;
+import flixel.util.FlxColor;
 
 class CreditState extends FlxState {
 
-    public static var pisspoop = [
-        ["Manux123", "(Retired) Programmer of Friday Night Funkin: Cool Engine"],
-        ["Jloor", "(Retired) Programmer of Friday Night Funkin: Cool Engine"],
-        ["Chasetodie", "(Retired) Programmer of Friday Night Funkin: Cool Engine"],
-        ["Jotaro Gaming", "Programmer of Friday Night Funkin: Cool Engine"],
-        ["Overcharged Dev", "(Retired) Programmer of Friday Night Funkin: Cool Engine"],
-        ["Fairy Boy", "(Retired) Artist of Friday Night Funkin: Cool Engine"],
-        ["Zero Artist", "(Retired) Artist of Friday Night Funkin: Cool Engine"],
-        ["Juanen100", "Programmer of Friday Night Funkin: Cool Engine"],
-        ["XuelDev", "Programmer of Friday Night Funkin: Cool Engine"]
+    // Item Shit
+
+    public var pisspoop = [
+        "Manux123",
+        "Jloor",
+        "Chasetodie",
+        "Jotaro Gaming",
+        "Overcharged Dev",
+        "FairyBoy",
+        "Zero Artist",
+        "Juanen100",
+        "XuelDev"
     ];
 
-    public var idnum = 0;
+    public var descs = [
+        "(Retired) Programmer Friday Night Funkin : Cool Engine",
+        "(Retired) Programmer Friday Night Funkin: Cool Engine",
+        "(Retired) Programmer Friday Night Funkin: Cool Engine",
+        "Programmer of Friday Night Funkin: Cool Engine",
+        "(Retired) Programmer Friday Night Funkin: Cool Engine",
+        "(Retired) Artist Friday Night Funkin: Cool Engine",
+        "(Retired) Artist Friday Night Funkin: Cool Engine",
+        "Programmer of Friday Night Funkin: Cool Engine",
+        "Programmer of Friday Night Funkin: Cool Engine"
+    ];
 
-    // Do not touch (Its not really important (If you touch it tho you may fuck the whole thing over))
-    public var yShit = 13;
+    public var debug = false;
+
+    public var curSelected = 1;
+
+    public var yShit = 40;
+    public var addBy = 60;
     public var timeBy = 0;
 
-    public var setGreen = true;
+    public var id = 1;
 
-    public var CredGroup = new FlxSpriteGroup();
+    public var fC = true;
 
-    var bg:FlxSprite;
+    public var credGroup = new FlxSpriteGroup();
+
+    public var bg:FlxSprite;
     
-    var versionShit:FlxText;
 
-
-    // Config for CreditsScreen
-
-    public var minCur = 1; // The lowest id of the trace list (Dont Change This)
-    public var maxCur = 9; // The highest id of the trace list (Change this)
-
-    // Don't touch
-    public var curSel = 1;
-
-    // Go ahead
-
-    
 
     override public function create() {
-        super.create();
 
-        bg = new FlxSprite().loadGraphic(Paths.image("menu/menuChartingBG"));
+        bg = new FlxSprite().loadGraphic(Paths.image("menu/menuDesat"));
         add(bg);
 
-        versionShit= new FlxText(5, FlxG.height - 19, 0, 'Cool Engine - V${Application.current.meta.get('version')}', 12);
-		versionShit.scrollFactor.set();
-		versionShit.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		add(versionShit);
+        for (i in pisspoop) {
+            if (fC) {
+                var Person = new Alphabet(13, yShit, i, true, false);
+                Person.ID = id;
 
+                FlxTween.tween(Person, {x: 100}, 0.45, {ease: FlxEase.quadOut});
 
-        for(i in pisspoop) {
-            var CredShit = new FlxText(13,yShit*timeBy,0,i[0], 16);
-            if (setGreen) {CredShit.color = FlxColor.GREEN;} else {CredShit.color = FlxColor.WHITE;}
-            CredGroup.add(CredShit);
-            add(CredShit);
-            setGreen = false;
-            idnum++;
-            CredShit.ID = idnum;
-            trace("ID CARD : " + idnum + " | ID : " + CredShit.ID);
-            timeBy++;
+                Person.color = FlxColor.GREEN;
 
-            
+                add(Person);
+                credGroup.add(Person);
+
+                // Add da shit
+                id++;
+                timeBy++;
+                fC = false;
+            } else {
+                var Person = new Alphabet(13, yShit+addBy*timeBy, i, true, false);
+                Person.ID = id;
+
+                add(Person);
+                credGroup.add(Person);
+
+                // Add da shit
+                id++;
+                timeBy++;
+            }
         }
+
+        if (debug == true) {
+            debugIds();
+        }
+    }
+
+    public function debugIds() {
+        credGroup.forEach(function(spr:FlxSprite) {
+            trace("ID : " + spr.ID);
+        });
     }
 
     override public function update(elapsed) {
@@ -88,35 +113,45 @@ class CreditState extends FlxState {
             changeItem("UP");
         }
 
+        if (FlxG.keys.justPressed.ENTER) {
+            var daChoice = curSelected - 1;
+            CreditsDescriptionState.Description = descs[daChoice];
+            FlxG.switchState(new states.CreditsDescriptionState());
+        }
+
         if (FlxG.keys.justPressed.ESCAPE) {
             FlxG.switchState(new states.MainMenuState());
         }
 
-        CredGroup.screenCenter(X);
+        // credGroup.screenCenter(X);
     }
 
-    public function changeItem(counterWay:String) {
-        if (counterWay.toLowerCase() == "down") {
-            if (curSel == maxCur) {
-                curSel = minCur;
+    public function changeItem(way:String) {
+        if (way == "DOWN") {
+            if (curSelected == pisspoop.length) {
+                curSelected = 1;
             } else {
-                curSel++;
-            }
-        } 
-
-        if (counterWay.toLowerCase() == "up") {
-            if (curSel == minCur) {
-                curSel = maxCur;
-            } else {
-                curSel = curSel - 1;
+                curSelected++;
             }
         }
 
-        CredGroup.forEach(function(spr:FlxSprite) {
-            if (spr.ID == curSel) {
-                spr.color = FlxColor.GREEN;
+        if (way == "UP") {
+            if (curSelected == 1) {
+                curSelected = pisspoop.length;
             } else {
+                curSelected = curSelected - 1;
+            }
+        }
+
+        credGroup.forEach(function(spr:FlxSprite) {
+            if (spr.ID == curSelected) {
+                FlxTween.tween(spr, {x: 100}, 0.45, {ease: FlxEase.quadOut});
+                spr.color = FlxColor.GREEN;
+                // FlxG.camera.follow(bg, FlxCameraFollowStyle.TOPDOWN);
+            } else {
+                FlxTween.tween(spr, {x: 13}, 0.45, {ease: FlxEase.quadIn});
                 spr.color = FlxColor.WHITE;
+
             }
         });
     }

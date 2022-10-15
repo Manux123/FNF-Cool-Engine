@@ -26,8 +26,6 @@
 - [PhantomArcade3K](https://twitter.com/phantomarcade3k) - Animator of fnf
 - [Evilsk8r](https://twitter.com/evilsk8r)  - Artist of fnf
 
-# MP4
-- I got rid of it lol Linux PROO!!! XuelDev:)
 
 # Building
 THESE INSTRUCTIONS ARE FOR COMPILING THE GAME'S SOURCE CODE!!!

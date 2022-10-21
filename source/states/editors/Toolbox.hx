@@ -105,7 +105,7 @@ class Toolbox extends FlxState {
         }
 
         if (FlxG.keys.justPressed.ESCAPE) {
-            loadState(1);
+            FlxG.switchState(new states.MainMenuState());
         }
             
     } 

@@ -122,6 +122,11 @@ class MainMenuState extends MusicBeatState
 		}
 		//FlxG.camera.follow(camFollow, null, 0.06);
 		
+		var unstableShit = new FlxText(5, FlxG.height -57,0, "Press U to open unstable!");
+		unstableShit.scrollFactor.set();
+		unstableShit.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		add(unstableShit);
+
 		creditsShit= new FlxText(5, FlxG.height - 19, 0, "Press C to go to credits!", 12);
 		creditsShit.scrollFactor.set();
 		creditsShit.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -176,12 +181,18 @@ class MainMenuState extends MusicBeatState
 		}
 
 		if (FlxG.keys.justPressed.SEVEN) {
-FlxG.switchState(new states.editors.Toolbox());
+			FlxG.switchState(new states.editors.Toolbox());
 		}
 
 
+		if (FlxG.keys.justPressed.U) {
+			FlxG.switchState(new states.unstable.UnstableLoader());
+		}
+
 		if (!selectedSomethin)
 		{
+			
+			
 			if (controls.UP_P)
 			{
 				FlxG.sound.play(Paths.sound('scrollMenu'));

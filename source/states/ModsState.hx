@@ -97,7 +97,7 @@ class ModsState extends states.MusicBeatState
 	override function update(elapsed:Float){
 		#if MOD_ALL
 		if(controls.BACK) {
-			LoadingState.loadAndSwitchState(new states.editors.Toolbox());
+			LoadingState.loadAndSwitchState(new states.MainMenuState());
 			FlxG.camera.flash(FlxColor.WHITE);
 		}
 		if(modsFolders.length != 0 || modsFolders != []) 

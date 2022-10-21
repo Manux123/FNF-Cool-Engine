@@ -49,7 +49,7 @@ class OptionsMenuState extends MusicBeatState
 			("\n" + 'Note Skin') +
                         ("\n" + 'Credits') +
 			("\n" + 'Controls')
-		
+		);
 		//trace(controlsStrings);
 
 		#if desktop

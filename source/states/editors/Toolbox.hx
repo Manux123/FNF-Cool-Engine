@@ -1,96 +1,99 @@
 package states.editors;
 
-import others.Notify;
 import flixel.util.FlxColor;
-import flixel.FlxG;
 import flixel.FlxState;
+import flixel.FlxG;
 import flixel.FlxSprite;
-import flixel.text.FlxText;
+import flixel.tweens.*;
 import flixel.group.FlxSpriteGroup;
 import Alphabet;
 
 class Toolbox extends FlxState {
-    
-    // Config Shit 
 
-    public var OptionsShit = [
-        "Load Mods",
-        "Config Mods"
+    public var optionShit = [
+        "Load Mods"
     ];
 
-    public var minCur = 1;
-    public var maxCur = 2;
 
-    // Pos shit
-
+    public var id = 1;
 
     public var yShit = 40;
     public var addBy = 60;
-    public var fuckMeSideways = 0;
+    public var timeBy = 0;
 
     public var curSelected = 1;
 
-    public var idShit = 1;
+    public var menuItems = new FlxSpriteGroup();
 
-    public var firstOption = true;
 
-    // Group Shit 
+    public var UP = FlxG.keys.justPressed.UP;
+    public var DOWN = FlxG.keys.justPressed.DOWN;
+    public var ENTER = FlxG.keys.justPressed.ENTER;
 
-    public var OptionGroup = new FlxSpriteGroup();
-
-    // Edit this function for adding custom menu buttons 
-
-    public function loadState() {
-        switch (curSelected) {
-            case 1:
+    public function loadState(num:Int) {
+        
+        
+        var daChoice = optionShit[curSelected - 1];
+        switch(daChoice) {
+            case "Load Mods":
                 FlxG.switchState(new states.ModsState());
-            case 2:
-                trace("Menu Not Complete!");
         }
     }
 
     override public function create() {
-        super.create();
+        // var daChoice:String = optionShit[curSelected]; 
+        // FlxG.switchState(optionMap[daChoice]);
 
-        Notify.NText = "This Menu is in Beta.";
-        openSubState(new others.Notify());
+        // Above is for later
 
-        var bg = new FlxSprite().loadGraphic("assets/images/menu/menuDesat.png");
-        bg.screenCenter();
-        bg.color = 0xFF453F3F;
+        var bg = new FlxSprite().loadGraphic(Paths.image("menu/menuDesat"));
         add(bg);
 
-        for (i in OptionsShit) {
-            if (firstOption) {
-                var OptionShit = new Alphabet(0,yShit,i, true, false);
-                OptionGroup.add(OptionShit);
-                add(OptionShit);
-                OptionShit.ID = idShit;
+        for (i in optionShit) {
+            if (id == 1) {
+                var OptionText = new Alphabet(13, yShit, i, true, false);
+                OptionText.color = FlxColor.GREEN;
+                FlxTween.tween(OptionText, {x: 100}, 0.45, {ease: FlxEase.quadOut});
+                OptionText.ID = id;
+                add(OptionText);
 
-                trace("ID : " + OptionShit.ID);
+                menuItems.add(OptionText);
 
-                idShit++;
-                firstOption = false;
-                fuckMeSideways++;
-            } else {
-                var OptionShit = new Alphabet(0,yShit + addBy * fuckMeSideways, i, true, false);
-                OptionGroup.add(OptionShit);
-                add(OptionShit);
-                OptionShit.ID = idShit;
-
-                trace("ID : " + OptionShit.ID);
+                id++;
+                timeBy++;
                 
-                fuckMeSideways++;
-                idShit++;
+            } else {
+                var OptionText = new Alphabet(13, yShit+addBy*timeBy, i, true, false);
+                OptionText.color = FlxColor.WHITE;
+                OptionText.ID = id;
+                add(OptionText);
+
+                menuItems.add(OptionText);
+
+                id++;
+                timeBy++;   
             }
         }
+
+
+        // Debugging Ids
+
+        debugIds(); // If you don't want the ids to show in console comment this line out
+
+
+    }
+
+    public function debugIds() {
+        menuItems.forEach(function(spr:FlxSprite) {
+            trace("ID : " + spr.ID);
+        });
     }
 
     override public function update(elapsed) {
         super.update(elapsed);
-
+        
         if (FlxG.keys.justPressed.DOWN) {
-            changeItem("DOWN");
+            changeItem("DONW");
         }
 
         if (FlxG.keys.justPressed.UP) {
@@ -98,40 +101,46 @@ class Toolbox extends FlxState {
         }
 
         if (FlxG.keys.justPressed.ENTER) {
-            loadState();
+            loadState(0);
         }
 
         if (FlxG.keys.justPressed.ESCAPE) {
-            Notify.removeNotification();
-            FlxG.switchState(new states.MainMenuState());
+            loadState(1);
         }
-
-        OptionGroup.screenCenter(X);
-    }
+            
+    } 
 
     public function changeItem(way:String) {
-        if (way.toLowerCase() == "down") {
-            if (curSelected == maxCur) {
-                curSelected = minCur;
+        var lWay = way.toLowerCase();
+
+        if (lWay == "down") {
+            if (curSelected == optionShit.length) {
+                curSelected = 1;
             } else {
                 curSelected++;
             }
-        }
+        } 
 
-        if (way.toLowerCase() == "up") {
-            if (curSelected == minCur) {
-                curSelected = maxCur;
+        if (lWay == "up") {
+            if (curSelected == 1) {
+                curSelected = optionShit.length;
             } else {
-                curSelected = curSelected -1;
+                curSelected = curSelected - 1;
             }
         }
 
-        OptionGroup.forEach(function(spr:FlxSprite) {
+        menuItems.forEach(function(spr:FlxSprite) {
             if (spr.ID == curSelected) {
+                FlxTween.tween(spr, {x: 100}, 0.45, {ease: FlxEase.quadOut});
                 spr.color = FlxColor.GREEN;
+                // FlxG.camera.follow(bg, FlxCameraFollowStyle.TOPDOWN);
             } else {
+                FlxTween.tween(spr, {x: 13}, 0.45, {ease: FlxEase.quadIn});
                 spr.color = FlxColor.WHITE;
+
             }
         });
     }
+
+
 }

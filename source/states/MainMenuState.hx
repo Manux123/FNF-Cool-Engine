@@ -1,6 +1,5 @@
 package states;
 
-import others.Notify;
 #if desktop
 import Discord.DiscordClient;
 #end

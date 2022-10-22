@@ -1,12 +1,14 @@
-# [Cool Engine](https://github.com/Manux123/FNF-Cool-Engine)
+# YO YO YO This project has been abandoned if you want to see the updated version click [here](https://github.com/Cool-Engine-Team/JXJS-Engine)
 
-**FNF': Cool Engine is a modification of the original FNF' source code the mod includes new Options and better Graphics!!**
+# Cool Engine (legacy)
+
+**FNF': Cool Engine (legacy) is a modification of the original FNF' source code the mod includes new Options and better Graphics!!**
 ----------------------------------------------
 
 ![](/art/cool-logo.png)
 ----------------------------------------------
 
-## The Cool Engine Team Credits
+## (former) Cool Engine Team Credits
 - [Manux123](https://twitter.com/ActionsAnimati1) - retired Programmer Friday Night Funkin: Cool Engine
 - [Jloor](https://twitter.com/GamerJloor) - retired Programmer Friday Night Funkin: Cool Engine
 - [Chasetodie](https://twitter.com/Chasetodie10) - retired Programmer Friday Night Funkin: Cool Engine

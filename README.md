@@ -10,10 +10,10 @@
 - [Manux123](https://twitter.com/ActionsAnimati1) - retired Programmer Friday Night Funkin: Cool Engine
 - [Jloor](https://twitter.com/GamerJloor) - retired Programmer Friday Night Funkin: Cool Engine
 - [Chasetodie](https://twitter.com/Chasetodie10) - retired Programmer Friday Night Funkin: Cool Engine
-- [Jotaro-Gaming](https://youtube.com/c/JotaroGamingg) - Programmer and composer Friday Night Funkin: Cool Engine V2 and V1
+- [Jotaro-Gaming](https://youtube.com/c/JotaroGamingg) - retired Programmer and composer Friday Night Funkin: Cool Engine V2 and V1
 - [Overcharged Dev](https://www.youtube.com/channel/UCkcscIIXyUsfj2DsnNDWQbg/) - retired Programmer Friday Night Funkin: Cool Engine
 - [FairyBoy](https://twitter.com/JulianSamwise?s=09) and [Zero Artist](https://twitter.com/zero_artist02) - retired Artists Friday Night Funkin: Cool Engine
-- [XuelDev](https://www.instagram.com/xueldev/) - (Retired) Programmer Friday Night Funkin: Cool Engine V1 and V2
+- [XuelDev](https://www.instagram.com/xueldev/) - retired Programmer Friday Night Funkin: Cool Engine V1 and V2
 - [Juanen100](https://twitter.com/Juanen1001) - Programmer Friday Night Funkin : Cool Engine V2 and V1
 
 ## Funkin android credits

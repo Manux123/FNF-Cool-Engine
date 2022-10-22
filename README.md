@@ -1,5 +1,12 @@
 # YO YO YO This project has been abandoned if you want to see the updated version click [here](https://github.com/Cool-Engine-Team/JXJS-Engine)
 
+# Goodbye Messages
+
+Jotaro:  it inevitably....... was abandoned like many good engines like micd up and kade................. this was a good run wasnt it? it was like seeing your child grow up
+
+XuelDev: I know I wasn't here long but it was a good run. I mean it. Check the closed pull requests. 
+This engine was the one that I had never seen the potential in! But when I did... I cranked out updates faster than I could crank 90's back in 2019. It was a good run. Thanks
+
 # Cool Engine (legacy)
 
 **FNF': Cool Engine (legacy) is a modification of the original FNF' source code the mod includes new Options and better Graphics!!**

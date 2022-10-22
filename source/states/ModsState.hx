@@ -66,7 +66,7 @@ class ModsState extends states.MusicBeatState
 			if(FileSystem.exists(freakyMenu))
 				FlxG.sound.playMusic(freakyMenu);
 			else
-				FlxG.sound.playMusic(Paths.music('freakyMenu'));
+				FlxG.sound.playMusic(Paths.music('freakymenu'));
 			grpMods = new FlxTypedGroup<Alphabet>();
 
 			for(i in 0... modsFolders.length){

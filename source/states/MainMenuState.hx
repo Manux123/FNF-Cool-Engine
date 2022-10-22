@@ -80,7 +80,7 @@ class MainMenuState extends MusicBeatState
 		transOut = FlxTransitionableState.defaultTransOut;
 
 		#if !MAINMENU
-		if (!FlxG.sound.music.playing)FlxG.sound.playMusic(Paths.music('freakyMenu'));
+		if (!FlxG.sound.music.playing)FlxG.sound.playMusic(Paths.music('freakymenu'));
 		#end
 
 		persistentUpdate = persistentDraw = true; bg = new FlxSprite(-80);

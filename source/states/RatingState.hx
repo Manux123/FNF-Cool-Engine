@@ -112,7 +112,7 @@ class RatingState extends FlxSubState
                 bf.animation.play('hey', true);
 
                 FlxG.camera.flash(FlxColor.WHITE, 2.5);
-                FlxG.sound.playMusic(Paths.music('freakyMenu'));
+                FlxG.sound.playMusic(Paths.music('freakymenu'));
                 //FlxG.sound.music.stop();
                 FlxG.sound.play(Paths.sound('confirmMenu'));
                 pressedEnter = false;

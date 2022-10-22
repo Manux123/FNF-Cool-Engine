@@ -45,7 +45,7 @@ class TitleState extends states.MusicBeatState
 	var textGroup:FlxGroup;
 	var ngSpr:FlxSprite;
 
-	var timerWait:Float = 1.2;
+	var timerWait:Float = 2.7;
 
 	var start:Bool = false;
 	var startNut = 0;
@@ -192,7 +192,7 @@ class TitleState extends states.MusicBeatState
 				// music.loadStream(Paths.music('freakyMenu'));
 				// FlxG.sound.list.add(music);
 				// music.play();
-				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
+				FlxG.sound.playMusic(Paths.music('freakymenu'), 0);
 
 				FlxG.sound.music.fadeIn(4, 0, 0.7);
 				Conductor.changeBPM(102);
@@ -226,7 +226,7 @@ class TitleState extends states.MusicBeatState
 		}
 		// FlxG.watch.addQuick('amp', FlxG.sound.music.amplitude);
 
-		if (start) {
+		if (start) { //Its kinda bad and you should reused the beat shit, but ok
 			var Timer:FlxTimer = new FlxTimer().start(0.1, function(timer:FlxTimer) {
 				if (startNut == 0) {
 					credTextShit.visible = true;
@@ -237,11 +237,11 @@ class TitleState extends states.MusicBeatState
 						credTextShit.text = "Present";
 						credTextShit.screenCenter();
 
-						timer.start(timerWait, function(timer:FlxTimer) {
+						timer.start(1.2, function(timer:FlxTimer) {
 							credTextShit.text = "The Cool Engine!";
 							credTextShit.screenCenter();
 
-							timer.start(1, function(timer:FlxTimer) {
+							timer.start(4.5, function(timer:FlxTimer) {
 								skipIntro();
 							});
 						});
@@ -377,7 +377,7 @@ class TitleState extends states.MusicBeatState
 		#if sys
 		var env = Sys.environment();
 		if (!env.exists("USERNAME")) {
-			return "Couldnt find computa name";
+			return "Player";
 		}
 		return env["USERNAME"];
 		#else
@@ -403,16 +403,16 @@ class TitleState extends states.MusicBeatState
 		logoBl.animation.play('bump');
 		danceLeft = !danceLeft;
 
-		if (danceLeft)
+		/*if (danceLeft)
 			gfDance.animation.play('danceRight');
 		else
-			gfDance.animation.play('danceLeft');
+			gfDance.animation.play('danceLeft');*/
 
 		FlxG.log.add(curBeat);
 
 		FlxTween.tween(FlxG.camera, {zoom:1.02}, 0.3, {ease: FlxEase.quadOut, type: BACKWARD});
 
-		switch (curBeat)
+		/*switch (curBeat)
 		{
 			case 0:
 				deleteCoolText();
@@ -466,7 +466,7 @@ class TitleState extends states.MusicBeatState
 
 			case 16:
 				skipIntro();
-		}
+		}*/
 	}
 
 	var skippedIntro:Bool = false;

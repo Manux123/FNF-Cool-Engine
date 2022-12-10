@@ -1,29 +1,12 @@
-# YO YO YO This project has been abandoned if you want to see the updated version click [here](https://github.com/Cool-Engine-Team/JXJS-Engine)
+# Cool Engine
 
-# Goodbye Messages
-
-Jotaro:  it inevitably....... was abandoned like many good engines like micd up and kade................. this was a good run wasnt it? it was like seeing your child grow up
-
-XuelDev: I know I wasn't here long but it was a good run. I mean it. Check the closed pull requests. 
-This engine was the one that I had never seen the potential in! But when I did... I cranked out updates faster than I could crank 90's back in 2019. It was a good run. Thanks
-
-# Cool Engine (legacy)
-
-**FNF': Cool Engine (legacy) is a modification of the original FNF' source code the mod includes new Options and better Graphics!!**
+**FNF': Cool Engine  is a modification of the original FNF' source code the mod includes new Options and better Graphics!!**
 ----------------------------------------------
 
 ![](/art/cool-logo.png)
 ----------------------------------------------
 
-## (former) Cool Engine Team Credits
-- [Manux123](https://twitter.com/ActionsAnimati1) - retired Programmer Friday Night Funkin: Cool Engine
-- [Jloor](https://twitter.com/GamerJloor) - retired Programmer Friday Night Funkin: Cool Engine
-- [Chasetodie](https://twitter.com/Chasetodie10) - retired Programmer Friday Night Funkin: Cool Engine
-- [Jotaro-Gaming](https://youtube.com/c/JotaroGamingg) - retired Programmer and composer Friday Night Funkin: Cool Engine V2 and V1
-- [Overcharged Dev](https://www.youtube.com/channel/UCkcscIIXyUsfj2DsnNDWQbg/) - retired Programmer Friday Night Funkin: Cool Engine
-- [FairyBoy](https://twitter.com/JulianSamwise?s=09) and [Zero Artist](https://twitter.com/zero_artist02) - retired Artists Friday Night Funkin: Cool Engine
-- [XuelDev](https://www.instagram.com/xueldev/) - retired Programmer Friday Night Funkin: Cool Engine V1 and V2
-- [Juanen100](https://twitter.com/Juanen1001) - Programmer Friday Night Funkin : Cool Engine V2 and V1
+## Cool Engine Team Credits (For people that have colaborated after this update)
 
 ## Funkin android credits
 - [LuckyDog](https://github.com/luckydog7)

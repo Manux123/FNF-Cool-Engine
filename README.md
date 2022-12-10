@@ -1,6 +1,9 @@
 # Cool Engine
 
-**FNF': Cool Engine  is a modification of the original FNF' source code the mod includes new Options and better Graphics!!**
+**FNF': Cool Engine  is a modification of the original FNF' source code the mod includes new Options and better Graphics!!** 
+
+**COOL ENGINE NEVER DIES**
+
 ----------------------------------------------
 
 ![](/art/cool-logo.png)
@@ -8,16 +11,7 @@
 
 ## Cool Engine Team Credits (For people that have colaborated after this update)
 
-## Funkin android credits
-- [LuckyDog](https://github.com/luckydog7)
-- [Zack](https://github.com/zacksgamerz)
-
-## FNF
-- [Kawaisprite](https://twitter.com/kawaisprite) - Musician of fnf
-- [ninjamuffin99](https://twitter.com/ninja_muffin99) - Programmer of fnf
-- [PhantomArcade3K](https://twitter.com/phantomarcade3k) - Animator of fnf
-- [Evilsk8r](https://twitter.com/evilsk8r)  - Artist of fnf
-
+-[XuelDev](https://github.com/XuelDev)
 
 # Building
 THESE INSTRUCTIONS ARE FOR COMPILING THE GAME'S SOURCE CODE!!!

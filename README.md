@@ -11,7 +11,7 @@
 
 ## Cool Engine Team Credits (For people that have colaborated after this update)
 
--[XuelDev](https://github.com/XuelDev)
+-[XuelDev](https://github.com/XuelDev) - Programmer of Friday Night Funkin : Cool Engine
 
 # Building
 THESE INSTRUCTIONS ARE FOR COMPILING THE GAME'S SOURCE CODE!!!

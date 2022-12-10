@@ -10,4 +10,15 @@ class ModPaths {
 		return 'mods/data/$song/Modchart.hx';
 
 	}
+
+	public static function getImage(key:String) {
+		return 'mods/images/$key';
+	}
+
+	public static function getDataFile(key:String, ender:String) {
+		return 'mods/data/$key.$ender';
+	}
+
+
+	
 }

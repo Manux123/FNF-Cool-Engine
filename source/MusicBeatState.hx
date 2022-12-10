@@ -1,5 +1,7 @@
 package;
 
+import Management.MemoryManagement;
+import flixel.tweens.FlxTween;
 import Conductor.BPMChangeEvent;
 import flixel.FlxG;
 import flixel.addons.transition.FlxTransitionableState;
@@ -71,5 +73,10 @@ class MusicBeatState extends FlxUIState
 	public function beatHit():Void
 	{
 		//do literally nothing dumbass
+	}
+
+	override function destroy() {
+		// Clear Memory jackass
+		MemoryManagement.clear();
 	}
 }

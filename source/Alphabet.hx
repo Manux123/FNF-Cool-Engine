@@ -20,6 +20,8 @@ class Alphabet extends FlxSpriteGroup
 	// for menu shit
 	public var targetY:Float = 0;
 	public var isMenuItem:Bool = false;
+	public var isMenuItemCenter:Bool = false;
+
 
 	public var text:String = "";
 
@@ -226,6 +228,12 @@ class Alphabet extends FlxSpriteGroup
 
 			y = FlxMath.lerp(y, (scaledY * 120) + (FlxG.height * 0.48), 0.16);
 			x = FlxMath.lerp(x, (targetY * 20) + 90, 0.16);
+		}
+		if (isMenuItemCenter)
+		{
+			var scaledY = FlxMath.remapToRange(targetY, 0, 1, 0, 1.3);
+			y = FlxMath.lerp(y, (scaledY * 120) + (FlxG.height * 0.48), 0.16);
+			screenCenter(X);
 		}
 
 		super.update(elapsed);

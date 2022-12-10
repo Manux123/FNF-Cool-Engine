@@ -1,5 +1,6 @@
 package;
 
+
 #if desktop
 import Discord.DiscordClient;
 import sys.thread.Thread;
@@ -27,6 +28,7 @@ import flixel.util.FlxTimer;
 import io.newgrounds.NG;
 import lime.app.Application;
 import openfl.Assets;
+import modding.HScript;
 
 using StringTools;
 
@@ -43,6 +45,7 @@ class TitleState extends MusicBeatState
 	var curWacky:Array<String> = [];
 
 	var wackyImage:FlxSprite;
+
 
 	override public function create():Void
 	{

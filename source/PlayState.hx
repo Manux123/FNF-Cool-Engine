@@ -1,7 +1,6 @@
 package;
 
-import modding.HScript.SongScript;
-import modding.HScript.Hscript;
+import modding.HScript;
 #if desktop
 import Discord.DiscordClient;
 #end
@@ -1577,13 +1576,6 @@ class PlayState extends MusicBeatState
 			trace("RESET = True");
 		}
 
-		// CHEAT = brandon's a pussy
-		if (controls.CHEAT)
-		{
-			health += 1;
-			trace("User is cheating!");
-		}
-
 		if (health <= 0)
 		{
 			boyfriend.stunned = true;
@@ -1674,6 +1666,8 @@ class PlayState extends MusicBeatState
 						case 3:
 							dad.playAnim('singRIGHT' + altAnim, true);
 					}
+
+					
 
 					dad.holdTimer = 0;
 

@@ -1,5 +1,6 @@
 package;
 
+import modding.ModPaths;
 #if desktop
 import Discord.DiscordClient;
 #end
@@ -30,16 +31,20 @@ class FreeplayState extends MusicBeatState
 
 	private var grpSongs:FlxTypedGroup<Alphabet>;
 	private var curPlaying:Bool = false;
-
-	private var iconArray:Array<HealthIcon> = [];
-
 	override function create()
 	{
-		var initSonglist = CoolUtil.coolTextFile(Paths.txt('freeplaySonglist'));
+		var initSonglist:Dynamic = CoolUtil.coolTextFile(ModPaths.getDataFile('freeplaySonglist', 'txt'));
 
-		for (i in 0...initSonglist.length)
-		{
-			songs.push(new SongMetadata(initSonglist[i], 1, 'gf'));
+
+		if (initSonglist == "") {
+			// Nothing there
+			trace("Nothing there");
+		} else {
+			
+			for (i in 0...initSonglist.length)
+			{
+				songs.push(new SongMetadata(initSonglist[i], 1, 'gf'));
+			}
 		}
 
 		/* 
@@ -92,16 +97,10 @@ class FreeplayState extends MusicBeatState
 		for (i in 0...songs.length)
 		{
 			var songText:Alphabet = new Alphabet(0, (70 * i) + 30, songs[i].songName, true, false);
-			songText.isMenuItem = true;
+			songText.isMenuItemCenter = true;
 			songText.targetY = i;
 			grpSongs.add(songText);
 
-			var icon:HealthIcon = new HealthIcon(songs[i].songCharacter);
-			icon.sprTracker = songText;
-
-			// using a FlxGroup is too much fuss!
-			iconArray.push(icon);
-			add(icon);
 
 			// songText.x += 40;
 			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
@@ -179,6 +178,10 @@ class FreeplayState extends MusicBeatState
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
+
+		grpSongs.forEach(function(spr:FlxSprite) {
+			spr.screenCenter(X);
+		});
 
 		if (FlxG.sound.music.volume < 0.7)
 		{
@@ -280,12 +283,6 @@ class FreeplayState extends MusicBeatState
 
 		var bullShit:Int = 0;
 
-		for (i in 0...iconArray.length)
-		{
-			iconArray[i].alpha = 0.6;
-		}
-
-		iconArray[curSelected].alpha = 1;
 
 		for (item in grpSongs.members)
 		{

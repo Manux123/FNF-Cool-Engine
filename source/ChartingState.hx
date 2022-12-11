@@ -81,9 +81,18 @@ class ChartingState extends MusicBeatState
 	var leftIcon:HealthIcon;
 	var rightIcon:HealthIcon;
 
+	var bg = new MenuBackground();
+
 	override function create()
 	{
 		curSection = lastSection;
+
+		
+		bg.blueBG();
+		bg.color = 0xFF453F3F;
+		bg.scrollFactor.set();
+		bg.antialiasing = true;
+		add(bg);
 
 		gridBG = FlxGridOverlay.create(GRID_SIZE, GRID_SIZE, GRID_SIZE * 8, GRID_SIZE * 16);
 		add(gridBG);
@@ -470,6 +479,7 @@ class ChartingState extends MusicBeatState
 	override function update(elapsed:Float)
 	{
 		curStep = recalculateSteps();
+
 
 		Conductor.songPosition = FlxG.sound.music.time;
 		_song.song = typingShit.text;

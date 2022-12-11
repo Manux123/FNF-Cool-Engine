@@ -12,3 +12,4 @@
 - Reverted back to Cool Engine logo
 - Added seethru when something isn't selected in MainMenuState.hx
 - Reset Changelog
+- Reverted back to WASD

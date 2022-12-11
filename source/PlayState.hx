@@ -1,5 +1,7 @@
 package;
 
+import flixel.input.keyboard.FlxKey;
+import Controls.Control;
 import modding.HScript;
 #if desktop
 import Discord.DiscordClient;
@@ -149,6 +151,10 @@ class PlayState extends MusicBeatState
 		camGame = new FlxCamera();
 		camHUD = new FlxCamera();
 		camHUD.bgColor.alpha = 0;
+
+		if (FlxG.save.data.downscroll) {	
+
+		}
 
 		FlxG.cameras.reset(camGame);
 		FlxG.cameras.add(camHUD);
@@ -693,6 +699,7 @@ class PlayState extends MusicBeatState
 		Conductor.songPosition = -5000;
 
 		strumLine = new FlxSprite(0, 50).makeGraphic(FlxG.width, 10);
+		if (FlxG.save.data.downscroll) {strumLine.y = FlxG.height - 150;}
 		strumLine.scrollFactor.set();
 
 		strumLineNotes = new FlxTypedGroup<FlxSprite>();
@@ -728,6 +735,8 @@ class PlayState extends MusicBeatState
 		FlxG.fixedTimestep = false;
 
 		healthBarBG = new FlxSprite(0, FlxG.height * 0.9).loadGraphic(Paths.image('healthBar'));
+		if (FlxG.save.data.downscroll)
+			healthBarBG.y = 50;
 		healthBarBG.screenCenter(X);
 		healthBarBG.scrollFactor.set();
 		add(healthBarBG);
@@ -1146,6 +1155,10 @@ class PlayState extends MusicBeatState
 			// FlxG.log.add(i);
 			var babyArrow:FlxSprite = new FlxSprite(0, strumLine.y);
 
+			if (FlxG.save.data.downscroll) {
+				babyArrow.y = FlxG.height - 150;
+			}
+
 			switch (curStage)
 			{
 				case 'school' | 'schoolEvil':
@@ -1445,6 +1458,19 @@ class PlayState extends MusicBeatState
 				Conductor.songPosition += FlxG.elapsed * 1000;
 				if (Conductor.songPosition >= 0)
 					startSong();
+
+				notes.forEach(function(spr:Note) {
+					if (FlxG.save.data.downscroll) //Downscroll
+						{
+							spr.y = (strumLine.y + 0.45 * (Conductor.songPosition - spr.strumTime) * Conductor.bpm);
+							
+						}
+						else //Upscroll
+						{
+							spr.y = (strumLine.y - 0.45 * (Conductor.songPosition - spr.strumTime) * Conductor.bpm);
+							
+						}
+				});
 			}
 		}
 		else
@@ -1681,7 +1707,10 @@ class PlayState extends MusicBeatState
 				// WIP interpolation shit? Need to fix the pause issue
 				// daNote.y = (strumLine.y - (songTime - daNote.strumTime) * (0.45 * PlayState.SONG.speed));
 
-				if (daNote.y < -daNote.height)
+				if (FlxG.save.data.downscroll){
+					daNote.y = (strumLine.y + (Conductor.songPosition - daNote.strumTime) * (0.45 * FlxMath.roundDecimal(SONG.speed, 2)));
+				}
+				if (daNote.y < -daNote.height && !FlxG.save.data.downscroll || daNote.y >= strumLine.y + 106 && FlxG.save.data.downscroll)
 				{
 					if (daNote.tooLate || !daNote.wasGoodHit)
 					{
@@ -1738,14 +1767,12 @@ class PlayState extends MusicBeatState
 				FlxG.switchState(new StoryMenuState());
 
 				// if ()
-				StoryMenuState.weekUnlocked[Std.int(Math.min(storyWeek + 1, StoryMenuState.weekUnlocked.length - 1))] = true;
 
 				if (SONG.validScore)
 				{
 					Highscore.saveWeekScore(storyWeek, campaignScore, storyDifficulty);
 				}
 
-				FlxG.save.data.weekUnlocked = StoryMenuState.weekUnlocked;
 				FlxG.save.flush();
 			}
 			else
@@ -1946,9 +1973,12 @@ class PlayState extends MusicBeatState
 		curSection += 1;
 	}
 
+	
+
 	private function keyShit():Void
 	{
 		// HOLDING
+	
 		var up = controls.UP;
 		var right = controls.RIGHT;
 		var down = controls.DOWN;
@@ -2336,7 +2366,7 @@ health -= 0.04;
 
 		if (generatedMusic)
 		{
-			notes.sort(FlxSort.byY, FlxSort.DESCENDING);
+			notes.sort(FlxSort.byY, FlxG.save.data.downscroll ? FlxSort.ASCENDING : FlxSort.DESCENDING);
 		}
 
 		if (SONG.notes[Math.floor(curStep / 16)] != null)

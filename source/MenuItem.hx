@@ -1,5 +1,6 @@
 package;
 
+import modding.ModPaths;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
@@ -16,7 +17,7 @@ class MenuItem extends FlxSpriteGroup
 	public function new(x:Float, y:Float, weekNum:Int = 0)
 	{
 		super(x, y);
-		week = new FlxSprite().loadGraphic(Paths.image('storymenu/week' + weekNum));
+		week = new FlxSprite().loadGraphic(ModPaths.getImage('weeks/week' + weekNum));
 		add(week);
 	}
 

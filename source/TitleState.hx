@@ -1,6 +1,7 @@
 package;
 
 
+import options.OptionsPreload;
 #if desktop
 import Discord.DiscordClient;
 import sys.thread.Thread;
@@ -50,8 +51,9 @@ class TitleState extends MusicBeatState
 	override public function create():Void
 	{
 
-
 		PlayerSettings.init();
+		OptionsPreload.loadSettings();
+
 
 		curWacky = FlxG.random.getObject(getIntroTextShit());
 
@@ -64,20 +66,6 @@ class TitleState extends MusicBeatState
 		FlxG.save.bind('funkin', 'ninjamuffin99');
 
 		Highscore.load();
-
-		if (FlxG.save.data.weekUnlocked != null)
-		{
-			// FIX LATER!!!
-			// WEEK UNLOCK PROGRESSION!!
-			// StoryMenuState.weekUnlocked = FlxG.save.data.weekUnlocked;
-
-			if (StoryMenuState.weekUnlocked.length < 4)
-				StoryMenuState.weekUnlocked.insert(0, true);
-
-			// QUICK PATCH OOPS!
-			if (!StoryMenuState.weekUnlocked[0])
-				StoryMenuState.weekUnlocked[0] = true;
-		}
 
 		#if FREEPLAY
 		FlxG.switchState(new FreeplayState());

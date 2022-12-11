@@ -25,7 +25,7 @@ class MainMenuState extends MusicBeatState
 
 	var menuItems:FlxTypedGroup<FlxSprite>;
 
-	var optionShit:Array<String> = ['story_mode', 'freeplay', 'credits'];
+	var optionShit:Array<String> = ['story_mode', 'freeplay', 'credits', 'options'];
 
 
 	var magenta:FlxSprite;
@@ -169,6 +169,8 @@ class MainMenuState extends MusicBeatState
 										FlxG.switchState(new FreeplayState());
 									case "credits":
 										FlxG.switchState(new CreditsState());
+									case "options":
+										FlxG.switchState(new OptionsState());
 								}
 						});
 					}
@@ -201,6 +203,9 @@ class MainMenuState extends MusicBeatState
 			{
 				spr.animation.play('selected');
 				camFollow.setPosition(spr.getGraphicMidpoint().x, spr.getGraphicMidpoint().y);
+				spr.alpha = 1;
+			} else {
+				spr.alpha = 0.7;
 			}
 
 			spr.updateHitbox();

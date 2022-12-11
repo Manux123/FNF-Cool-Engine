@@ -1,5 +1,6 @@
 package modding;
 
+import flixel.input.keyboard.FlxKey;
 import flixel.FlxSprite;
 import flixel.FlxG;
 import flixel.text.FlxText;
@@ -67,6 +68,89 @@ class SongScript {
 	public function loadScript(file:String)
 	{
 		script = parser.parseString(openfl.Assets.getText(ModPaths.getSongScript('$file')));
+		interp.execute(script);
+	}
+}
+
+class StoryScript {
+	public var interp = new Interp();
+	public var parser = new Parser();
+	public var script:hscript.Expr;
+
+	public function new()
+	{
+		parser.allowTypes = true;
+		parser.allowJSON = true;
+		parser.allowMetadata = true;
+
+		// No need to set variables
+	}
+
+	public function call(funcName:String, ?args:Array<Dynamic>):Dynamic
+	{
+		if (args == null)
+			args = [];
+		// if(!running) return true;
+		try
+		{
+			var func:Dynamic = interp.variables.get(funcName);
+			if (func != null && Reflect.isFunction(func))
+				return Reflect.callMethod(null, func, args);
+		}
+		catch (e)
+		{
+			// scriptType = EmptyScript;
+			FlxG.log.add(e.details());
+			// running = false;
+		}
+		return true;
+	}
+
+	public function loadScript(file:String)
+	{
+		script = parser.parseString(openfl.Assets.getText(ModPaths.getScript('$file')));
+		interp.execute(script);
+	}
+}
+
+class ControlsScript {
+	public var interp = new Interp();
+	public var parser = new Parser();
+	public var script:hscript.Expr;
+
+	public function new()
+	{
+		parser.allowTypes = true;
+		parser.allowJSON = true;
+		parser.allowMetadata = true;
+
+
+		interp.variables.set('FlxG', FlxG);
+	}
+
+	public function call(funcName:String, ?args:Array<Dynamic>):Dynamic
+	{
+		if (args == null)
+			args = [];
+		// if(!running) return true;
+		try
+		{
+			var func:Dynamic = interp.variables.get(funcName);
+			if (func != null && Reflect.isFunction(func))
+				return Reflect.callMethod(null, func, args);
+		}
+		catch (e)
+		{
+			// scriptType = EmptyScript;
+			FlxG.log.add(e.details());
+			// running = false;
+		}
+		return true;
+	}
+
+	public function loadScript(file:String)
+	{
+		script = parser.parseString(openfl.Assets.getText(ModPaths.getAScript('$file')));
 		interp.execute(script);
 	}
 }

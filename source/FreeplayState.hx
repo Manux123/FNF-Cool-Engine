@@ -33,28 +33,8 @@ class FreeplayState extends MusicBeatState
 	private var curPlaying:Bool = false;
 	override function create()
 	{
-		var initSonglist:Dynamic = CoolUtil.coolTextFile(ModPaths.getDataFile('freeplaySonglist', 'txt'));
 
-
-		if (initSonglist == "") {
-			// Nothing there
-			trace("Nothing there");
-		} else {
-			
-			for (i in 0...initSonglist.length)
-			{
-				songs.push(new SongMetadata(initSonglist[i], 1, 'gf'));
-			}
-		}
-
-		/* 
-			if (FlxG.sound.music != null)
-			{
-				if (!FlxG.sound.music.playing)
-					FlxG.sound.playMusic(Paths.music('freakyMenu'));
-			}
-		 */
-
+		
 		#if desktop
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("In the Menus", null);
@@ -65,6 +45,10 @@ class FreeplayState extends MusicBeatState
 		#if debug
 		isDebug = true;
 		#end
+
+		if (StoryMenuState.weekUnlocked[1] || isDebug) {
+			addWeek(['Tutorial'], 0, ['gf']);
+		}
 
 		if (StoryMenuState.weekUnlocked[2] || isDebug)
 			addWeek(['Bopeebo', 'Fresh', 'Dadbattle'], 1, ['dad']);

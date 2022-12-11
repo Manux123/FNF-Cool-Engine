@@ -676,7 +676,6 @@ class PlayState extends MusicBeatState
 		}
 
 		add(gf);
-		gf.alpha = 0;
 
 		// Shitty layering but whatev it works LOL
 		if (curStage == 'limo')

@@ -1,6 +1,7 @@
 # True facts
 
 - Cool Engine gets bitches
+- Synthio just now nutted 17:32 GBT
 
 # Friday Night Funkin
 

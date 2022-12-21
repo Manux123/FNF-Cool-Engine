@@ -1,6 +1,6 @@
 
 
-# Friday Night Funkin : Cool Engine (Canceled) - **Coming Soon a Legacy Version!!**
+# Friday Night Funkin : Cool Engine (Canceled) - **Coming Soon a Legacy Version!! YA**
 
 This is the repository for Friday Night Funkin, a game originally made for Ludum Dare 47 "Stuck In a Loop".
 

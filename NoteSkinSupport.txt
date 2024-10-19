@@ -1,0 +1,2 @@
+Just a little warning, you need to put the name of your noteSkin between brackets (e.g: [My_Epic_Skin].png). Also with the xml (e.g: [My_Epic_Skin].xml).
+Idk why this happens, but when I found out, i'll fix it

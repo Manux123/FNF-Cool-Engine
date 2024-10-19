@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="QUAVER_assets.png">
+	<!-- Created with Adobe Animate version 21.0.5.40714 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="arrowDOWN0000" x="0" y="162" width="156" height="136"/>
+	<SubTexture name="arrowLEFT0000" x="156" y="162" width="136" height="156"/>
+	<SubTexture name="arrowRIGHT0000" x="292" y="162" width="136" height="156"/>
+	<SubTexture name="arrowUP0000" x="428" y="162" width="156" height="136"/>
+	<SubTexture name="blue alone0000" x="0" y="0" width="154" height="138"/>
+	<SubTexture name="blue hold0000" x="154" y="0" width="50" height="44"/>
+	<SubTexture name="blue tail0000" x="204" y="0" width="50" height="64"/>
+	<SubTexture name="down confirm0000" x="584" y="162" width="128" height="128"/>
+	<SubTexture name="down press0000" x="584" y="162" width="128" height="128"/>
+	<SubTexture name="green alone0000" x="254" y="0" width="157" height="140"/>
+	<SubTexture name="green hold0000" x="411" y="0" width="50" height="44"/>
+	<SubTexture name="green tail0000" x="461" y="0" width="50" height="64"/>
+	<SubTexture name="left confirm0000" x="712" y="162" width="128" height="128"/>
+	<SubTexture name="left press0000" x="712" y="162" width="128" height="128"/>
+	<SubTexture name="purple alone0000" x="511" y="0" width="124" height="139"/>
+	<SubTexture name="purple hold0000" x="635" y="0" width="50" height="44"/>
+	<SubTexture name="purple tail0000" x="685" y="0" width="50" height="64"/>
+	<SubTexture name="red alone0000" x="735" y="0" width="145" height="162"/>
+	<SubTexture name="red hold0000" x="880" y="0" width="50" height="44"/>
+	<SubTexture name="red tail0000" x="930" y="0" width="50" height="64"/>
+	<SubTexture name="right confirm0000" x="840" y="162" width="128" height="128"/>
+	<SubTexture name="right press0000" x="840" y="162" width="128" height="128"/>
+	<SubTexture name="up confirm0000" x="0" y="318" width="128" height="128"/>
+	<SubTexture name="up press0000" x="0" y="318" width="128" height="128"/>
+</TextureAtlas>

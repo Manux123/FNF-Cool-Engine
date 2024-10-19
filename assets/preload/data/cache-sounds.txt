@@ -1,0 +1,9 @@
+confirmMenu
+scrollMenu
+cancelMenu
+intro1
+intro2
+intro3
+introGo
+hitsounds/hit-1
+hitsounds/hit-2

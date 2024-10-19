@@ -4,6 +4,7 @@ import flixel.FlxG;
 import flixel.graphics.frames.FlxAtlasFrames;
 import openfl.utils.AssetType;
 import openfl.utils.Assets as OpenFlAssets;
+import openfl.display.BitmapData as Bitmap;
 
 class Paths
 {
@@ -80,6 +81,13 @@ class Paths
 		return sound(key + FlxG.random.int(min, max), library);
 	}
 
+	inline static public function video(key:String, ?library:String)
+	{
+		trace('assets/videos/$key.mp4');
+		return getPath('videos/$key.mp4', BINARY, library);
+	}
+		
+
 	inline static public function music(key:String, ?library:String)
 	{
 		return getPath('music/$key.$SOUND_EXT', MUSIC, library);
@@ -87,12 +95,26 @@ class Paths
 
 	inline static public function voices(song:String)
 	{
-		return 'songs:assets/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';
+		trace('Loading VOICES');
+		var loadingSong:Bool = true;
+		if(loadingSong) {
+			trace('Done Loading VOICES!');
+			return 'songs:assets/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';}
+		else {
+			trace('ERROR Loading INST :c');
+			return 'defaultsong:assets/defaultsong/Voices.$SOUND_EXT';}
 	}
 
 	inline static public function inst(song:String)
 	{
-		return 'songs:assets/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';
+		trace('Loading INST');
+		var loadingSong:Bool = true;
+		if(loadingSong) {
+			trace('Done Loading INST!');
+			return 'songs:assets/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';}
+		else {
+			trace('ERROR Loading INST :c');
+			return 'defaultsong:assets/defaultsong/Inst.$SOUND_EXT';}
 	}
 
 	inline static public function image(key:String, ?library:String)
@@ -114,7 +136,4 @@ class Paths
 	{
 		return FlxAtlasFrames.fromSpriteSheetPacker(image(key, library), file('images/$key.txt', library));
 	}
-
-
-
 }

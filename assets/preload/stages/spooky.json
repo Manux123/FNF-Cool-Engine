@@ -1,0 +1,36 @@
+{
+	"name": "spooky",
+	"defaultZoom": 1.05,
+	"isPixelStage": false,
+	"gfVersion": "gf",
+	"boyfriendPosition": [770, 450],
+	"dadPosition": [100, 100],
+	"gfPosition": [400, 130],
+	"cameraBoyfriend":[0,-150],
+	"elements": [
+		{
+			"type": "animated",
+			"name": "halloweenBG",
+			"asset": "halloween_bg",
+			"position": [-200, -100],
+			"scrollFactor": [1, 1],
+			"antialiasing": true,
+			"zIndex": 0,
+			"animations": [
+				{
+					"name": "idle",
+					"prefix": "halloweem bg0",
+					"framerate": 24,
+					"looped": true
+				},
+				{
+					"name": "lightning",
+					"prefix": "halloweem bg lightning strike",
+					"framerate": 24,
+					"looped": false
+				}
+			],
+			"firstAnimation": "idle"
+		}
+	]
+}

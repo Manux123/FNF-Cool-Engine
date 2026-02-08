@@ -11,6 +11,10 @@ import flixel.FlxCamera;
 import ui.FlxVirtualPad;
 import flixel.input.actions.FlxActionInput;
 #end
+import controls.Controls;
+#if debug
+import debug.DebugConsole;
+#end
 
 class MusicBeatState extends FlxUIState
 {
@@ -69,6 +73,10 @@ class MusicBeatState extends FlxUIState
 	{
 		//everyStep();
 		var oldStep:Int = curStep;
+
+		#if debug
+		DebugConsole.update();
+		#end
 
 		updateCurStep();
 		updateBeat();

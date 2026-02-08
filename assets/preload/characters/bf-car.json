@@ -1,0 +1,100 @@
+{
+	"path": "week4/bfCar",
+	"isPlayer": true,
+	"antialiasing": true,
+	"scale": 1.0,
+	"flipX": true,
+	"cameraOffset":[-300,0],
+	"animations": [
+		{
+			"name": "idle",
+			"prefix": "BF idle dance",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -5,
+			"offsetY": 0
+		},
+		{
+			"name": "singUP",
+			"prefix": "BF NOTE UP0",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -29,
+			"offsetY": 27
+		},
+		{
+			"name": "singLEFT",
+			"prefix": "BF NOTE LEFT0",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 12,
+			"offsetY": -6
+		},
+		{
+			"name": "singRIGHT",
+			"prefix": "BF NOTE RIGHT0",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -38,
+			"offsetY": -7
+		},
+		{
+			"name": "singDOWN",
+			"prefix": "BF NOTE DOWN0",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -10,
+			"offsetY": -50
+		},
+		{
+			"name": "singUPmiss",
+			"prefix": "BF NOTE UP MISS",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -29,
+			"offsetY": 27
+		},
+		{
+			"name": "singLEFTmiss",
+			"prefix": "BF NOTE LEFT MISS",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 12,
+			"offsetY": 24
+		},
+		{
+			"name": "singRIGHTmiss",
+			"prefix": "BF NOTE RIGHT MISS",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -30,
+			"offsetY": 21
+		},
+		{
+			"name": "singDOWNmiss",
+			"prefix": "BF NOTE DOWN MISS",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -11,
+			"offsetY": -19
+		},
+		{
+			"name": "hey",
+			"prefix": "BF HEY",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0,
+			"specialAnim": true
+		},
+		{
+			"name": "scared",
+			"prefix": "BF idle shaking",
+			"framerate": 24,
+			"looped": true,
+			"offsetX": 0,
+			"offsetY": 0,
+			"specialAnim": true
+		}
+	]
+}

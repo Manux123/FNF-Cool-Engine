@@ -7,11 +7,13 @@ import flixel.math.FlxPoint;
 import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 
+import objects.character.Character;
+
 import states.PlayState;
 
 class GameOverSubstate extends MusicBeatSubstate
 {
-	var bf:Boyfriend;
+	var bf:Character;
 	var camFollow:FlxObject;
 
 	var stageSuffix:String = "";
@@ -36,7 +38,7 @@ class GameOverSubstate extends MusicBeatSubstate
 
 		Conductor.songPosition = 0;
 
-		bf = new Boyfriend(x, y, daBf);
+		bf = new Character(x, y, daBf,true);
 		add(bf);
 
 		camFollow = new FlxObject(bf.getGraphicMidpoint().x, bf.getGraphicMidpoint().y, 1, 1);
@@ -81,7 +83,7 @@ class GameOverSubstate extends MusicBeatSubstate
 				FlxG.camera.follow(camFollow, LOCKON, 0.01);
 			
 			if (bf.animation.curAnim.finished)
-				FlxG.sound.playMusic(Paths.music('gameOver' + stageSuffix));
+				FlxG.sound.playMusic(Paths.music('gameplay/gameOver' + stageSuffix));
 		}
 
 		if (FlxG.sound.music.playing)
@@ -106,7 +108,7 @@ class GameOverSubstate extends MusicBeatSubstate
 			isEnding = true;
 			bf.playAnim('deathConfirm', true);
 			FlxG.sound.music.stop();
-			FlxG.sound.play(Paths.music('gameOverEnd' + stageSuffix));
+			FlxG.sound.play(Paths.music('gameplay/gameOverEnd' + stageSuffix));
 			new FlxTimer().start(0.7, function(tmr:FlxTimer)
 			{
 				FlxG.camera.fade(FlxColor.BLACK, 2, false, function()

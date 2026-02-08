@@ -1,0 +1,80 @@
+{
+	"animations": [
+		{
+			"offsetX": 0,
+			"framerate": 24,
+			"offsetY": 0,
+			"prefix": "Parent Christmas Idle",
+			"name": "idle",
+			"looped": false
+		},
+		{
+			"offsetX": -47,
+			"framerate": 24,
+			"offsetY": 24,
+			"prefix": "Parent Up Note Dad",
+			"name": "singUP",
+			"looped": false
+		},
+		{
+			"offsetX": -31,
+			"framerate": 24,
+			"offsetY": -29,
+			"prefix": "Parent Down Note Dad",
+			"name": "singDOWN",
+			"looped": false
+		},
+		{
+			"offsetX": -25,
+			"framerate": 24,
+			"offsetY": 16,
+			"prefix": "Parent Left Note Dad",
+			"name": "singLEFT",
+			"looped": false
+		},
+		{
+			"offsetX": -1,
+			"framerate": 24,
+			"offsetY": -23,
+			"prefix": "Parent Right Note Dad",
+			"name": "singRIGHT",
+			"looped": false
+		},
+		{
+			"offsetX": -45,
+			"framerate": 24,
+			"offsetY": 24,
+			"prefix": "Parent Up Note Mom",
+			"name": "singUP-alt",
+			"looped": false
+		},
+		{
+			"offsetX": -29,
+			"framerate": 24,
+			"offsetY": -26,
+			"prefix": "Parent Down Note Mom",
+			"name": "singDOWN-alt",
+			"looped": false
+		},
+		{
+			"offsetX": -30,
+			"framerate": 24,
+			"offsetY": 15,
+			"prefix": "Parent Left Note Mom",
+			"name": "singLEFT-alt",
+			"looped": false
+		},
+		{
+			"offsetX": -1,
+			"framerate": 24,
+			"offsetY": -24,
+			"prefix": "Parent Right Note Mom",
+			"name": "singRIGHT-alt",
+			"looped": false
+		}
+	],
+	"isPlayer": false,
+	"antialiasing": true,
+	"path": "christmas/mom_dad_christmas_assets",
+	"scale": 1
+}

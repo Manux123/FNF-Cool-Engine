@@ -1,14 +1,14 @@
 package states;
 
 import controls.KeyBindMenu;
-import Controls.Control;
+import controls.Controls.Control;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxSubState;
 import flixel.addons.transition.FlxTransitionableState;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.input.keyboard.FlxKey;
-import flixel.system.FlxSound;
+import flixel.sound.FlxSound;
 import flixel.text.FlxText;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
@@ -23,7 +23,7 @@ class PauseSubState extends states.MusicBeatSubstate
 
 	var pauseMusic:FlxSound;
 
-	public function new(x:Float, y:Float)
+	public function new()
 	{
 		super();
 
@@ -110,6 +110,7 @@ class PauseSubState extends states.MusicBeatSubstate
 			{
 				case "Resume":
 					close();
+					FlxG.sound.resume();
 				case "Restart Song":
 					FlxG.resetState();
 				case "Skip Song":
@@ -117,10 +118,11 @@ class PauseSubState extends states.MusicBeatSubstate
 				case "Change KeyBinds":
 					FlxG.state.openSubState(new KeyBindMenu());
 				case "Exit to menu":
-				if (PlayState.isStoryMode)
-					FlxG.switchState(new StoryMenuState());
-				else
-					FlxG.switchState(new FreeplayState());
+					PlayState.isPlaying = false;
+					if (PlayState.isStoryMode)
+						FlxG.switchState(new StoryMenuState());
+					else
+						FlxG.switchState(new FreeplayState());
 			}
 		}
 	}

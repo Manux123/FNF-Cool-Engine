@@ -1,0 +1,49 @@
+{
+	"path": "weeb/senpai",
+	"isPlayer": false,
+	"antialiasing": false,
+	"scale": 6.0,
+	"cameraOffset":[-100,-430],
+	"animations": [
+		{
+			"name": "idle",
+			"prefix": "Senpai Idle",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singUP",
+			"prefix": "SENPAI UP NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 5,
+			"offsetY": 37
+		},
+		{
+			"name": "singLEFT",
+			"prefix": "SENPAI LEFT NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 40,
+			"offsetY": 0
+		},
+		{
+			"name": "singRIGHT",
+			"prefix": "SENPAI RIGHT NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singDOWN",
+			"prefix": "SENPAI DOWN NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 14,
+			"offsetY": 0
+		}
+	]
+}

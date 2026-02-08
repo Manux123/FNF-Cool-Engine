@@ -1,0 +1,30 @@
+{
+	"name": "schoolEvil",
+	"defaultZoom": 1.1,
+	"isPixelStage": true,
+	"gfVersion": "gf-pixel",
+	"boyfriendPosition": [970, 670],
+	"dadPosition": [100, 50],
+	"gfPosition": [580, 430],
+	"elements": [
+		{
+			"type": "animated",
+			"name": "animatedEvilSchool",
+			"asset": "animatedEvilSchool",
+			"position": [-900, -1100],
+			"scrollFactor": [0.8, 0.9],
+			"scale": [6, 6],
+			"antialiasing": false,
+			"zIndex": 0,
+			"animations": [
+				{
+					"name": "idle",
+					"prefix": "background 2",
+					"framerate": 24,
+					"looped": true
+				}
+			],
+			"firstAnimation": "idle"
+		}
+	]
+}

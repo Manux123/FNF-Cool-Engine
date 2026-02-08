@@ -1,0 +1,104 @@
+{
+	"name": "mall",
+	"defaultZoom": 0.8,
+	"isPixelStage": false,
+	"gfVersion": "gf-christmas",
+	"boyfriendPosition": [970, 450],
+	"dadPosition": [100, 100],
+	"gfPosition": [400, 130],
+	"cameraBoyfriend":[0,-200],
+	"elements": [
+		{
+			"type": "sprite",
+			"name": "bgWalls",
+			"asset": "bgWalls",
+			"position": [-1000, -500],
+			"scrollFactor": [0.2, 0.2],
+			"scale": [0.8, 0.8],
+			"antialiasing": true,
+			"active": false,
+			"zIndex": 0
+		},
+		{
+			"type": "animated",
+			"name": "upperBoppers",
+			"asset": "upperBop",
+			"position": [-240, -90],
+			"scrollFactor": [0.33, 0.33],
+			"scale": [0.85, 0.85],
+			"antialiasing": true,
+			"zIndex": 1,
+			"animations": [
+				{
+					"name": "bop",
+					"prefix": "Upper Crowd Bob",
+					"framerate": 24,
+					"looped": false
+				}
+			]
+		},
+		{
+			"type": "sprite",
+			"name": "bgEscalator",
+			"asset": "bgEscalator",
+			"position": [-1100, -600],
+			"scrollFactor": [0.3, 0.3],
+			"scale": [0.9, 0.9],
+			"antialiasing": true,
+			"active": false,
+			"zIndex": 2
+		},
+		{
+			"type": "sprite",
+			"name": "christmasTree",
+			"asset": "christmasTree",
+			"position": [370, -250],
+			"scrollFactor": [0.4, 0.4],
+			"antialiasing": true,
+			"zIndex": 3
+		},
+		{
+			"type": "animated",
+			"name": "bottomBoppers",
+			"asset": "bottomBop",
+			"position": [-300, 140],
+			"scrollFactor": [0.9, 0.9],
+			"scale": [1, 1],
+			"antialiasing": true,
+			"zIndex": 4,
+			"animations": [
+				{
+					"name": "bop",
+					"prefix": "Bottom Level Boppers",
+					"framerate": 24,
+					"looped": false
+				}
+			]
+		},
+		{
+			"type": "sprite",
+			"name": "fgSnow",
+			"asset": "fgSnow",
+			"position": [-600, 700],
+			"antialiasing": true,
+			"active": false,
+			"zIndex": 5
+		},
+		{
+			"type": "animated",
+			"name": "santa",
+			"asset": "santa",
+			"position": [-840, 150],
+			"antialiasing": true,
+			"zIndex": 6,
+			"animations": [
+				{
+					"name": "idle",
+					"prefix": "santa idle in fear",
+					"framerate": 24,
+					"looped": false
+				}
+			]
+		}
+	]
+}

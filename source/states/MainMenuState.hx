@@ -15,7 +15,10 @@ import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 import lime.app.Application;
+import options.OptionsMenuState;
 import openfl.display.BitmapData as Bitmap;
+import debug.AnimationDebug;
+import debug.StageEditor;
 
 using StringTools;
 
@@ -28,6 +31,9 @@ class MainMenuState extends states.MusicBeatState
 	var optionShit:Array<String> = ['story-mode', 'freeplay'#if !switch ,'options', 'donate'#end];
 
 	var canSnap:Array<Float> = [];
+
+	public static var musicFreakyisPlaying:Bool = true;
+
 	var camFollow:FlxObject;
 	var newInput:Bool = true;
 	var menuItem:FlxSprite;
@@ -49,14 +55,16 @@ class MainMenuState extends states.MusicBeatState
 		transOut = FlxTransitionableState.defaultTransOut;
 
 		#if !MAINMENU
-		if (!FlxG.sound.music.playing){
+		if (!musicFreakyisPlaying && FreeplayState.vocals == null){
 			FlxG.sound.playMusic(Paths.music('freakyMenu'));
+			musicFreakyisPlaying = true;
 		}
 		#end
 
 		persistentUpdate = persistentDraw = true;
 
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBG')));
+		bg.color = 0xFF3E3E3E;
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0.18;
 		bg.screenCenter();
@@ -73,7 +81,7 @@ class MainMenuState extends states.MusicBeatState
 		{
 			var offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;
 			var menuItem:FlxSprite = new FlxSprite(70, (i * 140)  + offset);
-			menuItem.frames = Paths.getSparrowAtlas('mainmenu/menu_' + optionShit[i]);
+			menuItem.frames = Paths.getSparrowAtlas('menu/menu_' + optionShit[i]);
 			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
 			menuItem.animation.play('idle');
@@ -88,7 +96,6 @@ class MainMenuState extends states.MusicBeatState
 			menuItem.updateHitbox();
 
 		}
-		//FlxG.camera.follow(camFollow, null, 0.06);
 		
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Friday Night Funkin v0.2.7.1", 12);
 		versionShit.scrollFactor.set();
@@ -100,8 +107,6 @@ class MainMenuState extends states.MusicBeatState
 		versionShit2.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		versionShit2.y -= 20;
 		add(versionShit2);
-
-		// NG.core.calls.event.logEvent('swag').send();
 
 		changeItem();
 
@@ -122,6 +127,12 @@ class MainMenuState extends states.MusicBeatState
 			FlxG.sound.music.volume += 0.5 * FlxG.elapsed;
 		}
 		#end
+
+		if (FlxG.keys.justPressed.ONE)
+			FlxG.switchState(new AnimationDebug('bf'));
+/*
+		if (FlxG.keys.justPressed.TWO)
+			FlxG.switchState(new StageEditor());*/
 
 		if (!selectedSomethin)
 		{

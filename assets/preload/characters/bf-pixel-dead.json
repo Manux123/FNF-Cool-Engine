@@ -1,0 +1,33 @@
+{
+	"path": "weeb/bfPixelsDEAD",
+	"isPlayer": true,
+	"antialiasing": false,
+	"scale": 6.0,
+	"flipX": true,
+	"animations": [
+		{
+			"name": "firstDeath",
+			"prefix": "BF Dies pixel",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "deathLoop",
+			"prefix": "Retry Loop",
+			"framerate": 24,
+			"looped": true,
+			"offsetX": -30,
+			"offsetY": -12
+		},
+		{
+			"name": "deathConfirm",
+			"prefix": "RETRY CONFIRM",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -30,
+			"offsetY": -12
+		}
+	]
+}

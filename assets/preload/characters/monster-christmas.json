@@ -1,0 +1,48 @@
+{
+	"path": "christmas/monsterChristmas",
+	"isPlayer": false,
+	"antialiasing": true,
+	"scale": 1.0,
+	"animations": [
+		{
+			"name": "idle",
+			"prefix": "monster idle",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singUP",
+			"prefix": "monster up note",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -20,
+			"offsetY": 50
+		},
+		{
+			"name": "singDOWN",
+			"prefix": "monster down",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -40,
+			"offsetY": -94
+		},
+		{
+			"name": "singLEFT",
+			"prefix": "Monster Right note",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -30,
+			"offsetY": 0
+		},
+		{
+			"name": "singRIGHT",
+			"prefix": "Monster left note",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -51,
+			"offsetY": 0
+		}
+	]
+}

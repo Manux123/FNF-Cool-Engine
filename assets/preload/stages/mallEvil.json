@@ -1,0 +1,39 @@
+{
+	"name": "mallEvil",
+	"defaultZoom": 1.05,
+	"isPixelStage": false,
+	"gfVersion": "gf-christmas",
+	"boyfriendPosition": [1090, 450],
+	"dadPosition": [100, 20],
+	"gfPosition": [400, 130],
+	"elements": [
+		{
+			"type": "sprite",
+			"name": "evilBG",
+			"asset": "evilBG",
+			"position": [-400, -500],
+			"scrollFactor": [0.2, 0.2],
+			"scale": [0.8, 0.8],
+			"antialiasing": true,
+			"active": false,
+			"zIndex": 0
+		},
+		{
+			"type": "sprite",
+			"name": "evilTree",
+			"asset": "evilTree",
+			"position": [300, -300],
+			"scrollFactor": [0.2, 0.2],
+			"antialiasing": true,
+			"zIndex": 1
+		},
+		{
+			"type": "sprite",
+			"name": "evilSnow",
+			"asset": "evilSnow",
+			"position": [-200, 700],
+			"antialiasing": true,
+			"zIndex": 2
+		}
+	]
+}

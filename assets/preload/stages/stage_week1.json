@@ -1,0 +1,45 @@
+{
+	"name": "stage_week1",
+	"defaultZoom": 0.9,
+	"isPixelStage": false,
+	"gfVersion": "gf",
+	"boyfriendPosition": [770, 450],
+	"dadPosition": [100, 100],
+	"gfPosition": [400, 130],
+	"cameraBoyfriend": [0, 0],
+	"cameraDad": [0, 0],
+	"elements": [
+		{
+			"type": "sprite",
+			"name": "stageback",
+			"asset": "stageback",
+			"position": [-600, -200],
+			"scrollFactor": [0.9, 0.9],
+			"antialiasing": true,
+			"active": false,
+			"zIndex": 0
+		},
+		{
+			"type": "sprite",
+			"name": "stagefront",
+			"asset": "stagefront",
+			"position": [-650, 600],
+			"scrollFactor": [0.9, 0.9],
+			"scale": [1.1, 1.1],
+			"antialiasing": true,
+			"active": false,
+			"zIndex": 1
+		},
+		{
+			"type": "sprite",
+			"name": "stagecurtains",
+			"asset": "stagecurtains",
+			"position": [-500, -300],
+			"scrollFactor": [1.3, 1.3],
+			"scale": [0.9, 0.9],
+			"antialiasing": true,
+			"active": false,
+			"zIndex": 2
+		}
+	]
+}

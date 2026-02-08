@@ -1,0 +1,48 @@
+{
+	"path": "week4/Mom_Assets",
+	"isPlayer": false,
+	"antialiasing": true,
+	"scale": 1.0,
+	"animations": [
+		{
+			"name": "idle",
+			"prefix": "Mom Idle",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singUP",
+			"prefix": "Mom Up Pose",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 14,
+			"offsetY": 71
+		},
+		{
+			"name": "singDOWN",
+			"prefix": "MOM DOWN POSE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 20,
+			"offsetY": -160
+		},
+		{
+			"name": "singLEFT",
+			"prefix": "Mom Left Pose",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 250,
+			"offsetY": -23
+		},
+		{
+			"name": "singRIGHT",
+			"prefix": "Mom Pose Left",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 10,
+			"offsetY": -60
+		}
+	]
+}

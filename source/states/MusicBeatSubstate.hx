@@ -9,6 +9,8 @@ import ui.FlxVirtualPad;
 import flixel.input.actions.FlxActionInput;
 #end
 
+import controls.Controls;
+
 class MusicBeatSubstate extends FlxSubState
 {
 	public function new()

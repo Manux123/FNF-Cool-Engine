@@ -1,0 +1,33 @@
+{
+	"path": "BF_dead",
+	"isPlayer": true,
+	"antialiasing": true,
+	"scale": 1.0,
+	"flipX": true,
+	"animations": [
+		{
+			"name": "firstDeath",
+			"prefix": "BF dies",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "deathLoop",
+			"prefix": "BF Dead Loop",
+			"framerate": 24,
+			"looped": true,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "deathConfirm",
+			"prefix": "BF Dead confirm",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		}
+	]
+}

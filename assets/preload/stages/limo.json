@@ -1,0 +1,96 @@
+{
+	"name": "limo",
+	"defaultZoom": 0.9,
+	"isPixelStage": false,
+	"gfVersion": "gf-car",
+	"boyfriendPosition": [1030, 230],
+	"dadPosition": [100, 100],
+	"gfPosition": [400, 130],
+	"elements": [
+		{
+			"type": "sprite",
+			"name": "limoSunset",
+			"asset": "limoSunset",
+			"position": [-120, -50],
+			"scrollFactor": [0.1, 0.1],
+			"antialiasing": true,
+			"zIndex": 0
+		},
+		{
+			"type": "animated",
+			"name": "bgLimo",
+			"asset": "bgLimo",
+			"position": [-200, 480],
+			"scrollFactor": [0.4, 0.4],
+			"antialiasing": true,
+			"zIndex": 1,
+			"animations": [
+				{
+					"name": "drive",
+					"prefix": "background limo pink",
+					"framerate": 24,
+					"looped": true
+				}
+			],
+			"firstAnimation": "drive"
+		},
+		{
+			"type": "animated",
+			"name": "limoDrive",
+			"asset": "limoDrive",
+			"position": [-120, 550],
+			"antialiasing": true,
+			"zIndex": 2,
+			"animations": [
+				{
+					"name": "drive",
+					"prefix": "Limo stage",
+					"framerate": 24,
+					"looped": true
+				}
+			],
+			"firstAnimation": "drive"
+		},
+		{
+			"type": "custom_class_group",
+			"className": "BackgroundDancer",
+			"name": "limos",
+			"asset": "limoDancer",
+			"zIndex": 3,
+			"instances": [
+				{
+					"position": [
+						-200,
+						370
+					]
+				},
+				{
+					"position": [
+						0,
+						370
+					]
+				},
+				{
+					"position": [
+						200,
+						370
+					]
+				},
+				{
+					"position": [
+						400,
+						370
+					]
+				}
+			]
+		},
+		{
+			"type": "sprite",
+			"name": "fastCar",
+			"asset": "fastCarLol",
+			"position": [-300, 160],
+			"antialiasing": true,
+			"zIndex": 6
+		}
+	]
+}

@@ -1,0 +1,82 @@
+{
+	"path": "weeb/bfPixel",
+	"isPlayer": true,
+	"antialiasing": false,
+	"scale": 6.0,
+	"flipX": true,
+	"cameraOffset":[-200,-200],
+	"animations": [
+		{
+			"name": "idle",
+			"prefix": "BF IDLE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singUP",
+			"prefix": "BF UP NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singLEFT",
+			"prefix": "BF LEFT NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singRIGHT",
+			"prefix": "BF RIGHT NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singDOWN",
+			"prefix": "BF DOWN NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singUPmiss",
+			"prefix": "BF UP MISS",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singLEFTmiss",
+			"prefix": "BF LEFT MISS",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singRIGHTmiss",
+			"prefix": "BF RIGHT MISS",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singDOWNmiss",
+			"prefix": "BF DOWN MISS",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		}
+	]
+}

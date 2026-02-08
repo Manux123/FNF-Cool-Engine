@@ -1,0 +1,50 @@
+{
+	"path": "weeb/bfPixel",
+	"isPlayer": false,
+	"antialiasing": false,
+	"scale": 6.0,
+	"flipX": true,
+	"cameraOffset":[0,-150],
+	"animations": [
+		{
+			"name": "idle",
+			"prefix": "BF IDLE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singUP",
+			"prefix": "BF UP NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singLEFT",
+			"prefix": "BF RIGHT NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singRIGHT",
+			"prefix": "BF LEFT NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singDOWN",
+			"prefix": "BF DOWN NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		}
+	]
+}

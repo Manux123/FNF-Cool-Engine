@@ -1,0 +1,49 @@
+{
+	"path": "weeb/spirit",
+	"isPlayer": false,
+	"antialiasing": false,
+	"scale": 6.0,
+	"isTxt": true,
+	"animations": [
+		{
+			"name": "idle",
+			"prefix": "idle spirit_",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -220,
+			"offsetY": -280
+		},
+		{
+			"name": "singUP",
+			"prefix": "up_",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -220,
+			"offsetY": -240
+		},
+		{
+			"name": "singRIGHT",
+			"prefix": "right_",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -220,
+			"offsetY": -280
+		},
+		{
+			"name": "singLEFT",
+			"prefix": "left_",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -200,
+			"offsetY": -280
+		},
+		{
+			"name": "singDOWN",
+			"prefix": "spirit down_",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 170,
+			"offsetY": 110
+		}
+	]
+}

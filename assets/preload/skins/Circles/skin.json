@@ -1,0 +1,43 @@
+{
+  "name": "Circles",
+  "author": "Community",
+  "description": "Circle-shaped notes",
+  "offsetDefault": false,
+  "normal": {
+    "path": "Circles",
+    "type": "sparrow",
+    "scale": 0.7,
+    "antialiasing": true
+  },
+  "pixel": {
+    "path": "Circles-pixels",
+    "type": "image",
+    "antialiasing": false
+  },
+  "animations": {
+    "left": "purple alone0",
+    "down": "blue alone0",
+    "up": "green alone0",
+    "right": "red alone0",
+    "leftHold": "purple hold",
+    "downHold": "blue hold",
+    "upHold": "green hold",
+    "rightHold": "red hold",
+    "leftHoldEnd": "purple tail",
+    "downHoldEnd": "blue tail",
+    "upHoldEnd": "green tail",
+    "rightHoldEnd": "red tail",
+    "strumLeft": "arrowLEFT",
+    "strumDown": "arrowDOWN",
+    "strumUp": "arrowUP",
+    "strumRight": "arrowRIGHT",
+    "strumLeftPress": "left press",
+    "strumDownPress": "down press",
+    "strumUpPress": "up press",
+    "strumRightPress": "right press",
+    "strumLeftConfirm": "left confirm",
+    "strumDownConfirm": "down confirm",
+    "strumUpConfirm": "up confirm",
+    "strumRightConfirm": "right confirm"
+  }
+}

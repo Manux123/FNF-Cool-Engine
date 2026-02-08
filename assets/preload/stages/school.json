@@ -1,0 +1,212 @@
+{
+	"name": "school",
+	"defaultZoom": 1.1,
+	"isPixelStage": true,
+	"gfVersion": "gf-pixel",
+	"boyfriendPosition": [
+		1070,
+		670
+	],
+	"dadPosition": [
+		200,
+		100
+	],
+	"gfPosition": [
+		680,
+		430
+	],
+	"elements": [
+		{
+			"type": "sprite",
+			"name": "weebSky",
+			"asset": "weebSky",
+			"position": [
+				0,
+				0
+			],
+			"scrollFactor": [
+				0.1,
+				0.1
+			],
+			"antialiasing": false,
+			"scale": [
+				6,
+				6
+			],
+			"zIndex": 0
+		},
+		{
+			"type": "sprite",
+			"name": "weebSchool",
+			"asset": "weebSchool",
+			"position": [
+				-200,
+				0
+			],
+			"scrollFactor": [
+				0.6,
+				0.9
+			],
+			"antialiasing": false,
+			"scale": [
+				6,
+				6
+			],
+			"zIndex": 1
+		},
+		{
+			"type": "sprite",
+			"name": "weebStreet",
+			"asset": "weebStreet",
+			"position": [
+				-200,
+				0
+			],
+			"scrollFactor": [
+				0.95,
+				0.95
+			],
+			"antialiasing": false,
+			"scale": [
+				6,
+				6
+			],
+			"zIndex": 2
+		},
+		{
+			"type": "sprite",
+			"name": "weebTreesBack",
+			"asset": "weebTreesBack",
+			"position": [
+				-30,
+				130
+			],
+			"scrollFactor": [
+				0.9,
+				0.9
+			],
+			"antialiasing": false,
+			"scale": [
+				6,
+				6
+			],
+			"zIndex": 3
+		},
+		{
+			"type": "animated",
+			"name": "weebTrees",
+			"asset": "weebTrees.txt",
+			"position": [
+				-780,
+				-950
+			],
+			"scrollFactor": [
+				0.85,
+				0.85
+			],
+			"antialiasing": false,
+			"scale": [
+				6,
+				6
+			],
+			"zIndex": 4,
+			"animations": [
+				{
+					"name": "treeLoop",
+					"prefix": "trees_",
+					"framerate": 12,
+					"looped": true,
+					"indices": [
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18
+					]
+				}
+			],
+			"firstAnimation": "treeLoop"
+		},
+		{
+			"type": "animated",
+			"name": "petals",
+			"asset": "petals",
+			"position": [
+				-200,
+				-40
+			],
+			"scrollFactor": [
+				0.85,
+				0.85
+			],
+			"scale": [
+				6,
+				6
+			],
+			"antialiasing": false,
+			"zIndex": 5,
+			"animations": [
+				{
+					"name": "leaves",
+					"prefix": "PETALS ALL",
+					"framerate": 24,
+					"looped": true
+				}
+			],
+			"firstAnimation": "leaves"
+		},
+		{
+			"type": "custom_class_group",
+			"className": "BackgroundGirls",
+			"name": "crowd",
+			"asset": "bgFreaks",
+			"zIndex": 5,
+			"instances": [
+				{
+					"position": [
+						-200,
+						370
+					]
+				},
+				{
+					"position": [
+						0,
+						370
+					]
+				},
+				{
+					"position": [
+						200,
+						370
+					]
+				},
+				{
+					"position": [
+						400,
+						370
+					]
+				},
+				{
+					"position": [
+						600,
+						370
+					]
+				}
+			]
+		}
+	]
+}

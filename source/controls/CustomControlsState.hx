@@ -6,13 +6,13 @@ import lime.utils.Int16Array;
 import lime.utils.Assets;
 import flixel.addons.ui.FlxUIButton;
 import flixel.text.FlxText;
-import Controls.Control;
+import controls.Controls.Control;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxSubState;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.input.keyboard.FlxKey;
-import flixel.system.FlxSound;
+import flixel.sound.FlxSound;
 import flixel.util.FlxColor;
 import ui.FlxVirtualPad;
 import flixel.util.FlxSave;
@@ -124,7 +124,7 @@ class CustomControlsState extends states.MusicBeatSubstate
 
 		var savebutton = new FlxUIButton((exitbutton.x + exitbutton.width + 25),25,"exit and save",() -> {
 			save();
-			FlxG.switchState(new states.OptionsMenuState());
+			FlxG.switchState(new options.OptionsMenuState());
 		});
 		savebutton.resize(250,50);
 		savebutton.setLabelFormat("VCR OSD Mono",24,FlxColor.BLACK,"center");
@@ -178,7 +178,7 @@ class CustomControlsState extends states.MusicBeatSubstate
 		var androidback:Bool = false;
 		#end
 		if (exitbutton.justReleased || androidback){
-			FlxG.switchState(new states.OptionsMenuState());
+			FlxG.switchState(new options.OptionsMenuState());
 		}
 		
 		for (touch in FlxG.touches.list){

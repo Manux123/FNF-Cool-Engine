@@ -1,0 +1,52 @@
+{
+	"_comment": "Ejemplo de personaje custom - Copia este archivo y modifícalo",
+	"path": "my_custom_character",
+	"isPlayer": false,
+	"antialiasing": true,
+	"scale": 1.0,
+	"specialAnim": false,
+	"flipX": false,
+	"pixelChar": false,
+	"animations": [
+		{
+			"name": "idle",
+			"prefix": "Character Idle",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singUP",
+			"prefix": "Character Sing Up",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -10,
+			"offsetY": 20
+		},
+		{
+			"name": "singDOWN",
+			"prefix": "Character Sing Down",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": -10
+		},
+		{
+			"name": "singLEFT",
+			"prefix": "Character Sing Left",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 15,
+			"offsetY": 0
+		},
+		{
+			"name": "singRIGHT",
+			"prefix": "Character Sing Right",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -15,
+			"offsetY": 0
+		}
+	]
+}

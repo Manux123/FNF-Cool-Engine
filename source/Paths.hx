@@ -4,6 +4,7 @@ import flixel.FlxG;
 import flixel.graphics.frames.FlxAtlasFrames;
 import openfl.utils.AssetType;
 import openfl.utils.Assets as OpenFlAssets;
+import states.PlayState;
 import openfl.display.BitmapData as Bitmap;
 
 class Paths
@@ -61,14 +62,35 @@ class Paths
 		return getPath('data/$key.txt', TEXT, library);
 	}
 
+	inline static public function songsTxt(key:String, ?library:String)
+	{
+		return 'songs:assets/songs/$key.txt';
+	}
+
 	inline static public function xml(key:String, ?library:String)
 	{
 		return getPath('data/$key.xml', TEXT, library);
 	}
 
+	
 	inline static public function json(key:String, ?library:String)
 	{
 		return getPath('data/$key.json', TEXT, library);
+	}
+
+	inline static public function jsonSong(key:String)
+	{
+		return 'songs:assets/songs/$key.json';
+	}
+
+	inline static public function stageJSON(key:String)
+	{
+		return 'assets/stages/$key.json';
+	}
+
+	inline static public function characterJSON(key:String, ?library:String)
+	{
+		return getPath('characters/$key.json', TEXT, library);
 	}
 
 	static public function sound(key:String, ?library:String)
@@ -86,7 +108,6 @@ class Paths
 		trace('assets/videos/$key.mp4');
 		return getPath('videos/$key.mp4', BINARY, library);
 	}
-		
 
 	inline static public function music(key:String, ?library:String)
 	{
@@ -97,29 +118,42 @@ class Paths
 	{
 		trace('Loading VOICES');
 		var loadingSong:Bool = true;
-		if(loadingSong) {
+		if (loadingSong)
+		{
 			trace('Done Loading VOICES!');
-			return 'songs:assets/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';}
-		else {
-			trace('ERROR Loading INST :c');
-			return 'defaultsong:assets/defaultsong/Voices.$SOUND_EXT';}
+			return 'songs:assets/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';
+		}
+		else
+		{
+			trace('ERROR Loading VOICES :c');
+			return 'songs:assets/songs/test/Voices.$SOUND_EXT';
+		}
 	}
 
 	inline static public function inst(song:String)
 	{
 		trace('Loading INST');
 		var loadingSong:Bool = true;
-		if(loadingSong) {
+		if (loadingSong)
+		{
 			trace('Done Loading INST!');
-			return 'songs:assets/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';}
-		else {
+			return 'songs:assets/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';
+		}
+		else
+		{
 			trace('ERROR Loading INST :c');
-			return 'defaultsong:assets/defaultsong/Inst.$SOUND_EXT';}
+			return 'songs:assets/songs/test/Inst.$SOUND_EXT';
+		}
 	}
 
 	inline static public function image(key:String, ?library:String)
 	{
 		return getPath('images/$key.png', IMAGE, library);
+	}
+
+	inline static public function imageStage(key:String, ?library:String)
+	{
+		return getPath('stages/' + PlayState.curStage + '/' + key + '.png', IMAGE, library);
 	}
 
 	inline static public function font(key:String)
@@ -132,8 +166,44 @@ class Paths
 		return FlxAtlasFrames.fromSparrow(image(key, library), file('images/$key.xml', library));
 	}
 
+	inline static public function characterSprite(key:String, ?library:String)
+	{
+		return FlxAtlasFrames.fromSparrow(getPath('characters/images/$key.png', IMAGE, library), getPath('characters/images/$key.xml', TEXT, library));
+	}
+
+	inline static public function stageSprite(key:String, ?library:String)
+	{
+		return FlxAtlasFrames.fromSparrow(getPath('stages/' + PlayState.curStage + '/' + key + '.png', IMAGE, library), getPath('stages/' + PlayState.curStage + '/' + key + '.xml', TEXT, library));
+	}
+
+	inline static public function skinSprite(key:String, ?library:String)
+	{
+		return FlxAtlasFrames.fromSparrow(getPath('skins/$key.png', IMAGE, library), getPath('skins/$key.xml', TEXT, library));
+	}
+	
 	inline static public function getPackerAtlas(key:String, ?library:String)
 	{
 		return FlxAtlasFrames.fromSpriteSheetPacker(image(key, library), file('images/$key.txt', library));
+	}
+
+	inline static public function characterSpriteTxt(key:String, ?library:String)
+	{
+		return FlxAtlasFrames.fromSpriteSheetPacker(getPath('characters/images/$key.png', IMAGE, library), file('characters/images/$key.txt', library));
+	}
+
+	inline static public function stageSpriteTxt(key:String, ?library:String)
+	{
+		return FlxAtlasFrames.fromSpriteSheetPacker(getPath('stages/' + PlayState.curStage + '/$key.png', IMAGE, library), file('stages/' + PlayState.curStage + '/$key.txt', library));
+	}
+
+	
+	inline static public function splashSprite(key:String, ?library:String)
+	{
+		return FlxAtlasFrames.fromSparrow(getPath('splashes/$key.png', IMAGE, library), getPath('splashes/$key.xml', TEXT, library));
+	}
+
+	inline static public function skinSpriteTxt(key:String, ?library:String)
+	{
+		return FlxAtlasFrames.fromSpriteSheetPacker(getPath('skins/$key.png', IMAGE, library), file('skins/$key.txt', library));
 	}
 }

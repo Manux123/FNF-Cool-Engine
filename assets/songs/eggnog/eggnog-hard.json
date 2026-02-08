@@ -1,6 +1,7 @@
 {
     "song": {
         "song": "Eggnog",
+        "stage":"mall",
         "notes": [
             {
                 "lengthInSteps": 16,
@@ -2884,6 +2885,7 @@
         "needsVoices": true,
         "player1": "bf-christmas",
         "player2": "parents-christmas",
+        "gfVersion":"gf-christmas",
         "sectionLengths": [],
         "speed": 1.9000000000000008,
         "validScore": true

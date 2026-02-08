@@ -8,6 +8,8 @@ class CoolUtil
 {
 	public static var difficultyArray:Array<String> = ['EASY', "NORMAL", "HARD"];
 
+	public static var difficultyPath:Array<String> = ['-easy','','-hard'];
+
 	public static function difficultyString():String
 	{
 		return difficultyArray[states.PlayState.storyDifficulty];

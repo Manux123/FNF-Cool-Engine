@@ -189,7 +189,7 @@ typedef enum vlc_dialog {
                              "mpeg2", "mpeg4", "mpg", "mpv2", "mts", "mtv", "mxf", "mxg", "nsv", "nuv", \
                              "ogg", "ogm", "ogv", "ogx", "ps", \
                              "rec", "rm", "rmvb", "tod", "ts", "tts", "vob", "vro", \
-                             "webm", "wm", "wmv", "wtv", "xesc"
+                             "wm", "wmv", "wtv", "xesc"
 
 #define EXTENSIONS_AUDIO \
     "*.3ga;" \
@@ -248,7 +248,7 @@ typedef enum vlc_dialog {
                          "*.m2t;*.m2ts;*.m4v;*.mkv;*.mov;*.mp2;*.mp2v;*.mp4;*.mp4v;*.mpe;*.mpeg;*.mpeg1;" \
                          "*.mpeg2;*.mpeg4;*.mpg;*.mpv2;*.mts;*.mtv;*.mxf;*.mxg;*.nsv;*.nuv;" \
                          "*.ogg;*.ogm;*.ogv;*.ogx;*.ps;" \
-                         "*.rec;*.rm;*.rmvb;*.tod;*.ts;*.tts;*.vob;*.vro;*.webm;*.wm;*.wmv;*.wtv;*.xesc"
+                         "*.rec;*.rm;*.rmvb;*.tod;*.ts;*.tts;*.vob;*.vro;*.wm;*.wmv;*.wtv;*.xesc"
 
 #define EXTENSIONS_PLAYLIST "*.asx;*.b4s;*.cue;*.ifo;*.m3u;*.m3u8;*.pls;*.ram;*.rar;*.sdp;*.vlc;*.xspf;*.wvx;*.zip;*.conf"
 

@@ -1,0 +1,58 @@
+{
+	"path": "week2/spooky_kids_assets",
+	"isPlayer": false,
+	"antialiasing": true,
+	"scale": 1.0,
+	"animations": [
+		{
+			"name": "singUP",
+			"prefix": "spooky UP NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -20,
+			"offsetY": 26
+		},
+		{
+			"name": "singDOWN",
+			"prefix": "spooky DOWN note",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -50,
+			"offsetY": -130
+		},
+		{
+			"name": "singLEFT",
+			"prefix": "note sing left",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 130,
+			"offsetY": -10
+		},
+		{
+			"name": "singRIGHT",
+			"prefix": "spooky sing right",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": -130,
+			"offsetY": -14
+		},
+		{
+			"name": "danceLeft",
+			"prefix": "spooky dance idle",
+			"indices": [0, 2, 6],
+			"framerate": 12,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "danceRight",
+			"prefix": "spooky dance idle",
+			"indices": [8, 10, 12, 14],
+			"framerate": 12,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		}
+	]
+}

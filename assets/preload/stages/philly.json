@@ -1,0 +1,98 @@
+{
+	"name": "philly",
+	"defaultZoom": 1.05,
+	"isPixelStage": false,
+	"gfVersion": "gf",
+	"boyfriendPosition": [770, 450],
+	"dadPosition": [100, 100],
+	"gfPosition": [400, 130],
+	"elements": [
+		{
+			"type": "sprite",
+			"name": "sky",
+			"asset": "sky",
+			"position": [-100, 0],
+			"scrollFactor": [0.1, 0.1],
+			"antialiasing": true,
+			"zIndex": 0
+		},
+		{
+			"type": "sprite",
+			"name": "city",
+			"asset": "city",
+			"position": [-10, 0],
+			"scrollFactor": [0.3, 0.3],
+			"scale": [0.85, 0.85],
+			"antialiasing": true,
+			"zIndex": 1
+		},
+		{
+			"type": "group",
+			"name": "phillyCityLights",
+			"zIndex": 2,
+			"members": [
+				{
+					"asset": "win0",
+					"position": [-10, 0],
+					"scrollFactor": [0.3, 0.3],
+					"scale": [0.85, 0.85]
+				},
+				{
+					"asset": "win1",
+					"position": [-10, 0],
+					"scrollFactor": [0.3, 0.3],
+					"scale": [0.85, 0.85]
+				},
+				{
+					"asset": "win2",
+					"position": [-10, 0],
+					"scrollFactor": [0.3, 0.3],
+					"scale": [0.85, 0.85]
+				},
+				{
+					"asset": "win3",
+					"position": [-10, 0],
+					"scrollFactor": [0.3, 0.3],
+					"scale": [0.85, 0.85]
+				},
+				{
+					"asset": "win4",
+					"position": [-10, 0],
+					"scrollFactor": [0.3, 0.3],
+					"scale": [0.85, 0.85]
+				}
+			]
+		},
+		{
+			"type": "sprite",
+			"name": "behindTrain",
+			"asset": "behindTrain",
+			"position": [-40, 50],
+			"antialiasing": true,
+			"zIndex": 3
+		},
+		{
+			"type": "sprite",
+			"name": "train",
+			"asset": "train",
+			"position": [2000, 360],
+			"antialiasing": true,
+			"zIndex": 4
+		},
+		{
+			"type": "sprite",
+			"name": "street",
+			"asset": "street",
+			"position": [-40, 50],
+			"antialiasing": true,
+			"zIndex": 5
+		},
+		{
+			"type": "sound",
+			"name": "trainSound",
+			"asset": "train_passes",
+			"looped": false,
+			"volume": 1.0
+		}
+	]
+}

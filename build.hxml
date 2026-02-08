@@ -1,0 +1,115 @@
+# ============================================
+# FNF Engine - Configuración de Compilación
+# ============================================
+# Este archivo controla cómo se compila tu juego
+# Edita las opciones según tus necesidades
+
+# ============================================
+# CONFIGURACIÓN BÁSICA
+# ============================================
+-cp source
+-cp assets/preload
+-main Main
+
+# ============================================
+# BIBLIOTECAS (Descomentar las que uses)
+# ============================================
+-lib flixel
+-lib flixel-addons
+-lib flixel-ui
+-lib hscript
+# -lib polymod
+-lib discord_rpc  # Descomentar para Discord Rich Presence
+# -lib hxCodec      # Descomentar para videos
+# -lib linc_luajit  # Descomentar para scripts Lua
+
+# ============================================
+# OPCIONES DE OPTIMIZACIÓN
+# ============================================
+
+# Nivel de optimización (opciones: 0, 1, 2, 3)
+# 0 = Sin optimización (más rápido compilar, más lento ejecutar)
+# 3 = Máxima optimización (más lento compilar, más rápido ejecutar)
+-D HXCPP_OPTIMIZATION_LEVEL=2
+
+# Compilación incremental (más rápida después de la primera vez)
+--macro openfl.utils.macro.MacroHelper.setDefine("HXCPP_CHECK_POINTER", true)
+
+# ============================================
+# CONFIGURACIÓN DE DEBUG/RELEASE
+# ============================================
+
+# MODO DEBUG (comenta estas líneas para compilación RELEASE)
+-debug
+-D FNF_DEBUG_MODE
+
+# MODO RELEASE (descomenta para versión final)
+# -D release
+# -D no-debug
+# -D no-traces
+
+# ============================================
+# CARACTERÍSTICAS DEL JUEGO
+# ============================================
+
+# Activar/Desactivar características
+-D DISCORD_ALLOWED       # Rich Presence de Discord
+ -D VIDEOS_ALLOWED      # Soporte para cutscenes en video
+# -D LUA_ALLOWED         # Scripts Lua personalizados
+# -D HSCRIPT_ALLOWED     # Scripts HScript personalizados
+
+# ============================================
+# CONFIGURACIÓN DE RENDIMIENTO
+# ============================================
+
+# FPS por defecto
+-D FPS_DEFAULT=60
+
+# Límite de memoria
+-D HXCPP_GC_BIG_BLOCKS=4
+
+# Usar GPU para renderizado
+-D FLX_RENDER_TILE
+
+# ============================================
+# PLATAFORMA OBJETIVO
+# ============================================
+
+# Windows (64-bit)
+-D windows
+-D desktop
+-D HXCPP_M64
+
+# Para 32-bit, comenta HXCPP_M64 y descomenta:
+# -D HXCPP_M32
+
+# ============================================
+# DIRECTORIOS DE SALIDA
+# ============================================
+-D HXCPP_OUTPUT_DIR=export/release/windows/obj
+--class-path source
+--class-path assets/preload/data
+
+# ============================================
+# CONFIGURACIÓN ADICIONAL
+# ============================================
+
+# Antialiasing
+-D FLX_NO_MOUSE_ADVANCED
+
+# Precarga de assets
+-D PRELOAD_ALL
+
+# Compilación silenciosa (menos spam en consola)
+# -D no-compilation
+
+# ============================================
+# MACROS Y DEFINICIONES PERSONALIZADAS
+# ============================================
+-D game_version=0.2.8
+# ============================================
+# NOTAS
+# ============================================
+# Para compilar: lime test windows
+# Para limpiar: lime clean windows
+# Para compilar en release: lime build windows -release

@@ -1,0 +1,49 @@
+{
+	"path": "weeb/senpai",
+	"isPlayer": false,
+	"antialiasing": false,
+	"scale": 6.0,
+	"cameraOffset":[-300,-330],
+	"animations": [
+		{
+			"name": "idle",
+			"prefix": "Angry Senpai Idle",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singUP",
+			"prefix": "Angry Senpai UP NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 5,
+			"offsetY": 37
+		},
+		{
+			"name": "singLEFT",
+			"prefix": "Angry Senpai LEFT NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 40,
+			"offsetY": 0
+		},
+		{
+			"name": "singRIGHT",
+			"prefix": "Angry Senpai RIGHT NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "singDOWN",
+			"prefix": "Angry Senpai DOWN NOTE",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 14,
+			"offsetY": 0
+		}
+	]
+}

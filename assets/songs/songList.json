@@ -1,0 +1,52 @@
+{
+	"songsWeeks": [
+		{
+			"weekSongs": ["Test"],
+			"songIcons": ["bf-pixel"],
+			"color": ["0xFFA5004D"],
+			"bpm": [150]
+		},
+		{
+			"weekSongs": ["Tutorial"],
+			"songIcons": ["gf"],
+			"color": ["0xFFA5004D"],
+			"bpm": [100]
+		},
+		{
+			"weekSongs": ["Bopeebo", "Fresh", "Dadbattle"],
+			"songIcons": ["dad", "dad", "dad"],
+			"color": ["0xFFAF66CE", "0xFFAF66CE", "0xFFAF66CE"],
+			"bpm": [100, 120, 180]
+		},
+		{
+			"weekSongs": ["Spookeez", "South", "Monster"],
+			"songIcons": ["spooky", "spooky", "monster"],
+			"color": ["0xFF2A2A2A", "0xFF2A2A2A", "0xFF2A2A2A"],
+			"bpm": [150, 165, 95]
+		},
+		{
+			"weekSongs": ["Pico", "Philly", "Blammed"],
+			"songIcons": ["pico", "pico", "pico"],
+			"color": ["0xFF6BAA4C", "0xFF6BAA4C", "0xFF6BAA4C"],
+			"bpm": [150, 175, 165]
+		},
+		{
+			"weekSongs": ["Satin-Panties", "High", "Milf"],
+			"songIcons": ["mom", "mom", "mom"],
+			"color": ["0xFFD85889", "0xFFD85889", "0xFFD85889"],
+			"bpm": [95, 95, 180]
+		},
+		{
+			"weekSongs": ["Cocoa", "Eggnog", "Winter-Horrorland"],
+			"songIcons": ["parents", "parents", "monster"],
+			"color": ["0xFF9A68A4", "0xFF9A68A4", "0xFF9A68A4"],
+			"bpm": [95, 95, 95]
+		},
+		{
+			"weekSongs": ["Senpai", "Roses", "Thorns"],
+			"songIcons": ["senpai", "senpai", "spirit"],
+			"color": ["0xFFFFAA6F", "0xFFFFAA6F", "0xFFFF78BF"],
+			"bpm": [150, 150, 190]
+		}
+	]
+}

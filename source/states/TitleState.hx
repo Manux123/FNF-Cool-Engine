@@ -1,9 +1,5 @@
 package states;
 
-#if desktop
-import Discord.DiscordClient;
-import sys.thread.Thread;
-#end
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxState;
@@ -15,9 +11,10 @@ import flixel.graphics.FlxGraphic;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.group.FlxGroup;
 import flixel.input.gamepad.FlxGamepad;
+import debug.ChartingState;
 import flixel.math.FlxPoint;
 import flixel.math.FlxRect;
-import flixel.system.FlxSound;
+import flixel.sound.FlxSound;
 import flixel.system.ui.FlxSoundTray;
 import flixel.text.FlxText;
 import flixel.tweens.FlxEase;
@@ -40,20 +37,19 @@ class TitleState extends states.MusicBeatState
 	var textGroup:FlxGroup;
 	var ngSpr:FlxSprite;
 
-	//var curWacky:Array<String> = [];
-
+	// var curWacky:Array<String> = [];
 	var wackyImage:FlxSprite;
 
 	override public function create():Void
 	{
 		PlayerSettings.init();
 
-		if(FlxG.save.data.FPSCap)
+		if (FlxG.save.data.FPSCap)
 			openfl.Lib.current.stage.frameRate = 120;
 		else
 			openfl.Lib.current.stage.frameRate = 240;
 
-		//curWacky = FlxG.random.getObject(getIntroTextShit());
+		// curWacky = FlxG.random.getObject(getIntroTextShit());
 
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGtitle')));
 		add(bg);
@@ -61,18 +57,6 @@ class TitleState extends states.MusicBeatState
 		// DEBUG BULLSHIT
 
 		super.create();
-
-		#if ng
-		var ng:NGio = new NGio(APIStuff.API, APIStuff.EncKey);
-		trace('NEWGROUNDS LOL');
-		#end
-
-		FlxG.save.bind('funkin', 'ninjamuffin99');
-
-		//states.OptionsData.initSave();
-		KeyBinds.keyCheck();
-
-		Highscore.load();
 
 		if (FlxG.save.data.weekUnlocked != null)
 		{
@@ -84,20 +68,13 @@ class TitleState extends states.MusicBeatState
 		}
 
 		#if FREEPLAY
-		FlxG.switchState(new states.FreeplayState());
+		FlxG.switchState(new FreeplayState());
 		#elseif CHARTING
-		FlxG.switchState(new states.ChartingState());
+		FlxG.switchState(new ChartingState());
 		#elseif MAINMENU
 		FlxG.switchState(new MainMenuState());
 		#else
-		new FlxTimer().start(1, function(tmr:FlxTimer)
-		{
-			startIntro();
-		});
-		#end
-
-		#if desktop
-		DiscordClient.initialize();
+		startIntro();
 		#end
 	}
 
@@ -168,51 +145,25 @@ class TitleState extends states.MusicBeatState
 		if (initialized)
 			skipIntro();
 		else
-			{
-				var diamond:FlxGraphic = FlxGraphic.fromClass(GraphicTransTileDiamond);
-				diamond.persist = true;
-				diamond.destroyOnNoUse = false;
-
-				FlxTransitionableState.defaultTransIn = new TransitionData(FADE, FlxColor.BLACK, 1, new FlxPoint(0, -1), {asset: diamond, width: 32, height: 32},
-					new FlxRect(-200, -200, FlxG.width * 1.4, FlxG.height * 1.4));
-				FlxTransitionableState.defaultTransOut = new TransitionData(FADE, FlxColor.BLACK, 0.7, new FlxPoint(0, 1),
-					{asset: diamond, width: 32, height: 32}, new FlxRect(-200, -200, FlxG.width * 1.4, FlxG.height * 1.4));
-
-				transIn = FlxTransitionableState.defaultTransIn;
-				transOut = FlxTransitionableState.defaultTransOut;
-
-				// HAD TO MODIFY SOME BACKEND SHIT
-				// IF THIS PR IS HERE IF ITS ACCEPTED UR GOOD TO GO
-				// https://github.com/HaxeFlixel/flixel-addons/pull/348
-
-				// var music:FlxSound = new FlxSound();
-				// music.loadStream(Paths.music('freakyMenu'));
-				// FlxG.sound.list.add(music);
-				// music.play();
-				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
-
-				FlxG.sound.music.fadeIn(4, 0, 0.7);
-				Conductor.changeBPM(102);
-				initialized = true;
-			}
-
-		// credGroup.add(credTextShit);
-	}
-
-	/*function getIntroTextShit():Array<Array<String>>
-	{
-		var fullText:String = Assets.getText(Paths.txt('introText'));
-
-		var firstArray:Array<String> = fullText.split('\n');
-		var swagGoodArray:Array<Array<String>> = [];
-
-		for (i in firstArray)
 		{
-			swagGoodArray.push(i.split('--'));
-		}
+			var diamond:FlxGraphic = FlxGraphic.fromClass(GraphicTransTileDiamond);
+			diamond.persist = true;
+			diamond.destroyOnNoUse = false;
 
-		return swagGoodArray;
-	}*/
+			FlxTransitionableState.defaultTransIn = new TransitionData(FADE, FlxColor.BLACK, 1, new FlxPoint(0, -1), {asset: diamond, width: 32, height: 32},
+				new FlxRect(-200, -200, FlxG.width * 1.4, FlxG.height * 1.4));
+			FlxTransitionableState.defaultTransOut = new TransitionData(FADE, FlxColor.BLACK, 0.7, new FlxPoint(0, 1),
+				{asset: diamond, width: 32, height: 32}, new FlxRect(-200, -200, FlxG.width * 1.4, FlxG.height * 1.4));
+
+			transIn = FlxTransitionableState.defaultTransIn;
+			transOut = FlxTransitionableState.defaultTransOut;
+			FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
+
+			FlxG.sound.music.fadeIn(4, 0, 0.7);
+			Conductor.changeBPM(102);
+			initialized = true;
+		}
+	}
 
 	var transitioning:Bool = false;
 
@@ -254,7 +205,7 @@ class TitleState extends states.MusicBeatState
 
 		if (pressedEnter && !transitioning && skippedIntro)
 		{
-			if(titleText != null)
+			if (titleText != null)
 				titleText.animation.play('press');
 
 			FlxG.camera.flash(FlxColor.WHITE, 1);
@@ -284,7 +235,7 @@ class TitleState extends states.MusicBeatState
 					}
 					else
 					{
-						//FlxG.switchState(new states.VideoState('test/sus',new states.PlayState()));
+						// FlxG.switchState(new states.VideoState('test/sus',new states.PlayState()));
 						FlxG.switchState(new MainMenuState());
 					}
 				}
@@ -299,7 +250,7 @@ class TitleState extends states.MusicBeatState
 			});
 			// FlxG.sound.play(Paths.music('titleShoot'), 0.7);
 		}
-            
+
 		if (pressedEnter && !skippedIntro)
 		{
 			skipIntro();
@@ -328,12 +279,13 @@ class TitleState extends states.MusicBeatState
 			coolText.y -= yOffset;
 		credGroup.add(coolText);
 		textGroup.add(coolText);
-		
-		FlxTween.tween(coolText,{y: coolText.y + (textGroup.length * 60) + 150},0.4,{ease: FlxEase.expoInOut, onComplete: function(flxTween:FlxTween) 
-			{ 
-			}});
 
-
+		FlxTween.tween(coolText, {y: coolText.y + (textGroup.length * 60) + 150}, 0.4, {
+			ease: FlxEase.expoInOut,
+			onComplete: function(flxTween:FlxTween)
+			{
+			}
+		});
 	}
 
 	function deleteCoolText()
@@ -345,8 +297,8 @@ class TitleState extends states.MusicBeatState
 		}
 	}
 
-	var randomString = ['Thx PabloelproxD210','Thx Chase for...',"Thx TheStrexx for"];
-	var randomString2 = ['for the Android port LOL','SOMTHING',"you'r 3 commits :D"];
+	var randomString = ['Thx PabloelproxD210', 'Thx Chase for...', "Thx TheStrexx for"];
+	var randomString2 = ['for the Android port LOL', 'SOMTHING', "you'r 3 commits :D"];
 	var random:Int;
 
 	override function beatHit()
@@ -363,7 +315,7 @@ class TitleState extends states.MusicBeatState
 
 		FlxG.log.add(curBeat);
 
-		FlxTween.tween(FlxG.camera, {zoom:1.02}, 0.3, {ease: FlxEase.quadOut, type: BACKWARD});
+		FlxTween.tween(FlxG.camera, {zoom: 1.02}, 0.3, {ease: FlxEase.quadOut, type: BACKWARD});
 
 		switch (curBeat)
 		{
@@ -385,7 +337,7 @@ class TitleState extends states.MusicBeatState
 				createCoolText(['Cool Engine Team']);
 			case 7:
 				// I can just put the original engine creator instead of every single fucking person that helps with it
-				//Suck my dick Juan
+				// Suck my dick Juan
 				addMoreText('Manux');
 				addMoreText('Juanen100');
 				addMoreText('MrClogsworthYt');
@@ -400,7 +352,7 @@ class TitleState extends states.MusicBeatState
 			// credTextShit.text = 'Shoutouts Tom Fulp';
 			// credTextShit.screenCenter();
 			case 9:
-				random = FlxG.random.int(0,randomString.length);
+				random = FlxG.random.int(0, randomString.length);
 				createCoolText([randomString[random]]);
 			// credTextShit.visible = true;
 			case 11:
@@ -436,17 +388,17 @@ class TitleState extends states.MusicBeatState
 			FlxG.camera.flash(FlxColor.WHITE, 4);
 			remove(credGroup);
 
-			FlxTween.tween(logoBl,{y: -100}, 1.4, {ease: FlxEase.expoInOut});
+			FlxTween.tween(logoBl, {y: -100}, 1.4, {ease: FlxEase.expoInOut});
 
 			logoBl.angle = -4;
 
 			new FlxTimer().start(0.01, function(tmr:FlxTimer)
-				{
-					if(logoBl.angle == -4) 
-						FlxTween.angle(logoBl, logoBl.angle, 4, 4, {ease: FlxEase.quartInOut});
-					if (logoBl.angle == 4) 
-						FlxTween.angle(logoBl, logoBl.angle, -4, 4, {ease: FlxEase.quartInOut});
-				}, 0);
+			{
+				if (logoBl.angle == -4)
+					FlxTween.angle(logoBl, logoBl.angle, 4, 4, {ease: FlxEase.quartInOut});
+				if (logoBl.angle == 4)
+					FlxTween.angle(logoBl, logoBl.angle, -4, 4, {ease: FlxEase.quartInOut});
+			}, 0);
 
 			skippedIntro = true;
 		}

@@ -1,0 +1,48 @@
+{
+  "name": "StepMania",
+  "author": "StepMania Community",
+  "description": "StepMania-style notes with DDR aesthetics",
+  "offsetDefault":true,
+  "normal": {
+    "path": "CAMELIANOTES_assets",
+    "type": "sparrow",
+    "scale": 0.7,
+    "antialiasing": true
+  },
+  "pixel": {
+    "path": "stepmania-pixels",
+    "type": "image",
+    "antialiasing": false
+  },
+  "animations": {
+    "left": "purple0",
+    "down": "blue0",
+    "up": "green0",
+    "right": "red0",
+    
+    "leftHold": "purple hold piece",
+    "downHold": "blue hold piece",
+    "upHold": "green hold piece",
+    "rightHold": "red hold piece",
+    
+    "leftHoldEnd": "pruple end hold",
+    "downHoldEnd": "blue hold end",
+    "upHoldEnd": "green hold end",
+    "rightHoldEnd": "red hold end",
+    
+    "strumLeft": "arrowLEFT",
+    "strumDown": "arrowDOWN",
+    "strumUp": "arrowUP",
+    "strumRight": "arrowRIGHT",
+    
+    "strumLeftPress": "left press",
+    "strumDownPress": "down press",
+    "strumUpPress": "up press",
+    "strumRightPress": "right press",
+    
+    "strumLeftConfirm": "left confirm",
+    "strumDownConfirm": "down confirm",
+    "strumUpConfirm": "up confirm",
+    "strumRightConfirm": "right confirm"
+  }
+}

@@ -3,6 +3,7 @@
 	"isPlayer": false,
 	"antialiasing": true,
 	"scale": 1.0,
+	"healthIcon":"gf",
 	"animations": [
 		{
 			"name": "danceLeft",

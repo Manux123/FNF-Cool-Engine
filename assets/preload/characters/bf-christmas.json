@@ -4,6 +4,7 @@
 	"antialiasing": true,
 	"scale": 1.0,
 	"flipX": true,
+	"healthIcon":"bf",
 	"animations": [
 		{
 			"name": "idle",

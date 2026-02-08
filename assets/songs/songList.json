@@ -38,13 +38,13 @@
 		},
 		{
 			"weekSongs": ["Cocoa", "Eggnog", "Winter-Horrorland"],
-			"songIcons": ["parents", "parents", "monster"],
+			"songIcons": ["parents-christmas", "parents-christmas", "monster"],
 			"color": ["0xFF9A68A4", "0xFF9A68A4", "0xFF9A68A4"],
 			"bpm": [95, 95, 95]
 		},
 		{
 			"weekSongs": ["Senpai", "Roses", "Thorns"],
-			"songIcons": ["senpai", "senpai", "spirit"],
+			"songIcons": ["senpai", "senpai-angry", "spirit"],
 			"color": ["0xFFFFAA6F", "0xFFFFAA6F", "0xFFFF78BF"],
 			"bpm": [150, 150, 190]
 		}

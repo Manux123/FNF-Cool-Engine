@@ -33,31 +33,6 @@ import objects.character.CharacterList;
 
 using StringTools;
 
-/**
- * ═══════════════════════════════════════════════════════════════
- *                    STAGE EDITOR V3.3 - ASSET MANAGER
- * ═══════════════════════════════════════════════════════════════
- * 
- * NUEVAS FUNCIONALIDADES:
- * - 📝 Cambiar tipo de elemento (sprite, animated, group, etc.)
- * - 📁 Selector de archivos de imagen con importación automática
- * - 💾 Copia automática de archivos a assets/shared/images/stage/[stageName]/
- * - 🎨 Asset path actualizable manualmente
- * 
- * SISTEMA DE CÁMARAS DEL MOUSE:
- * - El mouse cambia automáticamente entre camHUD y camGame
- * - Cuando está sobre UI → camHUD (hitboxes perfectas en paneles)
- * - Cuando está en juego → camGame (selección y arrastre correcto)
- * 
- * FIXES PREVIOS:
- * - ✅ Panel derecho visible
- * - ✅ Hitboxes perfectas
- * - ✅ DELETE funcional
- * - ✅ Stage no se duplica
- * - ✅ Cambio fluido entre UI y juego
- * 
- * @version 3.3 Asset Manager
- */
 class StageEditor extends MusicBeatState
 {
 	// ══════════════════════════════════════════════════════════════

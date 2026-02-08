@@ -549,11 +549,16 @@ class PlayState extends states.MusicBeatState
 			}
 		});
 
-		iconP1 = new HealthIcon(SONG.player1, true);
+		var icons:Array<String> = [SONG.player1,SONG.player2];
+
+		if (boyfriend.healthIcon != null && dad.healthIcon != null)
+			icons = [boyfriend.healthIcon,dad.healthIcon];
+
+		iconP1 = new HealthIcon(icons[0], true);
 		iconP1.y = healthBar.y - (iconP1.height / 2);
 		add(iconP1);
 
-		iconP2 = new HealthIcon(SONG.player2, false);
+		iconP2 = new HealthIcon(icons[1], false);
 		iconP2.y = healthBar.y - (iconP2.height / 2);
 		add(iconP2);
 		add(scoreTxt);

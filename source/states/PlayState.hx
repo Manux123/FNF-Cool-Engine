@@ -1959,7 +1959,8 @@ class PlayState extends states.MusicBeatState
 					}
 				}
 
-				if (FlxG.save.data.notesplashes)
+				//Splashes should not spawn if the cpu's notes aren't visible anyways 
+				if (FlxG.save.data.notesplashes && !FlxG.save.data.middlescroll)
 					spawnNoteSplashOnNote(daNote, 0);
 
 				// FIX: Usar nuevas funciones de animación

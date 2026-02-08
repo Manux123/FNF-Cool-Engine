@@ -376,7 +376,7 @@ class OptimizationOptions extends MusicBeatState
 		}
 
 		var optionsBG:FlxSprite = new FlxSprite();
-		optionsBG.frames = Paths.getSparrowAtlas('menu/menuoptions');
+		optionsBG.frames = Paths.getSparrowAtlas('menu/menu_options');
 	    optionsBG.animation.addByPrefix('idle', 'options basic', 24, false);
 	    optionsBG.animation.play('idle');
 	    optionsBG.antialiasing = true;
@@ -578,7 +578,7 @@ class FPSCap extends Option
 
 	private override function updateDisplay():String
 	{
-		return !FlxG.save.data.noFpsCap ? "FPS Capped" : "FPS Not Capped";
+		return !FlxG.save.data.noFpsCap ? "Capped FPS" : "Uncapped FPS";
 	}
 }
 

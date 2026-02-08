@@ -140,7 +140,7 @@ class FreeplayEditorState extends MusicBeatState
 		titleText.setBorderStyle(OUTLINE, 0xFF0f3460, 3);
 		add(titleText);
 		
-		infoText = new FlxText(20, 50, 0, "Add songs to Freeplay • View in time real", 16);
+		infoText = new FlxText(20, 50, 0, "Add songs to Freeplay • View in real time", 16);
 		infoText.setFormat(Paths.font("vcr.ttf"), 16, 0xFF53a8b6, LEFT);
 		add(infoText);
 		
@@ -177,7 +177,7 @@ class FreeplayEditorState extends MusicBeatState
 		var inputWidth:Int = 500;
 		
 		// Song Name
-		var label1 = new FlxText(40, startY, 0, "Name Song:", 18);
+		var label1 = new FlxText(40, startY, 0, "Song Name:", 18);
 		label1.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT);
 		add(label1);
 		
@@ -244,13 +244,13 @@ class FreeplayEditorState extends MusicBeatState
 			{
 				currentInstPath = path;
 				instLoaded = true;
-				loadInstBtn.label.text = "✓ Inst Cargado";
+				loadInstBtn.label.text = "✓ Loaded Inst";
 				loadInstBtn.label.color = 0xFF00FF00;
-				updateStatus("Inst.ogg cargado correctamente");
+				updateStatus("Loaded Inst.ogg properly");
 			});
-			dialog.browse(OPEN, "ogg", null, "Selecciona Inst.ogg");
+			dialog.browse(OPEN, "ogg", null, "Choose Inst.ogg");
 			#else
-			updateStatus("Carga de archivos solo disponible en Desktop");
+			updateStatus("Loading files is only available on Desktop");
 			#end
 		});
 		styleButton(loadInstBtn, 0xFF4a5568, 240);
@@ -265,13 +265,13 @@ class FreeplayEditorState extends MusicBeatState
 			{
 				currentVocalsPath = path;
 				vocalsLoaded = true;
-				loadVocalsBtn.label.text = "✓ Vocals Cargado";
+				loadVocalsBtn.label.text = "✓ Loaded Vocals!";
 				loadVocalsBtn.label.color = 0xFF00FF00;
-				updateStatus("Vocals.ogg cargado correctamente");
+				updateStatus("Loaded Vocals.ogg correctly");
 			});
-			dialog.browse(OPEN, "ogg", null, "Selecciona Vocals.ogg");
+			dialog.browse(OPEN, "ogg", null, "Choose Vocals.ogg");
 			#else
-			updateStatus("Carga de archivos solo disponible en Desktop");
+			updateStatus("Loading files is only available on Desktop");
 			#end
 		});
 		styleButton(loadVocalsBtn, 0xFF4a5568, 240);
@@ -313,7 +313,7 @@ class FreeplayEditorState extends MusicBeatState
 	function createColorPicker():Void
 	{
 		var startY:Float = 380;
-		var label = new FlxText(40, startY, 0, "Color BG:", 18);
+		var label = new FlxText(40, startY, 0, "BG Color:", 18);
 		label.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT);
 		add(label);
 		
@@ -329,7 +329,7 @@ class FreeplayEditorState extends MusicBeatState
 			{
 				selectedColor = preset.hex;
 				updateColorSelection();
-				updateStatus("Color Selected: " + preset.name);
+				updateStatus("Selected Color: " + preset.name);
 			});
 			
 			btn.makeGraphic(btnSize, btnSize, Std.parseInt(preset.hex));
@@ -357,12 +357,12 @@ class FreeplayEditorState extends MusicBeatState
 		previewGroup = new FlxTypedGroup<PreviewItem>();
 		add(previewGroup);
 		
-		var headerText = new FlxText(610, 115, 0, "PREVIEW IN TIME REAL", 24);
+		var headerText = new FlxText(610, 115, 0, "PREVIEW IN REAL TIME", 24);
 		headerText.setFormat(Paths.font("vcr.ttf"), 24, 0xFF53a8b6, LEFT);
 		headerText.setBorderStyle(OUTLINE, FlxColor.BLACK, 2);
 		add(headerText);
 		
-		var subText = new FlxText(610, 145, 0, "PREVIEW FREEPLAY:", 14);
+		var subText = new FlxText(610, 145, 0, "FREEPLAY PREVIEW:", 14);
 		subText.setFormat(Paths.font("vcr.ttf"), 14, FlxColor.WHITE, LEFT);
 		subText.alpha = 0.7;
 		add(subText);
@@ -446,7 +446,7 @@ class FreeplayEditorState extends MusicBeatState
 		
 		if (songName == "")
 		{
-			updateStatus("¡Error! Debes poner un nombre a la canción");
+			updateStatus("Oops! You must enter the name of the song");
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 			return;
 		}
@@ -493,7 +493,7 @@ class FreeplayEditorState extends MusicBeatState
 		resetForm();
 		
 		FlxG.sound.play(Paths.sound('confirmMenu'));
-		updateStatus('✓ Canción "' + songName + '" añadida a Week ' + weekIndex);
+		updateStatus('✓ Song "' + songName + '" was added to Week ' + weekIndex);
 	}
 	
 	function copySongFile(sourcePath:String, songName:String, fileType:String):Void
@@ -515,7 +515,7 @@ class FreeplayEditorState extends MusicBeatState
 		catch (e:Dynamic)
 		{
 			trace('Error copiando archivo: ' + e);
-			updateStatus("Error al copiar " + fileType + ".ogg");
+			updateStatus("Error copying file " + fileType + ".ogg");
 		}
 		#end
 	}
@@ -529,7 +529,7 @@ class FreeplayEditorState extends MusicBeatState
 			File.saveContent("assets/songs/songList.json", jsonString);
 			
 			FlxG.sound.play(Paths.sound('confirmMenu'));
-			updateStatus("✓ songList.json guardado correctamente!");
+			updateStatus("✓ songList.json saved!");
 			
 			// Visual feedback
 			FlxG.camera.flash(FlxColor.GREEN, 0.3);
@@ -537,11 +537,11 @@ class FreeplayEditorState extends MusicBeatState
 		catch (e:Dynamic)
 		{
 			trace('Error guardando JSON: ' + e);
-			updateStatus("Error al guardar JSON: " + e);
+			updateStatus("Error saving JSON: " + e);
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 		}
 		#else
-		updateStatus("Guardar JSON solo disponible en Desktop");
+		updateStatus("Saving JSON is only available on Desktop");
 		#end
 	}
 	
@@ -573,7 +573,7 @@ class FreeplayEditorState extends MusicBeatState
 		});
 		
 		weekInput.text = Std.string(songListData.songsWeeks.length - 1);
-		updateStatus("✓ Nueva Week " + (songListData.songsWeeks.length - 1) + " creada");
+		updateStatus("✓ Created new Week " + (songListData.songsWeeks.length - 1));
 		FlxG.sound.play(Paths.sound('scrollMenu'));
 	}
 	
@@ -581,7 +581,7 @@ class FreeplayEditorState extends MusicBeatState
 	{
 		if (!instLoaded || currentInstPath == "")
 		{
-			updateStatus("Primero debes cargar un Inst.ogg");
+			updateStatus("You must load an Inst.ogg file first");
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 			return;
 		}
@@ -600,11 +600,11 @@ class FreeplayEditorState extends MusicBeatState
 			previewMusic.play();
 			previewMusic.volume = 0.7;
 			
-			updateStatus("♪ Reproduciendo preview...");
+			updateStatus("♪ Playing preview...");
 		}
 		catch (e:Dynamic)
 		{
-			updateStatus("Error reproduciendo música: " + e);
+			updateStatus("Error playing music: " + e);
 		}
 		#end
 	}
@@ -616,9 +616,9 @@ class FreeplayEditorState extends MusicBeatState
 		currentVocalsPath = "";
 		instLoaded = false;
 		vocalsLoaded = false;
-		loadInstBtn.label.text = "Cargar Inst.ogg";
+		loadInstBtn.label.text = "Load Inst.ogg";
 		loadInstBtn.label.color = FlxColor.WHITE;
-		loadVocalsBtn.label.text = "Cargar Vocals.ogg";
+		loadVocalsBtn.label.text = "Load Vocals.ogg";
 		loadVocalsBtn.label.color = FlxColor.WHITE;
 	}
 	

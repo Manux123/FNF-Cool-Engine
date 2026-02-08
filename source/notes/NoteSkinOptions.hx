@@ -91,6 +91,12 @@ class NoteSkinOptions extends states.MusicBeatState
 
 	override function create()
 	{
+		initialize();
+		super.create();
+	}
+
+	function initialize():Void
+	{
 		if (FlxG.save.data.FPSCap)
 			openfl.Lib.current.stage.frameRate = 120;
 		else
@@ -173,14 +179,12 @@ class NoteSkinOptions extends states.MusicBeatState
 		if (curSelected == -1)
 			curSelected = 0;
 
-		changeSelection(0);
-		changeTab(0);
+		changeSelection(999); //Making them a big number will for sure reset to the first option on the list
+		changeTab(999);
 
 		#if mobileC
 		addVirtualPad(FULL, A_B_X_Y);
 		#end
-
-		super.create();
 	}
 
 	function refreshLists():Void
@@ -525,9 +529,7 @@ class NoteSkinOptions extends states.MusicBeatState
 				openAnimationEditor();
 
 			case 5: // Refresh Skins List
-				NoteSkinSystem.init();
-				refreshLists();
-				setupLists();
+				initialize();
 				FlxG.sound.play(Paths.sound('confirmMenu'));
 				showNotification("Lists refreshed!");
 		}

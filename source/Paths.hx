@@ -151,6 +151,11 @@ class Paths
 		return getPath('images/$key.png', IMAGE, library);
 	}
 
+	inline static public function characterimage(key:String, ?library:String)
+	{
+		return getPath('characters/images/$key.png', IMAGE, library);
+	}
+
 	inline static public function imageStage(key:String, ?library:String)
 	{
 		return getPath('stages/' + PlayState.curStage + '/' + key + '.png', IMAGE, library);

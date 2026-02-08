@@ -2417,6 +2417,12 @@ class PlayState extends states.MusicBeatState
 		super.destroy();
 	}
 
+	function startVideo(path:String,?midsong:Bool = false)
+	{
+		var video:mp4.MP4Handler = new mp4.MP4Handler();
+		video.playMP4(path,midsong);
+	}
+
 	function badNoteCheck()
 	{
 		// REDO THIS SYSTEM!

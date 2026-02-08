@@ -23,11 +23,10 @@ class MP4Handler
 
 	public function new()
 	{
-		//FlxG.autoPause = false;
 	}
 
-	public function playMP4(path:String, ?repeat:Bool = false, ?outputTo:FlxSprite = null, ?isWindow:Bool = false, ?isFullscreen:Bool = false,
-			?midSong:Bool = false):Void
+	public function playMP4(path:String, ?midSong:Bool = false, ?repeat:Bool = false, ?outputTo:FlxSprite = null, ?isWindow:Bool = false,
+			?isFullscreen:Bool = false):Void
 	{
 		if (!midSong)
 		{
@@ -39,18 +38,24 @@ class MP4Handler
 
 		bitmap = new VlcBitmap();
 
-		if (FlxG.stage.stageHeight / 9 < FlxG.stage.stageWidth / 16)
+		var targetRatio:Float = 16 / 9;
+		var screenWidth:Float = FlxG.stage.stageWidth;
+		var screenHeight:Float = FlxG.stage.stageHeight;
+		var screenRatio:Float = screenWidth / screenHeight;
+
+		if (screenRatio > targetRatio)
 		{
-			bitmap.set_width(FlxG.stage.stageHeight * (16 / 9));
-			bitmap.set_height(FlxG.stage.stageHeight);
+			bitmap.width = screenHeight * targetRatio; // Usando asignación directa
+			bitmap.height = screenHeight;
 		}
 		else
 		{
-			bitmap.set_width(FlxG.stage.stageWidth);
-			bitmap.set_height(FlxG.stage.stageWidth / (16 / 9));
+			bitmap.width = screenWidth;
+			bitmap.height = screenWidth / targetRatio;
 		}
 
-		
+		bitmap.x = (screenWidth - bitmap.width) / 2;
+		bitmap.y = (screenHeight - bitmap.height) / 2;
 
 		bitmap.onVideoReady = onVLCVideoReady;
 		bitmap.onComplete = onVLCComplete;
@@ -59,7 +64,7 @@ class MP4Handler
 		FlxG.stage.addEventListener(Event.ENTER_FRAME, update);
 
 		if (repeat)
-			bitmap.repeat = -1; 
+			bitmap.repeat = -1;
 		else
 			bitmap.repeat = 0;
 
@@ -103,6 +108,7 @@ class MP4Handler
 
 	public function onVLCComplete()
 	{
+		FlxG.stage.removeEventListener(Event.ENTER_FRAME, update);
 		bitmap.stop();
 
 		// Clean player, just in case! Actually no.
@@ -122,11 +128,13 @@ class MP4Handler
 				LoadingState.loadAndSwitchState(stateCallback);
 			}
 
-			bitmap.dispose();
-
-			if (FlxG.game.contains(bitmap))
+			if (bitmap != null)
 			{
-				FlxG.game.removeChild(bitmap);
+				bitmap.dispose();
+				if (FlxG.stage.contains(bitmap))
+				{
+					FlxG.stage.removeChild(bitmap);
+				}
 			}
 		});
 	}
@@ -165,7 +173,7 @@ class MP4Handler
 			}
 		}
 
-		bitmap.volume = FlxG.sound.volume + 0.3; // shitty volume fix. then make it louder.
+		bitmap.volume = FlxG.sound.volume + 0.000005;
 
 		if (FlxG.sound.volume <= 0.1)
 			bitmap.volume = 0;

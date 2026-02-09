@@ -72,6 +72,7 @@ class ScriptHandler
 			
 			// Llamar onCreate si existe
 			script.call('onCreate', []);
+			script.call('postCreate', []);
 			
 			// Guardar script según el tipo
 			switch (scriptType.toLowerCase())

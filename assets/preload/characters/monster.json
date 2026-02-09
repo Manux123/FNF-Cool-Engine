@@ -1,48 +1,48 @@
 {
-	"path": "week2/Monster_Assets",
-	"isPlayer": false,
-	"antialiasing": true,
-	"scale": 1.0,
 	"animations": [
 		{
-			"name": "idle",
-			"prefix": "monster idle",
-			"framerate": 24,
-			"looped": false,
 			"offsetX": 0,
-			"offsetY": 0
+			"framerate": 24,
+			"offsetY": 0,
+			"prefix": "monster idle",
+			"name": "idle",
+			"looped": false
 		},
 		{
-			"name": "singUP",
-			"prefix": "monster up note",
-			"framerate": 24,
-			"looped": false,
 			"offsetX": -20,
-			"offsetY": 94
+			"framerate": 24,
+			"offsetY": 51,
+			"prefix": "monster up note",
+			"name": "singUP",
+			"looped": false
 		},
 		{
-			"name": "singDOWN",
-			"prefix": "monster down",
-			"framerate": 24,
-			"looped": false,
 			"offsetX": -50,
-			"offsetY": -80
+			"framerate": 24,
+			"offsetY": -40,
+			"prefix": "monster down",
+			"name": "singDOWN",
+			"looped": false
 		},
 		{
-			"name": "singLEFT",
+			"offsetX": -40,
+			"framerate": 24,
+			"offsetY": -10,
 			"prefix": "Monster Right note",
-			"framerate": 24,
-			"looped": false,
-			"offsetX": -30,
-			"offsetY": 20
+			"name": "singLEFT",
+			"looped": false
 		},
 		{
-			"name": "singRIGHT",
-			"prefix": "Monster left note",
+			"offsetX": -31,
 			"framerate": 24,
-			"looped": false,
-			"offsetX": -51,
-			"offsetY": 30
+			"offsetY": 3,
+			"prefix": "Monster left note",
+			"name": "singRIGHT",
+			"looped": false
 		}
-	]
+	],
+	"isPlayer": false,
+	"antialiasing": true,
+	"path": "week2/Monster_Assets",
+	"scale": 1
 }

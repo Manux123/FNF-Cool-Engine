@@ -34,6 +34,10 @@ class ModuleScript
 	{
 		trace('[Module $name] Created');
 	}
+
+	public function postCreate():Void
+	{
+	}
 	
 	/**
 	 * Llamado cada frame

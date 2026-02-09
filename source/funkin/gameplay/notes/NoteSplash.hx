@@ -90,7 +90,7 @@ class NoteSplash extends FlxSprite
 		// Centrar el splash
 		offset.x = width * 0.3;
 		offset.y = height * 0.3;
-
+		
 		// NUEVO: Alpha diferente según tipo
 		if (isHoldSplash)
 			alpha = 0.7; // Hold splashes semi-transparentes
@@ -142,11 +142,11 @@ class NoteSplash extends FlxSprite
 			// Escala según el tipo
 			if (type == HOLD_START)
 			{
-				scale.set(0.8, 0.8); // Start splash mediano
+				scale.set(1.0, 1.0); // Start splash mediano
 			}
 			else if (type == HOLD_CONTINUOUS)
 			{
-				scale.set(0.6, 0.6); // Continuous splash más pequeño
+				scale.set(1.0, 1.0); // Continuous splash más pequeño
 			}
 			else if (type == HOLD_END)
 			{

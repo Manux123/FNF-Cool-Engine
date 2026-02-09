@@ -170,9 +170,9 @@ class PlayState extends funkin.states.MusicBeatState
 			EventManager.loadEventsFromSong();
 			
 			// Exponer PlayState a los scripts
-			ScriptHandler.setOnScripts('playState', PlayState.instance);
-			ScriptHandler.setOnScripts('game', PlayState.instance);
-			
+			ScriptHandler.setOnScripts('playState', this);
+			ScriptHandler.setOnScripts('game', this);
+			ScriptHandler.setOnScripts('SONG', SONG);
 			// Llamar onCreate en scripts
 			ScriptHandler.callOnScripts('onCreate', []);
 		}
@@ -205,6 +205,7 @@ class PlayState extends funkin.states.MusicBeatState
 			ScriptHandler.setOnScripts('gf', gf);
 			ScriptHandler.setOnScripts('stage', currentStage);
 			ScriptHandler.callOnScripts('onStageCreate', []);
+			ScriptHandler.callOnScripts('postCreate', []);
 		}
 
 		// Crear UI groups

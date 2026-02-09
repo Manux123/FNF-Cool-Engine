@@ -4,8 +4,12 @@
 	"isPixelStage": false,
 	"gfVersion": "gf",
 	"boyfriendPosition": [770, 450],
-	"dadPosition": [100, 100],
+	"dadPosition": [100, 410],
 	"gfPosition": [400, 130],
+	"_comment": "Scripts stage",
+	"scripts": [
+		"philly_stage.hx"
+	],
 	"elements": [
 		{
 			"type": "sprite",

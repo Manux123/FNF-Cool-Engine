@@ -3,7 +3,7 @@
 	"isPlayer": false,
 	"antialiasing": false,
 	"scale": 6.0,
-	"cameraOffset":[-100,-430],
+	"cameraOffset":[-300,-350],
 	"animations": [
 		{
 			"name": "idle",

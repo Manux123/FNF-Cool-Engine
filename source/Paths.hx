@@ -4,7 +4,7 @@ import flixel.FlxG;
 import flixel.graphics.frames.FlxAtlasFrames;
 import openfl.utils.AssetType;
 import openfl.utils.Assets as OpenFlAssets;
-import states.PlayState;
+import funkin.gameplay.PlayState;
 import openfl.display.BitmapData as Bitmap;
 
 class Paths

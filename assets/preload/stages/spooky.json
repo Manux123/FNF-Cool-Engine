@@ -4,9 +4,14 @@
 	"isPixelStage": false,
 	"gfVersion": "gf",
 	"boyfriendPosition": [770, 450],
-	"dadPosition": [100, 100],
+	"dadPosition": [100, 300],
 	"gfPosition": [400, 130],
 	"cameraBoyfriend":[0,-150],
+	"_comment": "Scripts stage",
+	"scripts": [
+		"spooky_stage.hx"
+	],
+
 	"elements": [
 		{
 			"type": "animated",

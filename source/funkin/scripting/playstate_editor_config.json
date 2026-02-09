@@ -1,0 +1,243 @@
+{
+	"_comment": "Estructura de datos para PlayState Editor",
+	"_description": "Este archivo define cómo el editor interpreta scripts y eventos",
+	
+	"editorVersion": "1.0.0",
+	"songName": "Tutorial",
+	"stage": "stage_week1",
+	
+	"scripts": [
+		{
+			"name": "example",
+			"path": "scripts/example.hx",
+			"enabled": true,
+			"type": "hscript",
+			"description": "Script de ejemplo básico",
+			"author": "Tu nombre",
+			"version": "1.0.0"
+		},
+		{
+			"name": "visual_effects",
+			"path": "scripts/visual_effects.hx",
+			"enabled": true,
+			"type": "hscript",
+			"description": "Efectos visuales avanzados"
+		}
+	],
+	
+	"events": [
+		{
+			"name": "Camera Zoom",
+			"time": 8000,
+			"values": {
+				"amount": "0.1",
+				"duration": "0.5"
+			},
+			"description": "Hace zoom a la cámara",
+			"visualPreview": {
+				"icon": "zoom_in",
+				"color": "#4CAF50"
+			}
+		},
+		{
+			"name": "Hey!",
+			"time": 16000,
+			"values": {
+				"target": "bf",
+				"force": "false"
+			},
+			"description": "Boyfriend hace animación 'hey'",
+			"visualPreview": {
+				"icon": "emoji_emotions",
+				"color": "#2196F3"
+			}
+		},
+		{
+			"name": "Screen Shake",
+			"time": 24000,
+			"values": {
+				"intensity": "0.05",
+				"duration": "0.5"
+			},
+			"description": "Sacude la pantalla",
+			"visualPreview": {
+				"icon": "vibration",
+				"color": "#FF9800"
+			}
+		},
+		{
+			"name": "Toggle Wave",
+			"time": 32000,
+			"values": {
+				"enable": "true"
+			},
+			"description": "Activa/desactiva efecto de onda (custom event)",
+			"visualPreview": {
+				"icon": "waves",
+				"color": "#9C27B0"
+			}
+		}
+	],
+	
+	"eventTypes": {
+		"Camera Zoom": {
+			"category": "Camera",
+			"parameters": [
+				{
+					"name": "amount",
+					"type": "float",
+					"default": 0.05,
+					"min": -1.0,
+					"max": 1.0,
+					"description": "Cantidad de zoom (negativo para zoom out)"
+				},
+				{
+					"name": "duration",
+					"type": "float",
+					"default": 0,
+					"min": 0,
+					"max": 10,
+					"description": "Duración de la transición (0 = instantáneo)"
+				}
+			]
+		},
+		"Hey!": {
+			"category": "Character",
+			"parameters": [
+				{
+					"name": "target",
+					"type": "dropdown",
+					"options": ["bf", "gf", "dad", ""],
+					"default": "",
+					"description": "Personaje que hará la animación"
+				},
+				{
+					"name": "force",
+					"type": "bool",
+					"default": false,
+					"description": "Forzar animación aunque esté cantando"
+				}
+			]
+		},
+		"Camera Flash": {
+			"category": "Camera",
+			"parameters": [
+				{
+					"name": "duration",
+					"type": "float",
+					"default": 1.0,
+					"min": 0.1,
+					"max": 10,
+					"description": "Duración del flash"
+				},
+				{
+					"name": "color",
+					"type": "color",
+					"default": "#FFFFFF",
+					"description": "Color del flash"
+				}
+			]
+		},
+		"Play Animation": {
+			"category": "Character",
+			"parameters": [
+				{
+					"name": "target",
+					"type": "dropdown",
+					"options": ["bf", "gf", "dad"],
+					"default": "bf",
+					"description": "Personaje objetivo"
+				},
+				{
+					"name": "animation",
+					"type": "string",
+					"default": "hey",
+					"description": "Nombre de la animación"
+				}
+			]
+		},
+		"Screen Shake": {
+			"category": "Camera",
+			"parameters": [
+				{
+					"name": "intensity",
+					"type": "float",
+					"default": 0.05,
+					"min": 0.001,
+					"max": 1.0,
+					"description": "Intensidad del shake"
+				},
+				{
+					"name": "duration",
+					"type": "float",
+					"default": 0.5,
+					"min": 0.1,
+					"max": 10,
+					"description": "Duración del shake"
+				}
+			]
+		}
+	},
+	
+	"customEvents": {
+		"Toggle Wave": {
+			"category": "Visual Effects",
+			"scriptRequired": "visual_effects.hx",
+			"parameters": [
+				{
+					"name": "enable",
+					"type": "bool",
+					"default": true,
+					"description": "Activar o desactivar el efecto"
+				}
+			],
+			"description": "Activa/desactiva el efecto de onda en la pantalla"
+		},
+		"Chromatic Aberration": {
+			"category": "Visual Effects",
+			"scriptRequired": "visual_effects.hx",
+			"parameters": [
+				{
+					"name": "intensity",
+					"type": "float",
+					"default": 0.01,
+					"min": 0,
+					"max": 0.1,
+					"description": "Intensidad del efecto"
+				}
+			],
+			"description": "Aplica aberración cromática"
+		}
+	},
+	
+	"timeline": {
+		"_comment": "Vista de línea de tiempo para el editor",
+		"snapToBeat": true,
+		"gridResolution": 16,
+		"zoom": 1.0,
+		"showWaveform": true,
+		"showBeats": true,
+		"tracks": [
+			{
+				"name": "Camera Events",
+				"color": "#4CAF50",
+				"enabled": true
+			},
+			{
+				"name": "Character Events",
+				"color": "#2196F3",
+				"enabled": true
+			},
+			{
+				"name": "Visual Effects",
+				"color": "#9C27B0",
+				"enabled": true
+			},
+			{
+				"name": "Custom Scripts",
+				"color": "#FF9800",
+				"enabled": true
+			}
+		]
+	}
+}

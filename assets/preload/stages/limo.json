@@ -6,6 +6,10 @@
 	"boyfriendPosition": [1030, 230],
 	"dadPosition": [100, 100],
 	"gfPosition": [400, 130],
+	"_comment": "Scripts stage",
+	"scripts": [
+		"limo_stage.hx"
+	],
 	"elements": [
 		{
 			"type": "sprite",

@@ -8,8 +8,8 @@
 		670
 	],
 	"dadPosition": [
-		200,
-		100
+		300,
+		430
 	],
 	"gfPosition": [
 		680,
@@ -174,7 +174,7 @@
 			"className": "BackgroundGirls",
 			"name": "crowd",
 			"asset": "bgFreaks",
-			"zIndex": 5,
+			"zIndex": 6,
 			"instances": [
 				{
 					"position": [

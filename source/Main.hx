@@ -7,15 +7,15 @@ import openfl.Assets;
 import openfl.Lib;
 import openfl.display.Sprite;
 import openfl.events.Event;
-import states.CacheState;
+import CacheState;
 import openfl.events.Event;
 import ui.DataInfoUI;
-import states.TitleState;
+import funkin.menus.TitleState;
 #if debug
 import openfl.events.UncaughtErrorEvent;
 import haxe.CallStack;
 import haxe.io.Path;
-import debug.DebugConsole;
+import funkin.debug.DebugConsole;
 #end
 
 import lime.app.Application;
@@ -27,11 +27,11 @@ import sys.io.File;
 using StringTools;
 
 // init
-import options.data.KeyBinds;
-import notes.NoteSkinSystem;
+import funkin.data.KeyBinds;
+import funkin.gameplay.notes.NoteSkinSystem;
 import extensions.CppAPI;
 #if desktop
-import Discord.DiscordClient;
+import data.Discord.DiscordClient;
 import sys.thread.Thread;
 #end
 
@@ -93,7 +93,7 @@ class Main extends Sprite
 			#if !debug
 			initialState = states.CacheState;
 			#else */
-		initialState = states.CacheState;
+		initialState = CacheState;
 		// #end
 
 		// En el constructor:
@@ -108,7 +108,7 @@ class Main extends Sprite
 		// states.OptionsData.initSave();
 		KeyBinds.keyCheck();
 
-		Highscore.load();
+		funkin.gameplay.objects.hud.Highscore.load();
 
 		#if (!html5 || !androidC)
 		framerate = 120;

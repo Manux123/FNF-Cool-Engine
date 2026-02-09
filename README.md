@@ -1,4 +1,4 @@
-# [Cool Engine](https://github.com/Manux123/FNF-Cool-Engine)
+# [Cool Engine REBORN (60%)](https://github.com/Manux123/FNF-Cool-Engine)
 
 **FNF': Cool Engine is a modification of the original FNF' source code the mod includes new Options and better Graphics!!**
 ----------------------------------------------

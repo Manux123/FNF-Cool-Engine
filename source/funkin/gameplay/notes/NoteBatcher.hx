@@ -193,7 +193,7 @@ class NoteBatcher extends FlxSpriteGroup
         super.update(elapsed);
         
         // Flush batches cada frame para asegurar rendering
-        flushAll();
+        //flushAll();
     }
     
     override function destroy()

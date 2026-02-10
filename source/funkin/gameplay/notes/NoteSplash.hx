@@ -38,10 +38,10 @@ class NoteSplash extends FlxSprite
 	{
 		super(x, y);
 		noteDatawea = noteData;
-		holdTimer = new FlxTimer();
+		//holdTimer = new FlxTimer();
 		setup(x, y, noteData, splashName);
 	}
-
+	
 	public function setup(x:Float, y:Float, noteData:Int = 0, ?splashName:String = null, ?type:SplashType = NORMAL)
 	{
 		this.x = x;
@@ -267,26 +267,26 @@ class NoteSplash extends FlxSprite
 	{
 		setup(x, y, noteData, splashName, HOLD_CONTINUOUS);
 		
-		// Crear timer para splashes continuos
-		if (holdTimer != null)
-		{
-			holdTimer.cancel();
+		// REUTILIZACIÓN DEL TIMER
+		if (holdTimer == null) {
+			holdTimer = new FlxTimer();
+		} else {
+			holdTimer.cancel(); // Lo detenemos si estaba haciendo otra cosa
 		}
 		
-		holdTimer = new FlxTimer();
+		// Usamos el mismo objeto holdTimer
 		holdTimer.start(holdInterval, function(timer:FlxTimer)
 		{
-			// Reproducir animación de nuevo
 			if (animation.curAnim != null)
 			{
 				animation.curAnim.restart();
 			}
 			
-			// Pequeña variación de posición para efecto visual
+			// Efecto visual
 			this.x = x + FlxG.random.float(-5, 5);
 			this.y = y + FlxG.random.float(-5, 5);
 			
-		}, 0); // 0 = loop infinito
+		}, 0);
 	}
 	
 	/**
@@ -297,7 +297,6 @@ class NoteSplash extends FlxSprite
 		if (holdTimer != null)
 		{
 			holdTimer.cancel();
-			holdTimer = null;
 		}
 		
 		recycleSplash();
@@ -310,7 +309,6 @@ class NoteSplash extends FlxSprite
 		if (holdTimer != null)
 		{
 			holdTimer.cancel();
-			holdTimer = null;
 		}
 		
 		inUse = false;

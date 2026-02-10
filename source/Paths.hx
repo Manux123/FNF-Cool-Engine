@@ -98,6 +98,11 @@ class Paths
 		return getPath('sounds/$key.$SOUND_EXT', SOUND, library);
 	}
 
+	static public function soundStage(key:String, ?library:String)
+	{
+		return getPath('stages/$key.$SOUND_EXT', SOUND, library);
+	}
+
 	inline static public function soundRandom(key:String, min:Int, max:Int, ?library:String)
 	{
 		return sound(key + FlxG.random.int(min, max), library);
@@ -158,7 +163,7 @@ class Paths
 
 	inline static public function imageStage(key:String, ?library:String)
 	{
-		return getPath('stages/' + PlayState.curStage + '/' + key + '.png', IMAGE, library);
+		return getPath('stages/' + PlayState.curStage + '/images/' + key + '.png', IMAGE, library);
 	}
 
 	inline static public function font(key:String)
@@ -178,7 +183,7 @@ class Paths
 
 	inline static public function stageSprite(key:String, ?library:String)
 	{
-		return FlxAtlasFrames.fromSparrow(getPath('stages/' + PlayState.curStage + '/' + key + '.png', IMAGE, library), getPath('stages/' + PlayState.curStage + '/' + key + '.xml', TEXT, library));
+		return FlxAtlasFrames.fromSparrow(getPath('stages/' + PlayState.curStage + '/images/' + key + '.png', IMAGE, library), getPath('stages/' + PlayState.curStage + '/images/' + key + '.xml', TEXT, library));
 	}
 
 	inline static public function skinSprite(key:String, ?library:String)
@@ -198,7 +203,7 @@ class Paths
 
 	inline static public function stageSpriteTxt(key:String, ?library:String)
 	{
-		return FlxAtlasFrames.fromSpriteSheetPacker(getPath('stages/' + PlayState.curStage + '/$key.png', IMAGE, library), file('stages/' + PlayState.curStage + '/$key.txt', library));
+		return FlxAtlasFrames.fromSpriteSheetPacker(getPath('stages/' + PlayState.curStage + '/images/$key.png', IMAGE, library), file('stages/' + PlayState.curStage + '/images/$key.txt', library));
 	}
 
 	

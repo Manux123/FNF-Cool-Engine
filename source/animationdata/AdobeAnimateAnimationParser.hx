@@ -29,7 +29,11 @@ typedef AdobeAnimateFrame =
 	@:optional var scaleX:Float;
 	@:optional var scaleY:Float;
 	@:optional var rotation:Float;
-	@:optional var layerDepth:Int; // Para ordenar las piezas correctamente
+	@:optional var skewX:Float;
+	@:optional var skewY:Float;
+	@:optional var layerDepth:Int;
+	@:optional var trpX:Float; // Transform Reference Point X
+	@:optional var trpY:Float; // Transform Reference Point Y
 }
 
 /**
@@ -54,6 +58,7 @@ typedef LayerData =
  * Parser optimizado para animaciones de Adobe Animate
  * Lee el formato JSON exportado por Adobe Animate (Animation.json)
  * Soporta símbolos anidados y múltiples capas
+ * VERSIÓN CORREGIDA - Maneja correctamente TRP y transformaciones
  */
 class AdobeAnimateAnimationParser
 {
@@ -159,8 +164,6 @@ class AdobeAnimateAnimationParser
 		
 		var layers:Array<Dynamic> = mainAnim.TL.L;
 		
-		// La animación principal típicamente tiene una capa con múltiples símbolos
-		// Cada símbolo representa una animación diferente
 		for (layer in layers)
 		{
 			if (layer.FR == null)
@@ -196,7 +199,76 @@ class AdobeAnimateAnimationParser
 	}
 	
 	/**
+	 * Extrae transformación de matriz 4x4 de Adobe Animate
+	 * CORREGIDO: Ahora también extrae rotación y skew
+	 */
+	private static function extractTransform(matrix:Array<Float>, ?trp:Dynamic):AdobeAnimateFrame
+	{
+		var frame:AdobeAnimateFrame = {
+			frameIndex: 0,
+			spriteName: "",
+			duration: 1,
+			x: 0,
+			y: 0,
+			scaleX: 1.0,
+			scaleY: 1.0,
+			rotation: 0,
+			skewX: 0,
+			skewY: 0
+		};
+		
+		if (matrix == null || matrix.length < 16)
+			return frame;
+		
+		// Extraer componentes de la matriz 4x4
+		// matriz[0]  matriz[1]  matriz[2]  matriz[3]
+		// matriz[4]  matriz[5]  matriz[6]  matriz[7]
+		// matriz[8]  matriz[9]  matriz[10] matriz[11]
+		// matriz[12] matriz[13] matriz[14] matriz[15]
+		
+		var a = matrix[0];  // scaleX * cos(rotation)
+		var b = matrix[1];  // scaleX * sin(rotation)
+		var c = matrix[4];  // -scaleY * sin(rotation)
+		var d = matrix[5];  // scaleY * cos(rotation)
+		var tx = matrix[12]; // translateX
+		var ty = matrix[13]; // translateY
+		
+		// Calcular scale
+		var scaleX = Math.sqrt(a * a + b * b);
+		var scaleY = Math.sqrt(c * c + d * d);
+		
+		// Normalizar para obtener rotación
+		var cosTheta = a / scaleX;
+		var sinTheta = b / scaleX;
+		
+		// Calcular ángulo en grados
+		var rotation = Math.atan2(sinTheta, cosTheta) * 180 / Math.PI;
+		
+		// Calcular skew
+		var skewX = Math.atan2(-c, d) * 180 / Math.PI - rotation;
+		var skewY = 0; // Típicamente 0 en Adobe Animate
+		
+		frame.x = tx;
+		frame.y = ty;
+		frame.scaleX = scaleX;
+		frame.scaleY = scaleY;
+		frame.rotation = rotation;
+		frame.skewX = skewX;
+		frame.skewY = skewY;
+		
+		// Guardar TRP si está disponible
+		if (trp != null)
+		{
+			if (trp.x != null) frame.trpX = trp.x;
+			if (trp.y != null) frame.trpY = trp.y;
+		}
+		
+		return frame;
+	}
+	
+	/**
 	 * Expande un símbolo a una animación completa
+	 * CORREGIDO: Maneja correctamente el TRP y las transformaciones jerárquicas
 	 */
 	private static function expandSymbolToAnimation(symbolName:String, framerate:Float, ?rootTransform:Array<Float>):AdobeAnimateAnimation
 	{
@@ -228,19 +300,17 @@ class AdobeAnimateAnimationParser
 					
 					for (element in elements)
 					{
-						var animFrame:AdobeAnimateFrame = null;
-						
 						// Manejar Symbol Instance (SI) - sub-símbolos o movieclips
 						if (element.SI != null)
 						{
 							var subSymbolName:String = element.SI.SN;
 							var transform:Dynamic = element.SI.M3D;
+							var trp:Dynamic = element.SI.TRP;
 							var firstFrame:Int = element.SI.FF != null ? element.SI.FF : 0;
 							
 							// Si es un sub-símbolo definido, expandirlo recursivamente
 							if (symbolCache.exists(subSymbolName))
 							{
-								// Expandir sub-símbolo (simplificado - tomar primer frame)
 								var subFrames = expandSymbolFrames(subSymbolName, firstFrame);
 								
 								for (subFrame in subFrames)
@@ -252,17 +322,30 @@ class AdobeAnimateAnimationParser
 										layerDepth: layerDepth
 									};
 									
-									// Combinar transformaciones
+									// Aplicar transformación del elemento
 									if (transform != null)
 									{
-										var matrix:Array<Float> = cast transform;
-										if (matrix.length >= 16)
-										{
-											combinedFrame.x = matrix[12] + (subFrame.x != null ? subFrame.x : 0);
-											combinedFrame.y = matrix[13] + (subFrame.y != null ? subFrame.y : 0);
-											combinedFrame.scaleX = matrix[0] * (subFrame.scaleX != null ? subFrame.scaleX : 1.0);
-											combinedFrame.scaleY = matrix[5] * (subFrame.scaleY != null ? subFrame.scaleY : 1.0);
-										}
+										var parentTransform = extractTransform(cast transform, trp);
+										
+										// Combinar transformaciones (padre + hijo)
+										combinedFrame.x = parentTransform.x + (subFrame.x != null ? subFrame.x : 0);
+										combinedFrame.y = parentTransform.y + (subFrame.y != null ? subFrame.y : 0);
+										combinedFrame.scaleX = parentTransform.scaleX * (subFrame.scaleX != null ? subFrame.scaleX : 1.0);
+										combinedFrame.scaleY = parentTransform.scaleY * (subFrame.scaleY != null ? subFrame.scaleY : 1.0);
+										combinedFrame.rotation = parentTransform.rotation + (subFrame.rotation != null ? subFrame.rotation : 0);
+										
+										// Aplicar TRP del padre
+										if (parentTransform.trpX != null) combinedFrame.trpX = parentTransform.trpX;
+										if (parentTransform.trpY != null) combinedFrame.trpY = parentTransform.trpY;
+									}
+									else
+									{
+										// Copiar transformaciones del hijo
+										combinedFrame.x = subFrame.x;
+										combinedFrame.y = subFrame.y;
+										combinedFrame.scaleX = subFrame.scaleX;
+										combinedFrame.scaleY = subFrame.scaleY;
+										combinedFrame.rotation = subFrame.rotation;
 									}
 									
 									allFrames.push(combinedFrame);
@@ -271,7 +354,7 @@ class AdobeAnimateAnimationParser
 							else
 							{
 								// Es un símbolo no definido, usar el nombre como sprite
-								animFrame = {
+								var animFrame:AdobeAnimateFrame = {
 									frameIndex: frameIndex,
 									spriteName: subSymbolName,
 									duration: duration,
@@ -280,14 +363,16 @@ class AdobeAnimateAnimationParser
 								
 								if (transform != null)
 								{
-									var matrix:Array<Float> = cast transform;
-									if (matrix.length >= 16)
-									{
-										animFrame.x = matrix[12];
-										animFrame.y = matrix[13];
-										animFrame.scaleX = matrix[0];
-										animFrame.scaleY = matrix[5];
-									}
+									var t = extractTransform(cast transform, trp);
+									animFrame.x = t.x;
+									animFrame.y = t.y;
+									animFrame.scaleX = t.scaleX;
+									animFrame.scaleY = t.scaleY;
+									animFrame.rotation = t.rotation;
+									animFrame.skewX = t.skewX;
+									animFrame.skewY = t.skewY;
+									animFrame.trpX = t.trpX;
+									animFrame.trpY = t.trpY;
 								}
 								
 								allFrames.push(animFrame);
@@ -299,7 +384,7 @@ class AdobeAnimateAnimationParser
 							var spriteName:String = element.ASI.N;
 							var transform:Dynamic = element.ASI.M3D;
 							
-							animFrame = {
+							var animFrame:AdobeAnimateFrame = {
 								frameIndex: frameIndex,
 								spriteName: spriteName,
 								duration: duration,
@@ -308,14 +393,14 @@ class AdobeAnimateAnimationParser
 							
 							if (transform != null)
 							{
-								var matrix:Array<Float> = cast transform;
-								if (matrix.length >= 16)
-								{
-									animFrame.x = matrix[12];
-									animFrame.y = matrix[13];
-									animFrame.scaleX = matrix[0];
-									animFrame.scaleY = matrix[5];
-								}
+								var t = extractTransform(cast transform, null);
+								animFrame.x = t.x;
+								animFrame.y = t.y;
+								animFrame.scaleX = t.scaleX;
+								animFrame.scaleY = t.scaleY;
+								animFrame.rotation = t.rotation;
+								animFrame.skewX = t.skewX;
+								animFrame.skewY = t.skewY;
 							}
 							
 							allFrames.push(animFrame);
@@ -351,6 +436,7 @@ class AdobeAnimateAnimationParser
 	
 	/**
 	 * Expande los frames de un símbolo (versión simplificada para sub-símbolos)
+	 * CORREGIDO: Maneja TRP correctamente
 	 */
 	private static function expandSymbolFrames(symbolName:String, startFrame:Int = 0):Array<AdobeAnimateFrame>
 	{
@@ -361,7 +447,7 @@ class AdobeAnimateAnimationParser
 		
 		var symbolDef = symbolCache.get(symbolName);
 		
-		// Tomar solo el frame especificado de la primera capa que tenga elementos
+		// Tomar frames del símbolo
 		for (layer in symbolDef.layers)
 		{
 			for (frameData in layer.frames)
@@ -390,14 +476,14 @@ class AdobeAnimateAnimationParser
 							
 							if (transform != null)
 							{
-								var matrix:Array<Float> = cast transform;
-								if (matrix.length >= 16)
-								{
-									frame.x = matrix[12];
-									frame.y = matrix[13];
-									frame.scaleX = matrix[0];
-									frame.scaleY = matrix[5];
-								}
+								var t = extractTransform(cast transform, null);
+								frame.x = t.x;
+								frame.y = t.y;
+								frame.scaleX = t.scaleX;
+								frame.scaleY = t.scaleY;
+								frame.rotation = t.rotation;
+								frame.skewX = t.skewX;
+								frame.skewY = t.skewY;
 							}
 							
 							frames.push(frame);
@@ -441,7 +527,6 @@ class AdobeAnimateAnimationParser
 	
 	/**
 	 * Convierte una animación de Adobe Animate a índices de frames para FlxAnimation
-	 * Ahora maneja múltiples sprites por frame (para capas)
 	 */
 	public static function getFrameIndices(animation:AdobeAnimateAnimation, spriteMap:Map<String, Int>):Array<Int>
 	{

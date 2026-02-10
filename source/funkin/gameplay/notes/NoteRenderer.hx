@@ -34,11 +34,11 @@ class NoteRenderer
     
     // OPTIMIZATION: Object Pooling para notas
     private var notePool:Array<Note> = [];
-    private var maxPoolSize:Int = 200;
+    private var maxPoolSize:Int = 50;
     
     // OPTIMIZATION: Object Pooling para splashes
     private var splashPool:Array<NoteSplash> = [];
-    private var maxSplashPoolSize:Int = 50;
+    private var maxSplashPoolSize:Int = 15;
     
     // NUEVO: Tracking de hold notes activas para splashes continuos
     private var activeHoldSplashes:Map<Note, NoteSplash> = new Map();

@@ -579,10 +579,10 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 		return sprite;
 	}
-
+	
 	function createSound(element:StageElement):Void
 	{
-		var sound:FlxSound = new FlxSound().loadEmbedded(Paths.sound(element.asset));
+		var sound:FlxSound = new FlxSound().loadEmbedded(Paths.soundStage('$curStage/sounds/'+element.asset));
 
 		if (element.volume != null)
 			sound.volume = element.volume;

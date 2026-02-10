@@ -46,38 +46,24 @@ class StrumNote extends FlxSprite
 		else
 			loadGraphic('assets/skins/arrows-pixels.png');
 		// Animaciones base pixel
-		animation.add('green', [6]);
-		animation.add('red', [7]);
-		animation.add('blue', [5]);
-		animation.add('purple', [4]);
+
+		for (i in 0...animColor.length){
+			animation.add(animColor[i],[i+4]);
+		}
 		
 		setGraphicSize(Std.int(width * PlayStateConfig.PIXEL_ZOOM));
 		updateHitbox();
 		antialiasing = false;
 		
-		// Animaciones específicas por dirección (pixel)
-		switch (Math.abs(noteID))
+		for (i in 0...4)
 		{
-			case 0:
-				x += Note.swagWidth * 0;
-				animation.add('static', [0]);
-				animation.add('pressed', [4, 8], 12, false);
-				animation.add('confirm', [12, 16], 24, false);
-			case 1:
-				x += Note.swagWidth * 1;
-				animation.add('static', [1]);
-				animation.add('pressed', [5, 9], 12, false);
-				animation.add('confirm', [13, 17], 24, false);
-			case 2:
-				x += Note.swagWidth * 2;
-				animation.add('static', [2]);
-				animation.add('pressed', [6, 10], 12, false);
-				animation.add('confirm', [14, 18], 12, false);
-			case 3:
-				x += Note.swagWidth * 3;
-				animation.add('static', [3]);
-				animation.add('pressed', [7, 11], 12, false);
-				animation.add('confirm', [15, 19], 24, false);
+			if (Math.abs(noteID) == i) 
+    		{
+				x += Note.swagWidth * i;
+				animation.add('static', [i]);
+				animation.add('pressed', [4+i, 8+i], 12, false);
+				animation.add('confirm', [12+i, 16+i], 24, false);
+			}
 		}
 	}
 

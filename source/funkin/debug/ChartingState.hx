@@ -128,7 +128,7 @@ class ChartingState extends funkin.states.MusicBeatState
 	var leftIcon:HealthIcon;
 	var rightIcon:HealthIcon;
 	var middleIcon:HealthIcon;
-	
+
 	// INDICADORES DE SECCIÓN
 	var sectionIndicators:FlxTypedGroup<FlxSprite>;
 
@@ -340,7 +340,7 @@ class ChartingState extends funkin.states.MusicBeatState
 			maxScroll = 0;
 
 		// Grid BG
-		gridBG = FlxGridOverlay.create(GRID_SIZE, GRID_SIZE, GRID_SIZE * 8, Std.int(totalGridHeight));
+		gridBG = FlxGridOverlay.create(GRID_SIZE, GRID_SIZE, GRID_SIZE * 8, Std.int(totalGridHeight), true, 0xFF3A3A3A, 0xFF2D2D2D);
 		gridBG.x = (FlxG.width / 2) - (GRID_SIZE * 4);
 		gridBG.y = 100;
 		gridBG.scrollFactor.set();
@@ -349,17 +349,17 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		// Grid Blanco/Negro
 		gridBlackWhite = new FlxSprite(gridBG.x, gridBG.y);
-		gridBlackWhite.makeGraphic(Std.int(gridBG.width), Std.int(gridBG.height), 0x00000000);
-		
+		gridBlackWhite.makeGraphic(Std.int(gridBG.width), Std.int(gridBG.height), 0x00000000, true);
+
 		var currentY:Float = 0;
 		for (i in 0..._song.notes.length)
 		{
 			var sectionHeight = _song.notes[i].lengthInSteps * GRID_SIZE;
-			var sectionColor = (i % 2 == 0) ? 0x40FFFFFF : 0x40000000;
+			var sectionColor = (i % 2 == 0) ? 0x30FFFFFF : 0x20000000;
 			FlxSpriteUtil.drawRect(gridBlackWhite, 0, currentY, gridBG.width, sectionHeight, sectionColor);
 			currentY += sectionHeight;
 		}
-		
+
 		gridBlackWhite.scrollFactor.set();
 		gridBlackWhite.cameras = [camGame];
 		add(gridBlackWhite);
@@ -855,7 +855,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		leftIcon.updateHitbox();
 		rightIcon.updateHitbox();
 		middleIcon.updateHitbox();
-		
+
 		// IMPORTANTE: Fijar iconos en pantalla
 		leftIcon.scrollFactor.set();
 		rightIcon.scrollFactor.set();
@@ -940,10 +940,10 @@ class ChartingState extends funkin.states.MusicBeatState
 			{
 				vocals.time = FlxG.sound.music.time;
 			}
-			
+
 			// Sincronizar volumen
 			vocals.volume = FlxG.sound.music.volume;
-			
+
 			// Controlar reproducción
 			if (FlxG.sound.music.playing)
 			{
@@ -977,7 +977,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		updateGridScroll();
 		updateCurrentSection();
 		updateNotePositions(); // ✨ Actualizar posiciones cuando el grid se mueve
-		//updateSectionIndicators(); // ✨ Actualizar indicadores de sección
+		// updateSectionIndicators(); // ✨ Actualizar indicadores de sección
 		cullNotes();
 
 		handleMouseInput();
@@ -1074,6 +1074,39 @@ class ChartingState extends funkin.states.MusicBeatState
 
 	function updateGridScroll():Void
 	{
+		// ✨ AUTO-SCROLL cuando la música está tocando
+		if (FlxG.sound.music != null && FlxG.sound.music.playing)
+		{
+			// Calcular posición del grid basada en la posición de la música
+			var accumulatedSteps:Float = 0;
+			var targetScrollY:Float = 0;
+
+			for (i in 0..._song.notes.length)
+			{
+				var sectionStartTime = getSectionStartTime(i);
+				var sectionEndTime = sectionStartTime + getSectionDuration(i);
+
+				if (Conductor.songPosition >= sectionStartTime && Conductor.songPosition < sectionEndTime)
+				{
+					// Estamos en esta sección
+					var progressInSection = (Conductor.songPosition - sectionStartTime) / getSectionDuration(i);
+					var sectionHeight = _song.notes[i].lengthInSteps * GRID_SIZE;
+					targetScrollY = accumulatedSteps + (progressInSection * sectionHeight);
+					break;
+				}
+
+				accumulatedSteps += _song.notes[i].lengthInSteps * GRID_SIZE;
+			}
+
+			// Suavizar el movimiento de la cámara
+			gridScrollY = FlxMath.lerp(gridScrollY, targetScrollY, 0.15);
+			gridScrollY = clamp(gridScrollY, 0, maxScroll);
+
+			gridBG.y = 100 - gridScrollY;
+			gridBlackWhite.y = gridBG.y;
+			strumLine.y = gridBG.y;
+		}
+
 		// Scroll con rueda del mouse
 		if (FlxG.mouse.wheel != 0)
 		{
@@ -1085,7 +1118,7 @@ class ChartingState extends funkin.states.MusicBeatState
 			gridBG.y = 100 - gridScrollY;
 			gridBlackWhite.y = gridBG.y;
 			strumLine.y = gridBG.y;
-			
+
 			// ✨ SINCRONIZAR VOCALES cuando haces scroll con la rueda del mouse
 			syncVocals();
 		}
@@ -1201,7 +1234,6 @@ class ChartingState extends funkin.states.MusicBeatState
 			if (hitsoundsEnabled)
 				FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
 		}
-
 		updateGrid();
 	}
 
@@ -1293,7 +1325,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		{
 			FlxG.sound.music.time = getSectionStartTime(curSection);
 			FlxG.sound.music.play();
-			
+
 			// ✨ SINCRONIZAR VOCALES cuando pulsas ENTER
 			syncVocals();
 		}
@@ -1511,6 +1543,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 			currentStep += section.lengthInSteps;
 		}
+		updateNotePositions();
 	}
 
 	function getSectionStartTime(sectionNum:Int):Float
@@ -1567,7 +1600,7 @@ class ChartingState extends funkin.states.MusicBeatState
 				var daNoteData:Int = Std.int(noteData[1]);
 				var daSus:Float = noteData[2];
 				var noteStep = (daStrumTime - getSectionStartTime(secNum)) / Conductor.stepCrochet;
-				
+
 				// ✨ REMAPEAR POSICIÓN VISUAL (igual que en updateGrid)
 				var visualColumn = daNoteData;
 				if (section.mustHitSection)
@@ -1577,11 +1610,11 @@ class ChartingState extends funkin.states.MusicBeatState
 					else
 						visualColumn = daNoteData - 4;
 				}
-				
+
 				// ACTUALIZAR posición X e Y
 				note.x = gridBG.x + (GRID_SIZE * visualColumn);
 				note.y = gridBG.y + sectionY + (noteStep * GRID_SIZE);
-				
+
 				// Actualizar sustain si existe
 				if (daSus > 0 && susIndex < curRenderedSustains.length)
 				{
@@ -1609,74 +1642,18 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		for (note in curRenderedNotes)
 		{
-			if (note == null) continue;
+			if (note == null)
+				continue;
 			// Mostrar si está en la ventana visible (con margen generoso)
 			note.visible = (note.y >= minY - 200 && note.y <= maxY + 200);
 		}
 
 		for (sus in curRenderedSustains)
 		{
-			if (sus == null) continue;
+			if (sus == null)
+				continue;
 			sus.visible = (sus.y >= minY - 200 && sus.y <= maxY + 200);
 		}
-	}
-
-	function addNote(?noteStrum:Float, ?noteData:Int, ?noteSus:Float):Void
-	{
-		if (noteStrum == null)
-		{
-			var mouseGridY = FlxG.mouse.y - gridBG.y;
-			var stepHeight = GRID_SIZE / (currentSnap / 16);
-			var snappedY = Math.floor(mouseGridY / stepHeight) * stepHeight;
-			noteStrum = getStrumTime(gridBG.y + snappedY);
-		}
-
-		if (noteData == null)
-			noteData = Math.floor((FlxG.mouse.x - gridBG.x) / GRID_SIZE);
-
-		if (noteSus == null)
-			noteSus = 0;
-
-		noteStrum = Math.floor(noteStrum / (Conductor.stepCrochet / (currentSnap / 16))) * (Conductor.stepCrochet / (currentSnap / 16));
-
-		var noteAdded:Bool = false;
-
-		for (i in _song.notes[curSection].sectionNotes)
-		{
-			if (Math.abs(i[0] - noteStrum) < 5 && i[1] == noteData)
-			{
-				saveUndoState("delete", {note: [i[0], i[1], i[2]]});
-				_song.notes[curSection].sectionNotes.remove(i);
-				noteAdded = true;
-				FlxG.sound.play(Paths.sound('scrollMenu'), 0.3);
-				break;
-			}
-		}
-
-		if (!noteAdded)
-		{
-			saveUndoState("add", {note: [noteStrum, noteData, noteSus]});
-			_song.notes[curSection].sectionNotes.push([noteStrum, noteData, noteSus]);
-
-			if (hitsoundsEnabled)
-				FlxG.sound.play(Paths.sound('hitsounds/hit-${FlxG.random.int(1, 2)}'), 0.4);
-		}
-
-		updateGrid();
-	}
-
-	function deleteNote(note:Note):Void
-	{
-		for (i in _song.notes[curSection].sectionNotes)
-		{
-			if (i[0] == note.strumTime && i[1] == note.noteData)
-			{
-				_song.notes[curSection].sectionNotes.remove(i);
-				FlxG.sound.play(Paths.sound('scrollMenu'), 0.3);
-			}
-		}
-
-		updateGrid();
 	}
 
 	function changeSection(change:Int = 0):Void
@@ -1708,7 +1685,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		updateSectionUI();
 		updateHeads();
-		
+
 		// ✨ SINCRONIZAR VOCALES cuando cambias de sección
 		syncVocals();
 	}

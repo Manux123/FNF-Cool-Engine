@@ -1025,7 +1025,8 @@ class PlayState extends funkin.states.MusicBeatState
 		// Animate
 		if (boyfriend != null && gf != null)
 		{
-			gf.playAnim('sad',true);
+			if (gf.animOffsets.exists('sad'))
+				gf.playAnim('sad',true);
 			var anims = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
 			boyfriend.playAnim('sing' + anims[direction] + 'miss', true);
 		}

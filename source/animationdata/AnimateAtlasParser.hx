@@ -17,7 +17,9 @@ import animationdata.AdobeAnimateAtlasParser;
 using StringTools;
 
 /**
- * AnimateAtlas - Versión mejorada con correcciones para sprites faltantes y transformaciones
+ * AnimateAtlas - VERSIÓN CORREGIDA
+ * Maneja correctamente el Transform Reference Point (TRP) de Adobe Animate
+ * para renderizar sprites en sus posiciones correctas
  */
 class AnimateAtlasParser
 {
@@ -34,7 +36,7 @@ class AnimateAtlasParser
 	{
 		try
 		{
-			trace("Parseando AnimateAtlas...");
+			trace("Parseando AnimateAtlas (versión corregida)...");
 			
 			// Cargar atlas de sprites
 			var atlasFrames = AdobeAnimateAtlasParser.parse(atlasJsonPath);
@@ -121,32 +123,21 @@ class AnimateAtlasParser
 					// Crear bitmap del frame
 					var frameBitmap = new BitmapData(frameWidth, frameHeight, true, 0x00000000);
 					
-					// MEJORA: Validar que todos los sprites existan antes de renderizar
-					var allSpritesValid = true;
-					for (sprite in sprites)
-					{
-						if (sprite.spriteName != null)
-						{
-							var atlasFrame = atlasFrames.getByName(sprite.spriteName);
-							if (atlasFrame == null)
-							{
-								trace("Advertencia: Sprite no encontrado para frame " + frameIdx + " de " + symbolName + ": " + sprite.spriteName);
-								allSpritesValid = false;
-							}
-						}
-					}
-					
-					// Renderizar todos los sprites del frame (incluso si faltan algunos)
+					// Renderizar todos los sprites del frame
 					var renderedCount = 0;
 					for (sprite in sprites)
 					{
-						if (renderSprite(frameBitmap, sprite, atlasFrames, frameWidth, frameHeight))
+						if (renderSpriteWithTRP(frameBitmap, sprite, atlasFrames, frameWidth, frameHeight))
 							renderedCount++;
 					}
 					
 					if (renderedCount == 0 && sprites.length > 0)
 					{
 						trace("Advertencia: No se renderizó ningún sprite para frame " + frameIdx + " de " + symbolName);
+					}
+					else
+					{
+						trace("Frame " + frameIdx + " de " + symbolName + ": " + renderedCount + " sprites renderizados");
 					}
 					
 					// Copiar al spritesheet
@@ -160,7 +151,6 @@ class AnimateAtlasParser
 					);
 					
 					// Agregar frame con nombre: "SymbolName####"
-					// Formato similar a Sparrow Atlas
 					var frameName = symbolName + StringTools.lpad(Std.string(frameIdx), "0", 4);
 					composedFrames.addAtlasFrame(
 						FlxRect.get(sheetX, sheetY, frameWidth, frameHeight),
@@ -190,10 +180,10 @@ class AnimateAtlasParser
 	}
 	
 	/**
-	 * Renderiza un sprite individual en el frame
-	 * @return true si se renderizó exitosamente, false si hubo error
+	 * Renderiza un sprite con manejo correcto del Transform Reference Point (TRP)
+	 * VERSIÓN CORREGIDA: Aplica transformaciones correctamente
 	 */
-	private static function renderSprite(
+	private static function renderSpriteWithTRP(
 		target:BitmapData,
 		sprite:Dynamic,
 		atlasFrames:FlxAtlasFrames,
@@ -201,7 +191,6 @@ class AnimateAtlasParser
 		canvasHeight:Int
 	):Bool
 	{
-		// MEJORA: Validar que el sprite tenga nombre
 		if (sprite.spriteName == null)
 		{
 			trace("Advertencia: Sprite sin nombre");
@@ -211,11 +200,10 @@ class AnimateAtlasParser
 		var atlasFrame = atlasFrames.getByName(sprite.spriteName);
 		if (atlasFrame == null)
 		{
-			// Ya no trazamos aquí porque se hace antes
+			trace("Advertencia: Sprite no encontrado en atlas: " + sprite.spriteName);
 			return false;
 		}
 		
-		// MEJORA: Validar dimensiones del frame
 		if (atlasFrame.frame.width <= 0 || atlasFrame.frame.height <= 0)
 		{
 			trace("Advertencia: Frame con dimensiones inválidas: " + sprite.spriteName);
@@ -255,41 +243,61 @@ class AnimateAtlasParser
 			return false;
 		}
 		
-		// MEJORA: Aplicar transformaciones con validación
+		// CORREGIDO: Aplicar transformaciones con TRP
 		var matrix = new Matrix();
 		
-		// Extraer valores con defaults seguros
+		// Valores de transformación del sprite
 		var x:Float = sprite.x != null ? sprite.x : 0;
 		var y:Float = sprite.y != null ? sprite.y : 0;
 		var scaleX:Float = sprite.scaleX != null ? sprite.scaleX : 1.0;
 		var scaleY:Float = sprite.scaleY != null ? sprite.scaleY : 1.0;
 		var rotation:Float = sprite.rotation != null ? sprite.rotation : 0;
 		
-		// MEJORA: Validar escalas para evitar valores extremos que hagan desaparecer sprites
+		// Transform Reference Point (punto de registro/pivote)
+		var trpX:Float = sprite.trpX != null ? sprite.trpX : 0;
+		var trpY:Float = sprite.trpY != null ? sprite.trpY : 0;
+		
+		// Validar escalas
 		if (Math.abs(scaleX) < 0.001) scaleX = 0.001;
 		if (Math.abs(scaleY) < 0.001) scaleY = 0.001;
 		if (Math.abs(scaleX) > 100) scaleX = 100;
 		if (Math.abs(scaleY) > 100) scaleY = 100;
 		
-		// Aplicar escala
-		if (scaleX != 1.0 || scaleY != 1.0)
-			matrix.scale(scaleX, scaleY);
+		// CLAVE: El TRP es el punto de registro en Adobe Animate
+		// Necesitamos:
+		// 1. Trasladar el sprite de modo que su TRP esté en el origen
+		// 2. Aplicar escala y rotación
+		// 3. Trasladar a la posición final
 		
-		// Aplicar rotación
+		// Paso 1: Mover el punto de registro al origen
+		matrix.translate(-trpX, -trpY);
+		
+		// Paso 2: Aplicar escala
+		matrix.scale(scaleX, scaleY);
+		
+		// Paso 3: Aplicar rotación
 		if (rotation != 0)
 			matrix.rotate(rotation * Math.PI / 180);
 		
-		// MEJORA: Calcular centro del canvas de forma más precisa
+		// Paso 4: Trasladar a la posición final en el canvas
+		// El centro del canvas es el punto de referencia
 		var centerX = canvasWidth / 2;
 		var centerY = canvasHeight / 2;
-		
-		// Aplicar traslación
 		matrix.translate(x + centerX, y + centerY);
 		
-		// MEJORA: Usar un try-catch para el draw por si la transformación causa problemas
+		// Renderizar
 		try
 		{
 			target.draw(spriteBitmap, matrix, null, null, null, true);
+			
+			// Debug: Mostrar información de renderizado
+			/*
+			trace("Renderizando " + sprite.spriteName + 
+				  " - Pos: (" + x + ", " + y + ")" +
+				  " - TRP: (" + trpX + ", " + trpY + ")" +
+				  " - Scale: (" + scaleX + ", " + scaleY + ")" +
+				  " - Rotation: " + rotation);
+			*/
 		}
 		catch (e:Dynamic)
 		{
@@ -303,7 +311,7 @@ class AnimateAtlasParser
 	}
 	
 	/**
-	 * NUEVA FUNCIÓN: Verificar integridad de sprites antes de parsear
+	 * Verificar integridad de sprites antes de parsear
 	 */
 	public static function validateSprites(
 		animationJsonPath:String,
@@ -341,6 +349,7 @@ class AnimateAtlasParser
 				if (missing.length > 0)
 				{
 					missingSprites.set(symbolName, missing);
+					trace("Sprites faltantes en " + symbolName + ": " + missing.join(", "));
 				}
 			}
 		}
@@ -350,5 +359,71 @@ class AnimateAtlasParser
 		}
 		
 		return missingSprites;
+	}
+	
+	/**
+	 * NUEVA FUNCIÓN: Genera un reporte detallado de diagnóstico
+	 */
+	public static function generateDiagnosticReport(
+		animationJsonPath:String,
+		atlasJsonPath:String
+	):String
+	{
+		var report = new StringBuf();
+		report.add("=== REPORTE DE DIAGNÓSTICO ANIMATE ATLAS ===\n\n");
+		
+		try
+		{
+			// Validar atlas
+			report.add("1. VALIDANDO ATLAS...\n");
+			var atlasFrames = AdobeAnimateAtlasParser.parse(atlasJsonPath);
+			if (atlasFrames == null)
+			{
+				report.add("   ERROR: No se pudo cargar el atlas\n");
+				return report.toString();
+			}
+			report.add("   OK: Atlas cargado correctamente\n");
+			report.add("   Sprites en atlas: " + atlasFrames.frames.length + "\n\n");
+			
+			// Validar animaciones
+			report.add("2. VALIDANDO ANIMACIONES...\n");
+			var animData = AdobeAnimateAnimationParser.parse(animationJsonPath);
+			if (animData == null)
+			{
+				report.add("   ERROR: No se pudieron cargar las animaciones\n");
+				return report.toString();
+			}
+			report.add("   OK: Animaciones cargadas correctamente\n");
+			report.add("   Símbolos encontrados: " + Lambda.count(animData) + "\n\n");
+			
+			// Verificar sprites
+			report.add("3. VERIFICANDO INTEGRIDAD DE SPRITES...\n");
+			var missing = validateSprites(animationJsonPath, atlasJsonPath);
+			
+			if (Lambda.count(missing) == 0)
+			{
+				report.add("   OK: Todos los sprites están presentes\n");
+			}
+			else
+			{
+				report.add("   ADVERTENCIA: Sprites faltantes detectados:\n");
+				for (symbolName in missing.keys())
+				{
+					var sprites = missing.get(symbolName);
+					report.add("   - " + symbolName + ": " + sprites.join(", ") + "\n");
+				}
+			}
+			
+			report.add("\n4. RESUMEN:\n");
+			report.add("   Atlas válido: " + (atlasFrames != null ? "SÍ" : "NO") + "\n");
+			report.add("   Animaciones válidas: " + (animData != null ? "SÍ" : "NO") + "\n");
+			report.add("   Sprites faltantes: " + Lambda.count(missing) + " símbolos afectados\n");
+		}
+		catch (e:Dynamic)
+		{
+			report.add("\nERROR GENERANDO REPORTE: " + e + "\n");
+		}
+		
+		return report.toString();
 	}
 }

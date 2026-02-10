@@ -1,1281 +1,1130 @@
 package funkin.debug;
 
-import funkin.states.MusicBeatState;
 import flixel.FlxG;
-import flixel.FlxObject;
 import flixel.FlxSprite;
-import flixel.FlxCamera;
-import flixel.addons.display.FlxGridOverlay;
+import flixel.FlxState;
 import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.addons.ui.*;
-import flixel.math.FlxMath;
-import openfl.net.FileReference;
-import openfl.events.Event;
-import openfl.events.IOErrorEvent;
-import funkin.states.LoadingState;
-import openfl.net.FileFilter;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
-import funkin.gameplay.PlayState;
 import flixel.ui.FlxButton;
+import flixel.addons.ui.*;
+import flixel.math.FlxPoint;
+import flixel.math.FlxMath;
 import haxe.Json;
-import lime.utils.Assets;
-import sys.FileSystem;
 import sys.io.File;
-import flixel.tweens.FlxTween;
-import flixel.tweens.FlxEase;
-import flixel.group.FlxGroup;
-import flixel.FlxBasic;
-import funkin.menus.FreeplayState;
-
-import funkin.gameplay.objects.character.Character;
-import funkin.menus.MainMenuState;
+import sys.FileSystem;
 import funkin.gameplay.objects.stages.Stage;
-import funkin.gameplay.objects.character.CharacterList;
+import funkin.gameplay.objects.stages.Stage.StageData;
+import funkin.gameplay.objects.stages.Stage.StageElement;
+import funkin.gameplay.objects.character.Character;
+import funkin.gameplay.PlayState;
+import lime.ui.FileDialog;
+import funkin.menus.MainMenuState;
 
 using StringTools;
 
-class StageEditor extends MusicBeatState
+typedef EditorHistory = {
+	var data:StageData;
+	var timestamp:Float;
+}
+
+class StageEditor extends FlxState
 {
-	// ══════════════════════════════════════════════════════════════
-	// CORE COMPONENTS
-	// ══════════════════════════════════════════════════════════════
+	// UI Groups
+	var uiGroup:FlxTypedGroup<FlxSprite>;
+	var leftPanel:FlxUITabMenu;
+	var rightPanel:FlxUITabMenu;
+	var topBar:FlxSprite;
 	
-	var currentStage:Stage;
-	var stageName:String = 'stage_week1';
+	// Canvas and Stage
+	var canvas:FlxSprite;
+	var canvasGrid:FlxSprite;
+	var stage:Stage;
+	
+	// Characters
+	var boyfriend:Character;
+	var dad:Character;
+	var gf:Character;
+	var charactersGroup:FlxTypedGroup<Character>;
+	
+	// Visual element sprites (for editing)
+	var elementSprites:Map<String, FlxSprite> = new Map();
+	var selectedVisualSprite:FlxSprite = null;
+	var selectionBox:FlxSprite;
+	
+	// Data
 	var stageData:StageData;
+	var songData = PlayState.SONG;
+	var selectedElementIndex:Int = -1;
+	var clipboard:StageElement = null;
 	
-	var camGame:FlxCamera;
-	var camHUD:FlxCamera;
-	var camFollow:FlxObject;
+	// History (Undo/Redo)
+	var history:Array<EditorHistory> = [];
+	var historyIndex:Int = -1;
+	var maxHistory:Int = 50;
 	
-	// ══════════════════════════════════════════════════════════════
-	// UI COMPONENTS - DUAL PANEL SYSTEM
-	// ══════════════════════════════════════════════════════════════
-	
-	// Panel izquierdo (Layers + Stage)
-	var leftPanel:FlxSprite;
-	var leftPanelWidth:Int = 300;
-	var leftPanelVisible:Bool = true;
-	var leftToggleBtn:SimpleButton;
-	var leftContent:FlxGroup;
-	
-	// Panel derecho (Properties)
-	var rightPanel:FlxSprite;
-	var rightPanelWidth:Int = 300;
-	var rightPanelVisible:Bool = true;
-	var rightToggleBtn:SimpleButton;
-	var rightContent:FlxGroup;
+	// Dragging
+	var isDragging:Bool = false;
+	var dragStartPos:FlxPoint;
+	var dragElementStartPos:FlxPoint;
 	
 	// UI Elements
-	var layerList:FlxTypedGroup<LayerItem>;
-	var layerListY:Float = 200;
-	var layerListHeight:Float = 400;
-	var layerScroll:Float = 0;
+	var stageNameInput:FlxUIInputText;
+	var defaultZoomStepper:FlxUINumericStepper;
+	var elementsList:FlxUIList;
+	var selectedElementText:FlxText;
 	
-	// Active inputs
-	var activeInputs:Map<String, FlxUIInputText> = new Map();
-	var activeSteppers:Map<String, FlxUINumericStepper> = new Map();
+	// Song/Character inputs
+	var songNameInput:FlxUIInputText;
+	var player1Input:FlxUIInputText;
+	var player2Input:FlxUIInputText;
+	var gfVersionInput:FlxUIInputText;
 	
-	// ══════════════════════════════════════════════════════════════
-	// EDITOR STATE
-	// ══════════════════════════════════════════════════════════════
+	// File
+	var currentFilePath:String = "";
+	var hasUnsavedChanges:Bool = false;
 	
-	var selectedElement:StageElement = null;
-	var selectedElementIndex:Int = -1;
-	var selectedSprite:FlxSprite = null;
+	// Camera
+	var camEditor:flixel.FlxCamera;
+	var camHUD:flixel.FlxCamera;
+	var camZoom:Float = 0.7;
+	var camFollow:FlxPoint;
 	
-	var layerVisibility:Map<String, Bool> = new Map();
-	var draggingElement:Bool = false;
-	var dragOffset:Array<Float> = [0, 0];
-	
-	// Mouse camera management
-	var currentMouseCamera:FlxCamera = null;
-	
-	// ══════════════════════════════════════════════════════════════
-	// VISUAL HELPERS
-	// ══════════════════════════════════════════════════════════════
-	
-	var gridBG:FlxSprite;
-	var showGrid:Bool = true;
-	
-	var bfPlaceholder:Character;
-	var dadPlaceholder:Character;
-	var gfPlaceholder:Character;
-	
-	// ══════════════════════════════════════════════════════════════
-	// INFO DISPLAYS
-	// ══════════════════════════════════════════════════════════════
-	
-	var headerText:FlxText;
-	var statusText:FlxText;
-	var helpText:FlxText;
-	
-	var _file:FileReference;
-	var _imageFile:FileReference; // Para seleccionar imágenes
-	var selectedImagePath:String = ""; // Path temporal de la imagen seleccionada
-
-	public function new(?stage:String = 'stage_week1')
+	override public function create():Void
 	{
-		super();
-		stageName = stage;
-	}
-	
-	override function create()
-	{
+		super.create();
 		FlxG.mouse.visible = true;
-		FlxG.mouse.useSystemCursor = true;
-		FlxG.sound.playMusic(Paths.music('configurator'));
-		FreeplayState.destroyFreeplayVocals();
-		MainMenuState.musicFreakyisPlaying = false;
-		
-		// Cameras
-		camGame = new FlxCamera();
-		camHUD = new FlxCamera();
+		// Setup cameras
+		camEditor = new flixel.FlxCamera();
+		camHUD = new flixel.FlxCamera();
 		camHUD.bgColor.alpha = 0;
 		
-		FlxG.cameras.reset(camGame);
+		FlxG.cameras.reset(camEditor);
 		FlxG.cameras.add(camHUD, false);
 		
-		// Initialize mouse camera to game camera
-		currentMouseCamera = camGame;
+		camEditor.zoom = camZoom;
+		camFollow = FlxPoint.get(FlxG.width / 2, FlxG.height / 2);
 		
-		// Grid background
-		gridBG = FlxGridOverlay.create(50, 50, -1, -1, true, 0x22FFFFFF, 0x11000000);
-		gridBG.scrollFactor.set(0.5, 0.5);
-		add(gridBG);
+		// Inicializar con datos por defecto
 		
-		// Load stage
-		loadStage(stageName);
-		createPlaceholders();
+		stageData = {
+			name: "stage",
+			defaultZoom: 0.9,
+			isPixelStage: false,
+			elements: [],
+			gfVersion: "gf",
+			boyfriendPosition: [770, 450],
+			dadPosition: [100, 100],
+			gfPosition: [400, 130],
+			cameraBoyfriend: [0, 0],
+			cameraDad: [0, 0],
+			hideGirlfriend: false,
+			scripts: []
+		};
 		
-		// Create UI
-		createDualPanelUI();
+		dragStartPos = FlxPoint.get();
+		dragElementStartPos = FlxPoint.get();
 		
-		// Camera follow
-		camFollow = new FlxObject(0, 0, 2, 2);
-		camFollow.screenCenter();
-		add(camFollow);
-		camGame.follow(camFollow, LOCKON, 0.04);
-		camGame.zoom = stageData.defaultZoom;
+		setupCanvas();
+		loadStageAndCharacters();
+		setupOverlays(); // Grid y selectionBox deben ir después del stage
+		setupUI();
+		saveToHistory();
 		
-		super.create();
+		FlxG.camera.bgColor = 0xFF1a1a2e;
 	}
 	
-	// ══════════════════════════════════════════════════════════════
-	// STAGE MANAGEMENT
-	// ══════════════════════════════════════════════════════════════
-	
-	function loadStage(name:String):Void
+	function setupCanvas():Void
 	{
+		// Canvas background (detrás del stage)
+		canvas = new FlxSprite(0, 0).makeGraphic(FlxG.width, FlxG.height, 0xFF0e0e1a);
+		canvas.scrollFactor.set(0, 0);
+		add(canvas);
+		canvas.cameras = [camEditor];
+	}
+	
+	function setupOverlays():Void
+	{
+		// Grid overlay (debe añadirse DESPUÉS del stage para estar encima)
+		canvasGrid = new FlxSprite(0, 0);
+		canvasGrid.makeGraphic(FlxG.width, FlxG.height, FlxColor.TRANSPARENT, true);
+		canvasGrid.scrollFactor.set(1, 1);
+		drawGrid();
+		add(canvasGrid);
+		canvasGrid.cameras = [camEditor];
+		
+		// Selection box (para mostrar el elemento seleccionado - debe estar al final)
+		selectionBox = new FlxSprite();
+		selectionBox.makeGraphic(1, 1, FlxColor.TRANSPARENT);
+		selectionBox.visible = false;
+		add(selectionBox);
+		selectionBox.cameras = [camEditor];
+	}
+	
+	function drawGrid():Void
+	{
+		var gridSize = 50;
+		var width = Std.int(canvasGrid.width);
+		var height = Std.int(canvasGrid.height);
+		
+		canvasGrid.pixels.fillRect(canvasGrid.pixels.rect, FlxColor.TRANSPARENT);
+		
+		// Vertical lines
+		var x = 0;
+		while (x < width)
+		{
+			for (y in 0...height)
+			{
+				canvasGrid.pixels.setPixel32(x, y, 0x33404055);
+			}
+			x += gridSize;
+		}
+		
+		// Horizontal lines
+		var y = 0;
+		while (y < height)
+		{
+			for (x in 0...width)
+			{
+				canvasGrid.pixels.setPixel32(x, y, 0x33404055);
+			}
+			y += gridSize;
+		}
+	}
+	
+	function loadStageAndCharacters():Void
+	{
+		// Limpiar stage existente
+		if (stage != null)
+		{
+			remove(stage);
+			stage.destroy();
+		}
+		
+		if (charactersGroup != null)
+		{
+			remove(charactersGroup);
+			charactersGroup.destroy();
+		}
+		
+		// Cargar el stage
 		try
 		{
-			var file:String = Assets.getText(Paths.stageJSON(name));
-			stageData = cast Json.parse(file);
+			stage = new Stage(stageData.name);
+			add(stage);
+			stage.cameras = [camEditor];
 			
-			currentStage = new Stage(name);
-			add(currentStage);
-			
-			if (stageData.elements != null)
+			// Actualizar datos del stage
+			if (stage.stageData != null)
 			{
-				for (i in 0...stageData.elements.length)
-				{
-					var elem = stageData.elements[i];
-					if (elem.name != null)
-						layerVisibility.set(elem.name, elem.visible != null ? elem.visible : true);
-				}
+				stageData = stage.stageData;
 			}
 			
-			trace("Stage loaded: " + name + " with " + stageData.elements.length + " elements");
+			// Crear mapeo de elementos visuales
+			updateElementSprites();
+			
+			trace("Stage loaded: " + stageData.name);
 		}
 		catch (e:Dynamic)
 		{
-			trace("Could not load stage, creating new: " + e);
-			createNewStage();
+			trace("Error loading stage: " + e);
 		}
-	}
-	
-	function createNewStage():Void
-	{
-		stageData = {
-			name: stageName,
-			defaultZoom: 1.05,
-			isPixelStage: false,
-			elements: [],
-			boyfriendPosition: [770, 450],
-			dadPosition: [100, 100],
-			gfPosition: [400, 130]
-		};
 		
-		currentStage = new Stage(stageName);
-		add(currentStage);
+		// Crear grupo de personajes
+		charactersGroup = new FlxTypedGroup<Character>();
+		add(charactersGroup);
+		charactersGroup.cameras = [camEditor];
+		
+		// Cargar personajes
+		loadCharacters();
 	}
 	
-	function reloadStage():Void
+	function loadCharacters():Void
 	{
-		// Limpiar stage actual completamente
-		if (currentStage != null)
+		var gfChar = stageData.gfVersion != null ? stageData.gfVersion : songData.gfVersion;
+		
+		// Dad (player2)
+		if (dad != null)
 		{
-			remove(currentStage, true);
-			currentStage.destroy();
-			currentStage = null;
+			charactersGroup.remove(dad);
+			dad.destroy();
 		}
 		
-		// Limpiar sprites seleccionados
-		selectedSprite = null;
+		dad = new Character(stageData.dadPosition[0], stageData.dadPosition[1], songData.player2, false);
+		dad.alpha = 0.8; // Semi-transparente para indicar que es editable
+		charactersGroup.add(dad);
 		
-		// Garbage collection
-		#if cpp
-		cpp.vm.Gc.run(true);
-		#end
-		
-		// Crear nuevo stage
-		currentStage = new Stage(stageName);
-		currentStage.stageData = stageData;
-		currentStage.buildStage();
-		
-		// Insertar después del grid
-		var insertIndex = members.indexOf(gridBG) + 1;
-		
-		// Asegurarse de insertar antes de los placeholders
-		if (members.indexOf(bfPlaceholder) != -1)
+		// GF
+		if (!stageData.hideGirlfriend)
 		{
-			insertIndex = Std.int(Math.min(insertIndex, members.indexOf(bfPlaceholder)));
+			if (gf != null)
+			{
+				charactersGroup.remove(gf);
+				gf.destroy();
+			}
+			
+			gf = new Character(stageData.gfPosition[0], stageData.gfPosition[1], gfChar, false);
+			gf.alpha = 0.8;
+			charactersGroup.add(gf);
 		}
 		
-		insert(insertIndex, currentStage);
+		// Boyfriend (player1)
+		if (boyfriend != null)
+		{
+			charactersGroup.remove(boyfriend);
+			boyfriend.destroy();
+		}
 		
-		// Actualizar UI
-		updateLayerList();
-		showNotification("Stage reloaded!");
+		boyfriend = new Character(stageData.boyfriendPosition[0], stageData.boyfriendPosition[1], songData.player1, true);
+		boyfriend.alpha = 0.8;
+		charactersGroup.add(boyfriend);
+		
+		trace("Characters loaded - BF: " + songData.player1 + ", Dad: " + songData.player2 + ", GF: " + gfChar);
 	}
 	
-	function createPlaceholders():Void
+	function updateElementSprites():Void
 	{
-		bfPlaceholder = new Character(0, 0, 'bf', true);
-		bfPlaceholder.alpha = 0.4;
-		bfPlaceholder.setPosition(
-			stageData.boyfriendPosition != null ? stageData.boyfriendPosition[0] : 770,
-			stageData.boyfriendPosition != null ? stageData.boyfriendPosition[1] : 450
-		);
-		bfPlaceholder.dance();
-		add(bfPlaceholder);
+		// Crear referencias a los sprites del stage para poder editarlos
+		elementSprites.clear();
 		
-		dadPlaceholder = new Character(0, 0, 'dad');
-		dadPlaceholder.alpha = 0.4;
-		dadPlaceholder.setPosition(
-			stageData.dadPosition != null ? stageData.dadPosition[0] : 100,
-			stageData.dadPosition != null ? stageData.dadPosition[1] : 100
-		);
-		dadPlaceholder.dance();
-		add(dadPlaceholder);
-		
-		gfPlaceholder = new Character(0, 0, 'gf');
-		gfPlaceholder.alpha = 0.4;
-		gfPlaceholder.setPosition(
-			stageData.gfPosition != null ? stageData.gfPosition[0] : 400,
-			stageData.gfPosition != null ? stageData.gfPosition[1] : 130
-		);
-		gfPlaceholder.dance();
-		add(gfPlaceholder);
+		if (stage != null && stage.elements != null)
+		{
+			for (name => sprite in stage.elements)
+			{
+				elementSprites.set(name, sprite);
+			}
+		}
 	}
 	
-	// ══════════════════════════════════════════════════════════════
-	// DUAL PANEL UI CREATION
-	// ══════════════════════════════════════════════════════════════
-	
-	function createDualPanelUI():Void
+	function setupUI():Void
 	{
-		// ═══════════════════════════════════════════════════════════
-		// PANEL IZQUIERDO (LAYERS + STAGE INFO)
-		// ═══════════════════════════════════════════════════════════
-
-		// Contenido izquierdo
-		leftContent = new FlxGroup();
-		leftContent.cameras = [camHUD];
-		add(leftContent);
+		uiGroup = new FlxTypedGroup<FlxSprite>();
+		add(uiGroup);
+		uiGroup.cameras = [camHUD];
 		
-		leftPanel = new FlxSprite(0, 0);
-		leftPanel.makeGraphic(leftPanelWidth, FlxG.height, 0xDD1a1a2e);
+		// Top Bar
+		topBar = new FlxSprite(0, 0).makeGraphic(FlxG.width, 40, 0xFF2a2a3e);
+		uiGroup.add(topBar);
+		
+		var title = new FlxText(10, 10, 0, "STAGE EDITOR - " + stageData.name, 16);
+		title.setFormat(null, 16, FlxColor.WHITE, LEFT);
+		uiGroup.add(title);
+		
+		// Botones del top bar
+		var saveBtn = new FlxButton(FlxG.width - 480, 10, "Save JSON", saveJSON);
+		var loadBtn = new FlxButton(FlxG.width - 380, 10, "Load JSON", loadJSON);
+		var reloadBtn = new FlxButton(FlxG.width - 280, 10, "Reload", reloadStage);
+		var undoBtn = new FlxButton(FlxG.width - 180, 10, "Undo", undo);
+		var redoBtn = new FlxButton(FlxG.width - 110, 10, "Redo", redo);
+		
+		uiGroup.add(saveBtn);
+		uiGroup.add(loadBtn);
+		uiGroup.add(reloadBtn);
+		uiGroup.add(undoBtn);
+		uiGroup.add(redoBtn);
+		
+		// Panel izquierdo - Propiedades del Stage
+		setupLeftPanel();
+		
+		// Panel derecho - Elementos
+		setupRightPanel();
+	}
+	
+	function setupLeftPanel():Void
+	{
+		var tabs = [
+			{name: "Stage", label: "Stage Props"},
+			{name: "Song", label: "Song Data"},
+			{name: "Characters", label: "Char Positions"},
+			{name: "Scripts", label: "Scripts"}
+		];
+		
+		leftPanel = new FlxUITabMenu(null, tabs, true);
+		leftPanel.resize(300, FlxG.height - 40);
+		leftPanel.x = 0;
+		leftPanel.y = 40;
 		leftPanel.scrollFactor.set();
-		leftContent.add(leftPanel);
+		uiGroup.add(leftPanel);
 		
-		// Borde derecho
-		var leftBorder = new FlxSprite(leftPanelWidth, 0);
-		leftBorder.makeGraphic(2, FlxG.height, 0xFF16213e);
-		leftBorder.scrollFactor.set();
-		leftContent.add(leftBorder);
+		// Tab: Stage Properties
+		var stageTab = new FlxUI(null, leftPanel);
+		stageTab.name = "Stage";
 		
-		// Header izquierdo
-		var leftHeader = new FlxSprite(0, 0);
-		leftHeader.makeGraphic(leftPanelWidth, 50, 0xFF0f3460);
-		leftHeader.scrollFactor.set();
-		leftContent.add(leftHeader);
+		stageNameInput = new FlxUIInputText(10, 10, 200, stageData.name);
+		var stageNameLabel = new FlxText(10, 0, 0, "Stage Name:");
 		
-		var leftTitle = new FlxText(10, 15, leftPanelWidth - 60, "LAYERS", 18);
-		leftTitle.setFormat(null, 18, FlxColor.WHITE, LEFT, OUTLINE, 0xFF000000);
-		leftTitle.scrollFactor.set();
-		leftContent.add(leftTitle);
+		defaultZoomStepper = new FlxUINumericStepper(10, 50, 0.05, stageData.defaultZoom, 0.1, 5, 2);
+		var zoomLabel = new FlxText(10, 40, 0, "Default Zoom:");
 		
-		// Toggle button izquierdo
-		leftToggleBtn = new SimpleButton(leftPanelWidth - 40, 10, 30, 30, "◄");
-		leftToggleBtn.onClick = toggleLeftPanel;
-		leftContent.add(leftToggleBtn);
+		var pixelCheckbox = new FlxUICheckBox(10, 80, null, null, "Pixel Stage", 100);
+		pixelCheckbox.checked = stageData.isPixelStage;
 		
-		// Stage info compacto
-		var stageInfo = new FlxText(10, 60, leftPanelWidth - 20, 'Stage: ${stageData.name}\nZoom: ${stageData.defaultZoom}\nElements: ${stageData.elements != null ? stageData.elements.length : 0}', 11);
-		stageInfo.setFormat(null, 11, 0xFF888888, LEFT);
-		stageInfo.scrollFactor.set();
-		leftContent.add(stageInfo);
+		var hideGFCheckbox = new FlxUICheckBox(10, 110, null, null, "Hide Girlfriend", 100);
+		hideGFCheckbox.checked = stageData.hideGirlfriend;
 		
-		// Separador
-		var separator1 = new FlxSprite(10, 120);
-		separator1.makeGraphic(leftPanelWidth - 20, 1, 0xFF444444);
-		separator1.scrollFactor.set();
-		leftContent.add(separator1);
+		stageTab.add(stageNameLabel);
+		stageTab.add(stageNameInput);
+		stageTab.add(zoomLabel);
+		stageTab.add(defaultZoomStepper);
+		stageTab.add(pixelCheckbox);
+		stageTab.add(hideGFCheckbox);
 		
-		// Label de layers
-		var layersLabel = new FlxText(10, 130, leftPanelWidth - 20, "LAYERS LIST:", 12);
-		layersLabel.setFormat(null, 12, FlxColor.WHITE, LEFT);
-		layersLabel.scrollFactor.set();
-		leftContent.add(layersLabel);
+		leftPanel.addGroup(stageTab);
 		
-		// Botón Add Element
-		var addBtn = new SimpleButton(10, FlxG.height - 50, leftPanelWidth - 20, 40, "+ ADD ELEMENT");
-		addBtn.onClick = addNewElement;
-		leftContent.add(addBtn);
+		// Tab: Song Data
+		var songTab = new FlxUI(null, leftPanel);
+		songTab.name = "Song";
 		
-		// Botón Reload
-		var reloadBtn = new SimpleButton(10, FlxG.height - 100, leftPanelWidth - 20, 40, "↻ RELOAD STAGE");
-		reloadBtn.onClick = reloadStage;
-		leftContent.add(reloadBtn);
+		var songLabel = new FlxText(10, 10, 0, "Song Name:");
+		songNameInput = new FlxUIInputText(10, 30, 200, songData.song);
 		
-		// Layer list
-		layerList = new FlxTypedGroup<LayerItem>();
-		leftContent.add(layerList);
+		var p1Label = new FlxText(10, 60, 0, "Player 1 (BF):");
+		player1Input = new FlxUIInputText(10, 80, 200, songData.player1);
 		
-		// ═══════════════════════════════════════════════════════════
-		// PANEL DERECHO (PROPERTIES) - FIXED
-		// ═══════════════════════════════════════════════════════════
-
-		// Contenido derecho
-		rightContent = new FlxGroup();
-		rightContent.cameras = [camHUD];
-		add(rightContent);
+		var p2Label = new FlxText(10, 110, 0, "Player 2 (Dad):");
+		player2Input = new FlxUIInputText(10, 130, 200, songData.player2);
 		
-		rightPanel = new FlxSprite(FlxG.width - rightPanelWidth, 0);
-		rightPanel.makeGraphic(rightPanelWidth, FlxG.height, 0xDD1a1a2e);
+		var gfLabel = new FlxText(10, 160, 0, "GF Version:");
+		gfVersionInput = new FlxUIInputText(10, 180, 200, songData.gfVersion);
+		
+		var loadCharsBtn = new FlxButton(10, 210, "Reload Characters", () -> {
+			songData.player1 = player1Input.text;
+			songData.player2 = player2Input.text;
+			songData.gfVersion = gfVersionInput.text;
+			loadCharacters();
+		});
+		
+		songTab.add(songLabel);
+		songTab.add(songNameInput);
+		songTab.add(p1Label);
+		songTab.add(player1Input);
+		songTab.add(p2Label);
+		songTab.add(player2Input);
+		songTab.add(gfLabel);
+		songTab.add(gfVersionInput);
+		songTab.add(loadCharsBtn);
+		
+		leftPanel.addGroup(songTab);
+		
+		// Tab: Characters positions
+		var charTab = new FlxUI(null, leftPanel);
+		charTab.name = "Characters";
+		
+		var bfLabel = new FlxText(10, 10, 0, "Boyfriend Position:");
+		var bfXStepper = new FlxUINumericStepper(10, 30, 10, stageData.boyfriendPosition[0], -2000, 2000, 0);
+		var bfYStepper = new FlxUINumericStepper(150, 30, 10, stageData.boyfriendPosition[1], -2000, 2000, 0);
+		
+		var dadLabel = new FlxText(10, 70, 0, "Dad Position:");
+		var dadXStepper = new FlxUINumericStepper(10, 90, 10, stageData.dadPosition[0], -2000, 2000, 0);
+		var dadYStepper = new FlxUINumericStepper(150, 90, 10, stageData.dadPosition[1], -2000, 2000, 0);
+		
+		var gfLabel = new FlxText(10, 130, 0, "Girlfriend Position:");
+		var gfXStepper = new FlxUINumericStepper(10, 150, 10, stageData.gfPosition[0], -2000, 2000, 0);
+		var gfYStepper = new FlxUINumericStepper(150, 150, 10, stageData.gfPosition[1], -2000, 2000, 0);
+		
+		charTab.add(bfLabel);
+		charTab.add(bfXStepper);
+		charTab.add(bfYStepper);
+		charTab.add(dadLabel);
+		charTab.add(dadXStepper);
+		charTab.add(dadYStepper);
+		charTab.add(gfLabel);
+		charTab.add(gfXStepper);
+		charTab.add(gfYStepper);
+		
+		leftPanel.addGroup(charTab);
+		
+		// Tab: Scripts
+		var scriptsTab = new FlxUI(null, leftPanel);
+		scriptsTab.name = "Scripts";
+		
+		var addScriptBtn = new FlxButton(10, 10, "Add Script", addScript);
+		scriptsTab.add(addScriptBtn);
+		
+		leftPanel.addGroup(scriptsTab);
+	}
+	
+	function setupRightPanel():Void
+	{
+		var tabs = [
+			{name: "Elements", label: "Elements"},
+			{name: "Properties", label: "Properties"}
+		];
+		
+		rightPanel = new FlxUITabMenu(null, tabs, true);
+		rightPanel.resize(350, FlxG.height - 40);
+		rightPanel.x = FlxG.width - 350;
+		rightPanel.y = 40;
 		rightPanel.scrollFactor.set();
-		rightContent.add(rightPanel);
+		uiGroup.add(rightPanel);
 		
-		// Borde izquierdo
-		var rightBorder = new FlxSprite(FlxG.width - rightPanelWidth - 2, 0);
-		rightBorder.makeGraphic(2, FlxG.height, 0xFF16213e);
-		rightBorder.scrollFactor.set();
-		rightContent.add(rightBorder);
+		// Tab: Elements List
+		var elementsTab = new FlxUI(null, rightPanel);
+		elementsTab.name = "Elements";
 		
-		// Header derecho - FIXED: Ahora usa FlxG.width - rightPanelWidth
-		var rightHeader = new FlxSprite(FlxG.width - rightPanelWidth, 0);
-		rightHeader.makeGraphic(rightPanelWidth, 50, 0xFF0f3460);
-		rightHeader.scrollFactor.set();
-		rightContent.add(rightHeader);
+		var addElementBtn = new FlxButton(10, 10, "Add Element", () -> {
+			openAddElementMenu();
+		});
 		
-		// Title derecho - FIXED: Ahora usa FlxG.width - rightPanelWidth
-		var rightTitle = new FlxText(FlxG.width - rightPanelWidth + 50, 15, rightPanelWidth - 60, "PROPERTIES", 18);
-		rightTitle.setFormat(null, 18, FlxColor.WHITE, LEFT, OUTLINE, 0xFF000000);
-		rightTitle.scrollFactor.set();
-		rightContent.add(rightTitle);
+		var deleteElementBtn = new FlxButton(120, 10, "Delete", deleteSelectedElement);
+		var copyElementBtn = new FlxButton(200, 10, "Copy", copyElement);
+		var pasteElementBtn = new FlxButton(260, 10, "Paste", pasteElement);
 		
-		// Toggle button derecho
-		rightToggleBtn = new SimpleButton(FlxG.width - rightPanelWidth + 10, 10, 30, 30, "►");
-		rightToggleBtn.onClick = toggleRightPanel;
-		rightContent.add(rightToggleBtn);
+		elementsList = new FlxUIList(10, 50, null, 300, 500);
 		
-		// ═══════════════════════════════════════════════════════════
-		// STATUS BAR
-		// ═══════════════════════════════════════════════════════════
+		elementsTab.add(addElementBtn);
+		elementsTab.add(deleteElementBtn);
+		elementsTab.add(copyElementBtn);
+		elementsTab.add(pasteElementBtn);
+		elementsTab.add(elementsList);
 		
-		var statusBarBG = new FlxSprite(leftPanelWidth, FlxG.height - 30);
-		statusBarBG.makeGraphic(FlxG.width - leftPanelWidth - rightPanelWidth, 30, 0xCC16213e);
-		statusBarBG.cameras = [camHUD];
-		statusBarBG.scrollFactor.set();
-		add(statusBarBG);
+		rightPanel.addGroup(elementsTab);
 		
-		statusText = new FlxText(leftPanelWidth + 10, FlxG.height - 25, FlxG.width - leftPanelWidth - rightPanelWidth - 20, "", 12);
-		statusText.setFormat(null, 12, FlxColor.WHITE, LEFT);
-		statusText.cameras = [camHUD];
-		statusText.scrollFactor.set();
-		add(statusText);
+		// Tab: Element Properties
+		var propsTab = new FlxUI(null, rightPanel);
+		propsTab.name = "Properties";
 		
-		// ═══════════════════════════════════════════════════════════
-		// HELP TEXT
-		// ═══════════════════════════════════════════════════════════
+		selectedElementText = new FlxText(10, 10, 300, "No element selected\n\nClick on a stage element\nto select it!");
+		selectedElementText.setFormat(null, 12, FlxColor.WHITE, LEFT);
+		propsTab.add(selectedElementText);
 		
-		helpText = new FlxText(leftPanelWidth + 10, 10, FlxG.width - leftPanelWidth - rightPanelWidth - 20, "I/J/K/L - Camera | Q/E - Zoom | G - Grid | R - Reset | T - Reload | S - Save | ESC - Exit\nSelect images, change types, and manage assets in the Properties panel", 11);
-		helpText.setFormat(null, 11, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
-		helpText.cameras = [camHUD];
-		helpText.scrollFactor.set();
-		add(helpText);
+		rightPanel.addGroup(propsTab);
 		
-		// Initial update
-		updateLayerList();
-		updatePropertiesPanel();
+		refreshElementsList();
 	}
 	
-	// ══════════════════════════════════════════════════════════════
-	// PANEL TOGGLE FUNCTIONS
-	// ══════════════════════════════════════════════════════════════
-	
-	function toggleLeftPanel():Void
+	function refreshElementsList():Void
 	{
-		leftPanelVisible = !leftPanelVisible;
+		if (elementsList == null) return;
 		
-		var targetX = leftPanelVisible ? 0 : -leftPanelWidth;
-		
-		FlxTween.tween(leftPanel, {x: targetX}, 0.3, {ease: FlxEase.quadOut});
-		FlxTween.tween(leftToggleBtn, {x: targetX + leftPanelWidth - 40}, 0.3, {ease: FlxEase.quadOut});
-		
-		leftToggleBtn.label.text = leftPanelVisible ? "◄" : "►";
-		
-		// Move all left content
-		for (member in leftContent.members)
-		{
-			if (Std.isOfType(member, FlxSprite))
-			{
-				var sprite:FlxSprite = cast member;
-				var offsetX = leftPanelVisible ? leftPanelWidth : 0;
-				FlxTween.tween(sprite, {x: sprite.x - (leftPanelVisible ? -leftPanelWidth : leftPanelWidth)}, 0.3, {ease: FlxEase.quadOut});
-			}
-		}
-	}
-	
-	function toggleRightPanel():Void
-	{
-		rightPanelVisible = !rightPanelVisible;
-		
-		var targetX = rightPanelVisible ? FlxG.width - rightPanelWidth : FlxG.width;
-		
-		FlxTween.tween(rightPanel, {x: targetX}, 0.3, {ease: FlxEase.quadOut});
-		FlxTween.tween(rightToggleBtn, {x: targetX + 10}, 0.3, {ease: FlxEase.quadOut});
-		
-		rightToggleBtn.label.text = rightPanelVisible ? "►" : "◄";
-		
-		// Move all right content
-		for (member in rightContent.members)
-		{
-			if (Std.isOfType(member, FlxSprite))
-			{
-				var sprite:FlxSprite = cast member;
-				FlxTween.tween(sprite, {x: sprite.x + (rightPanelVisible ? -rightPanelWidth : rightPanelWidth)}, 0.3, {ease: FlxEase.quadOut});
-			}
-		}
-	}
-	
-	// ══════════════════════════════════════════════════════════════
-	// LAYER LIST
-	// ══════════════════════════════════════════════════════════════
-	
-	function updateLayerList():Void
-	{
-		layerList.clear();
-		
-		if (stageData.elements == null) return;
-		
-		var startY:Float = layerListY;
+		elementsList.clear();
 		
 		for (i in 0...stageData.elements.length)
 		{
 			var element = stageData.elements[i];
-			var itemY = startY + (i * 45) - layerScroll;
+			var label = '${element.name != null ? element.name : "Element " + i} (${element.type})';
 			
-			if (itemY > layerListY - 45 && itemY < layerListY + layerListHeight)
-			{
-				var item = new LayerItem(10, itemY, leftPanelWidth - 20, element, i);
-				item.cameras = [camHUD];
-				item.onSelect = function() { selectElement(i); };
-				item.onToggleVis = function() { toggleLayerVisibility(element.name); };
-				item.setSelected(i == selectedElementIndex);
-				layerList.add(item);
-			}
-		}
-	}
-	
-	// ══════════════════════════════════════════════════════════════
-	// PROPERTIES PANEL
-	// ══════════════════════════════════════════════════════════════
-	
-	function updatePropertiesPanel():Void
-	{
-		// Clear existing content but keep the panel background
-		var membersToRemove:Array<FlxBasic> = [];
-		for (member in rightContent.members)
-		{
-			if (member != rightPanel)
-			{
-				membersToRemove.push(member);
-			}
-		}
-		
-		for (member in membersToRemove)
-		{
-			rightContent.remove(member, true);
-			if (member != null)
-				member.destroy();
-		}
-		
-		activeInputs.clear();
-		activeSteppers.clear();
-		
-		if (selectedElement == null)
-		{
-			var noSelText = new FlxText(FlxG.width - rightPanelWidth + 20, 200, rightPanelWidth - 40, "No element selected\n\nClick on a layer\nto edit its properties", 14);
-			noSelText.setFormat(null, 14, 0xFF666666, CENTER);
-			noSelText.cameras = [camHUD];
-			noSelText.scrollFactor.set(0, 0);
-			rightContent.add(noSelText);
-			return;
-		}
-		
-		var contentX = FlxG.width - rightPanelWidth + 20;
-		var contentY:Float = 70;
-		var spacing:Float = 50;
-		
-		// Element name header
-		var nameHeader = new FlxText(contentX, contentY, rightPanelWidth - 40, selectedElement.name != null ? selectedElement.name.toUpperCase() : "UNNAMED", 14);
-		nameHeader.setFormat(null, 14, 0xFFe94560, LEFT);
-		nameHeader.cameras = [camHUD];
-		nameHeader.scrollFactor.set(0, 0);
-		rightContent.add(nameHeader);
-		
-		// Name input
-		contentY += 30;
-		createPropLabel("Name", contentX, contentY);
-		var nameInput = createPropInput(contentX, contentY + 20, selectedElement.name != null ? selectedElement.name : "");
-		activeInputs.set("elementName", nameInput);
-		
-		// Type selector
-		contentY += spacing;
-		createPropLabel("Type", contentX, contentY);
-		var typeDropdown = new FlxUIDropDownMenu(Std.int(contentX), Std.int(contentY + 20), 
-			FlxUIDropDownMenu.makeStrIdLabelArray(["sprite", "animated", "group", "custom_class", "custom_class_group"], true),
-			function(type:String) {
-				selectedElement.type = type;
-				showNotification("Type changed to: " + type);
-				// Reload stage to apply changes
-				reloadStage();
-				selectElement(selectedElementIndex);
+			var itemButton = new FlxButton(0, 0, label, () -> {
+				selectElement(i);
 			});
-		typeDropdown.selectedLabel = selectedElement.type;
-		typeDropdown.cameras = [camHUD];
-		typeDropdown.scrollFactor.set(0, 0);
-		rightContent.add(typeDropdown);
-		
-		// Asset path
-		contentY += spacing;
-		createPropLabel("Asset Path", contentX, contentY);
-		var assetInput = createPropInput(contentX, contentY + 20, selectedElement.asset != null ? selectedElement.asset : "");
-		activeInputs.set("asset", assetInput);
-		
-		// Buttons row: Select image and Apply
-		contentY += spacing;
-		var buttonWidth = (rightPanelWidth - 45) / 2; // Dividir en 2 botones con espacio
-		
-		var selectImageBtn = new SimpleButton(contentX, Std.int(contentY), Std.int(buttonWidth), 30, "📁 SELECT");
-		selectImageBtn.bgColor = 0xFF4a90e2;
-		selectImageBtn.cameras = [camHUD];
-		selectImageBtn.scrollFactor.set(0, 0);
-		selectImageBtn.onClick = selectImageFile;
-		rightContent.add(selectImageBtn);
-		
-		var applyBtn = new SimpleButton(contentX + buttonWidth + 5, Std.int(contentY), Std.int(buttonWidth), 30, "↻ APPLY");
-		applyBtn.bgColor = 0xFF2ecc71;
-		applyBtn.cameras = [camHUD];
-		applyBtn.scrollFactor.set(0, 0);
-		applyBtn.onClick = function() {
-			reloadStage();
-			selectElement(selectedElementIndex);
-			showNotification("Changes applied!");
-		};
-		rightContent.add(applyBtn);
-		
-		// Position X
-		contentY += spacing;
-		createPropLabel("Position X", contentX, contentY);
-		var xStepper = createPropStepper(contentX, contentY + 20, selectedElement.position[0], -5000, 5000, 1);
-		activeSteppers.set("posX", xStepper);
-		
-		// Position Y
-		contentY += spacing;
-		createPropLabel("Position Y", contentX, contentY);
-		var yStepper = createPropStepper(contentX, contentY + 20, selectedElement.position[1], -5000, 5000, 1);
-		activeSteppers.set("posY", yStepper);
-		
-		// Z-Index
-		contentY += spacing;
-		createPropLabel("Z-Index", contentX, contentY);
-		var zStepper = createPropStepper(contentX, contentY + 20, selectedElement.zIndex != null ? selectedElement.zIndex : 0, -100, 100, 1);
-		activeSteppers.set("zIndex", zStepper);
-		
-		// Alpha
-		contentY += spacing;
-		createPropLabel("Alpha", contentX, contentY);
-		var alphaStepper = createPropStepper(contentX, contentY + 20, selectedElement.alpha != null ? selectedElement.alpha : 1.0, 0, 1, 0.1);
-		activeSteppers.set("alpha", alphaStepper);
-		
-		// Delete button
-		contentY += spacing + 20;
-		var deleteBtn = new SimpleButton(contentX, Std.int(contentY), rightPanelWidth - 40, 40, "✕ DELETE");
-		deleteBtn.bgColor = 0xFFe94560;
-		deleteBtn.cameras = [camHUD];
-		deleteBtn.scrollFactor.set(0, 0);
-		deleteBtn.onClick = deleteSelectedElement;
-		rightContent.add(deleteBtn);
-	}
-	
-	function createPropLabel(text:String, x:Float, y:Float):FlxText
-	{
-		var label = new FlxText(x, y, rightPanelWidth - 40, text, 11);
-		label.setFormat(null, 11, 0xFF888888, LEFT);
-		label.cameras = [camHUD];
-		label.scrollFactor.set(0, 0);
-		rightContent.add(label);
-		return label;
-	}
-	
-	// ══════════════════════════════════════════════════════════════
-	// IMAGE FILE SELECTION
-	// ══════════════════════════════════════════════════════════════
-	
-	function selectImageFile():Void
-	{
-		if (selectedElement == null) return;
-		
-		_imageFile = new FileReference();
-		
-		var imageFilter:FileFilter = new FileFilter("Image Files", "*.png;*.jpg;*.jpeg;*.bmp");
-		
-		_imageFile.addEventListener(Event.SELECT, onImageFileSelected);
-		_imageFile.addEventListener(Event.CANCEL, onImageFileCancel);
-		
-		_imageFile.browse([imageFilter]);
-	}
-	
-	function onImageFileSelected(e:Event):Void
-	{
-		_imageFile.removeEventListener(Event.SELECT, onImageFileSelected);
-		_imageFile.removeEventListener(Event.CANCEL, onImageFileCancel);
-		
-		_imageFile.addEventListener(Event.COMPLETE, onImageFileLoaded);
-		_imageFile.addEventListener(IOErrorEvent.IO_ERROR, onImageFileError);
-		
-		_imageFile.load();
-	}
-	
-	function onImageFileLoaded(e:Event):Void
-	{
-		_imageFile.removeEventListener(Event.COMPLETE, onImageFileLoaded);
-		_imageFile.removeEventListener(IOErrorEvent.IO_ERROR, onImageFileError);
-		
-		try
-		{
-			// Obtener el nombre del archivo sin extensión
-			var fileName:String = _imageFile.name;
-			var fileNameNoExt:String = fileName.substring(0, fileName.lastIndexOf('.'));
-			var fileExt:String = fileName.substring(fileName.lastIndexOf('.'));
+			itemButton.label.size = 10;
 			
-			// Determinar la ruta de destino basada en el stage
-			// Por defecto: assets/shared/images/stage/[stageName]/
-			#if sys
-			var assetsPath:String = "assets/shared/images/stage/" + stageName + "/";
-			
-			// Crear el directorio si no existe
-			if (!FileSystem.exists(assetsPath))
-			{
-				FileSystem.createDirectory(assetsPath);
-				trace("Created directory: " + assetsPath);
-			}
-			
-			// Guardar el archivo
-			var destinationPath:String = assetsPath + fileName;
-			File.saveBytes(destinationPath, _imageFile.data);
-			
-			// Actualizar el asset del elemento seleccionado
-			// El path relativo para el juego sería: stageName/fileNameNoExt
-			var assetPath:String = stageName + "/" + fileNameNoExt;
-			selectedElement.asset = assetPath;
-			
-			// Actualizar el input de asset si existe
-			if (activeInputs.exists("asset"))
-			{
-				activeInputs.get("asset").text = assetPath;
-			}
-			
-			showNotification("Image imported: " + fileName);
-			trace("Image saved to: " + destinationPath);
-			trace("Asset path set to: " + assetPath);
-			
-			// Recargar el stage para mostrar la nueva imagen
-			reloadStage();
-			selectElement(selectedElementIndex);
-			#else
-			showNotification("File import only works in desktop builds!");
-			#end
+			elementsList.add(itemButton);
 		}
-		catch (e:Dynamic)
-		{
-			showNotification("Error importing image: " + e);
-			trace("Error importing image: " + e);
-		}
-		
-		_imageFile = null;
 	}
-	
-	function onImageFileCancel(e:Event):Void
-	{
-		_imageFile.removeEventListener(Event.SELECT, onImageFileSelected);
-		_imageFile.removeEventListener(Event.CANCEL, onImageFileCancel);
-		_imageFile = null;
-	}
-	
-	function onImageFileError(e:IOErrorEvent):Void
-	{
-		_imageFile.removeEventListener(Event.COMPLETE, onImageFileLoaded);
-		_imageFile.removeEventListener(IOErrorEvent.IO_ERROR, onImageFileError);
-		
-		showNotification("Error loading image file!");
-		trace("Error loading image: " + e);
-		
-		_imageFile = null;
-	}
-	
-	function createPropInput(x:Float, y:Float, defaultValue:String):FlxUIInputText
-	{
-		var input = new FlxUIInputText(Std.int(x), Std.int(y), rightPanelWidth - 40, defaultValue, 12);
-		input.cameras = [camHUD];
-		input.scrollFactor.set(0, 0);
-		input.backgroundColor = 0xFF2a2d3a;
-		input.fieldBorderColor = 0xFF16213e;
-		input.color = FlxColor.WHITE;
-		rightContent.add(input);
-		return input;
-	}
-	
-	function createPropStepper(x:Float, y:Float, defaultValue:Float, min:Float, max:Float, step:Float):FlxUINumericStepper
-	{
-		var stepper = new FlxUINumericStepper(Std.int(x), Std.int(y), step, defaultValue, min, max, 2);
-		stepper.cameras = [camHUD];
-		stepper.scrollFactor.set(0, 0);
-		rightContent.add(stepper);
-		return stepper;
-	}
-	
-	// ══════════════════════════════════════════════════════════════
-	// ELEMENT SELECTION & EDITING
-	// ══════════════════════════════════════════════════════════════
 	
 	function selectElement(index:Int):Void
 	{
-		if (index < 0 || index >= stageData.elements.length) return;
-		
 		selectedElementIndex = index;
-		selectedElement = stageData.elements[index];
-		
-		if (selectedElement.name != null)
-		{
-			selectedSprite = currentStage.getElement(selectedElement.name);
-			if (selectedSprite == null)
-				selectedSprite = currentStage.getCustomClass(selectedElement.name);
-		}
-		
-		updateLayerList();
 		updatePropertiesPanel();
-		
-		statusText.text = 'Selected: ${selectedElement.name != null ? selectedElement.name : "unnamed"} (${selectedElement.type})';
+		updateSelectionBox();
 	}
 	
-	function toggleLayerVisibility(name:String):Void
+	function updateSelectionBox():Void
 	{
-		if (name == null) return;
-		
-		var isVisible = layerVisibility.exists(name) ? layerVisibility.get(name) : true;
-		layerVisibility.set(name, !isVisible);
-		
-		for (elem in stageData.elements)
+		if (selectedElementIndex < 0 || selectedElementIndex >= stageData.elements.length)
 		{
-			if (elem.name == name)
-			{
-				elem.visible = !isVisible;
-				break;
-			}
+			selectionBox.visible = false;
+			selectedVisualSprite = null;
+			return;
 		}
 		
-		reloadStage();
+		var element = stageData.elements[selectedElementIndex];
+		
+		// Encontrar el sprite visual correspondiente
+		if (element.name != null && elementSprites.exists(element.name))
+		{
+			selectedVisualSprite = elementSprites.get(element.name);
+			
+			// Dibujar caja de selección alrededor del sprite
+			selectionBox.makeGraphic(
+				Std.int(selectedVisualSprite.width + 4),
+				Std.int(selectedVisualSprite.height + 4),
+				FlxColor.TRANSPARENT
+			);
+			
+			// Dibujar borde
+			for (i in 0...Std.int(selectedVisualSprite.width + 4))
+			{
+				selectionBox.pixels.setPixel32(i, 0, 0xFFFFFF00);
+				selectionBox.pixels.setPixel32(i, 1, 0xFFFFFF00);
+				selectionBox.pixels.setPixel32(i, Std.int(selectedVisualSprite.height + 2), 0xFFFFFF00);
+				selectionBox.pixels.setPixel32(i, Std.int(selectedVisualSprite.height + 3), 0xFFFFFF00);
+			}
+			
+			for (i in 0...Std.int(selectedVisualSprite.height + 4))
+			{
+				selectionBox.pixels.setPixel32(0, i, 0xFFFFFF00);
+				selectionBox.pixels.setPixel32(1, i, 0xFFFFFF00);
+				selectionBox.pixels.setPixel32(Std.int(selectedVisualSprite.width + 2), i, 0xFFFFFF00);
+				selectionBox.pixels.setPixel32(Std.int(selectedVisualSprite.width + 3), i, 0xFFFFFF00);
+			}
+			
+			selectionBox.setPosition(
+				selectedVisualSprite.x - 2,
+				selectedVisualSprite.y - 2
+			);
+			
+			selectionBox.visible = true;
+		}
+		else
+		{
+			selectionBox.visible = false;
+			selectedVisualSprite = null;
+		}
 	}
 	
-	function addNewElement():Void
+	function updatePropertiesPanel():Void
 	{
-		var newElement:StageElement = {
-			type: "sprite",
-			name: "new_element_" + stageData.elements.length,
-			asset: "stageback", // Asset por defecto
-			position: [400, 300],
-			scrollFactor: [1.0, 1.0],
-			zIndex: 0,
-			alpha: 1.0,
-			visible: true
-		};
+		if (selectedElementIndex < 0 || selectedElementIndex >= stageData.elements.length)
+		{
+			selectedElementText.text = "No element selected\n\nClick on a stage element\nto select it!";
+			return;
+		}
 		
-		stageData.elements.push(newElement);
-		reloadStage();
-		selectElement(stageData.elements.length - 1);
+		var element = stageData.elements[selectedElementIndex];
+		var info = 'Selected: ${element.name != null ? element.name : "Unnamed"}\n';
+		info += 'Type: ${element.type}\n';
+		info += 'Asset: ${element.asset}\n';
+		info += 'Position: [${element.position[0]}, ${element.position[1]}]\n';
 		
-		// Mostrar notificación
-		showNotification("New element added! Click 'SELECT IMAGE' to choose a file.");
+		if (element.scrollFactor != null)
+			info += 'Scroll: [${element.scrollFactor[0]}, ${element.scrollFactor[1]}]\n';
+		
+		if (element.scale != null)
+			info += 'Scale: [${element.scale[0]}, ${element.scale[1]}]\n';
+		
+		if (element.alpha != null)
+			info += 'Alpha: ${element.alpha}\n';
+		
+		if (element.zIndex != null)
+			info += 'Z-Index: ${element.zIndex}\n';
+		
+		selectedElementText.text = info;
+	}
+	
+	function openAddElementMenu():Void
+	{
+		trace("Add element menu - To be implemented");
+		// Aquí se abriría un diálogo para añadir nuevos elementos
 	}
 	
 	function deleteSelectedElement():Void
 	{
-		if (selectedElementIndex < 0 || selectedElementIndex >= stageData.elements.length) 
-			return;
-		
-		// FIXED: Remover sprite del stage primero
-		if (selectedSprite != null)
+		if (selectedElementIndex >= 0 && selectedElementIndex < stageData.elements.length)
 		{
-			currentStage.remove(selectedSprite, true);
-			selectedSprite.destroy();
-			selectedSprite = null;
+			stageData.elements.splice(selectedElementIndex, 1);
+			selectedElementIndex = -1;
+			saveToHistory();
+			reloadStage();
+			refreshElementsList();
+			updatePropertiesPanel();
+			hasUnsavedChanges = true;
 		}
-		
-		// Remover del array de datos
-		stageData.elements.splice(selectedElementIndex, 1);
-		
-		// Limpiar selección
-		selectedElement = null;
-		selectedElementIndex = -1;
-		
-		// Recargar stage
-		reloadStage();
-		updatePropertiesPanel();
-		
-		showNotification("Element deleted!");
 	}
 	
-	// ══════════════════════════════════════════════════════════════
-	// UPDATE & INPUT
-	// ══════════════════════════════════════════════════════════════
-	
-	override function update(elapsed:Float)
+	function copyElement():Void
 	{
-		super.update(elapsed);
-		
-		// ═══════════════════════════════════════════════════════════
-		// SISTEMA DE CAMBIO DE CÁMARA DEL MOUSE
-		// ═══════════════════════════════════════════════════════════
-		
-		// Detectar si el mouse está sobre UI
-		var mouseOverLeftPanel = leftPanelVisible && FlxG.mouse.screenX < leftPanelWidth;
-		var mouseOverRightPanel = rightPanelVisible && FlxG.mouse.screenX > FlxG.width - rightPanelWidth;
-		var mouseOverUI = mouseOverLeftPanel || mouseOverRightPanel;
-		
-		// Trackear qué cámara debería estar usando el mouse
-		currentMouseCamera = mouseOverUI ? camHUD : camGame;
-		
-		// Update active inputs
-		if (selectedElement != null)
+		if (selectedElementIndex >= 0 && selectedElementIndex < stageData.elements.length)
 		{
-			if (activeInputs.exists("elementName"))
-				selectedElement.name = activeInputs.get("elementName").text;
-			
-			if (activeInputs.exists("asset"))
-				selectedElement.asset = activeInputs.get("asset").text;
-			
-			if (activeSteppers.exists("posX"))
-			{
-				selectedElement.position[0] = activeSteppers.get("posX").value;
-				if (selectedSprite != null)
-					selectedSprite.x = selectedElement.position[0];
-			}
-			
-			if (activeSteppers.exists("posY"))
-			{
-				selectedElement.position[1] = activeSteppers.get("posY").value;
-				if (selectedSprite != null)
-					selectedSprite.y = selectedElement.position[1];
-			}
-			
-			if (activeSteppers.exists("zIndex"))
-				selectedElement.zIndex = Std.int(activeSteppers.get("zIndex").value);
-			
-			if (activeSteppers.exists("alpha"))
-			{
-				selectedElement.alpha = activeSteppers.get("alpha").value;
-				if (selectedSprite != null)
-					selectedSprite.alpha = selectedElement.alpha;
-			}
+			clipboard = Reflect.copy(stageData.elements[selectedElementIndex]);
+			trace("Element copied to clipboard");
 		}
-		
-		// ESC - Exit
-		if (FlxG.keys.justPressed.ESCAPE)
+	}
+	
+	function pasteElement():Void
+	{
+		if (clipboard != null)
 		{
-			FlxG.sound.music.stop();
-			LoadingState.loadAndSwitchState(new MainMenuState());
-		}
-		
-		// T - Reload
-		if (FlxG.keys.justPressed.T)
-		{
+			var newElement = Reflect.copy(clipboard);
+			newElement.name = '${clipboard.name}_copy';
+			newElement.position = [clipboard.position[0] + 20, clipboard.position[1] + 20];
+			
+			stageData.elements.push(newElement);
+			saveToHistory();
 			reloadStage();
+			refreshElementsList();
+			hasUnsavedChanges = true;
+			trace("Element pasted");
+		}
+	}
+	
+	function moveElementLayer(index:Int, direction:String):Void
+	{
+		if (index < 0 || index >= stageData.elements.length)
+			return;
+		
+		var newIndex:Int = -1;
+		
+		if (direction == "up" && index < stageData.elements.length - 1)
+		{
+			// Mover hacia arriba en el orden de capas (aumentar índice, renderiza encima)
+			newIndex = index + 1;
+		}
+		else if (direction == "down" && index > 0)
+		{
+			// Mover hacia abajo en el orden de capas (disminuir índice, renderiza debajo)
+			newIndex = index - 1;
 		}
 		
-		// S - Save/Export
-		if (FlxG.keys.justPressed.S)
+		if (newIndex != -1)
 		{
-			exportStageJSON();
-		}
-		
-		// Zoom (solo si no estás sobre UI)
-		if (!mouseOverUI)
-		{
-			if (FlxG.keys.justPressed.E)
-				camGame.zoom += 0.1;
-			if (FlxG.keys.justPressed.Q)
-				camGame.zoom = Math.max(0.1, camGame.zoom - 0.1);
-		}
-		
-		// Reset camera
-		if (FlxG.keys.justPressed.R)
-		{
-			camFollow.setPosition(FlxG.width / 2, FlxG.height / 2);
-			camGame.zoom = stageData.defaultZoom;
-		}
-		
-		// Toggle grid
-		if (FlxG.keys.justPressed.G)
-		{
-			showGrid = !showGrid;
-			gridBG.visible = showGrid;
-		}
-		
-		// Camera movement (solo si no estás sobre UI)
-		if (!mouseOverUI)
-		{
-			var camSpeed = 200 * (FlxG.keys.pressed.SHIFT ? 2 : 1);
+			// Intercambiar elementos
+			var temp = stageData.elements[index];
+			stageData.elements[index] = stageData.elements[newIndex];
+			stageData.elements[newIndex] = temp;
 			
-			if (FlxG.keys.pressed.I)
-				camFollow.velocity.y = -camSpeed;
-			else if (FlxG.keys.pressed.K)
-				camFollow.velocity.y = camSpeed;
-			else
-				camFollow.velocity.y = 0;
+			// Actualizar índice seleccionado
+			selectedElementIndex = newIndex;
 			
-			if (FlxG.keys.pressed.J)
-				camFollow.velocity.x = -camSpeed;
-			else if (FlxG.keys.pressed.L)
-				camFollow.velocity.x = camSpeed;
-			else
-				camFollow.velocity.x = 0;
+			// Refrescar UI y guardar
+			saveToHistory();
+			reloadStage();
+			refreshElementsList();
+			updatePropertiesPanel();
+			hasUnsavedChanges = true;
+			
+			trace('Element moved ${direction} to index ${newIndex}');
+		}
+	}
+	
+	function addScript():Void
+	{
+		// Aquí abrirías un diálogo para seleccionar un archivo
+		// Por ahora añadimos una ruta de ejemplo
+		var scriptPath = "scripts/myScript.hx";
+		
+		if (stageData.scripts == null)
+			stageData.scripts = [];
+			
+		stageData.scripts.push(scriptPath);
+		saveToHistory();
+		hasUnsavedChanges = true;
+		trace('Script added: $scriptPath');
+	}
+	
+	function reloadStage():Void
+	{
+		// Remover overlays temporalmente
+		if (canvasGrid != null)
+		{
+			remove(canvasGrid);
+			canvasGrid.destroy();
+			canvasGrid = null;
+		}
+		
+		if (selectionBox != null)
+		{
+			remove(selectionBox);
+			selectionBox.destroy();
+			selectionBox = null;
+		}
+		
+		// Recargar el stage y personajes con los datos actuales
+		loadStageAndCharacters();
+		
+		// Recrear overlays encima
+		setupOverlays();
+		
+		trace("Stage reloaded");
+	}
+	
+	function saveToHistory():Void
+	{
+		// Eliminar histórico posterior si estamos en medio
+		if (historyIndex < history.length - 1)
+		{
+			history.splice(historyIndex + 1, history.length - historyIndex - 1);
+		}
+		
+		// Añadir nuevo estado
+		var jsonStr = Json.stringify(stageData);
+		var dataCopy:StageData = Json.parse(jsonStr);
+		
+		history.push({
+			data: dataCopy,
+			timestamp: Date.now().getTime()
+		});
+		
+		historyIndex = history.length - 1;
+		
+		// Limitar tamaño del historial
+		if (history.length > maxHistory)
+		{
+			history.shift();
+			historyIndex--;
+		}
+	}
+	
+	function undo():Void
+	{
+		if (historyIndex > 0)
+		{
+			historyIndex--;
+			var jsonStr = Json.stringify(history[historyIndex].data);
+			stageData = Json.parse(jsonStr);
+			reloadStage();
+			refreshElementsList();
+			updatePropertiesPanel();
+			trace('Undo - History index: $historyIndex');
+		}
+	}
+	
+	function redo():Void
+	{
+		if (historyIndex < history.length - 1)
+		{
+			historyIndex++;
+			var jsonStr = Json.stringify(history[historyIndex].data);
+			stageData = Json.parse(jsonStr);
+			reloadStage();
+			refreshElementsList();
+			updatePropertiesPanel();
+			trace('Redo - History index: $historyIndex');
+		}
+	}
+	
+	function saveJSON():Void
+	{
+		var jsonString = Json.stringify(stageData, null, "\t");
+		
+		#if sys
+		var savePath = 'assets/stages/${stageData.name}/${stageData.name}.json';
+		
+		// Crear directorio si no existe
+		var dirPath = 'assets/stages/${stageData.name}';
+		if (!FileSystem.exists(dirPath))
+		{
+			FileSystem.createDirectory(dirPath);
+		}
+		
+		File.saveContent(savePath, jsonString);
+		trace('Stage saved to: $savePath');
+		hasUnsavedChanges = false;
+		#else
+		trace("Save not available on this platform");
+		#end
+	}
+	
+	function loadJSON():Void
+	{
+		#if sys
+		// Aquí usarías un file dialog
+		// Por ahora cargamos un archivo de ejemplo
+		var loadPath = 'assets/stages/stage/stage.json';
+		
+		if (FileSystem.exists(loadPath))
+		{
+			var jsonString = File.getContent(loadPath);
+			stageData = Json.parse(jsonString);
+			
+			// Resetear historial
+			history = [];
+			historyIndex = -1;
+			saveToHistory();
+			
+			reloadStage();
+			refreshElementsList();
+			updatePropertiesPanel();
+			
+			trace('Stage loaded from: $loadPath');
+			hasUnsavedChanges = false;
 		}
 		else
 		{
-			camFollow.velocity.set(0, 0);
+			trace('File not found: $loadPath');
+		}
+		#else
+		trace("Load not available on this platform");
+		#end
+	}
+	
+	override public function update(elapsed:Float):Void
+	{
+		super.update(elapsed);
+
+		if (FlxG.keys.justPressed.ESCAPE)
+		{
+			if (PlayState.isPlaying)
+			{
+				FlxG.mouse.visible = false;
+				FlxG.switchState(new PlayState());
+			}
+			else
+			{
+				FlxG.mouse.visible = false;
+				FlxG.switchState(new MainMenuState());
+			}
 		}
 		
-		// Mouse interaction
-		handleMouseInteraction();
+		handleCameraMovement(elapsed);
+		handleInput();
+		handleDragging();
+		updateSelectionBox();
+	}
+	
+	function handleCameraMovement(elapsed:Float):Void
+	{
+		// Mover cámara con WASD (sin SHIFT)
+		var camSpeed:Float = 500 * elapsed;
 		
-		// Layer scroll (solo si el mouse está en camHUD y sobre el panel izquierdo)
-		if (currentMouseCamera == camHUD && FlxG.mouse.wheel != 0 && mouseOverLeftPanel)
+		if (!FlxG.keys.pressed.SHIFT)
 		{
-			layerScroll -= FlxG.mouse.wheel * 30;
-			layerScroll = FlxMath.bound(layerScroll, 0, Math.max(0, stageData.elements.length * 45 - layerListHeight));
-			updateLayerList();
+			if (FlxG.keys.pressed.W)
+				camFollow.y -= camSpeed;
+			if (FlxG.keys.pressed.S)
+				camFollow.y += camSpeed;
+			if (FlxG.keys.pressed.A)
+				camFollow.x -= camSpeed;
+			if (FlxG.keys.pressed.D)
+				camFollow.x += camSpeed;
+		}
+		
+		// Zoom con scroll del mouse o Q/E
+		if (FlxG.mouse.wheel != 0)
+		{
+			camZoom += FlxG.mouse.wheel * 0.05;
+			camZoom = Math.max(0.1, Math.min(2.0, camZoom));
+		}
+		
+		if (FlxG.keys.justPressed.Q)
+		{
+			camZoom -= 0.1;
+			camZoom = Math.max(0.1, camZoom);
+		}
+		if (FlxG.keys.justPressed.E)
+		{
+			camZoom += 0.1;
+			camZoom = Math.min(2.0, camZoom);
+		}
+		
+		// Reset camera con R
+		if (FlxG.keys.justPressed.R)
+		{
+			camFollow.set(FlxG.width / 2, FlxG.height / 2);
+			camZoom = 0.7;
+		}
+		
+		// Aplicar movimiento suave de cámara
+		camEditor.scroll.x = FlxMath.lerp(camEditor.scroll.x, camFollow.x - FlxG.width / 2, 0.1);
+		camEditor.scroll.y = FlxMath.lerp(camEditor.scroll.y, camFollow.y - FlxG.height / 2, 0.1);
+		camEditor.zoom = FlxMath.lerp(camEditor.zoom, camZoom, 0.1);
+	}
+	
+	function handleInput():Void
+	{
+		// Atajos de teclado
+		if (FlxG.keys.pressed.CONTROL)
+		{
+			if (FlxG.keys.justPressed.Z)
+				undo();
+			else if (FlxG.keys.justPressed.Y)
+				redo();
+			else if (FlxG.keys.justPressed.C)
+				copyElement();
+			else if (FlxG.keys.justPressed.V)
+				pasteElement();
+			else if (FlxG.keys.justPressed.S)
+				saveJSON();
+			else if (FlxG.keys.justPressed.O)
+				loadJSON();
+		}
+		
+		if (FlxG.keys.justPressed.DELETE)
+		{
+			deleteSelectedElement();
+		}
+		
+		// Arrow keys to move layers
+		if (selectedElementIndex >= 0)
+		{
+			if (FlxG.keys.justPressed.UP && !FlxG.keys.pressed.SHIFT)
+			{
+				moveElementLayer(selectedElementIndex, "up");
+			}
+			else if (FlxG.keys.justPressed.DOWN && !FlxG.keys.pressed.SHIFT)
+			{
+				moveElementLayer(selectedElementIndex, "down");
+			}
+			
+			// Arrow keys con SHIFT para mover posición pixel a pixel
+			if (FlxG.keys.pressed.SHIFT)
+			{
+				var element = stageData.elements[selectedElementIndex];
+				var moved = false;
+				
+				if (FlxG.keys.justPressed.UP)
+				{
+					element.position[1] -= 1;
+					moved = true;
+				}
+				if (FlxG.keys.justPressed.DOWN)
+				{
+					element.position[1] += 1;
+					moved = true;
+				}
+				if (FlxG.keys.justPressed.LEFT)
+				{
+					element.position[0] -= 1;
+					moved = true;
+				}
+				if (FlxG.keys.justPressed.RIGHT)
+				{
+					element.position[0] += 1;
+					moved = true;
+				}
+				
+				if (moved)
+				{
+					if (selectedVisualSprite != null)
+					{
+						selectedVisualSprite.setPosition(element.position[0], element.position[1]);
+					}
+					updatePropertiesPanel();
+					hasUnsavedChanges = true;
+				}
+			}
 		}
 	}
 	
-	function handleMouseInteraction():Void
+	
+	function checkMouseOverUI():Bool
 	{
-		// Si el mouse está en camHUD, no interactuar con el juego
-		if (currentMouseCamera == camHUD)
+		// Usar coordenadas de pantalla (sin transformación de cámara) para verificar UI
+		var screenX = FlxG.mouse.screenX;
+		var screenY = FlxG.mouse.screenY;
+		
+		// Verificar paneles
+		if (leftPanel != null)
 		{
-			// Cancelar arrastre si estamos sobre UI
-			if (draggingElement)
-				draggingElement = false;
-			return;
+			if (screenX >= leftPanel.x && screenX <= leftPanel.x + leftPanel.width &&
+			    screenY >= leftPanel.y && screenY <= leftPanel.y + leftPanel.height)
+			{
+				return true;
+			}
 		}
 		
-		// A partir de aquí, el mouse está en camGame
+		if (rightPanel != null)
+		{
+			if (screenX >= rightPanel.x && screenX <= rightPanel.x + rightPanel.width &&
+			    screenY >= rightPanel.y && screenY <= rightPanel.y + rightPanel.height)
+			{
+				return true;
+			}
+		}
 		
-		// Click to select
+		// Verificar top bar
+		if (topBar != null && screenY < topBar.height)
+		{
+			return true;
+		}
+		
+		return false;
+	}
+	
+	function handleDragging():Void
+	{
+		// No procesar clicks del stage si el mouse está sobre UI
+		if (checkMouseOverUI())
+			return;
+		
+		// Seleccionar elemento con click
 		if (FlxG.mouse.justPressed)
 		{
+			// Verificar si hicimos click en algún sprite del stage
+			var clickedIndex = -1;
+			
 			for (i in 0...stageData.elements.length)
 			{
 				var element = stageData.elements[i];
-				var sprite:FlxSprite = null;
-				
-				if (element.name != null)
+				if (element.name != null && elementSprites.exists(element.name))
 				{
-					sprite = currentStage.getElement(element.name);
-					if (sprite == null)
-						sprite = currentStage.getCustomClass(element.name);
-				}
-				
-				// Ahora overlaps funciona correctamente porque el mouse está en camGame
-				if (sprite != null && FlxG.mouse.overlaps(sprite, camGame))
-				{
-					selectElement(i);
-					draggingElement = true;
-					dragOffset = [
-						FlxG.mouse.x - sprite.x,
-						FlxG.mouse.y - sprite.y
-					];
-					break;
+					var sprite = elementSprites.get(element.name);
+					
+					// Convertir posición del mouse a coordenadas del mundo
+					var mouseWorldX = FlxG.mouse.x + camEditor.scroll.x;
+					var mouseWorldY = FlxG.mouse.y + camEditor.scroll.y;
+					
+					if (sprite.overlapsPoint(new FlxPoint(mouseWorldX, mouseWorldY)))
+					{
+						clickedIndex = i;
+						break;
+					}
 				}
 			}
-		}
-		
-		// Drag element
-		if (draggingElement && FlxG.mouse.pressed && selectedSprite != null)
-		{
-			var newX = FlxG.mouse.x - dragOffset[0];
-			var newY = FlxG.mouse.y - dragOffset[1];
 			
-			selectedSprite.setPosition(newX, newY);
-			selectedElement.position = [newX, newY];
-			
-			if (activeSteppers.exists("posX"))
-				activeSteppers.get("posX").value = newX;
-			if (activeSteppers.exists("posY"))
-				activeSteppers.get("posY").value = newY;
-		}
-		
-		// Stop dragging
-		if (FlxG.mouse.justReleased)
-		{
-			draggingElement = false;
-		}
-	}
-	
-	function exportStageJSON():Void
-	{
-		var json = Json.stringify(stageData, null, "\t");
-		
-		_file = new FileReference();
-		_file.addEventListener(Event.COMPLETE, onSaveComplete);
-		_file.addEventListener(Event.CANCEL, onSaveCancel);
-		_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
-		_file.save(json, stageData.name + ".json");
-	}
-	
-	function onSaveComplete(_):Void
-	{
-		_file.removeEventListener(Event.COMPLETE, onSaveComplete);
-		_file.removeEventListener(Event.CANCEL, onSaveCancel);
-		_file.removeEventListener(IOErrorEvent.IO_ERROR, onSaveError);
-		_file = null;
-		showNotification("Stage exported successfully!");
-	}
-	
-	function onSaveCancel(_):Void
-	{
-		_file.removeEventListener(Event.COMPLETE, onSaveComplete);
-		_file.removeEventListener(Event.CANCEL, onSaveCancel);
-		_file.removeEventListener(IOErrorEvent.IO_ERROR, onSaveError);
-		_file = null;
-	}
-	
-	function onSaveError(_):Void
-	{
-		_file.removeEventListener(Event.COMPLETE, onSaveComplete);
-		_file.removeEventListener(Event.CANCEL, onSaveCancel);
-		_file.removeEventListener(IOErrorEvent.IO_ERROR, onSaveError);
-		_file = null;
-		showNotification("Error exporting stage!");
-	}
-	
-	function showNotification(text:String):Void
-	{
-		statusText.text = text;
-		FlxG.sound.play(Paths.sound('confirmMenu'));
-	}
-}
-
-// ══════════════════════════════════════════════════════════════
-// SIMPLE BUTTON - FIXED: Ahora usa getScreenPosition
-// ══════════════════════════════════════════════════════════════
-
-class SimpleButton extends FlxSprite
-{
-	public var label:FlxText;
-	public var onClick:Void->Void = null;
-	public var bgColor:Int = 0xFF0f3460;
-	
-	var hovered:Bool = false;
-	
-	public function new(x:Float, y:Float, width:Int, height:Int, text:String)
-	{
-		super(x, y);
-		
-		makeGraphic(width, height, bgColor);
-		scrollFactor.set(0, 0);
-		
-		label = new FlxText(x, y + (height - 14) / 2, width, text, 12);
-		label.setFormat(null, 12, FlxColor.WHITE, CENTER);
-		label.alignment = CENTER;
-		label.scrollFactor.set(0, 0);
-	}
-	
-	override function update(elapsed:Float):Void
-	{
-		super.update(elapsed);
-		
-		// Update label position
-		label.setPosition(x, y + (height - 14) / 2);
-		label.update(elapsed);
-		
-		// Usar overlaps con camHUD (los botones están en camHUD)
-		var wasHovered = hovered;
-		hovered = FlxG.mouse.overlaps(this, cameras[0]);
-		
-		// Color change on hover
-		if (hovered != wasHovered)
-		{
-			color = hovered ? 0xFF16537e : 0xFFFFFFFF;
-		}
-		
-		// Click detection
-		if (hovered && FlxG.mouse.justPressed && onClick != null)
-		{
-			onClick();
-			FlxG.sound.play(Paths.sound('scrollMenu'));
-		}
-	}
-	
-	override function draw():Void
-	{
-		super.draw();
-		label.draw();
-	}
-	
-	override function destroy():Void
-	{
-		label.destroy();
-		super.destroy();
-	}
-}
-
-// ══════════════════════════════════════════════════════════════
-// LAYER ITEM - FIXED: Ahora usa getScreenPosition
-// ══════════════════════════════════════════════════════════════
-
-class LayerItem extends FlxSprite
-{
-	var element:StageElement;
-	var index:Int;
-	var nameText:FlxText;
-	var typeText:FlxText;
-	var visButton:FlxSprite;
-	var isSelected:Bool = false;
-	
-	public var onSelect:Void->Void = null;
-	public var onToggleVis:Void->Void = null;
-	
-	public function new(x:Float, y:Float, width:Int, element:StageElement, index:Int)
-	{
-		super(x, y);
-		
-		this.element = element;
-		this.index = index;
-		
-		makeGraphic(width, 40, 0xFF2a2d3a);
-		scrollFactor.set(0, 0);
-		
-		// Type badge
-		var typeColor = getTypeColor();
-		typeText = new FlxText(x + 5, y + 12, 50, element.type.substring(0, 3).toUpperCase(), 10);
-		typeText.setFormat(null, 10, typeColor, CENTER);
-		typeText.alignment = CENTER;
-		typeText.scrollFactor.set(0, 0);
-		
-		// Name
-		var displayName = element.name != null ? element.name : "unnamed_" + index;
-		nameText = new FlxText(x + 60, y + 12, width - 95, displayName, 11);
-		nameText.setFormat(null, 11, FlxColor.WHITE, LEFT);
-		nameText.scrollFactor.set(0, 0);
-		
-		// Visibility button
-		visButton = new FlxSprite(x + width - 25, y + 10);
-		var isVisible = element.visible != null ? element.visible : true;
-		visButton.makeGraphic(20, 20, isVisible ? 0xFF00ff00 : 0xFFff0000);
-		visButton.scrollFactor.set(0, 0);
-	}
-	
-	function getTypeColor():Int
-	{
-		return switch (element.type.toLowerCase())
-		{
-			case "sprite": 0xFF4a90e2;
-			case "animated": 0xFFe94560;
-			case "group": 0xFF9b59b6;
-			case "custom_class": 0xFFf39c12;
-			case "custom_class_group": 0xFFe67e22;
-			default: 0xFF95a5a6;
-		}
-	}
-	
-	public function setSelected(selected:Bool):Void
-	{
-		isSelected = selected;
-		color = selected ? 0xFF16537e : 0xFF2a2d3a;
-	}
-	
-	override function update(elapsed:Float):Void
-	{
-		super.update(elapsed);
-		
-		typeText.setPosition(x + 5, y + 12);
-		typeText.update(elapsed);
-		
-		nameText.setPosition(x + 60, y + 12);
-		nameText.update(elapsed);
-		
-		visButton.setPosition(x + width - 25, y + 10);
-		visButton.update(elapsed);
-		
-		// Usar overlaps con camHUD (los items están en camHUD)
-		if (FlxG.mouse.justPressed)
-		{
-			// Verificar si el mouse está sobre este item
-			if (FlxG.mouse.overlaps(this, cameras[0]))
+			if (clickedIndex >= 0)
 			{
-				// Check if clicking visibility button
-				if (FlxG.mouse.overlaps(visButton, cameras[0]))
+				selectElement(clickedIndex);
+			}
+		}
+		
+		// Drag del elemento seleccionado
+		if (selectedElementIndex >= 0 && selectedElementIndex < stageData.elements.length)
+		{
+			if (FlxG.mouse.justPressed && selectedVisualSprite != null)
+			{
+				var mouseWorldX = FlxG.mouse.x + camEditor.scroll.x;
+				var mouseWorldY = FlxG.mouse.y + camEditor.scroll.y;
+				
+				if (selectedVisualSprite.overlapsPoint(new FlxPoint(mouseWorldX, mouseWorldY)))
 				{
-					if (onToggleVis != null)
-						onToggleVis();
+					isDragging = true;
+					dragStartPos.set(mouseWorldX, mouseWorldY);
+					var element = stageData.elements[selectedElementIndex];
+					dragElementStartPos.set(element.position[0], element.position[1]);
 				}
-				else
+			}
+		}
+		
+		if (isDragging)
+		{
+			if (FlxG.mouse.pressed)
+			{
+				var mouseWorldX = FlxG.mouse.x + camEditor.scroll.x;
+				var mouseWorldY = FlxG.mouse.y + camEditor.scroll.y;
+				
+				var dx = mouseWorldX - dragStartPos.x;
+				var dy = mouseWorldY - dragStartPos.y;
+				
+				var element = stageData.elements[selectedElementIndex];
+				element.position[0] = dragElementStartPos.x + dx;
+				element.position[1] = dragElementStartPos.y + dy;
+				
+				if (selectedVisualSprite != null)
 				{
-					if (onSelect != null)
-						onSelect();
+					selectedVisualSprite.setPosition(element.position[0], element.position[1]);
 				}
+				
+				updatePropertiesPanel();
+			}
+			else
+			{
+				isDragging = false;
+				saveToHistory();
+				hasUnsavedChanges = true;
 			}
 		}
 	}
 	
-	override function draw():Void
+	override public function destroy():Void
 	{
-		super.draw();
-		typeText.draw();
-		nameText.draw();
-		visButton.draw();
-	}
-	
-	override function destroy():Void
-	{
-		typeText.destroy();
-		nameText.destroy();
-		visButton.destroy();
+		dragStartPos.put();
+		dragElementStartPos.put();
+		camFollow.put();
+		
+		if (stage != null)
+			stage.destroy();
+		
+		if (boyfriend != null)
+			boyfriend.destroy();
+		
+		if (dad != null)
+			dad.destroy();
+		
+		if (gf != null)
+			gf.destroy();
+		
 		super.destroy();
 	}
 }

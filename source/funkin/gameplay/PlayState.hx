@@ -20,6 +20,9 @@ import funkin.gameplay.notes.Note;
 import funkin.gameplay.notes.NoteSplash;
 import funkin.gameplay.notes.StrumNote;
 import funkin.gameplay.notes.NoteSkinSystem;
+import funkin.gameplay.notes.NotePool;
+import funkin.optimization.GPURenderer;
+import funkin.optimization.OptimizationManager;
 // NUEVO: Import de batching
 import funkin.gameplay.notes.NoteBatcher;
 // Gameplay modules
@@ -42,9 +45,13 @@ import funkin.gameplay.objects.hud.ScoreManager;
 import funkin.menus.GitarooPause;
 import funkin.menus.PauseSubState;
 import funkin.debug.ChartingState;
+import funkin.debug.DialogueEditor;
 #if desktop
 import data.Discord.DiscordClient;
 #end
+// Cutscenes
+import funkin.cutscenes.dialogue.DialogueBoxImproved;
+import funkin.cutscenes.dialogue.DialogueData;
 
 using StringTools;
 
@@ -79,7 +86,10 @@ class PlayState extends funkin.states.MusicBeatState
 	private var cameraController:CameraController;
 	private var uiManager:UIManager;
 	private var characterController:CharacterController;
+
 	public var scriptsEnabled:Bool = true;
+
+	var isCutscene:Bool = false;
 
 	public var scoreManager:ScoreManager;
 
@@ -133,19 +143,21 @@ class PlayState extends funkin.states.MusicBeatState
 
 	// === OPTIMIZATION ===
 	private var strumLiney:Float = PlayStateConfig.STRUM_LINE_Y;
+	private var optimizationManager:OptimizationManager;
 
 	// === SECTION CACHE ===
 	private var cachedSection:SwagSection = null;
 	private var cachedSectionIndex:Int = -1;
-	
-	// === NUEVO: BATCHING Y HOLD NOTES ===
+
+	// === NEW: BATCHING AND HOLD NOTES ===
 	private var noteBatcher:NoteBatcher;
 	private var heldNotes:Map<Int, Note> = new Map(); // dirección -> nota
 	private var holdSplashes:Map<Int, NoteSplash> = new Map(); // dirección -> splash continuo
-	
-	// NUEVO: Configuración de optimizaciones
+
+	// NEW: CONFIG OPTIMIZATIONS
 	public var enableBatching:Bool = true;
 	public var enableHoldSplashes:Bool = true;
+
 	private var showDebugStats:Bool = false;
 	private var debugText:FlxText;
 
@@ -168,7 +180,7 @@ class PlayState extends funkin.states.MusicBeatState
 			ScriptHandler.init();
 			ScriptHandler.loadSongScripts(SONG.song);
 			EventManager.loadEventsFromSong();
-			
+
 			// Exponer PlayState a los scripts
 			ScriptHandler.setOnScripts('playState', this);
 			ScriptHandler.setOnScripts('game', this);
@@ -219,7 +231,7 @@ class PlayState extends funkin.states.MusicBeatState
 
 		// Crear UI
 		setupUI();
-		
+
 		// NUEVO: Setup debug display
 		setupDebugDisplay();
 
@@ -229,6 +241,18 @@ class PlayState extends funkin.states.MusicBeatState
 			ScriptHandler.setOnScripts('camHUD', camHUD);
 			ScriptHandler.setOnScripts('camCountdown', camCountdown);
 		}
+
+		trace('[PlayState] Inicializando sistema de optimización...');
+
+		optimizationManager = new OptimizationManager();
+		optimizationManager.init();
+
+		// Configurar calidad
+		// Opción 1: Manual
+		optimizationManager.setQuality(QualityLevel.HIGH);
+
+		// Opción 2: Adaptativa (recomendado)
+		optimizationManager.enableAdaptiveQuality = true;
 
 		// Start song
 		startCountdown();
@@ -301,7 +325,8 @@ class PlayState extends funkin.states.MusicBeatState
 		boyfriend = new Character(currentStage.boyfriendPosition.x, currentStage.boyfriendPosition.y, SONG.player1, true);
 
 		// Agregar a state
-		if (gf != null){
+		if (gf != null)
+		{
 			if (!currentStage.hideGirlfriend)
 				add(gf);
 		}
@@ -320,9 +345,9 @@ class PlayState extends funkin.states.MusicBeatState
 	{
 		// NUEVO: Crear batcher primero si está habilitado
 		noteBatcher = new NoteBatcher();
-			noteBatcher.cameras = [camHUD];
-			add(noteBatcher);
-		
+		noteBatcher.cameras = [camHUD];
+		add(noteBatcher);
+
 		strumLineNotes = new FlxTypedGroup<FlxSprite>();
 		strumLineNotes.cameras = [camHUD];
 		add(strumLineNotes);
@@ -360,7 +385,7 @@ class PlayState extends funkin.states.MusicBeatState
 		inputHandler.ghostTapping = FlxG.save.data.ghosttap;
 		inputHandler.onNoteHit = onPlayerNoteHit;
 		inputHandler.onNoteMiss = onPlayerNoteMiss;
-		
+
 		// NUEVO: Callback para release de hold notes
 		inputHandler.onKeyRelease = onKeyRelease;
 
@@ -372,7 +397,7 @@ class PlayState extends funkin.states.MusicBeatState
 		noteManager.onCPUNoteHit = onCPUNoteHit;
 		noteManager.onNoteHit = onNoteHitCallback; // NUEVO: Callback para gestionar splashes
 	}
-	
+
 	/**
 	 * NUEVO: Setup debug display
 	 */
@@ -514,6 +539,32 @@ class PlayState extends funkin.states.MusicBeatState
 			return;
 		}
 
+		if (checkForDialogue('intro') && isStoryMode)
+		{
+			inCutscene = true;
+			trace('[PlayState] Diálogo de intro encontrado, mostrando...');
+			showDialogue('intro', function()
+			{
+				if (FlxG.sound.music != null)
+					FlxG.sound.music.stop();
+				if (vocals != null)
+				{
+					vocals.stop();
+					vocals.volume = 0;
+				}
+				// Cuando termina el diálogo, ejecutar el countdown
+				executeCountdown();
+				isCutscene = false;
+			});
+			return;
+		}
+
+		if (!isCutscene)
+			executeCountdown();
+	}
+
+	private function executeCountdown():Void
+	{
 		trace('[PlayState] === INICIANDO COUNTDOWN ===');
 		Conductor.songPosition = 0;
 		Conductor.songPosition = -Conductor.crochet * 5;
@@ -563,7 +614,7 @@ class PlayState extends funkin.states.MusicBeatState
 		}, 5);
 	}
 
-	function getCountdown(asset:FlxSprite, sip:Int, wea:Int,introAlts:Array<String>, ?isGo = false)
+	function getCountdown(asset:FlxSprite, sip:Int, wea:Int, introAlts:Array<String>, ?isGo = false)
 	{
 		asset = new FlxSprite().loadGraphic(Paths.image(introAlts[sip]));
 		asset.cameras = [camCountdown];
@@ -600,9 +651,12 @@ class PlayState extends funkin.states.MusicBeatState
 			ScriptHandler.callOnScripts('onUpdate', [elapsed]);
 
 		if (currentStage != null)
-        	currentStage.update(elapsed);
+			currentStage.update(elapsed);
 
 		super.update(elapsed);
+
+		if (optimizationManager != null)
+			optimizationManager.update(elapsed);
 
 		// === CRÍTICO: ACTUALIZAR CONDUCTOR.SONGPOSITION ===
 		if (!paused && !inCutscene)
@@ -661,18 +715,21 @@ class PlayState extends funkin.states.MusicBeatState
 				gameOver();
 
 			// Limpiar hold splashes de CPU que ya no tienen notas activas
-			for (key in heldNotes.keys()) {
-				if (key >= 4) { // Es una nota de CPU
+			for (key in heldNotes.keys())
+			{
+				if (key >= 4)
+				{ // Es una nota de CPU
 					var note = heldNotes.get(key);
 					// Si la canción ya pasó el tiempo de la nota + su duración
-					if (Conductor.songPosition > note.strumTime + note.sustainLength) {
+					if (Conductor.songPosition > note.strumTime + note.sustainLength)
+					{
 						onKeyRelease(key); // Reutilizamos la función de limpieza
 					}
 				}
 			}
 		}
 
-		if (vocals != null && SONG.needsVoices)
+		if (vocals != null && SONG.needsVoices && !inCutscene)
 		{
 			if (vocals.volume < 1)
 			{
@@ -681,10 +738,10 @@ class PlayState extends funkin.states.MusicBeatState
 					vocals.volume = 1;
 			}
 		}
-		
+
 		// NUEVO: Debug controls
 		updateDebugControls();
-		
+
 		// NUEVO: Update debug text
 		if (showDebugStats && debugText != null)
 		{
@@ -705,8 +762,16 @@ class PlayState extends funkin.states.MusicBeatState
 			FlxG.switchState(new ChartingState());
 		}
 
+		if (FlxG.keys.justPressed.NINE)
+		{
+			persistentUpdate = false;
+			persistentDraw = true;
+			paused = true;
+			FlxG.switchState(new DialogueEditor());
+		}
+
 		// Song time - SINCRONIZACIÓN MEJORADA
-		if (startingSong && startedCountdown)
+		if (startingSong && startedCountdown && !inCutscene)
 		{
 			if (FlxG.sound.music != null && Conductor.songPosition >= 0)
 			{
@@ -721,7 +786,7 @@ class PlayState extends funkin.states.MusicBeatState
 			ScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
 		}
 	}
-	
+
 	/**
 	 * NUEVO: Debug controls
 	 */
@@ -735,7 +800,7 @@ class PlayState extends funkin.states.MusicBeatState
 				debugText.visible = showDebugStats;
 			trace('[PlayState] Debug stats: $showDebugStats');
 		}
-		
+
 		// F7: Print pool stats
 		if (FlxG.keys.justPressed.F7)
 		{
@@ -775,8 +840,9 @@ class PlayState extends funkin.states.MusicBeatState
 		startingSong = false;
 
 		// Iniciar música e instrumental juntos
-		if (FlxG.sound.music != null)
+		if (FlxG.sound.music != null && !inCutscene)
 		{
+			FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), 1, false);
 			FlxG.sound.music.volume = 1;
 			FlxG.sound.music.time = 0;
 			FlxG.sound.music.play();
@@ -786,7 +852,7 @@ class PlayState extends funkin.states.MusicBeatState
 		}
 
 		// Sincronizar vocales con música
-		if (SONG.needsVoices && vocals != null)
+		if (SONG.needsVoices && vocals != null && !inCutscene)
 		{
 			vocals.volume = 1;
 			vocals.time = 0;
@@ -826,7 +892,7 @@ class PlayState extends funkin.states.MusicBeatState
 			}
 		});
 	}
-	
+
 	/**
 	 * NUEVO: Callback cuando se suelta una tecla (para hold notes)
 	 */
@@ -835,13 +901,13 @@ class PlayState extends funkin.states.MusicBeatState
 		// Notificar al note manager que se soltó una hold note
 		if (noteManager != null)
 			noteManager.releaseHoldNote(direction);
-		
+
 		// Limpiar tracking local y crear splash de fin
 		if (heldNotes.exists(direction))
 		{
 			var note = heldNotes.get(direction);
 			heldNotes.remove(direction);
-			
+
 			// NUEVO: Detener splash continuo si existe
 			if (holdSplashes.exists(direction))
 			{
@@ -853,7 +919,7 @@ class PlayState extends funkin.states.MusicBeatState
 				}
 				holdSplashes.remove(direction);
 			}
-			
+
 			// NUEVO: Crear splash de fin de hold note
 			if (enableHoldSplashes && FlxG.save.data.notesplashes)
 			{
@@ -863,18 +929,18 @@ class PlayState extends funkin.states.MusicBeatState
 					var endSplash:NoteSplash = grpNoteSplashes.recycle(NoteSplash);
 					endSplash.setup(strum.x, strum.y, direction, null, HOLD_END);
 					endSplash.cameras = [camHUD];
-					
+
 					if (!grpNoteSplashes.members.contains(endSplash))
 					{
 						grpNoteSplashes.add(endSplash);
 					}
-					
+
 					trace('Created HOLD_END splash for direction $direction');
 				}
 			}
 		}
 	}
-	
+
 	/**
 	 * NUEVO: Callback cuando el jugador golpea una nota (para splashes)
 	 */
@@ -884,11 +950,13 @@ class PlayState extends funkin.states.MusicBeatState
 	 */
 	private function onNoteHitCallback(note:Note):Void
 	{
-		if (!enableHoldSplashes) return;
-		
+		if (!enableHoldSplashes)
+			return;
+
 		// Solo para notas del jugador
-		if (!note.mustPress) return;
-		
+		if (!note.mustPress)
+			return;
+
 		// Si es sustain note
 		if (note.isSustainNote)
 		{
@@ -896,7 +964,7 @@ class PlayState extends funkin.states.MusicBeatState
 			if (!heldNotes.exists(note.noteData))
 			{
 				heldNotes.set(note.noteData, note);
-				
+
 				// Crear splash de inicio usando HOLD_START
 				var strum = playerStrums.members[note.noteData];
 				if (strum != null && FlxG.save.data.notesplashes)
@@ -904,21 +972,21 @@ class PlayState extends funkin.states.MusicBeatState
 					var startSplash:NoteSplash = grpNoteSplashes.recycle(NoteSplash);
 					startSplash.setup(strum.x, strum.y, note.noteData, null, HOLD_START);
 					startSplash.cameras = [camHUD];
-					
+
 					if (!grpNoteSplashes.members.contains(startSplash))
 					{
 						grpNoteSplashes.add(startSplash);
 					}
-					
+
 					trace('Created HOLD_START splash for direction ${note.noteData}');
-					
+
 					// OPCIONAL: Iniciar splash continuo (descomenta si quieres el efecto continuo)
 					// startContinuousHoldSplash(note.noteData, strum.x, strum.y);
 				}
 			}
 		}
 	}
-	
+
 	/**
 	 * NUEVO: Iniciar splash continuo para hold note
 	 * MEJORADO: Ahora usa HOLD_CONTINUOUS
@@ -932,13 +1000,14 @@ class PlayState extends funkin.states.MusicBeatState
 		var isCPU = direction >= 4;
 		var actualDir = isCPU ? direction - 4 : direction;
 		var strum = isCPU ? cpuStrums.members[actualDir] : playerStrums.members[actualDir];
-		
-		if (strum == null) return;
+
+		if (strum == null)
+			return;
 
 		var continuousSplash:NoteSplash = new NoteSplash(strum.x, strum.y, actualDir);
 		continuousSplash.startContinuousSplash(strum.x, strum.y, actualDir);
 		continuousSplash.cameras = [camHUD];
-		
+
 		grpNoteSplashes.add(continuousSplash);
 		holdSplashes.set(direction, continuousSplash);
 	}
@@ -1026,7 +1095,7 @@ class PlayState extends funkin.states.MusicBeatState
 		if (boyfriend != null && gf != null)
 		{
 			if (gf.animOffsets.exists('sad'))
-				gf.playAnim('sad',true);
+				gf.playAnim('sad', true);
 			var anims = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
 			boyfriend.playAnim('sing' + anims[direction] + 'miss', true);
 		}
@@ -1056,8 +1125,8 @@ class PlayState extends funkin.states.MusicBeatState
 		{
 			// Usamos un offset para no colisionar con las IDs de las notas del jugador (0-3)
 			// Las notas de CPU las guardaremos como 4, 5, 6, 7
-			var cpuDir = note.noteData + 4; 
-			
+			var cpuDir = note.noteData + 4;
+
 			if (!heldNotes.exists(cpuDir))
 			{
 				heldNotes.set(cpuDir, note);
@@ -1067,10 +1136,10 @@ class PlayState extends funkin.states.MusicBeatState
 					var startSplash:NoteSplash = grpNoteSplashes.recycle(NoteSplash);
 					startSplash.setup(strum.x, strum.y, note.noteData, null, HOLD_START);
 					startSplash.cameras = [camHUD];
-					
+
 					if (!grpNoteSplashes.members.contains(startSplash))
 						grpNoteSplashes.add(startSplash);
-						
+
 					// Iniciar el splash continuo para el oponente
 					startContinuousHoldSplash(cpuDir, strum.x, strum.y);
 				}
@@ -1254,7 +1323,7 @@ class PlayState extends funkin.states.MusicBeatState
 			hook(curBeat);
 
 		if (currentStage != null)
-        	currentStage.beatHit(curBeat);
+			currentStage.beatHit(curBeat);
 
 		if (scriptsEnabled)
 			ScriptHandler.callOnScripts('onBeatHit', [curBeat]);
@@ -1299,12 +1368,12 @@ class PlayState extends funkin.states.MusicBeatState
 			hook(curStep);
 
 		if (currentStage != null)
-        	currentStage.stepHit(curStep);
+			currentStage.stepHit(curStep);
 
 		if (scriptsEnabled)
 		{
 			ScriptHandler.callOnScripts('onStepHit', [curStep]);
-			
+
 			// Section change
 			var section = Math.floor(curStep / 16);
 			if (section != cachedSectionIndex)
@@ -1358,35 +1427,13 @@ class PlayState extends funkin.states.MusicBeatState
 			Highscore.saveScore(SONG.song, songScore, storyDifficulty);
 		}
 
-		if (isStoryMode)
+		if (showOutroDialogue() && isStoryMode)
 		{
-			campaignScore += songScore;
-			storyPlaylist.remove(storyPlaylist[0]);
-
-			if (storyPlaylist.length <= 0)
-			{
-				FlxG.sound.playMusic(Paths.music('freakyMenu'));
-
-				if (SONG.validScore)
-					Highscore.saveWeekScore(storyWeek, campaignScore, storyDifficulty);
-
-				FlxG.save.flush();
-				LoadingState.loadAndSwitchState(new RatingState());
-			}
-			else
-			{
-				// Next song
-				SONG = Song.loadFromJson(storyPlaylist[0].toLowerCase() + CoolUtil.difficultyPath[storyDifficulty], storyPlaylist[0]);
-				FlxG.sound.music.stop();
-				LoadingState.loadAndSwitchState(new PlayState());
-			}
+			return; // El diálogo manejará el resto
 		}
-		else
-		{
-			FlxG.sound.music.stop();
-			vocals.stop();
-			LoadingState.loadAndSwitchState(new RatingState());
-		}
+
+		if (!isCutscene)
+			continueAfterSong();
 	}
 
 	/**
@@ -1455,6 +1502,96 @@ class PlayState extends funkin.states.MusicBeatState
 		return section != null ? section.altAnim : false;
 	}
 
+	/*
+	 * NUEVO: Método draw() personalizado para renderizado optimizado
+	 * 
+	 * IMPORTANTE: Este método reemplaza el renderizado estándar de Flixel
+	 * con el GPURenderer para obtener:
+	 * - Batching automático de sprites
+	 * - Frustum culling
+	 * - Menor cantidad de draw calls
+	 * - Mejor rendimiento en general
+	 * 
+	 * ORDEN DE RENDERIZADO:
+	 * 1. Limpiar frame anterior del GPU
+	 * 2. Agregar todos los sprites visibles al GPURenderer
+	 * 3. Renderizar todo de una vez con batching
+	 * 4. Llamar a super.draw() para UI y otros elementos */
+	override public function draw():Void
+	{
+		// Si el optimization manager está activo, usar GPU rendering
+		if (optimizationManager != null && optimizationManager.gpuRenderer != null && optimizationManager.gpuRenderer.enabled)
+		{
+			// === PASO 1: Agregar sprites al GPU Renderer ===
+
+			// Renderizar stage (fondo, elementos del escenario)
+			if (currentStage != null)
+			{
+				// El stage tiene sus propios sprites que se agregan
+				// Esto depende de cómo esté implementado el Stage
+				// optimizationManager.addSpriteToRenderer(currentStage);
+			}
+
+			// Renderizar personajes
+			if (gf != null && gf.visible)
+				optimizationManager.addSpriteToRenderer(gf);
+
+			if (dad != null && dad.visible)
+				optimizationManager.addSpriteToRenderer(dad);
+
+			if (boyfriend != null && boyfriend.visible)
+				optimizationManager.addSpriteToRenderer(boyfriend);
+			/*
+				// Renderizar notas
+				if (notes != null)
+				{
+					notes.forEachAlive(function(note:Note)
+					{
+						if (note != null && note.visible)
+						{
+							// El GPURenderer hace culling automático
+							optimizationManager.addSpriteToRenderer(note);
+						}
+					});
+			}*/
+
+			// Renderizar strums
+			if (strumLineNotes != null)
+			{
+				strumLineNotes.forEachAlive(function(strum:FlxSprite)
+				{
+					if (strum != null && strum.visible)
+						optimizationManager.addSpriteToRenderer(strum);
+				});
+			}
+
+			// Renderizar splashes
+			if (grpNoteSplashes != null)
+			{
+				grpNoteSplashes.forEachAlive(function(splash:NoteSplash)
+				{
+					if (splash != null && splash.visible)
+						optimizationManager.addSpriteToRenderer(splash);
+				});
+			}
+
+			// === PASO 2: Renderizar con GPU ===
+			optimizationManager.render();
+
+			// === PASO 3: Renderizar UI y otros elementos que no van por GPU ===
+			// El UI Manager y otros elementos de HUD se renderizan normalmente
+			// ya que están en cámaras separadas (camHUD, camCountdown)
+
+			// Renderizar el resto normalmente (UI, efectos, etc)
+			super.draw();
+		}
+		else
+		{
+			// Renderizado tradicional si GPURenderer está deshabilitado
+			super.draw();
+		}
+	}
+
 	/**
 	 * Destroy
 	 */
@@ -1468,20 +1605,28 @@ class PlayState extends funkin.states.MusicBeatState
 			EventManager.clear();
 		}
 
+		if (optimizationManager != null)
+		{
+			trace('[PlayState] Destruyendo optimizaciones...');
+			optimizationManager.destroy();
+			optimizationManager = null;
+		}
+
 		// Destroy controllers
 		if (cameraController != null)
 			cameraController.destroy();
 
 		if (noteManager != null)
 			noteManager.destroy();
-		
+
 		// NUEVO: Destroy batcher
-		if (noteBatcher != null) {
+		if (noteBatcher != null)
+		{
 			remove(noteBatcher, true);
 			noteBatcher.destroy();
 			noteBatcher = null;
 		}
-		
+
 		// NUEVO: Limpiar hold splashes
 		heldNotes.clear();
 		holdSplashes.clear();
@@ -1496,5 +1641,159 @@ class PlayState extends funkin.states.MusicBeatState
 		onNoteMissHooks.clear();
 
 		super.destroy();
+	}
+
+	// ====================================
+	// SISTEMA DE DIÁLOGOS
+	// ====================================
+
+	/**
+	 * Verificar si existe un archivo de diálogo para la canción actual
+	 */
+	private function checkForDialogue(type:String = 'intro'):Bool
+	{
+		var songName = SONG.song.toLowerCase();
+		var dialoguePath = 'assets/songs/${songName}/${type}.json';
+
+		#if sys
+		return sys.FileSystem.exists(dialoguePath);
+		#else
+		// En web/móvil, intentar cargar y verificar
+		try
+		{
+			var data = DialogueData.loadDialogue(dialoguePath);
+			return (data != null);
+		}
+		catch (e:Dynamic)
+		{
+			return false;
+		}
+		#end
+	}
+
+	/**
+	 * Mostrar diálogo
+	 */
+	private function showDialogue(type:String = 'intro', ?onFinish:Void->Void):Void
+	{
+		isCutscene = true;
+
+		var songName = SONG.song.toLowerCase();
+		var dialoguePath = 'assets/songs/${songName}/${type}.json';
+
+		trace('[PlayState] Cargando diálogo: $dialoguePath');
+
+		var doof:DialogueBoxImproved = null;
+
+		try
+		{
+			doof = new DialogueBoxImproved(dialoguePath);
+		}
+		catch (e:Dynamic)
+		{
+			trace('[PlayState] Error al cargar diálogo: $e');
+			if (onFinish != null)
+				onFinish();
+			return;
+		}
+
+		if (doof == null)
+		{
+			trace('[PlayState] Diálogo es null, ejecutando callback...');
+			if (onFinish != null)
+				onFinish();
+			return;
+		}
+
+		// Configurar callback de finalización
+		doof.finishThing = function()
+		{
+			trace('[PlayState] Diálogo terminado');
+			inCutscene = false;
+			if (onFinish != null)
+				onFinish();
+		};
+
+		// Agregar diálogo
+		add(doof);
+
+		doof.cameras = [camHUD];
+
+		// Reproducir música de diálogo si existe (para Week 6 por ejemplo)
+		playDialogueMusic();
+	}
+
+	/**
+	 * Reproducir música específica de diálogo según la canción
+	 */
+	private function playDialogueMusic():Void
+	{
+		switch (SONG.song.toLowerCase())
+		{
+			case 'senpai':
+				FlxG.sound.playMusic(Paths.music('gameplay/week6/Lunchbox'), 0);
+				FlxG.sound.music.fadeIn(1, 0, 0.8);
+			case 'thorns':
+				FlxG.sound.playMusic(Paths.music('gameplay/week6/LunchboxScary'), 0);
+				FlxG.sound.music.fadeIn(1, 0, 0.8);
+		}
+	}
+
+	/**
+	 * Mostrar diálogo de outro (al final de la canción)
+	 */
+	private function showOutroDialogue():Bool
+	{
+		if (checkForDialogue('outro'))
+		{
+			isCutscene = true;
+			trace('[PlayState] Diálogo de outro encontrado, mostrando...');
+			showDialogue('outro', function()
+			{
+				// Continuar con el flujo normal después del diálogo
+				if (FlxG.sound.music != null)
+					FlxG.sound.music.stop();
+				isCutscene = false;
+				continueAfterSong();
+			});
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Continuar después de la canción (separado para reutilizar)
+	 */
+	private function continueAfterSong():Void
+	{
+		if (isStoryMode)
+		{
+			campaignScore += songScore;
+			storyPlaylist.remove(storyPlaylist[0]);
+
+			if (storyPlaylist.length <= 0)
+			{
+				FlxG.sound.playMusic(Paths.music('freakyMenu'));
+
+				if (SONG.validScore)
+					Highscore.saveWeekScore(storyWeek, campaignScore, storyDifficulty);
+
+				FlxG.save.flush();
+				LoadingState.loadAndSwitchState(new RatingState());
+			}
+			else
+			{
+				// Next song
+				SONG = Song.loadFromJson(storyPlaylist[0].toLowerCase() + CoolUtil.difficultyPath[storyDifficulty], storyPlaylist[0]);
+				FlxG.sound.music.stop();
+				LoadingState.loadAndSwitchState(new PlayState());
+			}
+		}
+		else
+		{
+			FlxG.sound.music.stop();
+			vocals.stop();
+			LoadingState.loadAndSwitchState(new RatingState());
+		}
 	}
 }

@@ -109,7 +109,7 @@ class Stage extends FlxTypedGroup<FlxBasic>
 	public var customClasses:Map<String, FlxSprite> = new Map<String, FlxSprite>(); // Para instancias individuales
 	public var customClassGroups:Map<String, FlxTypedGroup<FlxSprite>> = new Map<String, FlxTypedGroup<FlxSprite>>(); // Para grupos
 	public var sounds:Map<String, FlxSound> = new Map<String, FlxSound>();
-
+	
 	public var defaultCamZoom:Float = 1.05;
 	public var isPixelStage:Bool = false;
 

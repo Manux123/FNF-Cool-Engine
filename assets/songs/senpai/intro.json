@@ -1,0 +1,39 @@
+{
+  "name": "intro",
+  "style": "pixel",
+  "backgroundColor": "#B3DFD8",
+  "fadeTime": 0.83,
+  "messages": [
+    {
+      "character": "dad",
+      "text": "Ah, a new fair maiden has come in search of true love!",
+      "bubbleType": "normal",
+      "speed": 0.04,
+      "sound": "pixelText"
+    },
+    {
+      "character": "dad",
+      "text": "A serenade between gentlemen shall decide where her beautiful heart shall reside.",
+      "bubbleType": "normal",
+      "speed": 0.04
+    },
+    {
+      "character": "bf",
+      "text": "Beep bo bop",
+      "bubbleType": "normal",
+      "speed": 0.05
+    },
+    {
+      "character": "dad",
+      "text": "Hmph! The small man speaks in a peculiar manner!",
+      "bubbleType": "loud",
+      "speed": 0.035
+    },
+    {
+      "character": "dad",
+      "text": "But nonetheless, let us engage in a battle of melodies!",
+      "bubbleType": "normal",
+      "speed": 0.04
+    }
+  ]
+}

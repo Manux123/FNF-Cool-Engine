@@ -68,7 +68,7 @@ function fastCarDrive()
 	
 	// Reproducir sonido aleatorio de carro
 	var carNum = FlxG.random.int(0, 1);
-	FlxG.sound.play(Paths.soundRandom('carPass', 0, 1), 0.7);
+	FlxG.sound.play(Paths.soundRandomStage('carPass', 0, 1), 0.7);
 	
 	// Darle velocidad al carro
 	// Velocidad aleatoria entre 170-220, ajustada por elapsed

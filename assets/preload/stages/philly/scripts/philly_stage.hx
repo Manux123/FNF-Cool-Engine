@@ -6,12 +6,12 @@ var trainMoving:Bool = false;
 var trainCooldown:Int = 0;
 
 // ==========================================
-// INIT
+// INICIALIZACIÓN
 // ==========================================
 
 function onCreate()
 {
-	trace('[Philly Stage] Script LOADED');
+	trace('[Philly Stage] Script cargado');
 
 	// Esperar a que el stage esté listo
 	// Se llamará onStageCreate cuando esté disponible
@@ -19,20 +19,15 @@ function onCreate()
 
 function onStageCreate()
 {
-	trace('--- DEBUG PHILLY ---');
+	trace('[Philly Stage] Stage creado, obteniendo elementos...');
 
+	// Obtener elementos del stage
 	if (stage != null)
 	{
-		// 1. Obtener sonido
 		trainSound = stage.getSound('trainSound');
-
-		// 2. Obtener grupo (Asegúrate de haber corregido Stage.hx primero)
 		phillyCityLights = stage.getGroup('phillyCityLights');
-
-		// 3. Obtener elemento tren
 		train = stage.getElement('train');
 
-		// TRACES DE CONTROL
 		trace('[Philly Stage] Elementos inicializados:');
 		trace('  - trainSound: ' + (trainSound != null));
 		trace('  - phillyCityLights: ' + (phillyCityLights != null));
@@ -49,7 +44,7 @@ function onBeatHit(beat)
 	if (!trainMoving)
 		trainCooldown += 1;
 
-	if (curBeat % 4 == 0 && phillyCityLights != null)
+	if (beat % 4 == 0 && phillyCityLights != null)
 	{
 		phillyCityLights.forEach(function(light:FlxSprite)
 		{
@@ -60,7 +55,7 @@ function onBeatHit(beat)
 		phillyCityLights.members[curLight].visible = true;
 	}
 
-	if (curBeat % 8 == 4 && FlxG.random.bool(30) && !trainMoving && trainCooldown > 8)
+	if (beat % 8 == 4 && FlxG.random.bool(30) && !trainMoving && trainCooldown > 8)
 	{
 		trainCooldown = FlxG.random.int(-4, 0);
 		trainMoving = true;
@@ -73,25 +68,6 @@ function onBeatHit(beat)
 // FUNCIONES DEL TREN
 // ==========================================
 
-function startTrain()
-{
-	if (train == null)
-		return;
-
-	trainCooldown = FlxG.random.int(-4, 0);
-	trainMoving = true;
-
-	// Reproducir sonido del tren
-	if (trainSound != null)
-		trainSound.play(true);
-
-	// Resetear posición del tren
-	train.x = 2000;
-	train.visible = false;
-
-	trace('[Philly Stage] ¡Tren iniciado!');
-}
-
 // ==========================================
 // UPDATE - MOVIMIENTO DEL TREN
 // ==========================================
@@ -100,7 +76,6 @@ function onUpdate(elapsed)
 {
 	if (trainMoving && train != null)
 	{
-		var trainFrameTiming:Float = 0;
 		train.x -= 150;
 		train.visible = false;
 
@@ -109,7 +84,7 @@ function onUpdate(elapsed)
 			train.visible = true;
 			new FlxTimer().start(2, function(tmr:FlxTimer)
 			{
-				FlxTween.tween(train, {x: 2000}, 3, {type: ONESHOT});
+				FlxTween.tween(train, {x: 2000}, 3, {type: FlxTweenType.ONESHOT});
 				trainMoving = false;
 			});
 		}

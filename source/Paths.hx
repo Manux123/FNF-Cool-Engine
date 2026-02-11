@@ -108,6 +108,11 @@ class Paths
 		return sound(key + FlxG.random.int(min, max), library);
 	}
 
+	inline static public function soundRandomStage(key:String, min:Int, max:Int, ?library:String)
+	{
+		return soundStage('${PlayState.curStage}/sounds/$key' + FlxG.random.int(min, max), library);
+	}
+
 	inline static public function video(key:String, ?library:String)
 	{
 		trace('assets/videos/$key.mp4');

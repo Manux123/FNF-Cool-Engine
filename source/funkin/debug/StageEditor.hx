@@ -102,6 +102,8 @@ class StageEditor extends FlxState
 		FlxG.cameras.reset(camEditor);
 		FlxG.cameras.add(camHUD, false);
 		
+		FlxG.sound.playMusic(Paths.music('chartEditorLoop/chartEditorLoop'),0.7);
+		
 		camEditor.zoom = camZoom;
 		camFollow = FlxPoint.get(FlxG.width / 2, FlxG.height / 2);
 		

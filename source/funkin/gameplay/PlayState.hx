@@ -23,6 +23,10 @@ import funkin.gameplay.notes.NoteSkinSystem;
 import funkin.gameplay.notes.NotePool;
 import funkin.optimization.GPURenderer;
 import funkin.optimization.OptimizationManager;
+import funkin.gameplay.objects.character.CharacterSlot;
+import funkin.gameplay.objects.StrumsGroup;
+import funkin.data.Song.CharacterSlotData;
+import funkin.data.Song.StrumsGroupData;
 // NUEVO: Import de batching
 import funkin.gameplay.notes.NoteBatcher;
 // Gameplay modules
@@ -34,6 +38,7 @@ import funkin.scripting.EventManager;
 import funkin.data.Song.SwagSong;
 import funkin.data.Song;
 import funkin.data.Section.SwagSection;
+import funkin.data.Section;
 import funkin.data.Conductor;
 import extensions.CoolUtil;
 import funkin.gameplay.objects.hud.Highscore;
@@ -143,7 +148,8 @@ class PlayState extends funkin.states.MusicBeatState
 
 	// === OPTIMIZATION ===
 	private var strumLiney:Float = PlayStateConfig.STRUM_LINE_Y;
-	private var optimizationManager:OptimizationManager;
+
+	public var optimizationManager:OptimizationManager;
 
 	// === SECTION CACHE ===
 	private var cachedSection:SwagSection = null;
@@ -160,6 +166,17 @@ class PlayState extends funkin.states.MusicBeatState
 
 	private var showDebugStats:Bool = false;
 	private var debugText:FlxText;
+
+	private var characterSlots:Array<CharacterSlot> = [];
+	private var strumsGroups:Array<StrumsGroup> = [];
+
+	// Mapeos para acceso rápido
+	private var strumsGroupMap:Map<String, StrumsGroup> = new Map();
+	private var activeCharIndices:Array<Int> = []; // Personajes activos en la sección actual
+	
+	// ✅ Referencias directas a los grupos de strums
+	private var playerStrumsGroup:StrumsGroup = null;
+	private var cpuStrumsGroup:StrumsGroup = null;
 
 	#if desktop
 	var storyDifficultyText:String = "";
@@ -247,13 +264,6 @@ class PlayState extends funkin.states.MusicBeatState
 		optimizationManager = new OptimizationManager();
 		optimizationManager.init();
 
-		// Configurar calidad
-		// Opción 1: Manual
-		optimizationManager.setQuality(QualityLevel.HIGH);
-
-		// Opción 2: Adaptativa (recomendado)
-		optimizationManager.enableAdaptiveQuality = true;
-
 		// Start song
 		startCountdown();
 
@@ -318,24 +328,97 @@ class PlayState extends funkin.states.MusicBeatState
 		add(currentStage);
 
 		// Crear personajes desde stage
-		if (SONG.gfVersion == null)
-			SONG.gfVersion = 'gf';
-		gf = new Character(currentStage.gfPosition.x, currentStage.gfPosition.y, SONG.gfVersion);
-		dad = new Character(currentStage.dadPosition.x, currentStage.dadPosition.y, SONG.player2);
-		boyfriend = new Character(currentStage.boyfriendPosition.x, currentStage.boyfriendPosition.y, SONG.player1, true);
+		loadCharacters();
 
-		// Agregar a state
-		if (gf != null)
+		if (characterSlots.length > 0)
+			gf = characterSlots[0].character;
+		if (characterSlots.length > 1)
+			dad = characterSlots[1].character;
+		if (characterSlots.length > 2)
+			boyfriend = characterSlots[2].character;
+	}
+
+	private function loadCharacters():Void
+	{
+		trace('[PlayState] === CARGANDO PERSONAJES ===');
+		trace('[PlayState] SONG.characters: ' + (SONG.characters != null ? 'EXISTS' : 'NULL'));
+		if (SONG.characters != null)
+			trace('[PlayState] SONG.characters.length: ' + SONG.characters.length);
+		trace('[PlayState] SONG.player1: ' + SONG.player1);
+		trace('[PlayState] SONG.player2: ' + SONG.player2);
+		trace('[PlayState] SONG.gfVersion: ' + SONG.gfVersion);
+
+		// ✅ NUEVO: Si no hay personajes, crear por defecto (compatibilidad con charts antiguos)
+		if (SONG.characters == null || SONG.characters.length == 0)
 		{
-			if (!currentStage.hideGirlfriend)
-				add(gf);
+			trace('[PlayState] ADVERTENCIA: No hay personajes en SONG.characters');
+			trace('[PlayState] Creando personajes por defecto desde campos legacy...');
+			
+			// Crear personajes por defecto usando los campos legacy
+			SONG.characters = [];
+			
+			SONG.characters.push({
+				name: SONG.gfVersion != null ? SONG.gfVersion : 'gf',
+				x: 0,
+				y: 0,
+				visible: true
+			});
+			
+			SONG.characters.push({
+				name: SONG.player2 != null ? SONG.player2 : 'dad',
+				x: 0,
+				y: 0,
+				visible: true
+			});
+			
+			SONG.characters.push({
+				name: SONG.player1 != null ? SONG.player1 : 'bf',
+				x: 0,
+				y: 0,
+				visible: true
+			});
+			
+			trace('[PlayState] Personajes por defecto creados: ${SONG.characters.length}');
 		}
-		if (currentStage.hideGirlfriend)
-			gf.visible = false;
-		if (dad != null)
-			add(dad);
-		if (boyfriend != null)
-			add(boyfriend);
+
+		// Crear slots de personajes
+		for (i in 0...SONG.characters.length)
+		{
+			var charData = SONG.characters[i];
+			var slot = new CharacterSlot(charData, i);
+
+			// Si la posición es (0,0), usar posición del stage
+			if (charData.x == 0 && charData.y == 0)
+			{
+				switch (i)
+				{
+					case 0: // GF
+						slot.character.setPosition(currentStage.gfPosition.x, currentStage.gfPosition.y);
+					case 1: // Dad
+						slot.character.setPosition(currentStage.dadPosition.x, currentStage.dadPosition.y);
+					case 2: // BF (o segundo oponente)
+						slot.character.setPosition(currentStage.boyfriendPosition.x, currentStage.boyfriendPosition.y);
+					default:
+						// Posicionamiento personalizado para personajes adicionales
+						trace('[PlayState] Personaje adicional #$i en posición custom');
+				}
+			}
+			else
+			{
+				// Usar posición del JSON
+				slot.character.setPosition(charData.x, charData.y);
+			}
+
+			characterSlots.push(slot);
+			add(slot.character);
+
+			trace('[PlayState] Personaje #$i cargado: ${charData.name} en (${slot.character.x}, ${slot.character.y})');
+		}
+
+		trace('[PlayState] Total personajes cargados: ${characterSlots.length}');
+		trace('[PlayState] boyfriend: ' + (boyfriend != null ? 'OK (' + boyfriend.curCharacter + ')' : 'NULL'));
+		trace('[PlayState] dad: ' + (dad != null ? 'OK (' + dad.curCharacter + ')' : 'NULL'));
+		trace('[PlayState] gf: ' + (gf != null ? 'OK (' + gf.curCharacter + ')' : 'NULL'));
 	}
 
 	/**
@@ -348,9 +431,12 @@ class PlayState extends funkin.states.MusicBeatState
 		noteBatcher.cameras = [camHUD];
 		add(noteBatcher);
 
+		// ✅ Inicializar strumLineNotes ANTES de loadStrums()
 		strumLineNotes = new FlxTypedGroup<FlxSprite>();
 		strumLineNotes.cameras = [camHUD];
 		add(strumLineNotes);
+
+		loadStrums();
 
 		grpNoteSplashes = new FlxTypedGroup<NoteSplash>();
 		grpNoteSplashes.cameras = [camHUD];
@@ -360,25 +446,95 @@ class PlayState extends funkin.states.MusicBeatState
 		notes.cameras = [camHUD];
 		add(notes);
 
+		// Inicializar grupos legacy (para compatibilidad)
 		playerStrums = new FlxTypedGroup<FlxSprite>();
 		cpuStrums = new FlxTypedGroup<FlxSprite>();
 
-		generateStaticArrows(0); // CPU
-		generateStaticArrows(1); // Player
+		// ✅ NO llamar a generateStaticArrows - loadStrums() ya creó las flechas
+		// Las referencias playerStrums y cpuStrums se asignan en loadStrums() líneas 471-478
 	}
 
+	private function loadStrums():Void
+	{
+		trace('[PlayState] === CARGANDO GRUPOS DE STRUMS ===');
+
+		if (SONG.strumsGroups == null || SONG.strumsGroups.length == 0)
+		{
+			trace('[PlayState] ADVERTENCIA: No hay grupos de strums');
+			return;
+		}
+
+		// Crear grupos
+		for (groupData in SONG.strumsGroups)
+		{
+			var group = new StrumsGroup(groupData);
+			strumsGroups.push(group);
+			strumsGroupMap.set(groupData.id, group);
+
+			// Añadir strums al juego
+			group.strums.forEach(function(strum:FlxSprite)
+			{
+				strumLineNotes.add(strum);
+			});
+
+			// Separar CPU y Player strums (para compatibilidad)
+			if (groupData.cpu && cpuStrums == null)
+			{
+				cpuStrums = group.strums;
+				cpuStrumsGroup = group; // ✅ Guardar referencia al grupo completo
+			}
+			else if (!groupData.cpu && playerStrums == null)
+			{
+				playerStrums = group.strums;
+				playerStrumsGroup = group; // ✅ Guardar referencia al grupo completo
+			}
+			
+			trace('[PlayState] Grupo "${groupData.id}" cargado - CPU: ${groupData.cpu}, Visible: ${groupData.visible}');
+		}
+
+		trace('[PlayState] Total grupos de strums: ${strumsGroups.length}');
+	}
+	
 	/**
 	 * Setup controllers - MEJORADO con splashes
 	 */
 	private function setupControllers():Void
 	{
+		// ✅ Verificar que boyfriend y dad existan antes de crear CameraController
+		if (boyfriend == null || dad == null)
+		{
+			trace('[PlayState] ERROR CRÍTICO: boyfriend o dad son null!');
+			trace('[PlayState] boyfriend: ' + (boyfriend != null ? 'OK' : 'NULL'));
+			trace('[PlayState] dad: ' + (dad != null ? 'OK' : 'NULL'));
+			trace('[PlayState] No se puede continuar sin personajes principales');
+			// En modo debug, crear personajes de emergencia
+			#if debug
+			trace('[PlayState] Intentando recuperación de emergencia...');
+			if (boyfriend == null)
+			{
+				boyfriend = new Character(100, 100, 'bf');
+				add(boyfriend);
+			}
+			if (dad == null)
+			{
+				dad = new Character(100, 100, 'dad');
+				add(dad);
+			}
+			#else
+			// En producción, volver al menú
+			FlxG.switchState(new funkin.menus.MainMenuState());
+			return;
+			#end
+		}
+		
 		// Camera controller
 		cameraController = new CameraController(camGame, camHUD, boyfriend, dad);
 		if (currentStage.defaultCamZoom > 0)
 			cameraController.defaultZoom = currentStage.defaultCamZoom;
 
 		// Character controller
-		characterController = new CharacterController(boyfriend, dad, gf);
+		characterController = new CharacterController();
+		characterController.initFromSlots(characterSlots);
 
 		// Input handler
 		inputHandler = new InputHandler();
@@ -390,7 +546,8 @@ class PlayState extends funkin.states.MusicBeatState
 		inputHandler.onKeyRelease = onKeyRelease;
 
 		// Note manager - MEJORADO con splashes
-		noteManager = new NoteManager(notes, playerStrums, cpuStrums, grpNoteSplashes);
+		// ✅ Pasar referencias a StrumsGroup para animaciones de confirm
+		noteManager = new NoteManager(notes, playerStrums, cpuStrums, grpNoteSplashes, playerStrumsGroup, cpuStrumsGroup);
 		noteManager.strumLineY = strumLiney;
 		noteManager.downscroll = FlxG.save.data.downscroll;
 		noteManager.middlescroll = FlxG.save.data.middlescroll;
@@ -417,8 +574,12 @@ class PlayState extends funkin.states.MusicBeatState
 	{
 		var icons:Array<String> = [SONG.player1, SONG.player2];
 
-		if (boyfriend.healthIcon != null && dad.healthIcon != null)
-			icons = [boyfriend.healthIcon, dad.healthIcon];
+		// ✅ Verificar que existan antes de acceder a sus propiedades
+		if (boyfriend != null && dad != null)
+		{
+			if (boyfriend.healthIcon != null && dad.healthIcon != null)
+				icons = [boyfriend.healthIcon, dad.healthIcon];
+		}
 
 		uiManager = new UIManager(camHUD, gameState);
 		uiManager.setIcons(icons[0], icons[1]);
@@ -694,12 +855,20 @@ class PlayState extends funkin.states.MusicBeatState
 			}
 
 			// Update input
-			if (!boyfriend.stunned)
+			if (boyfriend != null && !boyfriend.stunned)
 			{
 				inputHandler.update();
 				inputHandler.processInputs(notes);
 				inputHandler.processSustains(notes);
 				updatePlayerStrums();
+				
+				// ✅ Actualizar animaciones de StrumsGroups
+				for (group in strumsGroups)
+				{
+					if (group != null)
+						group.update();
+				}
+				
 				if (inputHandler != null && noteManager != null)
 					inputHandler.checkMisses(notes);
 			}
@@ -878,19 +1047,76 @@ class PlayState extends funkin.states.MusicBeatState
 	 */
 	private function updatePlayerStrums():Void
 	{
+		// ✅ Si tenemos StrumsGroup, usarlo directamente
+		if (playerStrumsGroup != null)
+		{
+			for (i in 0...4)
+			{
+				if (inputHandler.pressed[i] && !isPlayingConfirm(i))
+				{
+					playerStrumsGroup.playPressed(i);
+				}
+
+				if (inputHandler.released[i])
+				{
+					playerStrumsGroup.resetStrum(i);
+				}
+			}
+			return;
+		}
+		
+		// ✅ Fallback al sistema antiguo
 		playerStrums.forEach(function(spr:FlxSprite)
 		{
-			if (inputHandler.pressed[spr.ID] && spr.animation.curAnim.name != 'confirm')
+			// Verificar que animation y curAnim no sean null
+			if (spr.animation == null || spr.animation.curAnim == null)
+				return;
+			
+			if (Std.isOfType(spr, StrumNote))
 			{
-				spr.animation.play('pressed');
-			}
+				var strumNote:StrumNote = cast(spr, StrumNote);
+				
+				if (inputHandler.pressed[spr.ID] && strumNote.animation.curAnim.name != 'confirm')
+				{
+					strumNote.playAnim('pressed');
+				}
 
-			if (inputHandler.released[spr.ID])
+				if (inputHandler.released[spr.ID])
+				{
+					strumNote.playAnim('static');
+				}
+			}
+			else
 			{
-				spr.animation.play('static');
-				spr.centerOffsets();
+				// Fallback para FlxSprite genérico
+				if (inputHandler.pressed[spr.ID] && spr.animation.curAnim.name != 'confirm')
+				{
+					spr.animation.play('pressed');
+				}
+
+				if (inputHandler.released[spr.ID])
+				{
+					spr.animation.play('static');
+					spr.centerOffsets();
+				}
 			}
 		});
+	}
+	
+	/**
+	 * Helper para verificar si un strum está tocando 'confirm'
+	 */
+	private function isPlayingConfirm(direction:Int):Bool
+	{
+		if (playerStrumsGroup != null)
+		{
+			var strum = playerStrumsGroup.getStrum(direction);
+			if (strum != null && strum.animation != null && strum.animation.curAnim != null)
+			{
+				return strum.animation.curAnim.name == 'confirm';
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -1053,7 +1279,12 @@ class PlayState extends funkin.states.MusicBeatState
 			}
 
 			// Animate character
-			characterController.sing(boyfriend, note.noteData);
+			var section:Section = getSectionAsClass(curStep);
+			var charIndices = section.getActiveCharacterIndices(1, 2);
+
+			// Solo hacer cantar al BF (índice 2 o 3 típicamente)
+			var bfIndex = charIndices.length > 0 ? charIndices[charIndices.length - 1] : 2;
+			characterController.singByIndex(bfIndex, note.noteData);
 
 			// Animate strum
 			noteManager.hitNote(note);
@@ -1153,20 +1384,15 @@ class PlayState extends funkin.states.MusicBeatState
 		var altAnim:String = getHasAltAnim(curStep) ? '-alt' : '';
 
 		// GF/Dad singing logic
-		var section = getSection(curStep);
+		var section = getSectionAsClass(curStep);
 		if (section != null)
 		{
-			gf.canSing = section.bothSing ? true : section.gfSing;
+			var charIndices = section.getActiveCharacterIndices(1, 2); // (dadIndex, bfIndex)
 
-			if (gf.canSing && !section.bothSing)
+			// Hacer cantar a todos los personajes activos
+			for (charIndex in charIndices)
 			{
-				dad.canSing = false;
-				characterController.sing(gf, note.noteData, altAnim);
-			}
-			else
-			{
-				dad.canSing = true;
-				characterController.sing(dad, note.noteData, altAnim);
+				characterController.singByIndex(charIndex, note.noteData, getHasAltAnim(curStep) ? '-alt' : '');
 			}
 		}
 
@@ -1448,6 +1674,15 @@ class PlayState extends funkin.states.MusicBeatState
 				return;
 		}
 
+		// ✅ Verificar que boyfriend exista
+		if (boyfriend == null)
+		{
+			trace('[PlayState] ERROR: boyfriend es null en gameOver()');
+			// Forzar game over de emergencia
+			FlxG.switchState(new funkin.menus.MainMenuState());
+			return;
+		}
+
 		boyfriend.stunned = true;
 		persistentUpdate = false;
 		persistentDraw = false;
@@ -1485,6 +1720,26 @@ class PlayState extends funkin.states.MusicBeatState
 	}
 
 	/**
+	 * Convert SwagSection to Section class for accessing methods
+	 */
+	public function getSectionAsClass(step:Int):Section
+	{
+		var swagSection = getSection(step);
+		if (swagSection == null) return null;
+		
+		var section = new Section();
+		section.sectionNotes = swagSection.sectionNotes;
+		section.lengthInSteps = swagSection.lengthInSteps;
+		section.typeOfSection = swagSection.typeOfSection;
+		section.mustHitSection = swagSection.mustHitSection;
+		section.characterIndex = swagSection.characterIndex != null ? swagSection.characterIndex : -1;
+		section.strumsGroupId = swagSection.strumsGroupId;
+		section.activeCharacters = swagSection.activeCharacters;
+		
+		return section;
+	}
+
+	/**
 	 * Verificar si la sección es del jugador
 	 */
 	public function getMustHitSection(step:Int):Bool
@@ -1517,22 +1772,12 @@ class PlayState extends funkin.states.MusicBeatState
 	 * 2. Agregar todos los sprites visibles al GPURenderer
 	 * 3. Renderizar todo de una vez con batching
 	 * 4. Llamar a super.draw() para UI y otros elementos */
-	override public function draw():Void
+	override function draw():Void
 	{
-		// Si el optimization manager está activo, usar GPU rendering
-		if (optimizationManager != null && optimizationManager.gpuRenderer != null && optimizationManager.gpuRenderer.enabled)
+		// 1. Agregar sprites al renderer
+		if (optimizationManager != null)
 		{
-			// === PASO 1: Agregar sprites al GPU Renderer ===
-
-			// Renderizar stage (fondo, elementos del escenario)
-			if (currentStage != null)
-			{
-				// El stage tiene sus propios sprites que se agregan
-				// Esto depende de cómo esté implementado el Stage
-				// optimizationManager.addSpriteToRenderer(currentStage);
-			}
-
-			// Renderizar personajes
+			// Renderizar splashes
 			if (gf != null && gf.visible)
 				optimizationManager.addSpriteToRenderer(gf);
 
@@ -1541,31 +1786,7 @@ class PlayState extends funkin.states.MusicBeatState
 
 			if (boyfriend != null && boyfriend.visible)
 				optimizationManager.addSpriteToRenderer(boyfriend);
-			/*
-				// Renderizar notas
-				if (notes != null)
-				{
-					notes.forEachAlive(function(note:Note)
-					{
-						if (note != null && note.visible)
-						{
-							// El GPURenderer hace culling automático
-							optimizationManager.addSpriteToRenderer(note);
-						}
-					});
-			}*/
 
-			// Renderizar strums
-			if (strumLineNotes != null)
-			{
-				strumLineNotes.forEachAlive(function(strum:FlxSprite)
-				{
-					if (strum != null && strum.visible)
-						optimizationManager.addSpriteToRenderer(strum);
-				});
-			}
-
-			// Renderizar splashes
 			if (grpNoteSplashes != null)
 			{
 				grpNoteSplashes.forEachAlive(function(splash:NoteSplash)
@@ -1575,21 +1796,18 @@ class PlayState extends funkin.states.MusicBeatState
 				});
 			}
 
-			// === PASO 2: Renderizar con GPU ===
-			optimizationManager.render();
+			notes.forEachAlive(function(n)
+			{
+				optimizationManager.addSpriteToRenderer(n);
+			});
 
-			// === PASO 3: Renderizar UI y otros elementos que no van por GPU ===
-			// El UI Manager y otros elementos de HUD se renderizan normalmente
-			// ya que están en cámaras separadas (camHUD, camCountdown)
+			optimizationManager.render(); // Dibujamos todo por GPU
+		}
 
-			// Renderizar el resto normalmente (UI, efectos, etc)
-			super.draw();
-		}
-		else
-		{
-			// Renderizado tradicional si GPURenderer está deshabilitado
-			super.draw();
-		}
+		super.draw(); // Flixel dibuja el resto (UI, etc)
+
+		// 2. Importante: Volver a hacerlos visibles para que el update funcione
+		// notes.forEachAlive(function(n) n.visible = true);
 	}
 
 	/**

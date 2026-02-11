@@ -105,7 +105,7 @@ class Main extends Sprite
 
 		NoteSkinSystem.init();
 
-		// states.OptionsData.initSave();
+		funkin.menus.OptionsMenuState.OptionsData.initSave();
 		KeyBinds.keyCheck();
 
 		funkin.gameplay.objects.hud.Highscore.load();

@@ -192,7 +192,7 @@ class DialogueEditor extends FlxState
 		clearBtn.label.color = FlxColor.BLACK;
 		add(clearBtn);
 	}
-
+	
 	/**
 	 * Crear panel del medio (lista de mensajes)
 	 */

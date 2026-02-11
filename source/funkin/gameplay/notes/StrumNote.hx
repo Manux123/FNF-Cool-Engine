@@ -6,6 +6,8 @@ import funkin.gameplay.PlayState;
 import lime.utils.Assets;
 import funkin.gameplay.PlayStateConfig;
 
+using StringTools;
+
 class StrumNote extends FlxSprite
 {
 	public var noteID:Int = 0;
@@ -35,6 +37,10 @@ class StrumNote extends FlxSprite
 		
 		updateHitbox();
 		scrollFactor.set();
+		
+		// ✅ REPRODUCIR animación inicial
+		animation.play('static');
+		centerOffsets();
 	}
 
 	function loadPixelStrum():Void
@@ -59,7 +65,7 @@ class StrumNote extends FlxSprite
 		{
 			if (Math.abs(noteID) == i) 
     		{
-				x += Note.swagWidth * i;
+				// La posición X ya está establecida por StrumsGroup
 				animation.add('static', [i]);
 				animation.add('pressed', [4+i, 8+i], 12, false);
 				animation.add('confirm', [12+i, 16+i], 24, false);
@@ -95,7 +101,7 @@ class StrumNote extends FlxSprite
 		switch (Math.abs(noteID))
 		{
 			case 0: // Left
-				x += Note.swagWidth * 0;
+				// La posición X ya está establecida por StrumsGroup
 				if (anims.strumLeft != null)
 					animation.addByPrefix('static', anims.strumLeft);
 				if (anims.strumLeftPress != null)
@@ -104,7 +110,7 @@ class StrumNote extends FlxSprite
 					animation.addByPrefix('confirm', anims.strumLeftConfirm, 24, false);
 					
 			case 1: // Down
-				x += Note.swagWidth * 1;
+				// La posición X ya está establecida por StrumsGroup
 				if (anims.strumDown != null)
 					animation.addByPrefix('static', anims.strumDown);
 				if (anims.strumDownPress != null)
@@ -113,7 +119,7 @@ class StrumNote extends FlxSprite
 					animation.addByPrefix('confirm', anims.strumDownConfirm, 24, false);
 					
 			case 2: // Up
-				x += Note.swagWidth * 2;
+				// La posición X ya está establecida por StrumsGroup
 				if (anims.strumUp != null)
 					animation.addByPrefix('static', anims.strumUp);
 				if (anims.strumUpPress != null)
@@ -122,7 +128,7 @@ class StrumNote extends FlxSprite
 					animation.addByPrefix('confirm', anims.strumUpConfirm, 24, false);
 					
 			case 3: // Right
-				x += Note.swagWidth * 3;
+				// La posición X ya está establecida por StrumsGroup
 				if (anims.strumRight != null)
 					animation.addByPrefix('static', anims.strumRight);
 				if (anims.strumRightPress != null)
@@ -138,17 +144,53 @@ class StrumNote extends FlxSprite
 			loadDefaultStrumAnimations();
 		}
 	}
-
+	
 	function loadDefaultStrumAnimations():Void
 	{
 		// Animaciones default de FNF
+		// La posición X ya está establecida por StrumsGroup, solo cargar animaciones
 		
-		for (i in 0...Std.int(Math.abs(noteID)))
+		var i = Std.int(Math.abs(noteID));
+		animation.addByPrefix('static', 'arrow'+animArrow[i]);
+		animation.addByPrefix('pressed', animArrow[i].toLowerCase() + ' press',24,false);
+		animation.addByPrefix('confirm', animArrow[i].toLowerCase() + ' confirm',24,false);
+	}
+	
+	/**
+	 * Reproducir animación de forma segura
+	 */
+	public function playAnim(animName:String, force:Bool = false):Void
+	{
+		if (animation == null) return;
+		
+		animation.play(animName, force);
+		centerOffsets();
+		
+		// Ajuste de offset para confirm (solo si no es pixel)
+		if (animName == 'confirm' && !PlayState.curStage.startsWith('school'))
 		{
-			x += Note.swagWidth * i;
-			animation.addByPrefix('static', 'arrow'+animArrow[i]);
-			animation.addByPrefix('pressed', animArrow[i].toLowerCase() + ' press',24,false);
-			animation.addByPrefix('confirm', animArrow[i].toLowerCase() + ' confirm',24,false);
+			if (NoteSkinSystem.offsetDefault)
+			{
+				offset.x -= 13;
+				offset.y -= 13;
+			}
+		}
+	}
+	
+	/**
+	 * Update para auto-reset de animaciones
+	 */
+	override function update(elapsed:Float):Void
+	{
+		super.update(elapsed);
+		
+		// Auto-reset de confirm a static cuando termina la animación
+		if (animation.curAnim != null)
+		{
+			if (animation.curAnim.name == 'confirm' && animation.curAnim.finished)
+			{
+				playAnim('static');
+			}
 		}
 	}
 }

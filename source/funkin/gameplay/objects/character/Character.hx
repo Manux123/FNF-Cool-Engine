@@ -94,6 +94,8 @@ class Character extends FlxSprite {
 		}
 
 		dance();
+		
+		isPlayer = characterData.isPlayer;
 
 		if (isPlayer) {
 			flipX = !flipX;

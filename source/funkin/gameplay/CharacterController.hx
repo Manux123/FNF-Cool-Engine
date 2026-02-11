@@ -1,31 +1,27 @@
 package funkin.gameplay;
 
 import funkin.gameplay.objects.character.Character;
+import funkin.gameplay.objects.character.CharacterSlot;
 import flixel.FlxG;
 import funkin.data.Conductor;
 
 using StringTools;
 
 /**
- * CharacterController - Control optimizado de animaciones
- * Maneja: Singing, Idle, Timers, Special animations
+ * CharacterController MEJORADO - Control de múltiples personajes
+ * Maneja: Arrays de personajes, Singing, Idle, Timers
  */
 class CharacterController
 {
-	// === CHARACTERS ===
+	// === CHARACTERS (nuevo sistema) ===
+	public var characterSlots:Array<CharacterSlot> = [];
+	
+	// === LEGACY SUPPORT (para compatibilidad) ===
 	public var boyfriend:Character;
 	public var dad:Character;
 	public var gf:Character;
 	
-	// === TIMERS ===
-	private var dadHoldTimer:Float = 0;
-	private var bfHoldTimer:Float = 0;
-	private var gfHoldTimer:Float = 0;
-	
 	// === FLAGS ===
-	private var dadAnimFinished:Bool = true;
-	private var bfAnimFinished:Bool = true;
-	private var gfAnimFinished:Bool = true;
 	public var specialAnim:Bool = false;
 	
 	// === CONSTANTS ===
@@ -38,11 +34,84 @@ class CharacterController
 	// === GF SPEED ===
 	private var gfSpeed:Int = 1;
 	
-	public function new(boyfriend:Character, dad:Character, gf:Character)
+	/**
+	 * Constructor LEGACY (para compatibilidad con código existente)
+	 */
+	public function new(?boyfriend:Character, ?dad:Character, ?gf:Character)
 	{
+		// Guardar referencias legacy
 		this.boyfriend = boyfriend;
 		this.dad = dad;
 		this.gf = gf;
+		
+		// Si se pasan personajes legacy, crear slots automáticamente
+		if (gf != null || dad != null || boyfriend != null)
+		{
+			initFromLegacyCharacters();
+		}
+	}
+	
+	/**
+	 * NUEVO: Inicializar desde array de CharacterSlots
+	 */
+	public function initFromSlots(slots:Array<CharacterSlot>):Void
+	{
+		characterSlots = slots;
+		
+		// Auto-asignar personajes legacy para compatibilidad
+		// Asumiendo: [0]=GF, [1]=DAD, [2]=BF (orden estándar)
+		if (slots.length > 0) gf = slots[0].character;
+		if (slots.length > 1) dad = slots[1].character;
+		if (slots.length > 2) boyfriend = slots[2].character;
+		
+		trace('[CharacterController] Inicializado con ${slots.length} character slots');
+	}
+	
+	/**
+	 * Crear slots desde personajes legacy
+	 */
+	private function initFromLegacyCharacters():Void
+	{
+		characterSlots = [];
+		
+		// Crear slots básicos (sin CharacterSlotData completo)
+		// Esto es solo para compatibilidad, idealmente usar initFromSlots()
+		if (gf != null)
+		{
+			var slot = createSlotFromCharacter(gf, 0);
+			characterSlots.push(slot);
+		}
+		
+		if (dad != null)
+		{
+			var slot = createSlotFromCharacter(dad, 1);
+			characterSlots.push(slot);
+		}
+		
+		if (boyfriend != null)
+		{
+			var slot = createSlotFromCharacter(boyfriend, 2);
+			characterSlots.push(slot);
+		}
+		
+		trace('[CharacterController] Inicializado en modo legacy con ${characterSlots.length} personajes');
+	}
+	
+	/**
+	 * Helper para crear slot desde Character existente
+	 */
+	private function createSlotFromCharacter(char:Character, index:Int):CharacterSlot
+	{
+		var data:funkin.data.Song.CharacterSlotData = {
+			name: char.curCharacter,
+			x: char.x,
+			y: char.y,
+			visible: true
+		};
+		
+		var slot = new CharacterSlot(data, index);
+		slot.character = char; // Reemplazar el personaje creado con el existente
+		return slot;
 	}
 	
 	/**
@@ -50,63 +119,41 @@ class CharacterController
 	 */
 	public function update(elapsed:Float):Void
 	{
-		// Actualizar timers
-		dadHoldTimer += elapsed;
-		bfHoldTimer += elapsed;
-		gfHoldTimer += elapsed;
+		// Update todos los slots
+		for (slot in characterSlots)
+		{
+			if (slot != null && slot.isActive)
+				slot.update(elapsed);
+		}
 		
-		// Update cada personaje
-		updateDadAnimations(elapsed);
-		updateBoyfriendAnimations(elapsed);
-		updateGFAnimations(elapsed);
+		// Legacy update (por si acaso)
+		updateLegacyAnimations(elapsed);
 	}
 	
 	/**
-	 * Update animaciones de Dad
+	 * Update legacy (compatibilidad)
 	 */
-	private function updateDadAnimations(elapsed:Float):Void
+	private function updateLegacyAnimations(elapsed:Float):Void
 	{
-		if (dad == null || dad.animation == null || dad.animation.curAnim == null)
-			return;
-		
-		var curAnim = dad.animation.curAnim.name;
-		
-		// Si está cantando y el timer expiró, volver a idle
-		if (curAnim.startsWith('sing') && !curAnim.endsWith('miss'))
+		// Dad
+		if (dad != null && dad.animation != null && dad.animation.curAnim != null)
 		{
-			if (dadHoldTimer > SING_DURATION && dad.canSing)
+			var curAnim = dad.animation.curAnim.name;
+			if (curAnim.startsWith('sing') && !curAnim.endsWith('miss'))
 			{
-				dadAnimFinished = true;
-				if (!specialAnim)
+				if (dad.holdTimer > SING_DURATION && dad.canSing && !specialAnim)
 					dad.dance();
 			}
 		}
 		
-		// Idle automático si no está cantando
-		if (!curAnim.startsWith('sing') && dad.canSing && dadAnimFinished && !specialAnim)
+		// Boyfriend
+		if (boyfriend != null && boyfriend.animation != null && boyfriend.animation.curAnim != null)
 		{
-			dadAnimFinished = true;
-		}
-	}
-	
-	/**
-	 * Update animaciones de Boyfriend
-	 */
-	private function updateBoyfriendAnimations(elapsed:Float):Void
-	{
-		if (boyfriend == null || boyfriend.animation == null || boyfriend.animation.curAnim == null)
-			return;
-		
-		var curAnim = boyfriend.animation.curAnim.name;
-		
-		// Si está cantando y el timer expiró, volver a idle
-		if (curAnim.startsWith('sing') && !curAnim.endsWith('miss') || curAnim.startsWith('hey'))
-		{
-			var threshold = Conductor.stepCrochet * 4 * IDLE_THRESHOLD;
-			if (bfHoldTimer > threshold && boyfriend.canSing)
+			var curAnim = boyfriend.animation.curAnim.name;
+			if (curAnim.startsWith('sing') && !curAnim.endsWith('miss'))
 			{
-				bfAnimFinished = true;
-				if (!specialAnim)
+				var threshold = Conductor.stepCrochet * 4 * IDLE_THRESHOLD;
+				if (boyfriend.holdTimer > threshold && boyfriend.canSing && !specialAnim)
 				{
 					boyfriend.playAnim('idle', true);
 					boyfriend.holdTimer = 0;
@@ -114,40 +161,47 @@ class CharacterController
 			}
 		}
 		
-		// Reset cuando está idle
-		if (curAnim.startsWith('idle'))
+		// GF
+		if (gf != null && gf.animation != null && gf.animation.curAnim != null)
 		{
-			bfAnimFinished = true;
-		}
-	}
-	
-	/**
-	 * Update animaciones de GF
-	 */
-	private function updateGFAnimations(elapsed:Float):Void
-	{
-		if (gf == null || gf.animation == null || gf.animation.curAnim == null)
-			return;
-		
-		var curAnim = gf.animation.curAnim.name;
-		
-		if (curAnim.startsWith('sing'))
-		{
-			if (gfHoldTimer > SING_DURATION && gf.canSing)
+			var curAnim = gf.animation.curAnim.name;
+			if (curAnim.startsWith('sing'))
 			{
-				gf.dance();
-				gfHoldTimer = 0;
-				gfAnimFinished = true;
+				if (gf.holdTimer > SING_DURATION && gf.canSing)
+				{
+					gf.dance();
+					gf.holdTimer = 0;
+				}
 			}
 		}
-		else
+	}
+	
+	/**
+	 * NUEVO: Hacer cantar a un personaje por índice
+	 */
+	public function singByIndex(charIndex:Int, noteData:Int, ?altAnim:String = ""):Void
+	{
+		if (charIndex < 0 || charIndex >= characterSlots.length)
+			return;
+		
+		var slot = characterSlots[charIndex];
+		if (slot != null && slot.isActive)
+			slot.sing(noteData, altAnim);
+	}
+	
+	/**
+	 * NUEVO: Hacer cantar a múltiples personajes
+	 */
+	public function singMultiple(charIndices:Array<Int>, noteData:Int, ?altAnim:String = ""):Void
+	{
+		for (index in charIndices)
 		{
-			gfHoldTimer = 0;
+			singByIndex(index, noteData, altAnim);
 		}
 	}
 	
 	/**
-	 * Hacer cantar a un personaje
+	 * Hacer cantar a un personaje (legacy)
 	 */
 	public function sing(char:Character, noteData:Int, ?altAnim:String = ""):Void
 	{
@@ -172,14 +226,7 @@ class CharacterController
 			return;
 		
 		char.playAnim(animName, true);
-		
-		// Reset timers
-		if (char == dad)
-			dadHoldTimer = 0;
-		else if (char == boyfriend)
-			bfHoldTimer = 0;
-		else if (char == gf)
-			gfHoldTimer = 0;
+		char.holdTimer = 0;
 	}
 	
 	/**
@@ -187,33 +234,34 @@ class CharacterController
 	 */
 	public function danceOnBeat(curBeat:Int):Void
 	{
-		// GF dance
-		if (gf != null && curBeat % gfSpeed == 0 && gfAnimFinished)
+		// Dance todos los slots
+		for (slot in characterSlots)
 		{
-			gf.dance();
-			gfHoldTimer = 0;
+			if (slot != null && slot.isActive)
+			{
+				// GF dance cada gfSpeed beats
+				if (slot.index == 0 && curBeat % gfSpeed == 0)
+					slot.dance();
+				// Otros personajes dance cada beat
+				else if (slot.index != 0)
+					slot.dance();
+			}
 		}
 		
-		// BF idle
+		// Legacy dance
+		if (gf != null && curBeat % gfSpeed == 0)
+			gf.dance();
+		
 		if (boyfriend != null && boyfriend.animation != null && boyfriend.animation.curAnim != null)
 		{
-			if (!boyfriend.animation.curAnim.name.startsWith("sing") && boyfriend.canSing && bfAnimFinished)
-			{
+			if (!boyfriend.animation.curAnim.name.startsWith("sing") && boyfriend.canSing && !specialAnim)
 				boyfriend.dance();
-				bfHoldTimer = 0;
-				specialAnim = false;
-			}
 		}
 		
-		// Dad idle
 		if (dad != null && dad.animation != null && dad.animation.curAnim != null)
 		{
-			if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing && dadAnimFinished)
-			{
+			if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing && !specialAnim)
 				dad.dance();
-				dadHoldTimer = 0;
-				specialAnim = false;
-			}
 		}
 	}
 	
@@ -227,6 +275,22 @@ class CharacterController
 		
 		char.playAnim(animName, true);
 		specialAnim = true;
+	}
+	
+	/**
+	 * NUEVO: Play special anim por índice
+	 */
+	public function playSpecialAnimByIndex(charIndex:Int, animName:String):Void
+	{
+		if (charIndex < 0 || charIndex >= characterSlots.length)
+			return;
+		
+		var slot = characterSlots[charIndex];
+		if (slot != null && slot.character != null)
+		{
+			slot.character.playAnim(animName, true);
+			specialAnim = true;
+		}
 	}
 	
 	/**
@@ -246,6 +310,42 @@ class CharacterController
 	}
 	
 	/**
+	 * NUEVO: Obtener personaje por índice
+	 */
+	public function getCharacter(index:Int):Character
+	{
+		if (index < 0 || index >= characterSlots.length)
+			return null;
+		
+		var slot = characterSlots[index];
+		return slot != null ? slot.character : null;
+	}
+	
+	/**
+	 * NUEVO: Obtener slot por índice
+	 */
+	public function getSlot(index:Int):CharacterSlot
+	{
+		if (index < 0 || index >= characterSlots.length)
+			return null;
+		
+		return characterSlots[index];
+	}
+	
+	/**
+	 * NUEVO: Activar/desactivar personaje
+	 */
+	public function setCharacterActive(index:Int, active:Bool):Void
+	{
+		if (index < 0 || index >= characterSlots.length)
+			return;
+		
+		var slot = characterSlots[index];
+		if (slot != null)
+			slot.setActive(active);
+	}
+	
+	/**
 	 * Verificar si BF está en idle
 	 */
 	public function isBFIdle():Bool
@@ -261,6 +361,13 @@ class CharacterController
 	 */
 	public function forceIdleAll():Void
 	{
+		for (slot in characterSlots)
+		{
+			if (slot != null && slot.character != null)
+				slot.character.dance();
+		}
+		
+		// Legacy
 		if (boyfriend != null)
 			boyfriend.dance();
 		if (dad != null)
@@ -269,5 +376,30 @@ class CharacterController
 			gf.dance();
 		
 		specialAnim = false;
+	}
+	
+	/**
+	 * NUEVO: Obtener total de personajes
+	 */
+	public function getCharacterCount():Int
+	{
+		return characterSlots.length;
+	}
+	
+	/**
+	 * Destruir
+	 */
+	public function destroy():Void
+	{
+		for (slot in characterSlots)
+		{
+			if (slot != null)
+				slot.destroy();
+		}
+		characterSlots = [];
+		
+		boyfriend = null;
+		dad = null;
+		gf = null;
 	}
 }

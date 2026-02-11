@@ -7,6 +7,8 @@ import flixel.math.FlxMath;
 import funkin.gameplay.notes.Note;
 import funkin.gameplay.notes.NoteRenderer;
 import funkin.gameplay.notes.NoteSplash;
+import funkin.gameplay.notes.StrumNote;
+import funkin.gameplay.objects.StrumsGroup;
 import funkin.data.Song.SwagSong;
 import funkin.data.Conductor;
 import funkin.gameplay.notes.NoteSkinSystem;
@@ -33,6 +35,10 @@ class NoteManager
 	// === STRUMS ===
 	private var playerStrums:FlxTypedGroup<FlxSprite>;
 	private var cpuStrums:FlxTypedGroup<FlxSprite>;
+	
+	// ✅ Referencias a StrumsGroup para animaciones
+	private var playerStrumsGroup:StrumsGroup;
+	private var cpuStrumsGroup:StrumsGroup;
 
 	// === RENDERER ===
 	private var renderer:NoteRenderer;
@@ -46,24 +52,27 @@ class NoteManager
 
 	// === OPTIMIZATION ===
 	private static inline var CULL_DISTANCE:Float = 2000;
+
 	private var _scrollSpeed:Float = 0.45;
 
 	// === CALLBACKS ===
 	public var onNoteMiss:Note->Void = null;
 	public var onCPUNoteHit:Note->Void = null;
 	public var onNoteHit:Note->Void = null; // NUEVO: Callback para hits del jugador
-	
+
 	// NUEVO: Tracking de hold notes presionadas
 	private var heldNotes:Map<Int, Note> = new Map(); // dirección -> nota
 	private var holdStartTimes:Map<Int, Float> = new Map(); // dirección -> tiempo de inicio
 
-	public function new(notes:FlxTypedGroup<Note>, playerStrums:FlxTypedGroup<FlxSprite>, cpuStrums:FlxTypedGroup<FlxSprite>, 
-						splashes:FlxTypedGroup<NoteSplash>)
+	public function new(notes:FlxTypedGroup<Note>, playerStrums:FlxTypedGroup<FlxSprite>, cpuStrums:FlxTypedGroup<FlxSprite>,
+			splashes:FlxTypedGroup<NoteSplash>, ?playerStrumsGroup:StrumsGroup, ?cpuStrumsGroup:StrumsGroup)
 	{
 		this.notes = notes;
 		this.playerStrums = playerStrums;
 		this.cpuStrums = cpuStrums;
 		this.splashes = splashes; // NUEVO
+		this.playerStrumsGroup = playerStrumsGroup; // ✅ Guardar referencia
+		this.cpuStrumsGroup = cpuStrumsGroup; // ✅ Guardar referencia
 
 		// Crear renderer con pooling y batching
 		renderer = new NoteRenderer(notes, playerStrums, cpuStrums);
@@ -150,7 +159,7 @@ class NoteManager
 		spawnNotes(songPosition);
 		updateActiveNotes(songPosition);
 		updateStrumAnimations();
-		
+
 		// NUEVO: Actualizar batcher y hold splashes
 		if (renderer != null)
 		{
@@ -210,13 +219,13 @@ class NoteManager
 			onCPUNoteHit(note);
 
 		handleStrumAnimation(note.noteData, false);
-		
+
 		// NUEVO: No crear splash para CPU notes si son sustain notes intermedias
 		if (!note.isSustainNote)
 		{
 			createNormalSplash(note, false);
 		}
-		
+
 		removeNote(note);
 	}
 
@@ -238,10 +247,11 @@ class NoteManager
 			removeNote(note);
 		}
 	}
-
+	
 	private function updateStrumAnimations():Void
 	{
-		var resetStrum = function(spr:FlxSprite) {
+		var resetStrum = function(spr:FlxSprite)
+		{
 			if (spr.animation.curAnim != null && spr.animation.curAnim.name == 'confirm' && spr.animation.finished)
 			{
 				spr.animation.play('static');
@@ -251,23 +261,43 @@ class NoteManager
 		cpuStrums.forEach(resetStrum);
 		playerStrums.forEach(resetStrum);
 	}
-
+	
 	private function handleStrumAnimation(data:Int, isPlayer:Bool):Void
 	{
+		var noteID = Std.int(Math.abs(data));
+		
+		// ✅ Intentar usar StrumsGroup primero
+		var strumsGroup = isPlayer ? playerStrumsGroup : cpuStrumsGroup;
+		if (strumsGroup != null)
+		{
+			strumsGroup.playConfirm(noteID);
+			return;
+		}
+		
+		// Fallback: usar FlxTypedGroup directamente
 		var targetGroup = isPlayer ? playerStrums : cpuStrums;
-		var noteID = Math.abs(data);
 
 		targetGroup.forEach(function(spr:FlxSprite)
 		{
 			if (spr.ID == noteID)
 			{
-				spr.animation.play('confirm', true);
-				spr.centerOffsets();
-
-				if (NoteSkinSystem.offsetDefault && !PlayState.SONG.stage.startsWith('school'))
+				// Verificar si es StrumNote y usar playAnim()
+				if (Std.isOfType(spr, StrumNote))
 				{
-					spr.offset.x -= 13;
-					spr.offset.y -= 13;
+					var strumNote:StrumNote = cast(spr, StrumNote);
+					strumNote.playAnim('confirm', true);
+				}
+				else
+				{
+					// Fallback para FlxSprite genérico
+					spr.animation.play('confirm', true);
+					spr.centerOffsets();
+
+					if (NoteSkinSystem.offsetDefault && !PlayState.SONG.stage.startsWith('school'))
+					{
+						spr.offset.x -= 13;
+						spr.offset.y -= 13;
+					}
 				}
 			}
 		});
@@ -331,7 +361,7 @@ class NoteManager
 
 		note.wasGoodHit = true;
 		handleStrumAnimation(note.noteData, true);
-		
+
 		// NUEVO: Gestionar splashes según tipo de nota
 		if (note.isSustainNote)
 		{
@@ -343,26 +373,26 @@ class NoteManager
 			createNormalSplash(note, true);
 			removeNote(note);
 		}
-		
+
 		// Callback
 		if (onNoteHit != null)
 			onNoteHit(note);
 	}
-	
+
 	/**
 	 * NUEVO: Manejar hit de sustain note
 	 */
 	private function handleSustainNoteHit(note:Note):Void
 	{
 		var direction = note.noteData;
-		
+
 		// Si es la primera parte de la hold note
 		if (!heldNotes.exists(direction))
 		{
 			// Marcar como held
 			heldNotes.set(direction, note);
 			holdStartTimes.set(direction, Conductor.songPosition);
-			
+
 			// Crear splash de inicio
 			var strum = getStrumForDirection(direction, true);
 			if (strum != null && renderer != null)
@@ -370,18 +400,18 @@ class NoteManager
 				var splash = renderer.createHoldStartSplash(note, strum.x, strum.y);
 				if (splash != null)
 					splashes.add(splash);
-				
+
 				// Iniciar splash continuo
 				var continuousSplash = renderer.startHoldContinuousSplash(note, strum.x, strum.y);
 				if (continuousSplash != null)
 					splashes.add(continuousSplash);
 			}
 		}
-		
+
 		// Remover la nota sustain
 		removeNote(note);
 	}
-	
+
 	/**
 	 * NUEVO: Cuando se suelta una tecla de hold note
 	 */
@@ -389,27 +419,28 @@ class NoteManager
 	{
 		if (!heldNotes.exists(direction))
 			return;
-		
+
 		var note = heldNotes.get(direction);
 		var strum = getStrumForDirection(direction, true);
-		
+
 		if (strum != null && renderer != null)
 		{
 			// Detener splash continuo y crear splash de release
 			renderer.stopHoldSplash(note, strum.x, strum.y);
 		}
-		
+
 		heldNotes.remove(direction);
 		holdStartTimes.remove(direction);
 	}
-	
+
 	/**
 	 * NUEVO: Crear splash normal
 	 */
 	private function createNormalSplash(note:Note, isPlayer:Bool):Void
 	{
-		if (renderer == null) return;
-		
+		if (renderer == null)
+			return;
+
 		var strum = getStrumForDirection(note.noteData, isPlayer);
 		if (strum != null)
 		{
@@ -418,7 +449,7 @@ class NoteManager
 				splashes.add(splash);
 		}
 	}
-	
+
 	/**
 	 * NUEVO: Obtener strum para una dirección
 	 */
@@ -426,13 +457,13 @@ class NoteManager
 	{
 		var targetGroup = isPlayer ? playerStrums : cpuStrums;
 		var strum:FlxSprite = null;
-		
+
 		targetGroup.forEach(function(spr:FlxSprite)
 		{
 			if (spr.ID == direction)
 				strum = spr;
 		});
-		
+
 		return strum;
 	}
 
@@ -446,7 +477,7 @@ class NoteManager
 		{
 			releaseHoldNote(note.noteData);
 		}
-		
+
 		if (onNoteMiss != null)
 			onNoteMiss(note);
 
@@ -476,7 +507,7 @@ class NoteManager
 	{
 		return renderer != null ? renderer.getPoolStats() : "No renderer";
 	}
-	
+
 	/**
 	 * NUEVO: Toggle batching
 	 */
@@ -485,7 +516,7 @@ class NoteManager
 		if (renderer != null)
 			renderer.toggleBatching();
 	}
-	
+
 	/**
 	 * NUEVO: Toggle hold splashes
 	 */

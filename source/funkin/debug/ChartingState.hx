@@ -3,6 +3,8 @@ package funkin.debug;
 import funkin.data.Conductor.BPMChangeEvent;
 import funkin.data.Section.SwagSection;
 import funkin.data.Song.SwagSong;
+import funkin.data.Song.CharacterSlotData;
+import funkin.data.Song.StrumsGroupData;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxCamera;
@@ -148,6 +150,8 @@ class ChartingState extends funkin.states.MusicBeatState
 	var check_mustHitSection:FlxUICheckBox;
 	var check_changeBPM:FlxUICheckBox;
 	var check_altAnim:FlxUICheckBox;
+
+	var multiCharExtension:ChartingState_MultiCharExtension;
 
 	// HERRAMIENTAS
 	var clipboard:Array<Dynamic> = [];
@@ -426,6 +430,11 @@ class ChartingState extends funkin.states.MusicBeatState
 		addSettingsUI();
 
 		add(UI_box);
+		
+		if (multiCharExtension != null){
+			multiCharExtension = new ChartingState_MultiCharExtension(this, UI_box, _song);
+			multiCharExtension.setupTab();
+		}
 	}
 
 	function addSongUI():Void
@@ -965,6 +974,8 @@ class ChartingState extends funkin.states.MusicBeatState
 		updateToolbar();
 		updateInfoPanel();
 		updateStatusBar(elapsed);
+		if (multiCharExtension != null)
+			multiCharExtension.update(elapsed);
 
 		// ✨ SINCRONIZAR VOCALES - llamar en cada frame
 		syncVocals();
@@ -2324,3 +2335,478 @@ typedef ChartAction =
  * 
  * DISFRUTA! 🎮✨
  */
+
+ class ChartingState_MultiCharExtension
+{
+	// Referencias
+	var chartingState:ChartingState;
+	var UI_box:FlxUITabMenu;
+	var _song:funkin.data.Song.SwagSong;
+	
+	// Tab
+	var tab_multichar:FlxUI;
+	
+	// UI Elements - CHARACTERS
+	var charListText:FlxText;
+	var selectedCharIndex:Int = -1;
+	var charNameInput:FlxUIInputText;
+	var charXStepper:FlxUINumericStepper;
+	var charYStepper:FlxUINumericStepper;
+	var charScaleStepper:FlxUINumericStepper;
+	var charVisibleCheck:FlxUICheckBox;
+	var charFlipCheck:FlxUICheckBox;
+	var charDropDown:FlxUIDropDownMenu;
+	
+	// UI Elements - STRUMS
+	var strumsListText:FlxText;
+	var selectedStrumsIndex:Int = -1;
+	var strumsIdInput:FlxUIInputText;
+	var strumsXStepper:FlxUINumericStepper;
+	var strumsYStepper:FlxUINumericStepper;
+	var strumsSpacingStepper:FlxUINumericStepper;
+	var strumsVisibleCheck:FlxUICheckBox;
+	var strumsCPUCheck:FlxUICheckBox;
+	
+	// Colors
+	static inline var ACCENT_CYAN:Int = 0xFF00D9FF;
+	static inline var ACCENT_GREEN:Int = 0xFF00FF88;
+	static inline var ACCENT_ERROR:Int = 0xFFFF3366;
+	static inline var TEXT_WHITE:Int = 0xFFFFFFFF;
+	static inline var TEXT_GRAY:Int = 0xFFAAAAAA;
+	
+	public function new(chartingState:ChartingState, UI_box:FlxUITabMenu, _song:funkin.data.Song.SwagSong)
+	{
+		this.chartingState = chartingState;
+		this.UI_box = UI_box;
+		this._song = _song;
+	}
+	
+	public function setupTab():Void
+	{
+		tab_multichar = new FlxUI(null, UI_box);
+		tab_multichar.name = 'Multi-Char';
+		
+		var yPos:Float = 10;
+		
+		// === TÍTULO ===
+		var title = new FlxText(10, yPos, 0, "🎭 MULTI-CHARACTER SYSTEM", 14);
+		title.setFormat(Paths.font("vcr.ttf"), 14, ACCENT_CYAN, LEFT);
+		tab_multichar.add(title);
+		yPos += 25;
+		
+		// === SECCIÓN PERSONAJES ===
+		setupCharactersSection(yPos);
+		yPos += 280;
+		
+		// === SECCIÓN STRUMS ===
+		setupStrumsSection(yPos);
+		
+		UI_box.addGroup(tab_multichar);
+		
+		trace('[MultiChar Extension] Tab creada exitosamente');
+	}
+	
+	function setupCharactersSection(yPos:Float):Void
+	{
+		// --- HEADER ---
+		var charHeader = new FlxText(10, yPos, 0, "PERSONAJES", 12);
+		charHeader.setFormat(Paths.font("vcr.ttf"), 12, ACCENT_GREEN, LEFT);
+		tab_multichar.add(charHeader);
+		yPos += 20;
+		
+		// --- LISTA DE PERSONAJES ---
+		charListText = new FlxText(10, yPos, 250, getCharactersList(), 10);
+		charListText.setFormat(Paths.font("vcr.ttf"), 10, TEXT_GRAY, LEFT);
+		tab_multichar.add(charListText);
+		yPos += 60;
+		
+		// --- BOTONES ---
+		var addCharBtn = new FlxButton(10, yPos, "Añadir", addCharacter);
+		var removeCharBtn = new FlxButton(80, yPos, "Eliminar", removeCharacter);
+		var upCharBtn = new FlxButton(150, yPos, "↑", moveCharacterUp);
+		var downCharBtn = new FlxButton(190, yPos, "↓", moveCharacterDown);
+		tab_multichar.add(addCharBtn);
+		tab_multichar.add(removeCharBtn);
+		tab_multichar.add(upCharBtn);
+		tab_multichar.add(downCharBtn);
+		yPos += 30;
+		
+		// --- SELECTOR DE PERSONAJE ---
+		var charSelectLabel = new FlxText(10, yPos, 0, "Editar personaje #:", 10);
+		tab_multichar.add(charSelectLabel);
+		yPos += 15;
+		
+		var charSelectStepper = new FlxUINumericStepper(10, yPos, 1, 0, 0, 10, 0);
+		charSelectStepper.name = 'char_select';
+		tab_multichar.add(charSelectStepper);
+		yPos += 25;
+		
+		// --- DROPDOWN DE PERSONAJES DISPONIBLES ---
+		var charLabel = new FlxText(10, yPos, 0, "Personaje:", 10);
+		tab_multichar.add(charLabel);
+		yPos += 15;
+		
+		// Combine all character types into one list
+		CharacterList.init(); // Ensure initialized
+		var charList:Array<String> = [];
+		charList = charList.concat(CharacterList.boyfriends);
+		charList = charList.concat(CharacterList.opponents);
+		charList = charList.concat(CharacterList.girlfriends);
+		
+		charDropDown = new FlxUIDropDownMenu(10, yPos, FlxUIDropDownMenu.makeStrIdLabelArray(charList, true), function(charName:String)
+		{
+			if (selectedCharIndex >= 0 && selectedCharIndex < _song.characters.length)
+			{
+				_song.characters[selectedCharIndex].name = charList[Std.parseInt(charName)];
+				updateCharactersList();
+			}
+		});
+		tab_multichar.add(charDropDown);
+		yPos += 25;
+		
+		// --- POSICIÓN X ---
+		var xLabel = new FlxText(10, yPos, 0, "X:", 10);
+		tab_multichar.add(xLabel);
+		charXStepper = new FlxUINumericStepper(30, yPos, 10, 0, -2000, 2000, 0);
+		charXStepper.name = 'char_x';
+		tab_multichar.add(charXStepper);
+		yPos += 20;
+		
+		// --- POSICIÓN Y ---
+		var yLabel = new FlxText(10, yPos, 0, "Y:", 10);
+		tab_multichar.add(yLabel);
+		charYStepper = new FlxUINumericStepper(30, yPos, 10, 0, -2000, 2000, 0);
+		charYStepper.name = 'char_y';
+		tab_multichar.add(charYStepper);
+		yPos += 20;
+		
+		// --- ESCALA ---
+		var scaleLabel = new FlxText(10, yPos, 0, "Escala:", 10);
+		tab_multichar.add(scaleLabel);
+		charScaleStepper = new FlxUINumericStepper(60, yPos, 0.1, 1.0, 0.1, 5.0, 1);
+		charScaleStepper.name = 'char_scale';
+		tab_multichar.add(charScaleStepper);
+		yPos += 20;
+		
+		// --- CHECKBOXES ---
+		charVisibleCheck = new FlxUICheckBox(10, yPos, null, null, "Visible", 100);
+		charVisibleCheck.name = 'char_visible';
+		charVisibleCheck.checked = true;
+		tab_multichar.add(charVisibleCheck);
+		
+		charFlipCheck = new FlxUICheckBox(120, yPos, null, null, "Flip X", 100);
+		charFlipCheck.name = 'char_flip';
+		charFlipCheck.checked = false;
+		tab_multichar.add(charFlipCheck);
+	}
+	
+	function setupStrumsSection(yPos:Float):Void
+	{
+		// --- HEADER ---
+		var strumsHeader = new FlxText(10, yPos, 0, "GRUPOS DE STRUMS", 12);
+		strumsHeader.setFormat(Paths.font("vcr.ttf"), 12, ACCENT_GREEN, LEFT);
+		tab_multichar.add(strumsHeader);
+		yPos += 20;
+		
+		// --- LISTA DE STRUMS ---
+		strumsListText = new FlxText(10, yPos, 250, getStrumsList(), 10);
+		strumsListText.setFormat(Paths.font("vcr.ttf"), 10, TEXT_GRAY, LEFT);
+		tab_multichar.add(strumsListText);
+		yPos += 60;
+		
+		// --- BOTONES ---
+		var addStrumsBtn = new FlxButton(10, yPos, "Añadir", addStrumsGroup);
+		var removeStrumsBtn = new FlxButton(80, yPos, "Eliminar", removeStrumsGroup);
+		tab_multichar.add(addStrumsBtn);
+		tab_multichar.add(removeStrumsBtn);
+		yPos += 30;
+		
+		// --- SELECTOR ---
+		var strumsSelectLabel = new FlxText(10, yPos, 0, "Editar grupo #:", 10);
+		tab_multichar.add(strumsSelectLabel);
+		yPos += 15;
+		
+		var strumsSelectStepper = new FlxUINumericStepper(10, yPos, 1, 0, 0, 10, 0);
+		strumsSelectStepper.name = 'strums_select';
+		tab_multichar.add(strumsSelectStepper);
+		yPos += 25;
+		
+		// --- ID ---
+		var idLabel = new FlxText(10, yPos, 0, "ID:", 10);
+		tab_multichar.add(idLabel);
+		yPos += 15;
+		
+		strumsIdInput = new FlxUIInputText(10, yPos, 150, "strums_0", 10);
+		strumsIdInput.name = 'strums_id';
+		tab_multichar.add(strumsIdInput);
+		yPos += 25;
+		
+		// --- POSICIÓN X ---
+		var xLabel = new FlxText(10, yPos, 0, "X:", 10);
+		tab_multichar.add(xLabel);
+		strumsXStepper = new FlxUINumericStepper(30, yPos, 10, 100, 0, 2000, 0);
+		strumsXStepper.name = 'strums_x';
+		tab_multichar.add(strumsXStepper);
+		yPos += 20;
+		
+		// --- POSICIÓN Y ---
+		var yLabel2 = new FlxText(10, yPos, 0, "Y:", 10);
+		tab_multichar.add(yLabel2);
+		strumsYStepper = new FlxUINumericStepper(30, yPos, 10, 50, 0, 1000, 0);
+		strumsYStepper.name = 'strums_y';
+		tab_multichar.add(strumsYStepper);
+		yPos += 20;
+		
+		// --- ESPACIADO ---
+		var spacingLabel = new FlxText(10, yPos, 0, "Espaciado:", 10);
+		tab_multichar.add(spacingLabel);
+		strumsSpacingStepper = new FlxUINumericStepper(80, yPos, 10, 160, 50, 300, 0);
+		strumsSpacingStepper.name = 'strums_spacing';
+		tab_multichar.add(strumsSpacingStepper);
+		yPos += 20;
+		
+		// --- CHECKBOXES ---
+		strumsVisibleCheck = new FlxUICheckBox(10, yPos, null, null, "Visible", 100);
+		strumsVisibleCheck.name = 'strums_visible';
+		strumsVisibleCheck.checked = true;
+		tab_multichar.add(strumsVisibleCheck);
+		
+		strumsCPUCheck = new FlxUICheckBox(120, yPos, null, null, "CPU", 100);
+		strumsCPUCheck.name = 'strums_cpu';
+		strumsCPUCheck.checked = true;
+		tab_multichar.add(strumsCPUCheck);
+	}
+	
+	// ================================
+	// CHARACTERS FUNCTIONS
+	// ================================
+	
+	function addCharacter():Void
+	{
+		if (_song.characters == null)
+			_song.characters = [];
+		
+		var newChar:CharacterSlotData = {
+			name: "bf",
+			x: 400,
+			y: 300,
+			visible: true,
+			scale: 1.0
+		};
+		
+		_song.characters.push(newChar);
+		updateCharactersList();
+		trace('[MultiChar] Personaje añadido. Total: ${_song.characters.length}');
+	}
+	
+	function removeCharacter():Void
+	{
+		if (selectedCharIndex >= 0 && selectedCharIndex < _song.characters.length)
+		{
+			_song.characters.splice(selectedCharIndex, 1);
+			selectedCharIndex = -1;
+			updateCharactersList();
+			trace('[MultiChar] Personaje eliminado. Total: ${_song.characters.length}');
+		}
+	}
+	
+	function moveCharacterUp():Void
+	{
+		if (selectedCharIndex > 0 && selectedCharIndex < _song.characters.length)
+		{
+			var temp = _song.characters[selectedCharIndex];
+			_song.characters[selectedCharIndex] = _song.characters[selectedCharIndex - 1];
+			_song.characters[selectedCharIndex - 1] = temp;
+			selectedCharIndex--;
+			updateCharactersList();
+		}
+	}
+	
+	function moveCharacterDown():Void
+	{
+		if (selectedCharIndex >= 0 && selectedCharIndex < _song.characters.length - 1)
+		{
+			var temp = _song.characters[selectedCharIndex];
+			_song.characters[selectedCharIndex] = _song.characters[selectedCharIndex + 1];
+			_song.characters[selectedCharIndex + 1] = temp;
+			selectedCharIndex++;
+			updateCharactersList();
+		}
+	}
+	
+	// ================================
+	// STRUMS FUNCTIONS
+	// ================================
+	
+	function addStrumsGroup():Void
+	{
+		if (_song.strumsGroups == null)
+			_song.strumsGroups = [];
+		
+		var newGroup:StrumsGroupData = {
+			id: "strums_" + _song.strumsGroups.length,
+			x: 100,
+			y: 50,
+			visible: true,
+			cpu: false,
+			spacing: 160
+		};
+		
+		_song.strumsGroups.push(newGroup);
+		updateStrumsList();
+		trace('[MultiChar] Grupo de strums añadido. Total: ${_song.strumsGroups.length}');
+	}
+	
+	function removeStrumsGroup():Void
+	{
+		if (selectedStrumsIndex >= 0 && selectedStrumsIndex < _song.strumsGroups.length)
+		{
+			_song.strumsGroups.splice(selectedStrumsIndex, 1);
+			selectedStrumsIndex = -1;
+			updateStrumsList();
+			trace('[MultiChar] Grupo de strums eliminado. Total: ${_song.strumsGroups.length}');
+		}
+	}
+	
+	// ================================
+	// UPDATE LISTS
+	// ================================
+	
+	function updateCharactersList():Void
+	{
+		charListText.text = getCharactersList();
+	}
+	
+	function updateStrumsList():Void
+	{
+		strumsListText.text = getStrumsList();
+	}
+	
+	function getCharactersList():String
+	{
+		if (_song.characters == null || _song.characters.length == 0)
+			return "Sin personajes";
+		
+		var list = "";
+		for (i in 0..._song.characters.length)
+		{
+			var char = _song.characters[i];
+			list += '#$i: ${char.name}\n';
+		}
+		return list;
+	}
+	
+	function getStrumsList():String
+	{
+		if (_song.strumsGroups == null || _song.strumsGroups.length == 0)
+			return "Sin grupos";
+		
+		var list = "";
+		for (i in 0..._song.strumsGroups.length)
+		{
+			var group = _song.strumsGroups[i];
+			var type = group.cpu ? "CPU" : "PLAYER";
+			list += '#$i: ${group.id} ($type)\n';
+		}
+		return list;
+	}
+	
+	// ================================
+	// UPDATE
+	// ================================
+	
+	public function update(elapsed:Float):Void
+	{
+		// Leer valores de los steppers y aplicarlos
+		updateCharacterValues();
+		updateStrumsValues();
+	}
+	
+	function updateCharacterValues():Void
+	{
+		// Detectar cambio de selección
+		var selectStepper:FlxUINumericStepper = cast tab_multichar.getAsset('char_select');
+		if (selectStepper != null)
+		{
+			var newIndex = Std.int(selectStepper.value);
+			if (newIndex != selectedCharIndex)
+			{
+				selectedCharIndex = newIndex;
+				loadCharacterToUI(selectedCharIndex);
+			}
+		}
+		
+		// Aplicar valores si hay un personaje seleccionado
+		if (selectedCharIndex >= 0 && selectedCharIndex < _song.characters.length)
+		{
+			var char = _song.characters[selectedCharIndex];
+			
+			if (charXStepper != null) char.x = charXStepper.value;
+			if (charYStepper != null) char.y = charYStepper.value;
+			if (charScaleStepper != null) char.scale = charScaleStepper.value;
+			if (charVisibleCheck != null) char.visible = charVisibleCheck.checked;
+			if (charFlipCheck != null) char.flip = charFlipCheck.checked;
+		}
+	}
+	
+	function updateStrumsValues():Void
+	{
+		// Detectar cambio de selección
+		var selectStepper:FlxUINumericStepper = cast tab_multichar.getAsset('strums_select');
+		if (selectStepper != null)
+		{
+			var newIndex = Std.int(selectStepper.value);
+			if (newIndex != selectedStrumsIndex)
+			{
+				selectedStrumsIndex = newIndex;
+				loadStrumsToUI(selectedStrumsIndex);
+			}
+		}
+		
+		// Aplicar valores si hay un grupo seleccionado
+		if (selectedStrumsIndex >= 0 && selectedStrumsIndex < _song.strumsGroups.length)
+		{
+			var group = _song.strumsGroups[selectedStrumsIndex];
+			
+			if (strumsIdInput != null) group.id = strumsIdInput.text;
+			if (strumsXStepper != null) group.x = strumsXStepper.value;
+			if (strumsYStepper != null) group.y = strumsYStepper.value;
+			if (strumsSpacingStepper != null) group.spacing = strumsSpacingStepper.value;
+			if (strumsVisibleCheck != null) group.visible = strumsVisibleCheck.checked;
+			if (strumsCPUCheck != null) group.cpu = strumsCPUCheck.checked;
+		}
+	}
+	
+	function loadCharacterToUI(index:Int):Void
+	{
+		if (index < 0 || index >= _song.characters.length)
+			return;
+		
+		var char = _song.characters[index];
+		
+		if (charXStepper != null) charXStepper.value = char.x;
+		if (charYStepper != null) charYStepper.value = char.y;
+		if (charScaleStepper != null) charScaleStepper.value = char.scale != null ? char.scale : 1.0;
+		if (charVisibleCheck != null) charVisibleCheck.checked = char.visible != null ? char.visible : true;
+		if (charFlipCheck != null) charFlipCheck.checked = char.flip != null ? char.flip : false;
+		
+		trace('[MultiChar] Personaje #$index cargado en UI: ${char.name}');
+	}
+	
+	function loadStrumsToUI(index:Int):Void
+	{
+		if (index < 0 || index >= _song.strumsGroups.length)
+			return;
+		
+		var group = _song.strumsGroups[index];
+		
+		if (strumsIdInput != null) strumsIdInput.text = group.id;
+		if (strumsXStepper != null) strumsXStepper.value = group.x;
+		if (strumsYStepper != null) strumsYStepper.value = group.y;
+		if (strumsSpacingStepper != null) strumsSpacingStepper.value = group.spacing != null ? group.spacing : 160;
+		if (strumsVisibleCheck != null) strumsVisibleCheck.checked = group.visible;
+		if (strumsCPUCheck != null) strumsCPUCheck.checked = group.cpu;
+		
+		trace('[MultiChar] Grupo de strums #$index cargado en UI: ${group.id}');
+	}
+}

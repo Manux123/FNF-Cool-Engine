@@ -338,14 +338,20 @@ class OptimizationOptions extends MusicBeatState
 	public static var canDoLeft:Bool = false;
 
 	var options:Array<Option> = [
+		new GPURenderingOption(),
+		new QualityLevelOption(),
+		new AdaptiveQualityOption(),
+		new TextureCacheOption(),
+		new ShowStatsOption(),
 		new StaticStageOption(),
 		new ByePeople(),
         new ByeGF(),
-		//new EffectsOption()
 	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
 	var versionShit:FlxText;
+	var statsText:FlxText;
+	
 	override function create()
 	{
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
@@ -362,7 +368,7 @@ class OptimizationOptions extends MusicBeatState
 		
 		#if desktop
 		// Updating Discord Rich Presence
-		DiscordClient.changePresence("In the Options", null);
+		DiscordClient.changePresence("In the Optimization Options", null);
 		#end
 
 		for (i in 0...options.length)
@@ -376,7 +382,6 @@ class OptimizationOptions extends MusicBeatState
 				controlLabel.alpha = 1;
 
 			grpControls.add(controlLabel);
-			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
 		}
 
 		var optionsBG:FlxSprite = new FlxSprite();
@@ -387,10 +392,19 @@ class OptimizationOptions extends MusicBeatState
 		optionsBG.screenCenter(X);
 	    add(optionsBG);
 
-		versionShit = new FlxText(5, FlxG.height - 18, 0, "Offset (Left, Right): " + FlxG.save.data.offset, 12);
+		// Texto de información
+		versionShit = new FlxText(5, FlxG.height - 80, FlxG.width - 10, "", 12);
 		versionShit.scrollFactor.set();
-		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionShit.setFormat("VCR OSD Mono", 14, FlxColor.LIME, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
+		
+		// Texto de stats
+		statsText = new FlxText(5, FlxG.height - 50, FlxG.width - 10, "", 12);
+		statsText.scrollFactor.set();
+		statsText.setFormat("VCR OSD Mono", 12, FlxColor.CYAN, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		add(statsText);
+		
+		updateInfoText();
 
 		#if mobileC
 		addVirtualPad(FULL, A_B);
@@ -409,20 +423,6 @@ class OptimizationOptions extends MusicBeatState
 			if (controls.DOWN_P)
 				changeSelection(1);
 
-
-			if (controls.RIGHT_R)
-			{
-				FlxG.save.data.offset++;
-				versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset;
-			}
-
-			if (controls.LEFT_R)
-				{
-					FlxG.save.data.offset--;
-					versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset;
-				}
-	
-
 			if (controls.ACCEPT)
 			{
 				if (options[curSelected].press()) {
@@ -430,9 +430,49 @@ class OptimizationOptions extends MusicBeatState
 					var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, options[curSelected].getDisplay(), true, false);
 					ctrl.isMenuItem = true;
 					grpControls.add(ctrl);
+					
+					updateInfoText();
 				}
 			}
+			
+			// Actualizar stats cada 30 frames
+			if (FlxG.game.ticks % 30 == 0)
+			{
+				updateStatsText();
+			}
+			
 		FlxG.save.flush();
+	}
+	
+	function updateInfoText():Void
+	{
+		var info = "GPU: " + (FlxG.save.data.gpuRendering ? "ON" : "OFF");
+		info += " | Quality: " + getQualityName();
+		info += " | Adaptive: " + (FlxG.save.data.adaptiveQuality ? "ON" : "OFF");
+		info += " | Cache: " + (FlxG.save.data.textureCache ? "ON" : "OFF");
+		
+		versionShit.text = info;
+	}
+	
+	function updateStatsText():Void
+	{
+		var stats = "FPS: " + Std.int(1.0 / FlxG.elapsed);
+		stats += " | Cache: " + Paths.getCacheStats().split('\n')[5]; // Hit rate line
+		
+		statsText.text = stats;
+	}
+	
+	function getQualityName():String
+	{
+		var level = FlxG.save.data.qualityLevel != null ? FlxG.save.data.qualityLevel : 2;
+		return switch(level)
+		{
+			case 0: "LOW";
+			case 1: "MEDIUM";
+			case 2: "HIGH";
+			case 3: "ULTRA";
+			default: "HIGH";
+		};
 	}
 
 	var isSettingControl:Bool = false;
@@ -452,8 +492,6 @@ class OptimizationOptions extends MusicBeatState
 		if (curSelected >= grpControls.length)
 			curSelected = 0;
 
-		// selector.y = (70 * curSelected) + 30;
-
 		var bullShit:Int = 0;
 
 		for (item in grpControls.members)
@@ -462,12 +500,10 @@ class OptimizationOptions extends MusicBeatState
 			bullShit++;
 
 			item.alpha = 0.3;
-			// item.setGraphicSize(Std.int(item.width * 0.8));
 
 			if (item.targetY == 0)
 			{
 				item.alpha = 1;
-				// item.setGraphicSize(Std.int(item.width));
 			}
 		}
 	}
@@ -490,6 +526,102 @@ class Option
 	public function press():Bool { return throw "stub!"; }
 	private function updateDisplay():String { return throw "stub!"; }
 }
+
+// ========================================
+// OPTIMIZATION OPTIONS
+// ========================================
+
+class GPURenderingOption extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.gpuRendering = !FlxG.save.data.gpuRendering;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return FlxG.save.data.gpuRendering ? "GPU Rendering: ON" : "GPU Rendering: OFF";
+	}
+}
+
+class QualityLevelOption extends Option
+{
+	public override function press():Bool
+	{
+		if (FlxG.save.data.qualityLevel == null)
+			FlxG.save.data.qualityLevel = 2; // Default HIGH
+			
+		FlxG.save.data.qualityLevel = (FlxG.save.data.qualityLevel + 1) % 4;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		var level = FlxG.save.data.qualityLevel != null ? FlxG.save.data.qualityLevel : 2;
+		var name = switch(level)
+		{
+			case 0: "LOW";
+			case 1: "MEDIUM";
+			case 2: "HIGH";
+			case 3: "ULTRA";
+			default: "HIGH";
+		};
+		return "Quality: " + name;
+	}
+}
+
+class AdaptiveQualityOption extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.adaptiveQuality = !FlxG.save.data.adaptiveQuality;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return FlxG.save.data.adaptiveQuality ? "Adaptive Quality: ON" : "Adaptive Quality: OFF";
+	}
+}
+
+class TextureCacheOption extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.textureCache = !FlxG.save.data.textureCache;
+		Paths.setCacheEnabled(FlxG.save.data.textureCache);
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return FlxG.save.data.textureCache ? "Texture Cache: ON" : "Texture Cache: OFF";
+	}
+}
+
+class ShowStatsOption extends Option
+{
+	public override function press():Bool
+	{
+		FlxG.save.data.showStats = !FlxG.save.data.showStats;
+		display = updateDisplay();
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return FlxG.save.data.showStats ? "Show Stats: ON" : "Show Stats: OFF";
+	}
+}
+
+// ========================================
+// STAGE/VISUAL OPTIONS
+// ========================================
 
 class StaticStageOption extends Option
 {
@@ -535,6 +667,10 @@ class ByePeople extends Option
 		return FlxG.save.data.byebg ? "Remove BG Stuff" : "Add BG Stuff";
 	}
 }
+
+// ========================================
+// GAMEPLAY OPTIONS
+// ========================================
 
 class DownscrollOption extends Option
 {
@@ -766,6 +902,24 @@ class OptionsData
 
 			if(FlxG.save.data.hitsounds == null)
 				FlxG.save.data.hitsounds = false;
+			
+			// === GPU OPTIMIZATION SETTINGS ===
+			if (FlxG.save.data.gpuRendering == null)
+				FlxG.save.data.gpuRendering = true;
+			
+			if (FlxG.save.data.qualityLevel == null)
+				FlxG.save.data.qualityLevel = 2; // HIGH por defecto
+			
+			if (FlxG.save.data.adaptiveQuality == null)
+				FlxG.save.data.adaptiveQuality = true;
+			
+			if (FlxG.save.data.textureCache == null)
+				FlxG.save.data.textureCache = true;
+			
+			if (FlxG.save.data.showStats == null)
+				FlxG.save.data.showStats = false;
+			
+			// Aplicar configuración de caché
+			Paths.setCacheEnabled(FlxG.save.data.textureCache);
 		}
 }
-

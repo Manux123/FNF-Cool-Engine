@@ -101,7 +101,8 @@ class StageEditor extends FlxState
 		
 		FlxG.cameras.reset(camEditor);
 		FlxG.cameras.add(camHUD, false);
-		
+		flixel.FlxCamera.defaultCameras = [camEditor];
+
 		FlxG.sound.playMusic(Paths.music('chartEditorLoop/chartEditorLoop'),0.7);
 		
 		camEditor.zoom = camZoom;
@@ -306,18 +307,25 @@ class StageEditor extends FlxState
 		
 		// Top Bar
 		topBar = new FlxSprite(0, 0).makeGraphic(FlxG.width, 40, 0xFF2a2a3e);
+		topBar.cameras = [camHUD];
 		uiGroup.add(topBar);
 		
 		var title = new FlxText(10, 10, 0, "STAGE EDITOR - " + stageData.name, 16);
 		title.setFormat(null, 16, FlxColor.WHITE, LEFT);
+		topBar.cameras = [camHUD];
 		uiGroup.add(title);
 		
 		// Botones del top bar
 		var saveBtn = new FlxButton(FlxG.width - 480, 10, "Save JSON", saveJSON);
+		saveBtn.cameras = [camHUD];
 		var loadBtn = new FlxButton(FlxG.width - 380, 10, "Load JSON", loadJSON);
+		loadBtn.cameras = [camHUD];
 		var reloadBtn = new FlxButton(FlxG.width - 280, 10, "Reload", reloadStage);
+		reloadBtn.cameras = [camHUD];
 		var undoBtn = new FlxButton(FlxG.width - 180, 10, "Undo", undo);
+		undoBtn.cameras = [camHUD];
 		var redoBtn = new FlxButton(FlxG.width - 110, 10, "Redo", redo);
+		redoBtn.cameras = [camHUD];
 		
 		uiGroup.add(saveBtn);
 		uiGroup.add(loadBtn);
@@ -346,6 +354,7 @@ class StageEditor extends FlxState
 		leftPanel.x = 0;
 		leftPanel.y = 40;
 		leftPanel.scrollFactor.set();
+		leftPanel.cameras = [camHUD];
 		uiGroup.add(leftPanel);
 		
 		// Tab: Stage Properties
@@ -439,6 +448,7 @@ class StageEditor extends FlxState
 		// Tab: Scripts
 		var scriptsTab = new FlxUI(null, leftPanel);
 		scriptsTab.name = "Scripts";
+		scriptsTab.cameras = [camHUD];
 		
 		var addScriptBtn = new FlxButton(10, 10, "Add Script", addScript);
 		scriptsTab.add(addScriptBtn);
@@ -458,11 +468,13 @@ class StageEditor extends FlxState
 		rightPanel.x = FlxG.width - 350;
 		rightPanel.y = 40;
 		rightPanel.scrollFactor.set();
+		rightPanel.cameras = [camHUD];
 		uiGroup.add(rightPanel);
 		
 		// Tab: Elements List
 		var elementsTab = new FlxUI(null, rightPanel);
 		elementsTab.name = "Elements";
+		elementsTab.cameras = [camHUD];
 		
 		var addElementBtn = new FlxButton(10, 10, "Add Element", () -> {
 			openAddElementMenu();
@@ -485,6 +497,7 @@ class StageEditor extends FlxState
 		// Tab: Element Properties
 		var propsTab = new FlxUI(null, rightPanel);
 		propsTab.name = "Properties";
+		propsTab.cameras = [camHUD];
 		
 		selectedElementText = new FlxText(10, 10, 300, "No element selected\n\nClick on a stage element\nto select it!");
 		selectedElementText.setFormat(null, 12, FlxColor.WHITE, LEFT);

@@ -538,11 +538,10 @@ class Stage extends FlxTypedGroup<FlxBasic>
 			{
 				case "BackgroundGirls":
 					// Crear usando Type.createInstance para mejor compatibilidad
-					var bgClass = Type.resolveClass("funkin.gameplay.objects.stages.BackgroundGirls");
+					var bgClass = funkin.gameplay.objects.stages.BackgroundGirls;
 					if (bgClass != null)
 					{
 						sprite = Type.createInstance(bgClass, [x, y]);
-
 						// Aplicar propiedades personalizadas
 						if (customProps != null && customProps.scared == true)
 						{
@@ -555,7 +554,7 @@ class Stage extends FlxTypedGroup<FlxBasic>
 					}
 
 				case "BackgroundDancer":
-					var dancerClass = Type.resolveClass("funkin.gameplay.objects.stages.BackgroundDancer");
+					var dancerClass = funkin.gameplay.objects.stages.BackgroundDancer;
 					if (dancerClass != null)
 					{
 						sprite = Type.createInstance(dancerClass, [x, y]);

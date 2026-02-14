@@ -3,6 +3,7 @@ package funkin.gameplay.objects.stages;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
+import extensions.CoolUtil;
 
 class BackgroundGirls extends FlxSprite
 {

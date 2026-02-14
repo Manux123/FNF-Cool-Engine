@@ -1,6 +1,8 @@
 var fastCar = null;
 var fastCarCanDrive:Bool = true;
 
+var dancers = null;
+
 // ==========================================
 // INICIALIZACIÓN
 // ==========================================
@@ -24,6 +26,8 @@ function onStageCreate()
 		{
 			resetFastCar();
 		}
+
+		dancers = stage.getGroup('limos');
 		
 		trace('[Limo Stage] Elementos inicializados:');
 		trace('  - fastCar: ' + (fastCar != null));
@@ -41,6 +45,11 @@ function onBeatHit(beat)
 	{
 		fastCarDrive();
 	}
+
+	dancers.forEach(function(dancer:BackgroundDancer)
+				{
+					dancer.dance();
+				});
 }
 
 // ==========================================

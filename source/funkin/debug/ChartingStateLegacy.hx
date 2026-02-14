@@ -115,10 +115,6 @@ class ChartingStateLegacy extends states.MusicBeatState
 
 	override function create()
 	{
-		if (FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
 
 		#if desktop
 		DiscordClient.changePresence("Chart Editor", null, null, true);
@@ -137,7 +133,7 @@ class ChartingStateLegacy extends states.MusicBeatState
 		bg = new FlxSprite().loadGraphic(Paths.image('menu/menuChartingBG'));
 		bg.color = 0xFF453F3F;
 		bg.scrollFactor.set();
-		bg.antialiasing = true;
+		bg.antialiasing = FlxG.save.data.antialiasing;
 		add(bg);
 
 		gridBG = FlxGridOverlay.create(GRID_SIZE, GRID_SIZE, GRID_SIZE * 8, GRID_SIZE * 16);

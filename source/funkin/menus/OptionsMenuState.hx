@@ -5,6 +5,7 @@ import openfl.display.FPS;
 import data.Discord.DiscordClient;
 #end
 import funkin.menus.KeyBindMenu;
+import funkin.scripting.StateScriptHandler;
 import funkin.gameplay.controls.CustomControlsState;
 import funkin.gameplay.controls.Controls.KeyboardScheme;
 import funkin.gameplay.controls.Controls.Control;
@@ -33,6 +34,9 @@ import ui.Alphabet;
 
 using StringTools;
 
+/**
+ * Main Options Menu - Categorized options with visual interface
+ */
 class OptionsMenuState extends MusicBeatState
 {
 	var selector:FlxText;
@@ -40,35 +44,62 @@ class OptionsMenuState extends MusicBeatState
 	var menuBG:FlxSprite;
 
 	var controlsStrings:Array<String> = [];
-
 	private var grpControls:FlxTypedGroup<Alphabet>;
+	
+	// Visual elements
+	var categoryDesc:FlxText;
+	var categoryIcons:FlxTypedGroup<FlxSprite>;
 
 	public static var isPlayingMusic:Bool = false;
+	public static var fromPause:Bool = false; // Track if opened from pause menu
+
+	public static var optionsSong:String = '';
+	
 	override function create()
 	{
+		// Cargar scripts del state
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.init();
+		StateScriptHandler.loadStateScripts('OptionsMenuState', this);
+		StateScriptHandler.callOnScripts('onCreate', []);
+		#end
+		
 		menuBG = new FlxSprite().loadGraphic(Paths.image('menu/menuBG'));
 		controlsStrings = CoolUtil.coolStringFile(
-			("\n" + 'Preferences') +
+			("\n" + 'Graphics') +
+			("\n" + 'Gameplay') +
 			("\n" + 'Optimization') +
 			("\n" + 'Note Skin') +
 			("\n" + 'Controls'));
 		
-		//trace(controlsStrings);
-
+		// Añadir categorías custom desde scripts
+		#if HSCRIPT_ALLOWED
+		var customCategories = StateScriptHandler.getCustomCategories();
+		for (category in customCategories)
+		{
+			controlsStrings.push(category);
+		}
+		#end
+		
 		#if desktop
-		// Updating Discord Rich Presence
 		DiscordClient.changePresence("In the Options", null);
 		#end
 
 		MainMenuState.musicFreakyisPlaying = false;
-		if (!isPlayingMusic && FreeplayState.vocals == null){
+		if (!isPlayingMusic && FreeplayState.vocals == null && !fromPause){
 			FlxG.sound.playMusic(Paths.music('configurator'));
 		}
 
 		menuBG.screenCenter();
-		menuBG.antialiasing = true;
+		menuBG.antialiasing = FlxG.save.data.antialiasing;
 		menuBG.color = 0xFF453F3F;
 		add(menuBG);
+
+		// Title text
+		var titleText:FlxText = new FlxText(0, 30, FlxG.width, "OPTIONS MENU", 32);
+		titleText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+		titleText.borderSize = 2;
+		add(titleText);
 
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
@@ -86,61 +117,115 @@ class OptionsMenuState extends MusicBeatState
 			grpControls.add(controlLabel);
 		}
 
+		// Category description
+		categoryDesc = new FlxText(0, FlxG.height - 80, FlxG.width, "", 20);
+		categoryDesc.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+		categoryDesc.borderSize = 1.5;
+		add(categoryDesc);
+		
+		updateCategoryDesc();
+
 		#if mobileC
 		addVirtualPad(UP_DOWN, A_B);
 		#end
 		super.create();
 	}
 
+	function updateCategoryDesc():Void
+	{
+		switch(curSelected)
+		{
+			case 0:
+				categoryDesc.text = "Resolution, FPS, Window Mode";
+			case 1:
+				categoryDesc.text = "Downscroll, Ghost Tapping, Accuracy, etc.";
+			case 2:
+				categoryDesc.text = "Performance settings and optimizations";
+			case 3:
+				categoryDesc.text = "Customize your note appearance";
+			case 4:
+				categoryDesc.text = "Configure keyboard and gamepad controls";
+		}
+	}
+
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
+		
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
+		#end
 
-			if (controls.UP_P)
-				changeSelection(-1);
-			if (controls.DOWN_P)
-				changeSelection(1);
+		if (controls.UP_P)
+			changeSelection(-1);
+		if (controls.DOWN_P)
+			changeSelection(1);
 
-			if (controls.ACCEPT)
+		if (controls.ACCEPT)
+		{
+			#if HSCRIPT_ALLOWED
+			var cancelled = StateScriptHandler.callOnScriptsReturn('onAccept', [], false);
+			if (cancelled) {
+				FlxG.save.flush();
+				return;
+			}
+			#end
+			
+			isPlayingMusic = true;
+			switch(curSelected)
 			{
-				isPlayingMusic = true;
-				/*
-				if (curSelected != 5) Useless
-					grpControls.remove(grpControls.members[curSelected]);*/
-				switch(curSelected)
-				{
-					case 0:
-						FlxG.switchState(new OptionsMenu());
-					case 1:
-						FlxG.switchState(new OptimizationOptions());
-					case 2:
-						FlxG.switchState(new NoteSkinOptions());
-					case 3:
-						#if mobileC
-						FlxG.switchState(new CustomControlsState());
-						#else
-						FlxG.state.openSubState(new KeyBindMenu());
-						#end
-				}
+				case 0:
+					FlxG.switchState(new GraphicsOptionsMenu());
+				case 1:
+					FlxG.switchState(new GameplayOptionsMenu());
+				case 2:
+					FlxG.switchState(new OptimizationOptions());
+				case 3:
+					FlxG.switchState(new NoteSkinOptions());
+				case 4:
+					#if mobileC
+					FlxG.switchState(new CustomControlsState());
+					#else
+					FlxG.state.openSubState(new KeyBindMenu());
+					#end
+				default:
+					// Manejar categorías custom desde scripts
+					#if HSCRIPT_ALLOWED
+					StateScriptHandler.callOnScripts('onCategorySelected', [curSelected]);
+					#end
 			}
+		}
 
-			if (controls.BACK){
-				FlxG.sound.play(Paths.sound('cancelMenu'));
-				FlxG.switchState(new MainMenuState());
-				OptionsData.initSave();
-				isPlayingMusic = false;
+		if (controls.BACK){
+			#if HSCRIPT_ALLOWED
+			var cancelled = StateScriptHandler.callOnScriptsReturn('onBack', [], false);
+			if (cancelled) {
+				FlxG.save.flush();
+				return;
 			}
+			#end
+			
+			FlxG.sound.play(Paths.sound('cancelMenu'));
+			if (!PlayState.isPlaying)
+				FlxG.switchState(new MainMenuState());
+			else{
+				if (PlayState.SONG.song == null)
+					PlayState.SONG.song = optionsSong;
+				FlxG.switchState(new PlayState());
+			}
+			OptionsData.initSave();
+			isPlayingMusic = false;
+		}
+		
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
+		#end
+		
 		FlxG.save.flush();
 	}
 
-	var isSettingControl:Bool = false;
-
 	function changeSelection(change:Int = 0)
 	{
-		#if !switch
-		// NGio.logEvent('Fresh');
-		#end
-		
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
 
 		curSelected += change;
@@ -150,8 +235,6 @@ class OptionsMenuState extends MusicBeatState
 		if (curSelected >= grpControls.length)
 			curSelected = 0;
 
-		// selector.y = (70 * curSelected) + 30;
-
 		var bullShit:Int = 0;
 
 		for (item in grpControls.members)
@@ -160,25 +243,255 @@ class OptionsMenuState extends MusicBeatState
 			bullShit++;
 
 			item.alpha = 0.3;
-			// item.setGraphicSize(Std.int(item.width * 0.8));
 
 			if (item.targetY == 0)
 			{
 				item.alpha = 1;
-				// item.setGraphicSize(Std.int(item.width));
 			}
 		}
+		
+		updateCategoryDesc();
+		
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onSelectionChanged', [curSelected]);
+		#end
 	}
 }
 
-class OptionsMenu extends MusicBeatState
+/**
+ * Graphics Options Menu - Resolution, FPS, Window Mode
+ */
+class GraphicsOptionsMenu extends MusicBeatState
 {
-	var selector:FlxText;
 	var curSelected:Int = 0;
+	var options:Array<Option> = [];
+	private var grpControls:FlxTypedGroup<Alphabet>;
+	private var grpValues:FlxTypedGroup<FlxText>;
+	
+	// Visual info panel
+	var infoPanel:FlxSprite;
+	var infoText:FlxText;
+	var currentSettingsText:FlxText;
 
-	public static var canDoRight:Bool = false;
-	public static var canDoLeft:Bool = false;
+	override function create()
+	{
+		//PlayState.isPlaying = false;
+		
+		// Cargar scripts
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.init();
+		StateScriptHandler.loadStateScripts('GraphicsOptionsMenu', this);
+		StateScriptHandler.callOnScripts('onCreate', []);
+		#end
+		
+		// Background
+		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
+		menuBG.color = 0xFF453F3F;
+		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
+		menuBG.updateHitbox();
+		menuBG.screenCenter();
+		menuBG.antialiasing = FlxG.save.data.antialiasing;
+		add(menuBG);
 
+		#if desktop
+		DiscordClient.changePresence("Graphics Settings", null);
+		
+		options = [
+			new ResolutionOption(),
+			new FPSOption(),
+			new WindowModeOption(),
+			new AntiAliasingOption(),
+			new FullscreenOption()
+		];
+		#else
+		options = [
+			new FPSOption(),
+			new AntiAliasingOption()
+		];
+		#end
+		
+		// Añadir opciones custom desde scripts
+		#if HSCRIPT_ALLOWED
+		var customOptions = StateScriptHandler.getCustomOptions();
+		for (customOpt in customOptions)
+		{
+			options.push(new ScriptOption(customOpt));
+		}
+		#end
+
+		// Title
+		var titleText:FlxText = new FlxText(0, 20, FlxG.width, "GRAPHICS OPTIONS", 32);
+		titleText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+		titleText.borderSize = 2;
+		add(titleText);
+
+		// Info panel background
+		infoPanel = new FlxSprite(0, FlxG.height - 160).makeGraphic(FlxG.width, 160, FlxColor.BLACK);
+		infoPanel.alpha = 0.7;
+		add(infoPanel);
+
+		// Current settings display
+		currentSettingsText = new FlxText(20, FlxG.height - 150, FlxG.width - 40, "", 16);
+		currentSettingsText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, OUTLINE, FlxColor.BLACK);
+		add(currentSettingsText);
+		
+		// Info text
+		infoText = new FlxText(20, FlxG.height - 90, FlxG.width - 40, "", 18);
+		infoText.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.YELLOW, LEFT, OUTLINE, FlxColor.BLACK);
+		infoText.borderSize = 1.5;
+		add(infoText);
+
+		grpControls = new FlxTypedGroup<Alphabet>();
+		add(grpControls);
+		
+		grpValues = new FlxTypedGroup<FlxText>();
+		add(grpValues);
+
+		for (i in 0...options.length)
+		{
+			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 90, options[i].getName(), true, false);
+			controlLabel.isMenuItem = true;
+			controlLabel.targetY = i;
+			controlLabel.alpha = 0.3;
+			if(i == curSelected)
+				controlLabel.alpha = 1;
+			grpControls.add(controlLabel);
+			
+			// Value display on the right
+			var valueText:FlxText = new FlxText(FlxG.width - 400, (70 * i) + 100, 380, options[i].getValue(), 24);
+			valueText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.CYAN, RIGHT, OUTLINE, FlxColor.BLACK);
+			valueText.borderSize = 1.5;
+			valueText.alpha = 0.3;
+			if(i == curSelected)
+				valueText.alpha = 1;
+			grpValues.add(valueText);
+		}
+
+		updateInfoPanel();
+		updateCurrentSettings();
+
+		#if mobileC
+		addVirtualPad(FULL, A_B);
+		#end
+
+		super.create();
+	}
+
+	function updateInfoPanel():Void
+	{
+		infoText.text = options[curSelected].getDescription();
+	}
+	
+	function updateCurrentSettings():Void
+	{
+		var res = OptionsData.getResolutionString();
+		var fps = FlxG.drawFramerate;
+		var mode = OptionsData.getWindowModeString();
+		
+		currentSettingsText.text = 'Current: $res @ ${fps}FPS | Mode: $mode';
+	}
+
+	override function update(elapsed:Float)
+	{
+		super.update(elapsed);
+		
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
+		#end
+
+		if (controls.BACK) {
+			FlxG.sound.play(Paths.sound('cancelMenu'));
+			#if HSCRIPT_ALLOWED
+			StateScriptHandler.clearStateScripts();
+			#end
+			FlxG.switchState(new OptionsMenuState());
+		}
+		
+		if (controls.UP_P)
+			changeSelection(-1);
+		if (controls.DOWN_P)
+			changeSelection(1);
+
+		if (controls.LEFT_P || controls.RIGHT_P)
+		{
+			var change = controls.LEFT_P ? -1 : 1;
+			if (options[curSelected].change(change)) {
+				updateValue();
+				updateCurrentSettings();
+				FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+				
+				#if HSCRIPT_ALLOWED
+				StateScriptHandler.callOnScripts('onOptionChanged', [options[curSelected].getName(), options[curSelected].getValue()]);
+				#end
+			}
+		}
+
+		if (controls.ACCEPT)
+		{
+			if (options[curSelected].press()) {
+				updateValue();
+				updateCurrentSettings();
+				FlxG.sound.play(Paths.sound('confirmMenu'));
+				
+				#if HSCRIPT_ALLOWED
+				StateScriptHandler.callOnScripts('onOptionSelected', [options[curSelected].getName()]);
+				#end
+			}
+		}
+		
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
+		#end
+		
+		FlxG.save.flush();
+	}
+
+	function updateValue():Void
+	{
+		grpValues.members[curSelected].text = options[curSelected].getValue();
+	}
+
+	function changeSelection(change:Int = 0)
+	{
+		FlxG.sound.play(Paths.sound("scrollMenu"), 0.4);
+
+		curSelected += change;
+
+		if (curSelected < 0)
+			curSelected = options.length - 1;
+		if (curSelected >= options.length)
+			curSelected = 0;
+
+		var bullShit:Int = 0;
+
+		for (item in grpControls.members)
+		{
+			item.targetY = bullShit - curSelected;
+			bullShit++;
+			item.alpha = 0.3;
+			if (item.targetY == 0)
+				item.alpha = 1;
+		}
+		
+		bullShit = 0;
+		for (item in grpValues.members)
+		{
+			item.alpha = 0.3;
+			if (bullShit == curSelected)
+				item.alpha = 1;
+			bullShit++;
+		}
+		
+		updateInfoPanel();
+	}
+}
+
+/**
+ * Gameplay Options Menu - Game-specific settings
+ */
+class GameplayOptionsMenu extends MusicBeatState
+{
+	var curSelected:Int = 0;
 	var options:Array<Option> = [
 		new NewInputOption(),
 		new GhostTappingOption(),
@@ -187,43 +500,40 @@ class OptionsMenu extends MusicBeatState
 		new MiddleScroll(),
 		new HitSoundsOption(),
 		new SickModeOption(),
-		#if desktop
-		new FPSCap(),
-		new Fullscreen(),
-		#end
 		new AccuracyOption()
 	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
 	var versionShit:FlxText;
+	
 	override function create()
 	{
-		PlayState.isPlaying = false;
+		//PlayState.isPlaying = false;
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 
 		menuBG.color = 0xFF453F3F;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
 		menuBG.updateHitbox();
 		menuBG.screenCenter();
-		menuBG.antialiasing = true;
+		menuBG.antialiasing = FlxG.save.data.antialiasing;
 		add(menuBG);
-
-		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
 
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
 		
 		#if desktop
-		// Updating Discord Rich Presence
-		DiscordClient.changePresence("In the Options", null);
+		DiscordClient.changePresence("Gameplay Settings", null);
 		#end
+
+		// Title
+		var titleText:FlxText = new FlxText(0, 20, FlxG.width, "GAMEPLAY OPTIONS", 32);
+		titleText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+		titleText.borderSize = 2;
+		add(titleText);
 
 		for (i in 0...options.length)
 		{
-			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 30, options[i].getDisplay(), true, false);
+			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 90, options[i].getDisplay(), true, false);
 			controlLabel.isMenuItem = true;
 			controlLabel.targetY = i;
 
@@ -232,14 +542,13 @@ class OptionsMenu extends MusicBeatState
 				controlLabel.alpha = 1;
 
 			grpControls.add(controlLabel);
-			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
 		}
 
 		var optionsBG:FlxSprite = new FlxSprite();
 		optionsBG.frames = Paths.getSparrowAtlas('menu/menu_options');
 	    optionsBG.animation.addByPrefix('idle', 'options basic', 24, false);
 	    optionsBG.animation.play('idle');
-	    optionsBG.antialiasing = true;
+	    optionsBG.antialiasing = FlxG.save.data.antialiasing;
 		optionsBG.screenCenter(X);
 	    add(optionsBG);
 
@@ -259,46 +568,39 @@ class OptionsMenu extends MusicBeatState
 	{
 		super.update(elapsed);
 
-			if (controls.BACK)
-				FlxG.switchState(new OptionsMenuState());
-			if (controls.UP_P)
-				changeSelection(-1);
-			if (controls.DOWN_P)
-				changeSelection(1);
+		if (controls.BACK)
+			FlxG.switchState(new OptionsMenuState());
+		if (controls.UP_P)
+			changeSelection(-1);
+		if (controls.DOWN_P)
+			changeSelection(1);
 
-			if (controls.RIGHT_R)
-			{
-				FlxG.save.data.offset++;
-				versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset;
+		if (controls.RIGHT_R)
+		{
+			FlxG.save.data.offset++;
+			versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset;
+		}
+
+		if (controls.LEFT_R)
+		{
+			FlxG.save.data.offset--;
+			versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset;
+		}
+
+		if (controls.ACCEPT)
+		{
+			if (options[curSelected].press()) {
+				grpControls.remove(grpControls.members[curSelected]);
+				var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 90, options[curSelected].getDisplay(), true, false);
+				ctrl.isMenuItem = true;
+				grpControls.add(ctrl);
 			}
-
-			if (controls.LEFT_R)
-				{
-					FlxG.save.data.offset--;
-					versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset;
-				}
-	
-
-			if (controls.ACCEPT)
-			{
-				if (options[curSelected].press()) {
-					grpControls.remove(grpControls.members[curSelected]);
-					var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, options[curSelected].getDisplay(), true, false);
-					ctrl.isMenuItem = true;
-					grpControls.add(ctrl);
-				}
-			}
+		}
 		FlxG.save.flush();
 	}
 
-	var isSettingControl:Bool = false;
-
 	function changeSelection(change:Int = 0)
 	{
-		#if !switch
-		// NGio.logEvent("Fresh");
-		#end
-		
 		FlxG.sound.play(Paths.sound("scrollMenu"), 0.4);
 
 		curSelected += change;
@@ -308,8 +610,6 @@ class OptionsMenu extends MusicBeatState
 		if (curSelected >= grpControls.length)
 			curSelected = 0;
 
-		// selector.y = (70 * curSelected) + 30;
-
 		var bullShit:Int = 0;
 
 		for (item in grpControls.members)
@@ -318,12 +618,10 @@ class OptionsMenu extends MusicBeatState
 			bullShit++;
 
 			item.alpha = 0.3;
-			// item.setGraphicSize(Std.int(item.width * 0.8));
 
 			if (item.targetY == 0)
 			{
 				item.alpha = 1;
-				// item.setGraphicSize(Std.int(item.width));
 			}
 		}
 	}
@@ -344,36 +642,42 @@ class OptimizationOptions extends MusicBeatState
 		new TextureCacheOption(),
 		new ShowStatsOption(),
 		new StaticStageOption(),
+		new ByeGF(),
 		new ByePeople(),
-        new ByeGF(),
+		new EffectsOption()
 	];
 
 	private var grpControls:FlxTypedGroup<Alphabet>;
 	var versionShit:FlxText;
-	var statsText:FlxText;
 	
 	override function create()
 	{
+		//PlayState.isPlaying = false;
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 
 		menuBG.color = 0xFF453F3F;
 		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
 		menuBG.updateHitbox();
 		menuBG.screenCenter();
-		menuBG.antialiasing = true;
+		menuBG.antialiasing = FlxG.save.data.antialiasing;
 		add(menuBG);
 
 		grpControls = new FlxTypedGroup<Alphabet>();
 		add(grpControls);
 		
 		#if desktop
-		// Updating Discord Rich Presence
-		DiscordClient.changePresence("In the Optimization Options", null);
+		DiscordClient.changePresence("Optimization Settings", null);
 		#end
+
+		// Title
+		var titleText:FlxText = new FlxText(0, 20, FlxG.width, "OPTIMIZATION", 32);
+		titleText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+		titleText.borderSize = 2;
+		add(titleText);
 
 		for (i in 0...options.length)
 		{
-			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 30, options[i].getDisplay(), true, false);
+			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 90, options[i].getDisplay(), true, false);
 			controlLabel.isMenuItem = true;
 			controlLabel.targetY = i;
 
@@ -384,31 +688,10 @@ class OptimizationOptions extends MusicBeatState
 			grpControls.add(controlLabel);
 		}
 
-		var optionsBG:FlxSprite = new FlxSprite();
-		optionsBG.frames = Paths.getSparrowAtlas('menu/menu_options');
-	    optionsBG.animation.addByPrefix('idle', 'options basic', 24, false);
-	    optionsBG.animation.play('idle');
-	    optionsBG.antialiasing = true;
-		optionsBG.screenCenter(X);
-	    add(optionsBG);
-
-		// Texto de información
-		versionShit = new FlxText(5, FlxG.height - 80, FlxG.width - 10, "", 12);
-		versionShit.scrollFactor.set();
-		versionShit.setFormat("VCR OSD Mono", 14, FlxColor.LIME, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		add(versionShit);
-		
-		// Texto de stats
-		statsText = new FlxText(5, FlxG.height - 50, FlxG.width - 10, "", 12);
-		statsText.scrollFactor.set();
-		statsText.setFormat("VCR OSD Mono", 12, FlxColor.CYAN, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		add(statsText);
-		
-		updateInfoText();
-
 		#if mobileC
-		addVirtualPad(FULL, A_B);
+		addVirtualPad(UP_DOWN, A_B);
 		#end
+
 		super.create();
 	}
 
@@ -416,73 +699,27 @@ class OptimizationOptions extends MusicBeatState
 	{
 		super.update(elapsed);
 
-			if (controls.BACK)
-				FlxG.switchState(new OptionsMenuState());
-			if (controls.UP_P)
-				changeSelection(-1);
-			if (controls.DOWN_P)
-				changeSelection(1);
+		if (controls.BACK)
+			FlxG.switchState(new OptionsMenuState());
+		if (controls.UP_P)
+			changeSelection(-1);
+		if (controls.DOWN_P)
+			changeSelection(1);
 
-			if (controls.ACCEPT)
-			{
-				if (options[curSelected].press()) {
-					grpControls.remove(grpControls.members[curSelected]);
-					var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 30, options[curSelected].getDisplay(), true, false);
-					ctrl.isMenuItem = true;
-					grpControls.add(ctrl);
-					
-					updateInfoText();
-				}
+		if (controls.ACCEPT)
+		{
+			if (options[curSelected].press()) {
+				grpControls.remove(grpControls.members[curSelected]);
+				var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 90, options[curSelected].getDisplay(), true, false);
+				ctrl.isMenuItem = true;
+				grpControls.add(ctrl);
 			}
-			
-			// Actualizar stats cada 30 frames
-			if (FlxG.game.ticks % 30 == 0)
-			{
-				updateStatsText();
-			}
-			
+		}
 		FlxG.save.flush();
 	}
-	
-	function updateInfoText():Void
-	{
-		var info = "GPU: " + (FlxG.save.data.gpuRendering ? "ON" : "OFF");
-		info += " | Quality: " + getQualityName();
-		info += " | Adaptive: " + (FlxG.save.data.adaptiveQuality ? "ON" : "OFF");
-		info += " | Cache: " + (FlxG.save.data.textureCache ? "ON" : "OFF");
-		
-		versionShit.text = info;
-	}
-	
-	function updateStatsText():Void
-	{
-		var stats = "FPS: " + Std.int(1.0 / FlxG.elapsed);
-		stats += " | Cache: " + Paths.getCacheStats().split('\n')[5]; // Hit rate line
-		
-		statsText.text = stats;
-	}
-	
-	function getQualityName():String
-	{
-		var level = FlxG.save.data.qualityLevel != null ? FlxG.save.data.qualityLevel : 2;
-		return switch(level)
-		{
-			case 0: "LOW";
-			case 1: "MEDIUM";
-			case 2: "HIGH";
-			case 3: "ULTRA";
-			default: "HIGH";
-		};
-	}
-
-	var isSettingControl:Bool = false;
 
 	function changeSelection(change:Int = 0)
 	{
-		#if !switch
-		// NGio.logEvent("Fresh");
-		#end
-		
 		FlxG.sound.play(Paths.sound("scrollMenu"), 0.4);
 
 		curSelected += change;
@@ -509,6 +746,10 @@ class OptimizationOptions extends MusicBeatState
 	}
 }
 
+// ========================================
+// OPTION BASE CLASS
+// ========================================
+
 class Option
 {
 	public function new()
@@ -516,15 +757,221 @@ class Option
 		display = updateDisplay();
 	}
 
+	private var description:String = "";
 	private var display:String;
+	private var acceptValues:Bool = false;
+
 	public final function getDisplay():String
 	{
 		return display;
 	}
 
-	// Returns whether the label is to be updated.
-	public function press():Bool { return throw "stub!"; }
-	private function updateDisplay():String { return throw "stub!"; }
+	public final function getAccept():Bool
+	{
+		return acceptValues;
+	}
+
+	public function getDescription():String
+	{
+		return description;
+	}
+
+	public function getName():String
+	{
+		return display;
+	}
+
+	public function getValue():String
+	{
+		return "";
+	}
+
+	public function press():Bool
+	{
+		return false;
+	}
+	
+	public function change(direction:Int):Bool
+	{
+		return false;
+	}
+
+	private function updateDisplay():String
+	{
+		return "";
+	}
+}
+
+// ========================================
+// GRAPHICS OPTIONS
+// ========================================
+
+class ResolutionOption extends Option
+{
+	var resolutions:Array<Array<Int>> = [
+		[1280, 720],   // 720p
+		[1920, 1080],  // 1080p
+		[2560, 1440],  // 1440p
+		[3840, 2160]   // 4K
+	];
+	var resNames:Array<String> = ["720p", "1080p", "1440p", "4K"];
+	
+	public override function getName():String { return "Resolution"; }
+	
+	public override function getValue():String
+	{
+		var idx = OptionsData.getCurrentResolutionIndex();
+		return resNames[idx];
+	}
+	
+	public override function getDescription():String
+	{
+		return "Change game resolution. Higher = Better quality but lower FPS.\nRequires restart to apply.";
+	}
+	
+	public override function change(direction:Int):Bool
+	{
+		var current = OptionsData.getCurrentResolutionIndex();
+		current += direction;
+		
+		if (current < 0) current = resolutions.length - 1;
+		if (current >= resolutions.length) current = 0;
+		
+		FlxG.save.data.resolutionIndex = current;
+		
+		#if desktop
+		// Apply immediately if not fullscreen
+		if (!FlxG.fullscreen) {
+			FlxG.resizeWindow(resolutions[current][0], resolutions[current][1]);
+		}
+		#end
+		
+		return true;
+	}
+}
+
+class FPSOption extends Option
+{
+	var fpsOptions:Array<Int> = [60, 120, 144, 240, 999];
+	var fpsNames:Array<String> = ["60 FPS", "120 FPS", "144 FPS", "240 FPS", "Unlimited"];
+	
+	public override function getName():String { return "Frame Rate"; }
+	
+	public override function getValue():String
+	{
+		var idx = OptionsData.getCurrentFPSIndex();
+		return fpsNames[idx];
+	}
+	
+	public override function getDescription():String
+	{
+		return "Target frame rate. 60 FPS recommended for best compatibility.\nHigher values = smoother but more CPU usage.";
+	}
+	
+	public override function change(direction:Int):Bool
+	{
+		var current = OptionsData.getCurrentFPSIndex();
+		current += direction;
+		
+		if (current < 0) current = fpsOptions.length - 1;
+		if (current >= fpsOptions.length) current = 0;
+		
+		FlxG.save.data.fpsIndex = current;
+		
+		var targetFPS = fpsOptions[current];
+		openfl.Lib.current.stage.frameRate = targetFPS;
+		FlxG.updateFramerate = targetFPS;
+		FlxG.drawFramerate = targetFPS;
+		
+		return true;
+	}
+}
+
+class WindowModeOption extends Option
+{
+	var modes:Array<String> = ["Windowed", "Fullscreen", "Borderless"];
+	
+	public override function getName():String { return "Window Mode"; }
+	
+	public override function getValue():String
+	{
+		return modes[OptionsData.getWindowModeIndex()];
+	}
+	
+	public override function getDescription():String
+	{
+		return "Window display mode.\nWindowed = Resizable window\nFullscreen = Exclusive fullscreen\nBorderless = Fullscreen window";
+	}
+	
+	public override function change(direction:Int):Bool
+	{
+		#if desktop
+		var current = OptionsData.getWindowModeIndex();
+		current += direction;
+		
+		if (current < 0) current = modes.length - 1;
+		if (current >= modes.length) current = 0;
+		
+		FlxG.save.data.windowMode = current;
+		
+		switch(current) {
+			case 0: // Windowed
+				FlxG.fullscreen = false;
+			case 1: // Fullscreen
+				FlxG.fullscreen = true;
+			case 2: // Borderless
+				FlxG.fullscreen = true;
+				// Would need native extension for true borderless
+		}
+		
+		return true;
+		#else
+		return false;
+		#end
+	}
+}
+
+class AntiAliasingOption extends Option
+{
+	public override function getName():String { return "Anti-Aliasing"; }
+	
+	public override function getValue():String
+	{
+		return FlxG.save.data.antialiasing ? "ON" : "OFF";
+	}
+	
+	public override function getDescription():String
+	{
+		return "Smooth sprite edges. ON = Better quality, OFF = Better performance.";
+	}
+	
+	public override function press():Bool
+	{
+		FlxG.save.data.antialiasing = !FlxG.save.data.antialiasing;
+		return true;
+	}
+}
+
+class FullscreenOption extends Option
+{
+	public override function press():Bool
+	{
+		#if desktop
+		FlxG.fullscreen = !FlxG.fullscreen;
+		display = updateDisplay();
+		#end
+		return true;
+	}
+
+	private override function updateDisplay():String
+	{
+		return !FlxG.fullscreen ? "Fullscreen Off" : "Fullscreen On";
+	}
+	
+	public override function getDescription():String
+	{
+		return "Toggle fullscreen mode. Also accessible with F11.";
+	}
 }
 
 // ========================================
@@ -548,28 +995,33 @@ class GPURenderingOption extends Option
 
 class QualityLevelOption extends Option
 {
-	public override function press():Bool
+	var qualityLevels:Array<String> = ["LOW", "MEDIUM", "HIGH", "ULTRA"];
+	
+	public override function getName():String { return "Quality Level"; }
+	
+	public override function getValue():String
 	{
-		if (FlxG.save.data.qualityLevel == null)
-			FlxG.save.data.qualityLevel = 2; // Default HIGH
-			
-		FlxG.save.data.qualityLevel = (FlxG.save.data.qualityLevel + 1) % 4;
-		display = updateDisplay();
+		if (FlxG.save.data.qualityLevel == null) FlxG.save.data.qualityLevel = 2;
+		return qualityLevels[FlxG.save.data.qualityLevel];
+	}
+	
+	public override function change(direction:Int):Bool
+	{
+		if (FlxG.save.data.qualityLevel == null) FlxG.save.data.qualityLevel = 2;
+		
+		FlxG.save.data.qualityLevel += direction;
+		
+		if (FlxG.save.data.qualityLevel < 0) 
+			FlxG.save.data.qualityLevel = qualityLevels.length - 1;
+		if (FlxG.save.data.qualityLevel >= qualityLevels.length) 
+			FlxG.save.data.qualityLevel = 0;
+		
 		return true;
 	}
-
+	
 	private override function updateDisplay():String
 	{
-		var level = FlxG.save.data.qualityLevel != null ? FlxG.save.data.qualityLevel : 2;
-		var name = switch(level)
-		{
-			case 0: "LOW";
-			case 1: "MEDIUM";
-			case 2: "HIGH";
-			case 3: "ULTRA";
-			default: "HIGH";
-		};
-		return "Quality: " + name;
+		return "Quality: " + getValue();
 	}
 }
 
@@ -701,27 +1153,6 @@ class GhostTappingOption extends Option{
 	}
 }
 
-class FPSCap extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.noFpsCap = !FlxG.save.data.noFpsCap;
-		
-		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
-
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return !FlxG.save.data.noFpsCap ? "Capped FPS" : "Uncapped FPS";
-	}
-}
-
 class AccuracyOption extends Option
 {
 	public override function press():Bool
@@ -764,21 +1195,6 @@ class MiddleScroll extends Option
 	private override function updateDisplay():String
 	{
 		return !FlxG.save.data.middlescroll ? "Middlescroll Off" : "Middlescroll On";
-	}
-}
-
-class Fullscreen extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.fullscreen = !FlxG.fullscreen;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return !FlxG.fullscreen ? "Fullscreen Off" : "Fullscreen On";
 	}
 }
 
@@ -842,84 +1258,211 @@ class HitSoundsOption extends Option
 	}
 }
 
-class OptionsData
+// ========================================
+// SCRIPT OPTION - Wrapper para opciones de scripts
+// ========================================
+
+class ScriptOption extends Option
 {
-	public static function initSave()
+	var scriptData:Dynamic;
+	
+	public function new(scriptData:Dynamic)
+	{
+		this.scriptData = scriptData;
+		super();
+	}
+	
+	public override function getName():String 
+	{ 
+		if (scriptData.name != null)
+			return scriptData.name;
+		return "Script Option";
+	}
+	
+	public override function getValue():String
+	{
+		if (scriptData.getValue != null && Reflect.isFunction(scriptData.getValue))
 		{
-			if (FlxG.save.data.newInput == null)
-				FlxG.save.data.newInput = true;
-	
-			if (FlxG.save.data.downscroll == null)
-				FlxG.save.data.downscroll = false;
-	
-			if (FlxG.save.data.dfjk == null)
-				FlxG.save.data.dfjk = false;
-	
-			if (FlxG.save.data.accuracyDisplay == null)
-				FlxG.save.data.accuracyDisplay = true;
-
-			if (FlxG.save.data.notesplashes == null)
-				FlxG.save.data.notesplashes = true;
-
-			if (FlxG.save.data.middlescroll == null)
-				FlxG.save.data.middlescroll = false;
-
-			if(FlxG.save.data.HUD == null)
-				FlxG.save.data.HUD = false;
-			
-			if(FlxG.save.data.HUDTime == null)
-				FlxG.save.data.HUDTime = false;
-
-			if(FlxG.save.data.camZoom == null)
-				FlxG.save.data.camZoom = false;
-
-			if(FlxG.save.data.flashing == null)
-				FlxG.save.data.flashing = false;
-	
-			if (FlxG.save.data.offset == null)
-				FlxG.save.data.offset = 0;
-			
-			if(FlxG.save.data.perfectmode == null)
-				FlxG.save.data.perfectmode = false;
-
-			if(FlxG.save.data.sickmode == null)
-				FlxG.save.data.sickmode = false;
-
-			if(FlxG.save.data.staticstage == null)
-				FlxG.save.data.staticstage = false;
-
-			if(FlxG.save.data.specialVisualEffects == null)
-				FlxG.save.data.specialVisualEffects = true;
-
-			if(FlxG.save.data.gfbye == null)
-				FlxG.save.data.gfbye = false;
-
-			if(FlxG.save.data.byebg == null)
-				FlxG.save.data.byebg = false;
-
-			if (FlxG.save.data.ghosttap == null)
-    			FlxG.save.data.ghosttap = false;
-
-			if(FlxG.save.data.hitsounds == null)
-				FlxG.save.data.hitsounds = false;
-			
-			// === GPU OPTIMIZATION SETTINGS ===
-			if (FlxG.save.data.gpuRendering == null)
-				FlxG.save.data.gpuRendering = true;
-			
-			if (FlxG.save.data.qualityLevel == null)
-				FlxG.save.data.qualityLevel = 2; // HIGH por defecto
-			
-			if (FlxG.save.data.adaptiveQuality == null)
-				FlxG.save.data.adaptiveQuality = true;
-			
-			if (FlxG.save.data.textureCache == null)
-				FlxG.save.data.textureCache = true;
-			
-			if (FlxG.save.data.showStats == null)
-				FlxG.save.data.showStats = false;
-			
-			// Aplicar configuración de caché
-			Paths.setCacheEnabled(FlxG.save.data.textureCache);
+			try {
+				return Reflect.callMethod(null, scriptData.getValue, []);
+			} catch (e:Dynamic) {
+				trace('[ScriptOption] Error in getValue: $e');
+			}
 		}
+		return "";
+	}
+	
+	public override function getDescription():String
+	{
+		if (scriptData.description != null)
+			return scriptData.description;
+		return "Custom option from script";
+	}
+	
+	public override function press():Bool
+	{
+		if (scriptData.onPress != null && Reflect.isFunction(scriptData.onPress))
+		{
+			try {
+				var result = Reflect.callMethod(null, scriptData.onPress, []);
+				return result == true;
+			} catch (e:Dynamic) {
+				trace('[ScriptOption] Error in onPress: $e');
+			}
+		}
+		return false;
+	}
+	
+	public override function change(direction:Int):Bool
+	{
+		if (scriptData.onChange != null && Reflect.isFunction(scriptData.onChange))
+		{
+			try {
+				var result = Reflect.callMethod(null, scriptData.onChange, [direction]);
+				return result == true;
+			} catch (e:Dynamic) {
+				trace('[ScriptOption] Error in onChange: $e');
+			}
+		}
+		return false;
+	}
+}
+
+// ========================================
+// OPTIONS DATA HELPER
+// ========================================
+
+class OptionsData
+{	
+	public static function getResolutionString():String
+	{
+		var resolutions:Array<String> = ["1280x720", "1920x1080", "2560x1440", "3840x2160"];
+		var idx = getCurrentResolutionIndex();
+		return resolutions[idx];
+	}
+	
+	public static function getCurrentResolutionIndex():Int
+	{
+		if (FlxG.save.data.resolutionIndex == null)
+			FlxG.save.data.resolutionIndex = 1; // Default to 1080p
+		return FlxG.save.data.resolutionIndex;
+	}
+	
+	public static function getCurrentFPSIndex():Int
+	{
+		if (FlxG.save.data.fpsIndex == null)
+			FlxG.save.data.fpsIndex = 0; // Default to 60 FPS
+		return FlxG.save.data.fpsIndex;
+	}
+	
+	public static function getWindowModeIndex():Int
+	{
+		if (FlxG.save.data.windowMode == null)
+			FlxG.save.data.windowMode = 0; // Default to windowed
+		return FlxG.save.data.windowMode;
+	}
+	
+	public static function getWindowModeString():String
+	{
+		var modes:Array<String> = ["Windowed", "Fullscreen", "Borderless"];
+		return modes[getWindowModeIndex()];
+	}
+
+	public static function initSave()
+	{
+		if (FlxG.save.data.newInput == null)
+			FlxG.save.data.newInput = true;
+
+		if (FlxG.save.data.downscroll == null)
+			FlxG.save.data.downscroll = false;
+
+		if (FlxG.save.data.dfjk == null)
+			FlxG.save.data.dfjk = false;
+
+		if (FlxG.save.data.accuracyDisplay == null)
+			FlxG.save.data.accuracyDisplay = true;
+
+		if (FlxG.save.data.notesplashes == null)
+			FlxG.save.data.notesplashes = true;
+
+		if (FlxG.save.data.middlescroll == null)
+			FlxG.save.data.middlescroll = false;
+
+		if(FlxG.save.data.HUD == null)
+			FlxG.save.data.HUD = false;
+		
+		if(FlxG.save.data.HUDTime == null)
+			FlxG.save.data.HUDTime = false;
+
+		if(FlxG.save.data.camZoom == null)
+			FlxG.save.data.camZoom = false;
+
+		if(FlxG.save.data.flashing == null)
+			FlxG.save.data.flashing = false;
+
+		if (FlxG.save.data.offset == null)
+			FlxG.save.data.offset = 0;
+		
+		if(FlxG.save.data.perfectmode == null)
+			FlxG.save.data.perfectmode = false;
+
+		if(FlxG.save.data.sickmode == null)
+			FlxG.save.data.sickmode = false;
+
+		if(FlxG.save.data.staticstage == null)
+			FlxG.save.data.staticstage = false;
+
+		if(FlxG.save.data.specialVisualEffects == null)
+			FlxG.save.data.specialVisualEffects = true;
+
+		if(FlxG.save.data.gfbye == null)
+			FlxG.save.data.gfbye = false;
+
+		if(FlxG.save.data.byebg == null)
+			FlxG.save.data.byebg = false;
+
+		if (FlxG.save.data.ghosttap == null)
+    		FlxG.save.data.ghosttap = false;
+
+		if(FlxG.save.data.hitsounds == null)
+			FlxG.save.data.hitsounds = false;
+		
+		if(FlxG.save.data.antialiasing == null)
+			FlxG.save.data.antialiasing = true;
+		
+		// GPU OPTIMIZATION SETTINGS
+		if (FlxG.save.data.gpuRendering == null)
+			FlxG.save.data.gpuRendering = true;
+		
+		if (FlxG.save.data.qualityLevel == null)
+			FlxG.save.data.qualityLevel = 2; // HIGH by default
+		
+		if (FlxG.save.data.adaptiveQuality == null)
+			FlxG.save.data.adaptiveQuality = true;
+		
+		if (FlxG.save.data.textureCache == null)
+			FlxG.save.data.textureCache = true;
+		
+		if (FlxG.save.data.showStats == null)
+			FlxG.save.data.showStats = false;
+		
+		// GRAPHICS SETTINGS
+		if (FlxG.save.data.resolutionIndex == null)
+			FlxG.save.data.resolutionIndex = 1; // 1080p default
+		
+		if (FlxG.save.data.fpsIndex == null)
+			FlxG.save.data.fpsIndex = 0; // 60 FPS default
+		
+		if (FlxG.save.data.windowMode == null)
+			FlxG.save.data.windowMode = 0; // Windowed default
+
+		Paths.setCacheEnabled(FlxG.save.data.textureCache);
+		
+		// Apply FPS setting
+		var fpsOptions:Array<Int> = [60, 120, 144, 240, 999];
+		var targetFPS = fpsOptions[getCurrentFPSIndex()];
+		openfl.Lib.current.stage.frameRate = targetFPS;
+		FlxG.updateFramerate = targetFPS;
+		FlxG.drawFramerate = targetFPS;
+	}
 }

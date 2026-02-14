@@ -28,24 +28,18 @@ class CacheState extends funkin.states.MusicBeatState
     var loadingBar:FlxSprite;
     var loadingText:FlxText;
     var loadingPercentage:FlxText;
+    var loadingDetails:FlxText;
     
     var isLoading:Bool = true;
     var loadingComplete:Bool = false;
     
-    // Rutas de carpetas a cachear
-    var characterPaths:Array<String> = [];
-    var objectPaths:Array<String> = [];
-    var soundPaths:Array<String> = [];
-    var musicPaths:Array<String> = [];
-    
-    // Timer para ir al siguiente state
-    var waitTimer:FlxTimer;
+    var assetsToCache:Array<AssetInfo> = [];
+    var currentAssetIndex:Int = 0;
     
     override function create()
     {
         FlxG.mouse.visible = false;
-        FlxG.sound.muteKeys = null;
-
+        
         Highscore.load();
         KeyBinds.keyCheck();
         PlayerSettings.init();
@@ -56,30 +50,35 @@ class CacheState extends funkin.states.MusicBeatState
         else
             openfl.Lib.current.stage.frameRate = 240;
 
-        // Background
-        var bg:FlxSprite = new FlxSprite().loadGraphic(BitmapData.fromFile(Paths.image('menu/menuBG')));
+        var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/funkay'));
+        bg.scale.set(0.8,0.8);
+        bg.scrollFactor.set();
+        bg.updateHitbox();
+        bg.screenCenter();
+        bg.y += 50;
         add(bg);
 
-        // Barra de carga visual
-        var barBG:FlxSprite = new FlxSprite(0, 650).makeGraphic(FlxG.width - 100, 30, FlxColor.BLACK);
+        var barBG:FlxSprite = new FlxSprite(0, 500).makeGraphic(FlxG.width - 100, 40, 0xFF333333);
         barBG.screenCenter(X);
         add(barBG);
 
-        loadingBar = new FlxSprite(barBG.x + 5, barBG.y + 5).makeGraphic(1, 20, FlxColor.LIME);
+        loadingBar = new FlxSprite(barBG.x + 5, barBG.y + 5).makeGraphic(10, 30, FlxColor.LIME);
         add(loadingBar);
 
-        // Texto de carga
-        loadingText = new FlxText(0, 600, FlxG.width, "Loading...");
-        loadingText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+        loadingText = new FlxText(0, 450, FlxG.width, "Scanning assets...");
+        loadingText.setFormat(Paths.font("Funkin.otf"), 28, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
         add(loadingText);
 
-        loadingPercentage = new FlxText(0, 680, FlxG.width, "0%");
-        loadingPercentage.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+        loadingPercentage = new FlxText(0, 550, FlxG.width, "0%");
+        loadingPercentage.setFormat(Paths.font("Funkin.otf"), 24, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
         add(loadingPercentage);
+        
+        loadingDetails = new FlxText(0, 600, FlxG.width, "");
+        loadingDetails.setFormat(Paths.font("Funkin.otf"), 16, FlxColor.GRAY, CENTER, OUTLINE, FlxColor.BLACK);
+        add(loadingDetails);
 
-        // NUEVO: Modo simplificado de carga
-        // En lugar de cachear todo, solo cargamos lo esencial
-        loadEssentialAssets();
+        // Escanear automáticamente
+        scanAndPrepareAssets();
 
         super.create();
     }
@@ -88,108 +87,312 @@ class CacheState extends funkin.states.MusicBeatState
     {
         super.update(elapsed);
 
-        if (isLoading && !loadingComplete)
+        if (isLoading && !loadingComplete && currentAssetIndex < assetsToCache.length)
         {
-            var percentage:Float = toBeFinished > 0 ? (finished / toBeFinished) * 100 : 0;
-            loadingPercentage.text = Math.floor(percentage) + "%";
-            
-            // Actualizar barra de carga
-            if (toBeFinished > 0)
+            for (i in 0...5)
             {
-                var barWidth:Int = Std.int((FlxG.width - 110) * (finished / toBeFinished));
-                loadingBar.makeGraphic(barWidth > 0 ? barWidth : 1, 20, FlxColor.LIME);
+                if (currentAssetIndex >= assetsToCache.length)
+                    break;
+                
+                cacheAsset(assetsToCache[currentAssetIndex]);
+                currentAssetIndex++;
+                finished++;
             }
             
-            // Verificar si terminó
-            if (finished >= toBeFinished && toBeFinished > 0)
+            updateLoadingUI();
+            
+            if (currentAssetIndex >= assetsToCache.length)
             {
                 completeLoading();
             }
         }
     }
 
-    // NUEVO: Método simplificado que solo carga assets esenciales
-    function loadEssentialAssets():Void
+    /**
+     * ESCANEO AUTOMÁTICO DE ASSETS
+     * Detecta todos los archivos en las carpetas importantes
+     */
+    function scanAndPrepareAssets():Void
     {
-        trace("Loading essential assets...");
+        trace("=== Auto-scanning assets ===");
         
-        // Lista manual de assets esenciales
-        var essentialSounds:Array<String> = [
-            "confirmMenu",
-            "cancelMenu",
-            "scrollMenu"
-        ];
+        #if sys
+        // Sistema de archivos disponible - escanear carpetas
+        scanSoundsFolder("assets/sounds", "Sounds");
+        scanImagesFolder("assets/images", "Images");
+        scanStagesFolder("assets/stages");
+        #else
+        // Web/HTML5 - usar lista mínima fallback
+        trace("File system not available - using minimal fallback");
+        useFallbackList();
+        #end
         
-        var essentialImages:Array<String> = [
-            "menu/menuBG",
-            "menu/menuDesat"
-        ];
-        
-        toBeFinished = essentialSounds.length + essentialImages.length;
+        toBeFinished = assetsToCache.length;
         finished = 0;
         
-        // Cargar sonidos esenciales
-        for (sound in essentialSounds)
+        trace('Total assets found: $toBeFinished');
+        loadingText.text = "Caching assets...";
+    }
+
+    /**
+     * Escanear carpeta de sonidos recursivamente
+     */
+    #if sys
+    function scanSoundsFolder(directory:String, category:String):Void
+    {
+        if (!FileSystem.exists(directory) || !FileSystem.isDirectory(directory))
         {
-            try
+            trace('Directory not found: $directory');
+            return;
+        }
+        
+        try
+        {
+            var files = FileSystem.readDirectory(directory);
+            
+            for (file in files)
             {
-                var soundPath:String = 'sounds/$sound';
+                var fullPath = '$directory/$file';
                 
-                // Verificar si existe antes de intentar cargar
-                if (Assets.exists('assets/$soundPath.ogg') || Assets.exists('assets/shared/$soundPath.ogg'))
+                if (FileSystem.isDirectory(fullPath))
                 {
-                    // No usar FlxG.sound.cache() - da problemas
-                    // En su lugar, solo verificar que existe
-                    trace('Found sound: $soundPath');
+                    // Escanear subdirectorio recursivamente
+                    var subCategory = '$category/${file}';
+                    scanSoundsFolder(fullPath, subCategory);
                 }
                 else
                 {
-                    trace('Warning: Sound not found: $soundPath');
-                }
-            }
-            catch (e:Dynamic)
-            {
-                trace('Error checking sound: $sound - $e');
-            }
-            
-            finished++;
-        }
-        
-        // Cargar imágenes esenciales
-        for (image in essentialImages)
-        {
-            try
-            {
-                if (Assets.exists('assets/images/$image.png'))
-                {
-                    // Precargar imagen - CORREGIDO: sin parámetros opcionales
-                    var graphic = FlxG.bitmap.add('assets/images/$image.png');
-                    if (graphic != null)
+                    // Verificar si es archivo de audio
+                    if (file.endsWith('.ogg') || file.endsWith('.mp3'))
                     {
-                        graphic.persist = true;
-                        trace('Cached image: $image');
+                        // Obtener path relativo sin assets/sounds/ y sin extensión
+                        var relativePath = fullPath.replace('assets/sounds/', '');
+                        relativePath = relativePath.substring(0, relativePath.lastIndexOf('.'));
+                        
+                        assetsToCache.push({
+                            type: SOUND,
+                            path: relativePath,
+                            category: category,
+                            fullPath: Paths.sound(relativePath)
+                        });
+                        
+                        trace('Found sound: $relativePath');
                     }
                 }
-                else
-                {
-                    trace('Warning: Image not found: $image');
-                }
             }
-            catch (e:Dynamic)
-            {
-                trace('Error caching image: $image - $e');
-            }
-            
-            finished++;
+        }
+        catch (e:Dynamic)
+        {
+            trace('Error scanning sounds folder $directory: $e');
+        }
+    }
+    #end
+
+    /**
+     * Escanear carpeta de imágenes recursivamente
+     * EXCLUYE: characters (muy pesado), stages (se escanean aparte)
+     */
+    #if sys
+    function scanImagesFolder(directory:String, category:String):Void
+    {
+        if (!FileSystem.exists(directory) || !FileSystem.isDirectory(directory))
+        {
+            trace('Directory not found: $directory');
+            return;
         }
         
-        loadingText.text = "Loading complete!";
-        
-        // Esperar un poco antes de continuar
-        new FlxTimer().start(0.5, function(tmr:FlxTimer)
+        try
         {
-            completeLoading();
-        });
+            var files = FileSystem.readDirectory(directory);
+            
+            for (file in files)
+            {
+                var fullPath = '$directory/$file';
+                
+                if (FileSystem.isDirectory(fullPath))
+                {
+                    // EXCLUIR carpetas pesadas que se cargan dinámicamente
+                    if (file == 'characters' || file == 'stages')
+                    {
+                        trace('Skipping heavy folder: $file');
+                        continue;
+                    }
+                    
+                    // Escanear subdirectorio
+                    var subCategory = '$category/${file}';
+                    scanImagesFolder(fullPath, subCategory);
+                }
+                else
+                {
+                    // Solo .png (evitar .xml, .txt, etc)
+                    if (file.endsWith('.png'))
+                    {
+                        var relativePath = fullPath.replace('assets/images/', '');
+                        relativePath = relativePath.substring(0, relativePath.lastIndexOf('.'));
+                        
+                        assetsToCache.push({
+                            type: IMAGE,
+                            path: relativePath,
+                            category: category,
+                            fullPath: Paths.image(relativePath)
+                        });
+                        
+                        trace('Found image: $relativePath');
+                    }
+                }
+            }
+        }
+        catch (e:Dynamic)
+        {
+            trace('Error scanning images folder $directory: $e');
+        }
+    }
+    #end
+
+    /**
+     * Escanear stages (solo stage por defecto para no sobrecargar)
+     */
+    #if sys
+    function scanStagesFolder(directory:String):Void
+    {
+        if (!FileSystem.exists(directory) || !FileSystem.isDirectory(directory))
+        {
+            trace('Stages directory not found');
+            return;
+        }
+        
+        try
+        {
+            // Solo cachear el stage por defecto
+            var defaultStage = '$directory/stage/images';
+            
+            if (FileSystem.exists(defaultStage) && FileSystem.isDirectory(defaultStage))
+            {
+                var files = FileSystem.readDirectory(defaultStage);
+                
+                for (file in files)
+                {
+                    if (file.endsWith('.png'))
+                    {
+                        var imageName = file.substring(0, file.lastIndexOf('.'));
+                        var fullPath = 'assets/stages/stage/images/$file';
+                        
+                        assetsToCache.push({
+                            type: IMAGE,
+                            path: 'stage/$imageName',
+                            category: 'Stage',
+                            fullPath: fullPath
+                        });
+                        
+                        trace('Found stage image: $imageName');
+                    }
+                }
+            }
+        }
+        catch (e:Dynamic)
+        {
+            trace('Error scanning stages: $e');
+        }
+    }
+    #end
+
+    /**
+     * Lista mínima de fallback para cuando no hay sistema de archivos
+     * (HTML5, etc)
+     */
+    function useFallbackList():Void
+    {
+        var essentialSounds = [
+            "confirmMenu", "cancelMenu", "scrollMenu",
+            "soundtray/Volup", "soundtray/Voldown", "soundtray/VolMAX"
+        ];
+        
+        var essentialImages = [
+            "alphabet", "healthBar",
+            "soundtray/volumebox",
+            "soundtray/bars_1", "soundtray/bars_2", "soundtray/bars_3",
+            "soundtray/bars_4", "soundtray/bars_5", "soundtray/bars_6",
+            "soundtray/bars_7", "soundtray/bars_8", "soundtray/bars_9",
+            "soundtray/bars_10"
+        ];
+        
+        for (sound in essentialSounds)
+        {
+            assetsToCache.push({
+                type: SOUND,
+                path: sound,
+                category: "Essential",
+                fullPath: Paths.sound(sound)
+            });
+        }
+        
+        for (image in essentialImages)
+        {
+            assetsToCache.push({
+                type: IMAGE,
+                path: image,
+                category: "Essential",
+                fullPath: Paths.image(image)
+            });
+        }
+    }
+
+    function cacheAsset(asset:AssetInfo):Void
+    {
+        try
+        {
+            switch (asset.type)
+            {
+                case SOUND:
+                    if (Assets.exists(asset.fullPath))
+                    {
+                        FlxG.sound.load(asset.fullPath, 0.0, false);
+                        trace('✓ Cached sound: ${asset.path}');
+                    }
+                    else
+                    {
+                        trace('⚠ Sound not found: ${asset.path}');
+                    }
+                    
+                case IMAGE:
+                    if (Assets.exists(asset.fullPath))
+                    {
+                        var graphic = FlxG.bitmap.add(asset.fullPath);
+                        if (graphic != null)
+                        {
+                            // NO marcar como persist - dejar que FlxG.bitmap maneje el caché
+                            // Esto previene memory leaks masivos
+                            trace('✓ Cached image: ${asset.path}');
+                        }
+                    }
+                    else
+                    {
+                        trace('⚠ Image not found: ${asset.path}');
+                    }
+            }
+        }
+        catch (e:Dynamic)
+        {
+            trace('Error caching ${asset.path}: $e');
+        }
+    }
+
+    function updateLoadingUI():Void
+    {
+        var percentage:Float = toBeFinished > 0 ? (finished / toBeFinished) * 100 : 0;
+        loadingPercentage.text = Math.floor(percentage) + "%";
+        
+        if (toBeFinished > 0)
+        {
+            var barWidth:Int = Std.int((FlxG.width - 110) * (finished / toBeFinished));
+            loadingBar.makeGraphic(barWidth > 0 ? barWidth : 10, 30, FlxColor.LIME);
+        }
+        
+        if (currentAssetIndex < assetsToCache.length)
+        {
+            var current = assetsToCache[currentAssetIndex];
+            loadingDetails.text = '${current.category}: ${current.path}';
+        }
     }
 
     function completeLoading():Void
@@ -199,28 +402,29 @@ class CacheState extends funkin.states.MusicBeatState
         loadingComplete = true;
         isLoading = false;
         
-        loadingText.text = "Done!";
+        loadingText.text = "Loading Complete!";
         loadingPercentage.text = "100%";
+        loadingDetails.text = "Starting game...";
         
-        trace("Cache loading complete, transitioning to TitleState...");
+        trace("=== Cache loading complete ===");
+        trace('Cached $finished assets');
         
-        // Intentar reproducir sonido de confirmación
-        try
+        new FlxTimer().start(0.5, function(tmr:FlxTimer)
         {
-            FlxG.sound.play(Paths.sound('confirmMenu'), 1, false, null, false, function()
+            try
             {
-                goToTitle();
-            });
-        }
-        catch (e:Dynamic)
-        {
-            trace('Could not play confirm sound: $e');
-            // Si falla el sonido, ir directo al título
+                FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
+            }
+            catch (e:Dynamic)
+            {
+                trace('Could not play confirm sound: $e');
+            }
+            
             new FlxTimer().start(0.3, function(tmr:FlxTimer)
             {
                 goToTitle();
             });
-        }
+        });
     }
     
     function goToTitle():Void
@@ -231,67 +435,16 @@ class CacheState extends funkin.states.MusicBeatState
     }
 }
 
-// CORREGIDO: Image Cache System simplificado
-class ImageCache
+typedef AssetInfo =
 {
-    public static var cache:Map<String, FlxGraphic> = new Map<String, FlxGraphic>();
+    var type:AssetType;
+    var path:String;
+    var category:String;
+    var fullPath:String;
+}
 
-    public static function add(path:String):Void
-    {
-        if (cache.exists(path))
-            return; // Ya está en caché
-        
-        try
-        {
-            #if sys
-            if (FileSystem.exists(path))
-            {
-                var data:FlxGraphic = FlxGraphic.fromBitmapData(BitmapData.fromFile(path));
-                if (data != null)
-                {
-                    data.persist = true;
-                    cache.set(path, data);
-                }
-            }
-            #else
-            if (Assets.exists(path))
-            {
-                var data:FlxGraphic = FlxG.bitmap.add(path);
-                if (data != null)
-                {
-                    data.persist = true;
-                    cache.set(path, data);
-                }
-            }
-            #end
-        }
-        catch (e:Dynamic)
-        {
-            trace('Error adding to cache: $path - $e');
-        }
-    }
-
-    public static function get(path:String):FlxGraphic
-    {
-        return cache.get(path);
-    }
-
-    public static function exists(path:String):Bool
-    {
-        return cache.exists(path);
-    }
-
-    public static function clear():Void
-    {
-        for (key in cache.keys())
-        {
-            var graphic:FlxGraphic = cache.get(key);
-            if (graphic != null)
-            {
-                graphic.persist = false;
-                graphic.destroy();
-            }
-        }
-        cache.clear();
-    }
+enum AssetType
+{
+    SOUND;
+    IMAGE;
 }

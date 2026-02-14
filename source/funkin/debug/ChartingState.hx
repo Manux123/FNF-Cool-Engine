@@ -169,10 +169,6 @@ class ChartingState extends funkin.states.MusicBeatState
 	override function create()
 	{
 		FlxG.mouse.visible = true;
-		if (FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
 
 		#if desktop
 		DiscordClient.changePresence("Chart Editor", null, null, true);
@@ -1076,7 +1072,7 @@ class ChartingState extends funkin.states.MusicBeatState
 			numText.setFormat(Paths.font("vcr.ttf"), 12, (i == curSection ? ACCENT_CYAN : TEXT_GRAY), LEFT);
 			numText.scrollFactor.set();
 			numText.cameras = [camGame];
-			numText.antialiasing = false;
+			numText.antialiasing = FlxG.save.data.antialiasing;
 			sectionIndicators.add(cast numText);
 
 			currentY += sectionHeight;

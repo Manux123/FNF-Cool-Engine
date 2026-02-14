@@ -6,16 +6,6 @@ import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.util.FlxTimer;
 import funkin.gameplay.notes.NoteSkinSystem.NoteSplashData;
 
-/**
- * NoteSplash MEJORADO - Con soporte para notas largas (holds)
- * 
- * NUEVAS CARACTERÍSTICAS:
- * - Splashes específicos para hold notes usando archivos holdCover
- * - Splashes para el inicio de hold notes
- * - Splashes continuos mientras se mantiene la nota
- * - Splash especial al terminar hold notes
- * - Sistema de pooling optimizado
- */
 class NoteSplash extends FlxSprite
 {
 	public var noteDatawea:Int = 0;

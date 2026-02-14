@@ -26,6 +26,7 @@ import funkin.gameplay.objects.character.HealthIcon;
 import funkin.data.Song;
 import funkin.menus.FreeplayEditorState;
 import funkin.gameplay.objects.hud.Highscore;
+import funkin.scripting.StateScriptHandler;
 import funkin.gameplay.PlayState;
 import funkin.data.Conductor;
 import extensions.CoolUtil;
@@ -99,17 +100,12 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 	override function create()
 	{
-		if (FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
-
 		transIn = FlxTransitionableState.defaultTransIn;
 		transOut = FlxTransitionableState.defaultTransOut;
 
 		MainMenuState.musicFreakyisPlaying = false;
 		if (vocals == null)
-			FlxG.sound.playMusic(Paths.music('girlfriendsRingtone/girlfriendsRingtone'),0.7);
+			FlxG.sound.playMusic(Paths.music('girlfriendsRingtone/girlfriendsRingtone'), 0.7);
 
 		loadSongsData();
 		if (songInfo != null)
@@ -191,7 +187,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 			var icon:HealthIcon = new HealthIcon(songs[i].songCharacter);
 			icon.sprTracker = songText;
-			
+
 			// CORRECCIÓN: Verificar que el icono se creó correctamente antes de agregarlo
 			if (icon != null)
 			{
@@ -199,6 +195,12 @@ class FreeplayState extends funkin.states.MusicBeatState
 				add(icon);
 			}
 		}
+
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.init();
+		StateScriptHandler.loadStateScripts('FreeplayState', this);
+		StateScriptHandler.callOnScripts('onCreate', []);
+		#end
 
 		// === OVERLAY DE GLOW PARA EFECTOS ===
 		glowOverlay = new FlxSprite();
@@ -262,6 +264,10 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 		super.create();
 
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('postCreate', []);
+		#end
+
 		#if mobileC
 		addVirtualPad(FULL, A_B);
 		#end
@@ -323,6 +329,10 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 	override function update(elapsed:Float)
 	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
+		#end
+
 		// Actualizar efectos visuales
 		updateScreenBump(elapsed);
 		updateVisualBars(elapsed);
@@ -417,7 +427,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 				discSpr = new FlxSprite(750, 280);
 				discSpr.frames = Paths.getSparrowAtlas('freeplay/record player freeplay');
-				discSpr.antialiasing = true;
+				discSpr.antialiasing = FlxG.save.data.antialiasing;
 				discSpr.animation.addByPrefix('idle', 'disco', 24);
 				discSpr.animation.play('idle');
 				discSpr.x += 750;
@@ -441,7 +451,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 				destroyFreeplayVocals();
 				FlxG.sound.playMusic(Paths.music('freakyMenu'));
 				instPlaying = -1;
-				
+
 				if (discSpr != null)
 				{
 					FlxTween.tween(discSpr, {"x": discSpr.x + 750}, 0.6, {
@@ -460,9 +470,15 @@ class FreeplayState extends funkin.states.MusicBeatState
 			}
 		}
 		#end
-		
+
 		if (accepted)
 		{
+			#if HSCRIPT_ALLOWED
+			var cancelled = StateScriptHandler.callOnScriptsReturn('onAccept', [], false);
+			if (cancelled)
+				return;
+			#end
+
 			var songLowercase:String = songs[curSelected].songName.toLowerCase();
 			var poop:String = Highscore.formatSong(songLowercase, curDifficulty);
 			trace(poop);
@@ -486,8 +502,12 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 			destroyFreeplayVocals();
 		}
-		
+
 		super.update(elapsed);
+
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
+		#end
 	}
 
 	// === FUNCIÓN PARA SCREEN BUMP AL RITMO ===
@@ -585,6 +605,10 @@ class FreeplayState extends funkin.states.MusicBeatState
 		PlayState.storyDifficulty = curDifficulty;
 		diffText.text = '< ' + CoolUtil.difficultyString() + ' >';
 		positionHighscore();
+
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onDifficultyChanged', [curDifficulty]);
+		#end
 	}
 
 	function changeSelection(change:Int = 0)
@@ -655,6 +679,11 @@ class FreeplayState extends funkin.states.MusicBeatState
 		FlxG.camera.zoom = 1.02;
 
 		changeDiff();
+
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onSelectionChanged', [curSelected]);
+		StateScriptHandler.callOnScripts('onSongSelected', [songs[curSelected].songName]);
+		#end
 	}
 
 	private function positionHighscore()
@@ -698,6 +727,16 @@ class FreeplayState extends funkin.states.MusicBeatState
 		}
 
 		return value;
+	}
+
+	override function destroy()
+	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onDestroy', []);
+		StateScriptHandler.clearStateScripts();
+		#end
+
+		super.destroy();
 	}
 }
 

@@ -61,18 +61,11 @@ class Paths
 		currentLevel = name.toLowerCase();
 	}
 
-	static function getPath(file:String, type:AssetType, library:Null<String>)
+	static function getPath(file:String, type:AssetType)
 	{
-		if (library != null)
-			return getLibraryPath(file, library);
-
 		if (currentLevel != null)
 		{
-			var levelPath = getLibraryPathForce(file, currentLevel);
-			if (OpenFlAssets.exists(levelPath, type))
-				return levelPath;
-
-			levelPath = getLibraryPathForce(file, "shared");
+			var levelPath = getPreloadPath(file);
 			if (OpenFlAssets.exists(levelPath, type))
 				return levelPath;
 		}
@@ -80,50 +73,40 @@ class Paths
 		return getPreloadPath(file);
 	}
 
-	static public function getLibraryPath(file:String, library = "preload")
-	{
-		return if (library == "preload" || library == "default") getPreloadPath(file); else getLibraryPathForce(file, library);
-	}
-
-	inline static function getLibraryPathForce(file:String, library:String)
-	{
-		return '$library:assets/$library/$file';
-	}
-
 	inline static function getPreloadPath(file:String)
 	{
 		return 'assets/$file';
 	}
 
-	inline static public function file(file:String, type:AssetType = TEXT, ?library:String)
+	inline static public function file(file:String, type:AssetType = TEXT)
 	{
-		return getPath(file, type, library);
+		return getPath(file, type);
 	}
 
-	inline static public function txt(key:String, ?library:String)
+	inline static public function txt(key:String)
 	{
-		return getPath('data/$key.txt', TEXT, library);
+		return getPath('data/$key.txt', TEXT);
 	}
 
-	inline static public function songsTxt(key:String, ?library:String)
+	inline static public function songsTxt(key:String)
 	{
-		return 'songs:assets/songs/$key.txt';
+		return 'assets/songs/$key.txt';
 	}
 
-	inline static public function xml(key:String, ?library:String)
+	inline static public function xml(key:String)
 	{
-		return getPath('data/$key.xml', TEXT, library);
+		return getPath('data/$key.xml', TEXT);
 	}
 
 	
-	inline static public function json(key:String, ?library:String)
+	inline static public function json(key:String)
 	{
-		return getPath('data/$key.json', TEXT, library);
+		return getPath('data/$key.json', TEXT);
 	}
 
 	inline static public function jsonSong(key:String)
 	{
-		return 'songs:assets/songs/$key.json';
+		return 'assets/songs/$key.json';
 	}
 
 	inline static public function stageJSON(key:String)
@@ -131,40 +114,40 @@ class Paths
 		return 'assets/stages/$key.json';
 	}
 
-	inline static public function characterJSON(key:String, ?library:String)
+	inline static public function characterJSON(key:String)
 	{
-		return getPath('characters/$key.json', TEXT, library);
+		return getPath('characters/$key.json', TEXT);
 	}
 
-	static public function sound(key:String, ?library:String)
+	static public function sound(key:String)
 	{
-		return getPath('sounds/$key.$SOUND_EXT', SOUND, library);
+		return getPath('sounds/$key.$SOUND_EXT', SOUND);
 	}
 
-	static public function soundStage(key:String, ?library:String)
+	static public function soundStage(key:String)
 	{
-		return getPath('stages/$key.$SOUND_EXT', SOUND, library);
+		return getPath('stages/$key.$SOUND_EXT', SOUND);
 	}
 
-	inline static public function soundRandom(key:String, min:Int, max:Int, ?library:String)
+	inline static public function soundRandom(key:String, min:Int, max:Int)
 	{
-		return sound(key + FlxG.random.int(min, max), library);
+		return sound(key + FlxG.random.int(min, max));
 	}
 
-	inline static public function soundRandomStage(key:String, min:Int, max:Int, ?library:String)
+	inline static public function soundRandomStage(key:String, min:Int, max:Int)
 	{
-		return soundStage('${getCurrentStage()}/sounds/$key' + FlxG.random.int(min, max), library);
+		return soundStage('${getCurrentStage()}/sounds/$key' + FlxG.random.int(min, max));
 	}
 
-	inline static public function video(key:String, ?library:String)
+	inline static public function video(key:String)
 	{
 		trace('assets/videos/$key.mp4');
-		return getPath('videos/$key.mp4', BINARY, library);
+		return getPath('videos/$key.mp4', BINARY);
 	}
 
-	inline static public function music(key:String, ?library:String)
+	inline static public function music(key:String)
 	{
-		return getPath('music/$key.$SOUND_EXT', MUSIC, library);
+		return getPath('music/$key.$SOUND_EXT', MUSIC);
 	}
 
 	inline static public function voices(song:String)
@@ -174,12 +157,12 @@ class Paths
 		if (loadingSong)
 		{
 			trace('Done Loading VOICES!');
-			return 'songs:assets/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';
+			return 'assets/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';
 		}
 		else
 		{
 			trace('ERROR Loading VOICES :c');
-			return 'songs:assets/songs/test/Voices.$SOUND_EXT';
+			return 'assets/songs/test/Voices.$SOUND_EXT';
 		}
 	}
 
@@ -190,28 +173,28 @@ class Paths
 		if (loadingSong)
 		{
 			trace('Done Loading INST!');
-			return 'songs:assets/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';
+			return 'assets/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';
 		}
 		else
 		{
 			trace('ERROR Loading INST :c');
-			return 'songs:assets/songs/test/Inst.$SOUND_EXT';
+			return 'assets/songs/test/Inst.$SOUND_EXT';
 		}
 	}
 
-	inline static public function image(key:String, ?library:String)
+	inline static public function image(key:String)
 	{
-		return getPath('images/$key.png', IMAGE, library);
+		return getPath('images/$key.png', IMAGE);
 	}
 
-	inline static public function characterimage(key:String, ?library:String)
+	inline static public function characterimage(key:String)
 	{
-		return getPath('characters/images/$key.png', IMAGE, library);
+		return getPath('characters/images/$key.png', IMAGE);
 	}
 
-	inline static public function imageStage(key:String, ?library:String)
+	inline static public function imageStage(key:String)
 	{
-		return getPath('stages/' + getCurrentStage() + '/images/' + key + '.png', IMAGE, library);
+		return getPath('stages/' + getCurrentStage() + '/images/' + key + '.png', IMAGE);
 	}
 
 	inline static public function font(key:String)
@@ -226,11 +209,11 @@ class Paths
 	/**
 	 * Obtener bitmap con caché
 	 */
-	static public function getBitmap(key:String, ?library:String):Bitmap
+	static public function getBitmap(key:String):Bitmap
 	{
 		totalLoads++;
 		
-		var cacheKey = key + (library != null ? "_" + library : "");
+		var cacheKey = key;
 		
 		// Revisar caché si está habilitado
 		if (cacheEnabled && bitmapCache.exists(cacheKey))
@@ -242,7 +225,7 @@ class Paths
 		cacheMisses++;
 		
 		// Cargar bitmap
-		var imagePath = image(key, library);
+		var imagePath = image(key);
 		var bitmap:Bitmap = null;
 		
 		try
@@ -273,11 +256,11 @@ class Paths
 	/**
 	 * Obtener Sparrow Atlas con caché
 	 */
-	static public function getSparrowAtlas(key:String, ?library:String):FlxAtlasFrames
+	static public function getSparrowAtlas(key:String):FlxAtlasFrames
 	{
 		totalLoads++;
 		
-		var cacheKey = key + (library != null ? "_" + library : "");
+		var cacheKey = key;
 		
 		// Revisar caché
 		if (cacheEnabled && atlasCache.exists(cacheKey))
@@ -289,7 +272,7 @@ class Paths
 		cacheMisses++;
 		
 		// Cargar atlas
-		var atlas = FlxAtlasFrames.fromSparrow(image(key, library), file('images/$key.xml', library));
+		var atlas = FlxAtlasFrames.fromSparrow(image(key), file('images/$key.xml'));
 		
 		// Agregar al caché
 		if (cacheEnabled && atlas != null)
@@ -307,11 +290,11 @@ class Paths
 		return atlas;
 	}
 
-	static public function characterSprite(key:String, ?library:String):FlxAtlasFrames
+	static public function characterSprite(key:String):FlxAtlasFrames
 	{
 		totalLoads++;
 		
-		var cacheKey = "char_" + key + (library != null ? "_" + library : "");
+		var cacheKey = "char_" + key;
 		
 		// Revisar caché
 		if (cacheEnabled && atlasCache.exists(cacheKey))
@@ -323,8 +306,8 @@ class Paths
 		cacheMisses++;
 		
 		var atlas = FlxAtlasFrames.fromSparrow(
-			getPath('characters/images/$key.png', IMAGE, library), 
-			getPath('characters/images/$key.xml', TEXT, library)
+			getPath('characters/images/$key.png', IMAGE), 
+			getPath('characters/images/$key.xml', TEXT)
 		);
 		
 		if (cacheEnabled && atlas != null)
@@ -338,11 +321,11 @@ class Paths
 		return atlas;
 	}
 
-	static public function stageSprite(key:String, ?library:String):FlxAtlasFrames
+	static public function stageSprite(key:String):FlxAtlasFrames
 	{
 		totalLoads++;
 		
-		var cacheKey = "stage_" + key + (library != null ? "_" + library : "");
+		var cacheKey = "stage_" + key;
 		
 		// Revisar caché
 		if (cacheEnabled && atlasCache.exists(cacheKey))
@@ -355,8 +338,8 @@ class Paths
 		
 		var curStage = getCurrentStage();
 		var atlas = FlxAtlasFrames.fromSparrow(
-			getPath('stages/' + curStage + '/images/' + key + '.png', IMAGE, library), 
-			getPath('stages/' + curStage + '/images/' + key + '.xml', TEXT, library)
+			getPath('stages/' + curStage + '/images/$key.png', IMAGE), 
+			getPath('stages/' + curStage + '/images/$key.xml', TEXT)
 		);
 		
 		if (cacheEnabled && atlas != null)
@@ -370,11 +353,11 @@ class Paths
 		return atlas;
 	}
 
-	static public function skinSprite(key:String, ?library:String):FlxAtlasFrames
+	static public function skinSprite(key:String):FlxAtlasFrames
 	{
 		totalLoads++;
 		
-		var cacheKey = "skin_" + key + (library != null ? "_" + library : "");
+		var cacheKey = "skin_" + key;
 		
 		// Revisar caché
 		if (cacheEnabled && atlasCache.exists(cacheKey))
@@ -386,8 +369,8 @@ class Paths
 		cacheMisses++;
 		
 		var atlas = FlxAtlasFrames.fromSparrow(
-			getPath('skins/$key.png', IMAGE, library), 
-			getPath('skins/$key.xml', TEXT, library)
+			getPath('skins/$key.png', IMAGE), 
+			getPath('skins/$key.xml', TEXT)
 		);
 		
 		if (cacheEnabled && atlas != null)
@@ -401,11 +384,11 @@ class Paths
 		return atlas;
 	}
 	
-	static public function getPackerAtlas(key:String, ?library:String):FlxAtlasFrames
+	static public function getPackerAtlas(key:String):FlxAtlasFrames
 	{
 		totalLoads++;
 		
-		var cacheKey = "packer_" + key + (library != null ? "_" + library : "");
+		var cacheKey = "packer_" + key;
 		
 		if (cacheEnabled && atlasCache.exists(cacheKey))
 		{
@@ -415,7 +398,7 @@ class Paths
 		
 		cacheMisses++;
 		
-		var atlas = FlxAtlasFrames.fromSpriteSheetPacker(image(key, library), file('images/$key.txt', library));
+		var atlas = FlxAtlasFrames.fromSpriteSheetPacker(image(key), file('images/$key.txt'));
 		
 		if (cacheEnabled && atlas != null)
 		{
@@ -428,11 +411,11 @@ class Paths
 		return atlas;
 	}
 
-	static public function characterSpriteTxt(key:String, ?library:String):FlxAtlasFrames
+	static public function characterSpriteTxt(key:String):FlxAtlasFrames
 	{
 		totalLoads++;
 		
-		var cacheKey = "char_txt_" + key + (library != null ? "_" + library : "");
+		var cacheKey = "char_txt_" + key;
 		
 		if (cacheEnabled && atlasCache.exists(cacheKey))
 		{
@@ -443,8 +426,8 @@ class Paths
 		cacheMisses++;
 		
 		var atlas = FlxAtlasFrames.fromSpriteSheetPacker(
-			getPath('characters/images/$key.png', IMAGE, library), 
-			file('characters/images/$key.txt', library)
+			getPath('characters/images/$key.png', IMAGE), 
+			file('characters/images/$key.txt')
 		);
 		
 		if (cacheEnabled && atlas != null)
@@ -458,11 +441,11 @@ class Paths
 		return atlas;
 	}
 
-	static public function stageSpriteTxt(key:String, ?library:String):FlxAtlasFrames
+	static public function stageSpriteTxt(key:String):FlxAtlasFrames
 	{
 		totalLoads++;
 		
-		var cacheKey = "stage_txt_" + key + (library != null ? "_" + library : "");
+		var cacheKey = "stage_txt_" + key;
 		
 		if (cacheEnabled && atlasCache.exists(cacheKey))
 		{
@@ -474,8 +457,8 @@ class Paths
 		
 		var curStage = getCurrentStage();
 		var atlas = FlxAtlasFrames.fromSpriteSheetPacker(
-			getPath('stages/' + curStage + '/images/$key.png', IMAGE, library), 
-			file('stages/' + curStage + '/images/$key.txt', library)
+			getPath('stages/' + curStage + '/images/$key.png', IMAGE), 
+			file('stages/' + curStage + '/images/$key.txt')
 		);
 		
 		if (cacheEnabled && atlas != null)
@@ -490,11 +473,11 @@ class Paths
 	}
 
 	
-	static public function splashSprite(key:String, ?library:String):FlxAtlasFrames
+	static public function splashSprite(key:String):FlxAtlasFrames
 	{
 		totalLoads++;
 		
-		var cacheKey = "splash_" + key + (library != null ? "_" + library : "");
+		var cacheKey = "splash_" + key;
 		
 		if (cacheEnabled && atlasCache.exists(cacheKey))
 		{
@@ -505,8 +488,8 @@ class Paths
 		cacheMisses++;
 		
 		var atlas = FlxAtlasFrames.fromSparrow(
-			getPath('splashes/$key.png', IMAGE, library), 
-			getPath('splashes/$key.xml', TEXT, library)
+			getPath('splashes/$key.png', IMAGE), 
+			getPath('splashes/$key.xml', TEXT)
 		);
 		
 		if (cacheEnabled && atlas != null)
@@ -520,11 +503,11 @@ class Paths
 		return atlas;
 	}
 
-	static public function skinSpriteTxt(key:String, ?library:String):FlxAtlasFrames
+	static public function skinSpriteTxt(key:String):FlxAtlasFrames
 	{
 		totalLoads++;
 		
-		var cacheKey = "skin_txt_" + key + (library != null ? "_" + library : "");
+		var cacheKey = "skin_txt_" + key;
 		
 		if (cacheEnabled && atlasCache.exists(cacheKey))
 		{
@@ -535,8 +518,8 @@ class Paths
 		cacheMisses++;
 		
 		var atlas = FlxAtlasFrames.fromSpriteSheetPacker(
-			getPath('skins/$key.png', IMAGE, library), 
-			file('skins/$key.txt', library)
+			getPath('skins/$key.png', IMAGE), 
+			file('skins/$key.txt')
 		);
 		
 		if (cacheEnabled && atlas != null)
@@ -587,23 +570,75 @@ class Paths
 		
 		if (firstKey != null)
 		{
-			var bitmap = bitmapCache.get(firstKey);
-			if (bitmap != null)
-			{
-				bitmap.dispose();
-			}
+			// NO hacemos dispose - dejamos que el GC lo maneje
+			// para evitar crashes cuando se vuelve a estados anteriores
 			bitmapCache.remove(firstKey);
-			trace('[Paths] Bitmap removed of cache: $firstKey');
+			trace('[Paths] Bitmap removed from cache: $firstKey');
 			bitmapCount--;
 		}
 	}
 	
 	/**
 	 * Limpiar todo el caché
+	 * NOTA: NO hace dispose() de los recursos para evitar crashes
+	 * El garbage collector se encargará de liberarlos cuando ya no se usen
 	 */
 	public static function clearCache():Void
 	{
 		trace('[Paths] Clearing the entire cache...');
+		
+		// Limpiar caché local
+		atlasCache.clear();
+		bitmapCache.clear();
+
+		atlasCount = 0;
+    	bitmapCount = 0;
+		
+		trace('[Paths] Cache completely cleared (resources left to GC)');
+	}
+	
+	/**
+	 * Limpiar FlxG.bitmap (caché global de HaxeFlixel)
+	 * Usa clearCache() que limpia automáticamente gráficos no persistentes
+	 * Usar al salir de estados pesados como PlayState
+	 */
+	public static function clearFlxBitmapCache():Void
+	{
+		trace('[Paths] Clearing FlxG.bitmap cache...');
+		
+		// FlxG.bitmap.clearCache() limpia todos los gráficos no persistentes
+		// Los gráficos con persist=true se mantienen
+		FlxG.bitmap.clearCache();
+		
+		// Forzar garbage collection para liberar memoria inmediatamente
+		#if cpp
+		cpp.vm.Gc.run(true);
+		#elseif hl
+		hl.Gc.major();
+		#end
+		
+		trace('[Paths] Cleared non-persistent graphics from FlxG.bitmap');
+	}
+	
+	/**
+	 * Limpiar TODO el caché incluyendo FlxG.bitmap
+	 * Usar entre estados para prevenir memory leaks
+	 */
+	public static function clearAllCaches():Void
+	{
+		clearCache();
+		clearFlxBitmapCache();
+		trace('[Paths] All caches cleared');
+	}
+	
+	/**
+	 * Limpiar caché de forma agresiva con dispose()
+	 * ADVERTENCIA: Solo usar cuando estés 100% seguro de que ningún sprite
+	 * está usando estos recursos (ej: al cerrar el juego)
+	 */
+	public static function forceClearCache():Void
+	{
+		trace('[Paths] FORCE clearing cache with dispose()...');
 		
 		// Limpiar atlas
 		for (atlas in atlasCache)
@@ -628,7 +663,7 @@ class Paths
 		atlasCount = 0;
     	bitmapCount = 0;
 		
-		trace('[Paths] Cache completely cleared');
+		trace('[Paths] Cache FORCE cleared with dispose()');
 	}
 	
 	/**

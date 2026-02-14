@@ -98,11 +98,6 @@ class NoteSkinOptions extends funkin.states.MusicBeatState
 
 	function initialize():Void
 	{
-		if (FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
-
 		// Inicializar sistema
 		NoteSkinSystem.init();
 
@@ -115,7 +110,7 @@ class NoteSkinOptions extends funkin.states.MusicBeatState
 		bg.setGraphicSize(Std.int(bg.width * 1.1));
 		bg.updateHitbox();
 		bg.screenCenter();
-		bg.antialiasing = true;
+		bg.antialiasing = FlxG.save.data.antialiasing;
 		add(bg);
 
 		// Panel izquierdo (lista) - MEJORADO

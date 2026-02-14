@@ -170,8 +170,11 @@ class Character extends FlxSprite {
 		applyCharacterSpecificAdjustments();
 
 		// Play initial animation
+		// Para personajes con danceLeft/danceRight (GF, Spooky, etc)
 		if (animOffsets.exists('danceRight'))
 			playAnim('danceRight');
+		else if (animOffsets.exists('danceLeft'))
+			playAnim('danceLeft');
 		else if (animOffsets.exists(_idleAnim))
 			playAnim(_idleAnim);
 
@@ -434,9 +437,15 @@ class Character extends FlxSprite {
 					holdTimer = 0;
 				}
 			} else {
-				// FIX PROBLEMA 1: Dad vuelve a idle en loop
+				// FIX: Solo resetear holdTimer y dance si NO es un personaje con danceLeft/danceRight
 				holdTimer = 0;
-				if (animation.curAnim.finished) {
+				
+				// Detectar personajes con sistema de danceLeft/danceRight
+				var hasDanceAnims = animOffsets.exists('danceLeft') && animOffsets.exists('danceRight');
+				
+				// Para personajes con danceLeft/danceRight (GF, Spooky, etc), NO llamar dance() aquí
+				// El dance() será manejado solo desde beatHit() para mantener el toggle correcto
+				if (!hasDanceAnims && animation.curAnim.finished) {
 					dance();
 				}
 			}
@@ -444,6 +453,13 @@ class Character extends FlxSprite {
 			// Handle BF characters
 			if (animation.curAnim.name.startsWith(_singAnimPrefix)) {
 				holdTimer += elapsed;
+				
+				// Volver a idle después de cantar por un tiempo
+				var threshold = Conductor.stepCrochet * 4 * 0.001;
+				if (holdTimer >= threshold && canSing) {
+					playAnim(_idleAnim, true);
+					holdTimer = 0;
+				}
 			} else {
 				holdTimer = 0;
 
@@ -484,11 +500,14 @@ class Character extends FlxSprite {
 	 */
 	public function dance():Void {
 		if (!debugMode && !specialAnim) {
+			// Detectar personajes con sistema de danceLeft/danceRight
+			var hasDanceAnims = animOffsets.exists('danceLeft') && animOffsets.exists('danceRight');
+			
 			switch (curCharacter) {
-				case 'gf' | 'gf-car' | 'gf-pixel' | 'gf-christmas':
-					// FIX PROBLEMA 2: GF no baila a lo loco
+				case 'gf' | 'gf-car' | 'gf-pixel' | 'gf-christmas' | 'gf-tankmen':
+					// GF: SOLO usa danceLeft/danceRight, NUNCA idle
 					if (animation.curAnim == null || !animation.curAnim.name.startsWith(_singAnimPrefix)) {
-						// Solo cambiamos el lado del baile si la animación de 'hair' (pelo) terminó o no existe
+						// Solo cambiar el lado del baile si la animación de 'hair' terminó o no existe
 						if (animation.curAnim == null || !animation.curAnim.name.startsWith('hair') || animation.curAnim.finished) {
 							danced = !danced;
 
@@ -500,10 +519,9 @@ class Character extends FlxSprite {
 					}
 
 				case 'spooky':
-					// Mismo fix para Spooky
-					// var currentAnim = animation.curAnim != null ? animation.curAnim.name : "";
+					// Spooky también usa danceLeft/danceRight
 					if (animation.curAnim == null || !animation.curAnim.name.startsWith(_singAnimPrefix)) {
-						danced = !danced; // Cambia entre danceLeft y danceRight [cite: 36]
+						danced = !danced;
 
 						if (danced)
 							playAnim('danceRight');
@@ -512,7 +530,22 @@ class Character extends FlxSprite {
 					}
 
 				default:
-					playAnim(_idleAnim);
+					// Para personajes normales con idle
+					// PERO: si el personaje tiene danceLeft/danceRight, usarlos en vez de idle
+					if (hasDanceAnims) {
+						// Este personaje usa sistema dance aunque no esté en el switch
+						if (animation.curAnim == null || !animation.curAnim.name.startsWith(_singAnimPrefix)) {
+							danced = !danced;
+
+							if (danced)
+								playAnim('danceRight');
+							else
+								playAnim('danceLeft');
+						}
+					} else {
+						// Personaje normal con idle
+						playAnim(_idleAnim);
+					}
 			}
 		}
 	}

@@ -87,7 +87,8 @@ class CharacterSlot
 		holdTimer += elapsed;
 		
 		// Auto-idle después de cantar
-		if (character.animation.curAnim != null)
+		// NOTA: BF maneja su propio timing en Character.update(), así que lo saltamos aquí
+		if (character.animation.curAnim != null && !character.curCharacter.startsWith('bf'))
 		{
 			var curAnim = character.animation.curAnim.name;
 			
@@ -110,8 +111,34 @@ class CharacterSlot
 		if (!isActive || !character.canSing)
 			return;
 		
-		if (character.animation.curAnim != null && !character.animation.curAnim.name.startsWith('sing'))
+		// Permitir dance si no está cantando o en animación especial
+		if (character.animation.curAnim != null)
 		{
+			var curAnimName = character.animation.curAnim.name;
+			// Bloqueamos solo si está cantando (sing) o en animación especial (hair, etc)
+			// Para personajes con danceLeft/danceRight (GF, Spooky), SIEMPRE permitir dance en beat
+			if (!curAnimName.startsWith('sing'))
+			{
+				// Si está en animación especial (hair), solo dance si terminó
+				if (curAnimName.startsWith('hair'))
+				{
+					if (character.animation.curAnim.finished)
+					{
+						character.dance();
+						holdTimer = 0;
+					}
+				}
+				else
+				{
+					// Para danceLeft/danceRight o idle, siempre permitir dance en beat
+					character.dance();
+					holdTimer = 0;
+				}
+			}
+		}
+		else
+		{
+			// No hay animación actual, forzar dance
 			character.dance();
 			holdTimer = 0;
 		}

@@ -144,6 +144,14 @@ class GPURenderer
     {
         if (!enabled) return;
         
+        // ⚠️ VALIDACIÓN CRÍTICA: Verificar que la cámara exista y sea válida
+        if (camera == null)
+        {
+            trace('[GPURenderer] ERROR: Camera is null, cannot render');
+            clear();
+            return;
+        }
+        
         var startTime = haxe.Timer.stamp();
         
         try
@@ -154,8 +162,9 @@ class GPURenderer
             spritesCulled = 0;
             
             // Validar canvas
-            if (camera == null || camera.canvas == null || camera.canvas.graphics == null)
+            if (camera.canvas == null || camera.canvas.graphics == null)
             {
+                trace('[GPURenderer] WARNING: Camera canvas or graphics is null');
                 clear();
                 return;
             }
@@ -239,16 +248,32 @@ class GPURenderer
      */
     public function destroy():Void
     {
-        for (batch in batches)
+        trace('[GPURenderer] Destroying renderer...');
+        
+        // Limpiar batches primero
+        try
         {
-            batch.destroy();
+            for (batch in batches)
+            {
+                if (batch != null)
+                    batch.destroy();
+            }
+        }
+        catch (e:Dynamic)
+        {
+            trace('[GPURenderer] ERROR destroying batches: $e');
         }
         
-        batches.clear();
+        // Limpiar referencias
+        if (batches != null)
+            batches.clear();
         batches = null;
+        
         sortedBatches = null;
         camera = null;
         cameraRect = null;
+        
+        trace('[GPURenderer] Renderer destroyed');
     }
 }
 

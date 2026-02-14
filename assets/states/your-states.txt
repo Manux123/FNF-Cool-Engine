@@ -1,0 +1,579 @@
+# 🎨 Ejemplos de Scripts por State
+
+## 📂 Estructura de Carpetas
+
+```
+assets/states/
+├── titlestate/
+│   ├── CustomIntro.hx
+│   └── SkipIntro.hx
+├── mainmenustate/
+│   ├── ExtraMenuItems.hx
+│   ├── CustomBackground.hx
+│   └── SecretCodes.hx
+├── freeplaystate/
+│   ├── CustomSongs.hx
+│   ├── SongFilters.hx
+│   └── PlaylistSystem.hx
+├── storymenustate/
+│   ├── CustomWeeks.hx
+│   └── WeekUnlocker.hx
+└── pausesubstate/
+    ├── QuickRestart.hx
+    └── PracticeMode.hx
+```
+
+---
+
+## 🎬 TitleState Scripts
+
+### 1. CustomIntro.hx
+**Ubicación:** `assets/states/titlestate/CustomIntro.hx`
+
+```javascript
+// CustomIntro.hx
+// Personaliza el texto de intro
+
+var customIntroTexts:Array<Array<String>> = [
+    ["Cool Engine", "By Cool Team"],
+    ["Friday Night Funkin'", "With Custom Intro"],
+    ["Modding Made Easy", "Scripts FTW"],
+    ["Your Mod Name", "Your Team"]
+];
+
+var currentTextIndex:Int = 0;
+
+function onCreate() {
+    trace("Custom intro script loaded!");
+}
+
+function getIntroText() {
+    // Retorna array de strings para el intro
+    // Cada sub-array es [línea1, línea2]
+    return customIntroTexts;
+}
+
+function onIntroBeat(beat) {
+    trace("Intro beat: " + beat);
+    
+    // Cada 2 beats, cambiar el texto
+    if (beat % 2 == 0) {
+        currentTextIndex++;
+        if (currentTextIndex >= customIntroTexts.length)
+            currentTextIndex = 0;
+    }
+}
+
+function onIntroComplete() {
+    trace("¡Intro completada!");
+    FlxG.sound.play(Paths.sound('confirmMenu'));
+}
+```
+
+### 2. SkipIntro.hx
+**Ubicación:** `assets/states/titlestate/SkipIntro.hx`
+
+```javascript
+// SkipIntro.hx
+// Permite skipear la intro con ENTER
+
+var skipEnabled:Bool = true;
+
+function onCreate() {
+    if (save.autoSkipIntro != null)
+        skipEnabled = save.autoSkipIntro;
+    
+    // Si auto-skip está activado, skipear inmediatamente
+    if (skipEnabled) {
+        skipIntro();
+    }
+}
+
+function onUpdate(elapsed) {
+    // Presionar ENTER para skipear
+    if (FlxG.keys.justPressed.ENTER) {
+        skipIntro();
+    }
+}
+
+function skipIntro() {
+    trace("Skipping intro...");
+    // Llamar al método skipIntro del TitleState si existe
+}
+```
+
+---
+
+## 🏠 MainMenuState Scripts
+
+### 1. ExtraMenuItems.hx
+**Ubicación:** `assets/states/mainmenustate/ExtraMenuItems.hx`
+
+```javascript
+// ExtraMenuItems.hx
+// Añade items personalizados al menú principal
+
+var customItems:Array<String> = [
+    "mods",
+    "credits",
+    "gallery"
+];
+
+function onCreate() {
+    trace("Extra menu items loaded!");
+}
+
+function getCustomMenuItems() {
+    // Retorna array de strings con nombres de items
+    return customItems;
+}
+
+function onMenuItemSelected(itemName, itemIndex) {
+    trace("Selected: " + itemName + " (index: " + itemIndex + ")");
+    
+    // Manejar selección de items custom
+    switch(itemName) {
+        case "mods":
+            openModsMenu();
+        case "credits":
+            openCredits();
+        case "gallery":
+            openGallery();
+    }
+}
+
+function openModsMenu() {
+    trace("Opening mods menu...");
+    // FlxG.switchState(new ModsMenuState());
+}
+
+function openCredits() {
+    trace("Opening credits...");
+    createCreditsOverlay();
+}
+
+function createCreditsOverlay() {
+    var creditsText = new FlxText(0, 0, FlxG.width, "CREDITS\n\nYour Team Here", 32);
+    creditsText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, "center");
+    creditsText.screenCenter();
+    state.add(creditsText);
+}
+
+function openGallery() {
+    trace("Opening gallery...");
+}
+```
+
+### 2. CustomBackground.hx
+**Ubicación:** `assets/states/mainmenustate/CustomBackground.hx`
+
+```javascript
+// CustomBackground.hx
+// Cambia el fondo del menú principal dinámicamente
+
+var backgrounds:Array<String> = [
+    "menuBG",
+    "menuBG2",
+    "menuBG3"
+];
+
+var currentBg:Int = 0;
+var bgSprite:FlxSprite = null;
+var changeTimer:Float = 0;
+var changeInterval:Float = 10.0; // Cambiar cada 10 segundos
+
+function onCreate() {
+    if (save.menuBgIndex != null)
+        currentBg = save.menuBgIndex;
+}
+
+function postCreate() {
+    // Reemplazar el fondo existente
+    createCustomBackground();
+}
+
+function createCustomBackground() {
+    // Buscar y reemplazar el fondo del menú
+    var bg = new FlxSprite(-80);
+    bg.loadGraphic(Paths.image('menu/' + backgrounds[currentBg]));
+    bg.scrollFactor.set(0, 0.18);
+    bg.screenCenter();
+    bg.antialiasing = true;
+    
+    // Añadir efecto de color
+    bg.color = FlxColor.fromRGB(
+        FlxG.random.int(100, 200),
+        FlxG.random.int(100, 200),
+        FlxG.random.int(100, 200)
+    );
+    
+    bgSprite = bg;
+}
+
+function onUpdate(elapsed) {
+    changeTimer += elapsed;
+    
+    if (changeTimer >= changeInterval) {
+        changeTimer = 0;
+        changeBg();
+    }
+}
+
+function changeBg() {
+    currentBg++;
+    if (currentBg >= backgrounds.length)
+        currentBg = 0;
+    
+    save.menuBgIndex = currentBg;
+    FlxG.save.flush();
+    
+    trace("Changed background to: " + backgrounds[currentBg]);
+}
+```
+
+### 3. SecretCodes.hx
+**Ubicación:** `assets/states/mainmenustate/SecretCodes.hx`
+
+```javascript
+// SecretCodes.hx
+// Sistema de códigos secretos en el menú principal
+
+var codeBuffer:String = "";
+var secretCodes:Map<String, Void->Void> = new Map();
+
+function onCreate() {
+    // Registrar códigos secretos
+    registerCodes();
+}
+
+function registerCodes() {
+    secretCodes.set("KONAMI", function() {
+        trace("¡Código Konami activado!");
+        FlxG.sound.play(Paths.sound('confirmMenu'));
+        unlockAllContent();
+    });
+    
+    secretCodes.set("DEBUG", function() {
+        trace("¡Modo debug activado!");
+        save.debugMode = true;
+        FlxG.save.flush();
+    });
+    
+    secretCodes.set("UNLOCK", function() {
+        trace("¡Todo desbloqueado!");
+        unlockEverything();
+    });
+}
+
+function onUpdate(elapsed) {
+    // Detectar input de teclado
+    if (FlxG.keys.justPressed.ANY) {
+        var key = FlxG.keys.getIsDown()[0];
+        if (key != null) {
+            var keyName = key.toString();
+            codeBuffer += keyName.charAt(0);
+            
+            // Mantener buffer corto
+            if (codeBuffer.length > 10)
+                codeBuffer = codeBuffer.substring(1);
+            
+            // Verificar códigos
+            checkCodes();
+        }
+    }
+}
+
+function checkCodes() {
+    for (code in secretCodes.keys()) {
+        if (codeBuffer.toUpperCase().contains(code)) {
+            activateCode(code);
+            codeBuffer = ""; // Reset buffer
+        }
+    }
+}
+
+function activateCode(code) {
+    trace("Código activado: " + code);
+    var action = secretCodes.get(code);
+    if (action != null)
+        action();
+}
+
+function unlockAllContent() {
+    save.weekUnlocked = [true, true, true, true, true, true, true];
+    FlxG.save.flush();
+}
+
+function unlockEverything() {
+    unlockAllContent();
+    save.songsUnlocked = true;
+    FlxG.save.flush();
+}
+```
+
+---
+
+## 🎵 FreeplayState Scripts
+
+### 1. CustomSongs.hx
+**Ubicación:** `assets/states/freeplaystate/CustomSongs.hx`
+
+```javascript
+// CustomSongs.hx
+// Añade canciones personalizadas al freeplay
+
+var customSongs:Array<Dynamic> = [
+    {
+        name: "My Custom Song",
+        week: 0,
+        character: "bf",
+        color: FlxColor.PURPLE
+    },
+    {
+        name: "Another Song",
+        week: 0,
+        character: "gf",
+        color: FlxColor.CYAN
+    }
+];
+
+function onCreate() {
+    trace("Custom songs script loaded!");
+}
+
+function getCustomSongs() {
+    // Retorna array de objetos con datos de canciones
+    return customSongs;
+}
+
+function onSongSelected(songName) {
+    trace("Selected song: " + songName);
+    
+    // Verificar si es una canción custom
+    for (song in customSongs) {
+        if (song.name == songName) {
+            trace("This is a custom song!");
+            applyCustomSongSettings(song);
+        }
+    }
+}
+
+function applyCustomSongSettings(songData) {
+    // Aplicar configuraciones especiales
+    trace("Applying settings for: " + songData.name);
+}
+```
+
+### 2. SongFilters.hx
+**Ubicación:** `assets/states/freeplaystate/SongFilters.hx`
+
+```javascript
+// SongFilters.hx
+// Sistema de filtros para canciones
+
+var filterMode:String = "all"; // all, favorites, recent, hard
+var filterText:FlxText = null;
+
+function onCreate() {
+    if (save.songFilter != null)
+        filterMode = save.songFilter;
+}
+
+function postCreate() {
+    createFilterUI();
+}
+
+function createFilterUI() {
+    filterText = new FlxText(10, 10, 200, "Filter: " + filterMode.toUpperCase(), 16);
+    filterText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.YELLOW, "left", "outline", FlxColor.BLACK);
+    state.add(filterText);
+}
+
+function onUpdate(elapsed) {
+    // F para cambiar filtro
+    if (FlxG.keys.justPressed.F) {
+        cycleFilter();
+    }
+}
+
+function cycleFilter() {
+    switch(filterMode) {
+        case "all":
+            filterMode = "favorites";
+        case "favorites":
+            filterMode = "recent";
+        case "recent":
+            filterMode = "hard";
+        case "hard":
+            filterMode = "all";
+    }
+    
+    save.songFilter = filterMode;
+    FlxG.save.flush();
+    
+    if (filterText != null)
+        filterText.text = "Filter: " + filterMode.toUpperCase();
+    
+    trace("Filter changed to: " + filterMode);
+}
+```
+
+### 3. PlaylistSystem.hx
+**Ubicación:** `assets/states/freeplaystate/PlaylistSystem.hx`
+
+```javascript
+// PlaylistSystem.hx
+// Sistema de playlists personalizadas
+
+var playlists:Map<String, Array<String>> = new Map();
+var currentPlaylist:String = "default";
+
+function onCreate() {
+    loadPlaylists();
+}
+
+function loadPlaylists() {
+    // Playlist por defecto
+    playlists.set("default", []);
+    
+    // Cargar playlists guardadas
+    if (save.playlists != null) {
+        // Parsear playlists guardadas
+    }
+    
+    // Playlists predefinidas
+    playlists.set("favorites", [
+        "Tutorial",
+        "Bopeebo",
+        "Fresh"
+    ]);
+    
+    playlists.set("hard", [
+        "South",
+        "Monster",
+        "Senpai"
+    ]);
+}
+
+function onUpdate(elapsed) {
+    // P para abrir menú de playlists
+    if (FlxG.keys.justPressed.P) {
+        openPlaylistMenu();
+    }
+    
+    // A para añadir canción actual a playlist
+    if (FlxG.keys.justPressed.A) {
+        addToPlaylist();
+    }
+}
+
+function openPlaylistMenu() {
+    trace("Opening playlist menu...");
+    // Crear UI de playlists
+}
+
+function addToPlaylist() {
+    trace("Adding song to playlist...");
+}
+```
+
+---
+
+## 📚 StoryMenuState Scripts
+
+### 1. CustomWeeks.hx
+**Ubicación:** `assets/states/storymenustate/CustomWeeks.hx`
+
+```javascript
+// CustomWeeks.hx
+// Añade semanas personalizadas
+
+var customWeeks:Array<Dynamic> = [
+    {
+        name: "Custom Week",
+        characters: ["bf", "gf", "dad"],
+        songs: ["song1", "song2", "song3"],
+        difficulties: ["easy", "normal", "hard"],
+        color: FlxColor.PURPLE
+    }
+];
+
+function onCreate() {
+    trace("Custom weeks loaded!");
+}
+
+function getCustomWeeks() {
+    return customWeeks;
+}
+
+function onWeekSelected(weekIndex) {
+    trace("Selected week: " + weekIndex);
+}
+```
+
+---
+
+## ⏸️ PauseSubState Scripts
+
+### 1. QuickRestart.hx
+**Ubicación:** `assets/states/pausesubstate/QuickRestart.hx`
+
+```javascript
+// QuickRestart.hx
+// Reinicio rápido con R
+
+function onUpdate(elapsed) {
+    // R para reinicio rápido
+    if (FlxG.keys.justPressed.R) {
+        trace("Quick restart!");
+        FlxG.resetState();
+    }
+}
+```
+
+### 2. PracticeMode.hx
+**Ubicación:** `assets/states/pausesubstate/PracticeMode.hx`
+
+```javascript
+// PracticeMode.hx
+// Modo práctica desde pausa
+
+var practiceModeEnabled:Bool = false;
+
+function onCreate() {
+    if (save.practiceMode != null)
+        practiceModeEnabled = save.practiceMode;
+}
+
+function postCreate() {
+    addPracticeModeToggle();
+}
+
+function addPracticeModeToggle() {
+    var toggle = new FlxText(20, FlxG.height - 40, 300, 
+        "Practice Mode: " + (practiceModeEnabled ? "ON" : "OFF"), 16);
+    toggle.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.YELLOW);
+    state.add(toggle);
+}
+
+function onUpdate(elapsed) {
+    // P para toggle practice mode
+    if (FlxG.keys.justPressed.P) {
+        practiceModeEnabled = !practiceModeEnabled;
+        save.practiceMode = practiceModeEnabled;
+        FlxG.save.flush();
+        trace("Practice mode: " + (practiceModeEnabled ? "ON" : "OFF"));
+    }
+}
+```
+
+---
+
+## 🎯 Consejos de Uso
+
+1. **Copia** el script que quieras a la carpeta correcta
+2. **Personaliza** los valores según tus necesidades
+3. **Prueba** en el juego
+4. **Modifica** sobre la marcha sin recompilar
+
+**¡Los scripts se cargan automáticamente al entrar al state!** 🚀

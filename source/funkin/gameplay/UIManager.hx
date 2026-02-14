@@ -229,7 +229,7 @@ class UIManager extends FlxGroup
 		if (!curStage.startsWith('school'))
 		{
 			ratingSprite.setGraphicSize(Std.int(ratingSprite.width * 0.7));
-			ratingSprite.antialiasing = true;
+			ratingSprite.antialiasing = FlxG.save.data.antialiasing;
 		}
 		else
 		{
@@ -285,7 +285,7 @@ class UIManager extends FlxGroup
 
 			if (!curStage.startsWith('school'))
 			{
-				numScore.antialiasing = true;
+				numScore.antialiasing = FlxG.save.data.antialiasing;
 				numScore.setGraphicSize(Std.int(numScore.width * 0.5));
 			}
 			else
@@ -343,7 +343,7 @@ class UIManager extends FlxGroup
 		if (!curStage.startsWith('school'))
 		{
 			rating.setGraphicSize(Std.int(rating.width * 0.7));
-			rating.antialiasing = true;
+			rating.antialiasing = FlxG.save.data.antialiasing;
 		}
 
 		rating.updateHitbox();

@@ -70,8 +70,8 @@ class CustomControlsState extends funkin.states.MusicBeatSubstate
 		bg.setGraphicSize(Std.int(bg.width * 1.1));
 		bg.updateHitbox();
 		bg.screenCenter();
-		bg.antialiasing = true;
-
+		bg.antialiasing = FlxG.save.data.antialiasing;
+		
 		// load curSelected
 		if (_saveconrtol.data.buttonsmode == null){
 			curSelected = 0;

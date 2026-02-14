@@ -15,15 +15,6 @@ import funkin.gameplay.notes.NoteSkinSystem;
 
 using StringTools;
 
-/**
- * NoteManager MEJORADO - Con batching y hold splashes
- * 
- * NUEVAS CARACTERÍSTICAS:
- * - Integración con sistema de batching
- * - Splashes para hold notes (inicio, continuo, fin)
- * - Detección automática de hold notes
- * - Gestión optimizada de splashes
- */
 class NoteManager
 {
 	// === GROUPS ===
@@ -354,7 +345,7 @@ class NoteManager
 	/**
 	 * MEJORADO: Procesar hit de nota del jugador con splashes
 	 */
-	public function hitNote(note:Note):Void
+	public function hitNote(note:Note,rating:String):Void
 	{
 		if (note.wasGoodHit)
 			return;
@@ -362,16 +353,18 @@ class NoteManager
 		note.wasGoodHit = true;
 		handleStrumAnimation(note.noteData, true);
 
+		if (rating == "sick"){
 		// NUEVO: Gestionar splashes según tipo de nota
-		if (note.isSustainNote)
-		{
-			handleSustainNoteHit(note);
-		}
-		else
-		{
-			// Nota normal - splash normal
-			createNormalSplash(note, true);
-			removeNote(note);
+			if (note.isSustainNote)
+			{
+				handleSustainNoteHit(note);
+			}
+			else
+			{
+				// Nota normal - splash normal
+				createNormalSplash(note, true);
+				removeNote(note);
+			}
 		}
 
 		// Callback

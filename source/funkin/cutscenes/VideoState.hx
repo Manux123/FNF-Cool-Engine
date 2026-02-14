@@ -27,11 +27,6 @@ class VideoState extends MusicBeatState
 
     public override function create(){
         FlxG.autoPause = true;
-        
-        if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
 
         #if (windows || web)
         if(Assets.exists(Paths.video(videoPath))){

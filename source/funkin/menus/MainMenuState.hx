@@ -20,6 +20,7 @@ import openfl.display.BitmapData as Bitmap;
 import funkin.debug.AnimationDebug;
 import funkin.debug.StageEditor;
 import data.PlayerSettings;
+import funkin.scripting.StateScriptHandler;
 
 using StringTools;
 
@@ -29,7 +30,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 
 	var menuItems:FlxTypedGroup<FlxSprite>;
 
-	var optionShit:Array<String> = ['story-mode', 'freeplay'#if !switch ,'options', 'donate'#end];
+	var optionShit:Array<String> = ['story-mode', 'freeplay' #if !switch, 'options', 'donate' #end];
 
 	var canSnap:Array<Float> = [];
 
@@ -38,13 +39,14 @@ class MainMenuState extends funkin.states.MusicBeatState
 	var camFollow:FlxObject;
 	var newInput:Bool = true;
 	var menuItem:FlxSprite;
+
 	public static var firstStart:Bool = true;
 
 	public static var finishedFunnyMove:Bool = false;
 
 	override function create()
 	{
-		//LOAD CUZ THIS SHIT DONT DO IT SOME IN THE CACHESTATE.HX FUCK
+		// LOAD CUZ THIS SHIT DONT DO IT SOME IN THE CACHESTATE.HX FUCK
 		PlayerSettings.player1.controls.loadKeyBinds();
 
 		#if desktop
@@ -56,7 +58,8 @@ class MainMenuState extends funkin.states.MusicBeatState
 		transOut = FlxTransitionableState.defaultTransOut;
 
 		#if !MAINMENU
-		if (!musicFreakyisPlaying && FreeplayState.vocals == null){
+		if (!musicFreakyisPlaying && FreeplayState.vocals == null)
+		{
 			FlxG.sound.playMusic(Paths.music('freakyMenu'));
 			musicFreakyisPlaying = true;
 		}
@@ -69,7 +72,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0.18;
 		bg.screenCenter();
-		bg.antialiasing = true;
+		bg.antialiasing = FlxG.save.data.antialiasing;
 		add(bg);
 
 		camFollow = new FlxObject(0, 0, 1, 1);
@@ -78,26 +81,41 @@ class MainMenuState extends funkin.states.MusicBeatState
 		menuItems = new FlxTypedGroup<FlxSprite>();
 		add(menuItems);
 
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.init();
+		StateScriptHandler.loadStateScripts('MainMenuState', this);
+		StateScriptHandler.callOnScripts('onCreate', []);
+
+		// Obtener items custom
+		var customItems = StateScriptHandler.callOnScriptsReturn('getCustomMenuItems', [], null);
+		if (customItems != null && Std.isOfType(customItems, Array))
+		{
+			var itemsArray:Array<String> = cast customItems;
+			for (item in itemsArray)
+				optionShit.push(item);
+		}
+		#end
+
 		for (i in 0...optionShit.length)
 		{
 			var offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;
-			var menuItem:FlxSprite = new FlxSprite(70, (i * 140)  + offset);
+			var menuItem:FlxSprite = new FlxSprite(70, (i * 140) + offset);
 			menuItem.frames = Paths.getSparrowAtlas('menu/menu_' + optionShit[i]);
 			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
 			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
 			menuItem.animation.play('idle');
 			menuItem.ID = i;
-			//menuItem.screenCenter(X);
+			// menuItem.screenCenter(X);
 			menuItems.add(menuItem);
 			var scr:Float = (optionShit.length - 4) * 0.135;
-			if(optionShit.length < 6) scr = 0;
+			if (optionShit.length < 6)
+				scr = 0;
 			menuItem.scrollFactor.set(0, scr);
-			menuItem.antialiasing = true;
+			menuItem.antialiasing = FlxG.save.data.antialiasing;
 			menuItem.setGraphicSize(Std.int(menuItem.width * 0.8));
 			menuItem.updateHitbox();
-
 		}
-		
+
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Friday Night Funkin v0.2.7.1", 12);
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -114,14 +132,22 @@ class MainMenuState extends funkin.states.MusicBeatState
 		#if mobileC
 		addVirtualPad(UP_DOWN, A_B);
 		#end
-		
+
 		super.create();
+
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('postCreate', []);
+		#end
 	}
 
 	var selectedSomethin:Bool = false;
 
 	override function update(elapsed:Float)
 	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
+		#end
+
 		#if !MAINMENU
 		if (FlxG.sound.music.volume < 0.8)
 		{
@@ -131,9 +157,9 @@ class MainMenuState extends funkin.states.MusicBeatState
 
 		if (FlxG.keys.justPressed.ONE)
 			FlxG.switchState(new AnimationDebug('bf'));
-/*
-		if (FlxG.keys.justPressed.TWO)
-			FlxG.switchState(new StageEditor());*/
+		/*
+			if (FlxG.keys.justPressed.TWO)
+				FlxG.switchState(new StageEditor()); */
 
 		if (!selectedSomethin)
 		{
@@ -156,17 +182,31 @@ class MainMenuState extends funkin.states.MusicBeatState
 
 			if (controls.ACCEPT)
 			{
+				#if HSCRIPT_ALLOWED
+				var cancelled = StateScriptHandler.callOnScriptsReturn('onAccept', [], false);
+				if (cancelled)
+				{
+					super.update(elapsed);
+					return;
+				}
+
+				StateScriptHandler.callOnScripts('onMenuItemSelected', [optionShit[curSelected], curSelected]);
+				#end
+
 				if (optionShit[curSelected] == 'donate')
 				{
 					#if linux
-					Sys.command('/usr/bin/xdg-open', ["https://www.kickstarter.com/projects/funkin/friday-night-funkin-the-full-ass-game", "&"]);
+					Sys.command('/usr/bin/xdg-open', [
+						"https://www.kickstarter.com/projects/funkin/friday-night-funkin-the-full-ass-game",
+						"&"
+					]);
 					#else
 					FlxG.openURL('https://www.kickstarter.com/projects/funkin/friday-night-funkin-the-full-ass-game');
 					#end
 				}
 				else
 				{
-					//FlxTween.tween(menuItem, {x: menuItem.x + 200}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
+					// FlxTween.tween(menuItem, {x: menuItem.x + 200}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
 					selectedSomethin = true;
 					FlxG.sound.play(Paths.sound('confirmMenu'));
 					FlxG.camera.flash(FlxColor.WHITE);
@@ -186,35 +226,35 @@ class MainMenuState extends funkin.states.MusicBeatState
 						else
 						{
 							menuItems.forEach(function(spr:FlxSprite)
+							{
+								if (curSelected != spr.ID)
 								{
-									if (curSelected != spr.ID)
-									{
-										FlxTween.tween(spr, {alpha: 0}, 0.4, {
-											ease: FlxEase.quadOut,
-											onComplete: function(twn:FlxTween)
-											{
-												spr.kill();
-											}
-										});
-									}
-									else
-									{
-										FlxFlicker.flicker(spr, 1, 0.06, false, false, function(flick:FlxFlicker)
+									FlxTween.tween(spr, {alpha: 0}, 0.4, {
+										ease: FlxEase.quadOut,
+										onComplete: function(twn:FlxTween)
 										{
-											var daChoice:String = optionShit[curSelected];
-			
-											switch (daChoice)
-											{
-												case 'story-mode':
-													FlxG.switchState(new StoryMenuState());
-												case 'freeplay':
-													FlxG.switchState(new FreeplayState());
-												case 'options':
-													FlxG.switchState(new OptionsMenuState());
-											}
-										});
-									}
-								});
+											spr.kill();
+										}
+									});
+								}
+								else
+								{
+									FlxFlicker.flicker(spr, 1, 0.06, false, false, function(flick:FlxFlicker)
+									{
+										var daChoice:String = optionShit[curSelected];
+
+										switch (daChoice)
+										{
+											case 'story-mode':
+												FlxG.switchState(new StoryMenuState());
+											case 'freeplay':
+												FlxG.switchState(new FreeplayState());
+											case 'options':
+												FlxG.switchState(new OptionsMenuState());
+										}
+									});
+								}
+							});
 						}
 					});
 				}
@@ -223,11 +263,9 @@ class MainMenuState extends funkin.states.MusicBeatState
 
 		super.update(elapsed);
 
-		/*
-		menuItems.forEach(function(spr:FlxSprite)
-		{
-			spr.screenCenter(X); no
-		}); */
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
+		#end
 	}
 
 	function changeItem(huh:Int = 0)
@@ -247,7 +285,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 
 			if (spr.ID == curSelected)
 			{
-				FlxTween.tween(spr,{x:150},0.45,{ease:FlxEase.elasticInOut});
+				FlxTween.tween(spr, {x: 150}, 0.45, {ease: FlxEase.elasticInOut});
 				spr.animation.play('selected');
 				camFollow.setPosition(spr.getGraphicMidpoint().x, spr.getGraphicMidpoint().y);
 				spr.offset.x = 0.15 * (spr.frameWidth / 2 + 180);
@@ -255,7 +293,21 @@ class MainMenuState extends funkin.states.MusicBeatState
 				FlxG.log.add(spr.frameWidth);
 			}
 			else
-				FlxTween.tween(spr,{x:70},0.45,{ease:FlxEase.elasticInOut});
+				FlxTween.tween(spr, {x: 70}, 0.45, {ease: FlxEase.elasticInOut});
 		});
+
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onSelectionChanged', [curSelected]);
+		#end
+	}
+
+	override function destroy()
+	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onDestroy', []);
+		StateScriptHandler.clearStateScripts();
+		#end
+
+		super.destroy();
 	}
 }

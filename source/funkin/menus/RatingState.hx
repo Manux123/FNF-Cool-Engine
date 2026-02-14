@@ -14,6 +14,7 @@ import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.effects.particles.FlxEmitter;
 import flixel.group.FlxSpriteGroup;
 import flixel.effects.particles.FlxParticle;
+import funkin.scripting.StateScriptHandler;
 import flixel.math.FlxMath;
 import flixel.util.FlxGradient;
 
@@ -50,12 +51,13 @@ class RatingState extends FlxSubState
 
 	override public function create()
 	{
-		super.create();
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.init();
+		StateScriptHandler.loadStateScripts('RatingState', this);
+		StateScriptHandler.callOnScripts('onCreate', []);
+		#end
 
-		if (FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
+		super.create();
 
 		currentRank = funkin.data.Ranking.generateLetterRank();
 
@@ -200,7 +202,7 @@ class RatingState extends FlxSubState
 		// Sprite del Rank
 		var rankDisplayY:Float = currentRank == 'S' ? 80 : 120;
 		rankSprite = new FlxSprite(FlxG.width / 2 + 350, -300);
-		rankSprite.loadGraphic(Paths.image('ratings/${currentRank}'));
+		rankSprite.loadGraphic(Paths.image('menu/ratings/${currentRank}'));
 		rankSprite.scale.set(1.7, 1.7);
 		rankSprite.antialiasing = true;
 		rankSprite.alpha = 0;
@@ -215,7 +217,7 @@ class RatingState extends FlxSubState
 		if (PlayState.misses == 0)
 		{
 			fcBadge = new FlxSprite(rankSprite.x - 100, rankSprite.y + 200);
-			fcBadge.loadGraphic(Paths.image('ratings/FC'));
+			fcBadge.loadGraphic(Paths.image('menu/ratings/FC'));
 			fcBadge.scale.set(1.2, 1.2);
 			fcBadge.antialiasing = true;
 			fcBadge.alpha = 0;
@@ -395,6 +397,15 @@ class RatingState extends FlxSubState
 		});
 	}
 
+	override function destroy()
+	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onDestroy', []);
+		StateScriptHandler.clearStateScripts();
+		#end
+		super.destroy();
+	}
+
 	function startMusicWithIntro():Void
 	{
 		var rankMusic:String = currentRank;
@@ -473,6 +484,10 @@ class RatingState extends FlxSubState
 
 	override function update(elapsed:Float)
 	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
+		#end
+
 		super.update(elapsed);
 
 		// Actualizar beat timer para efectos de pulso
@@ -519,10 +534,18 @@ class RatingState extends FlxSubState
 		{
 			exitState(true);
 		}
+
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
+		#end
 	}
 
 	function onBeat():Void
 	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onBeatHit', [beatTimer]);
+		#end
+
 		// Efecto de pulso en elementos clave
 		for (element in pulseElements)
 		{

@@ -1,30 +1,11 @@
 package funkin.optimization;
 
 import flixel.FlxG;
+import flixel.FlxCamera;
 import funkin.gameplay.notes.NotePool;
 import funkin.optimization.GPURenderer;
 import funkin.gameplay.notes.Note;
 
-/**
- * OptimizationManager - Administrador central de optimizaciones
- * 
- * FUNCIONES:
- * - Coordina todos los sistemas de optimización
- * - Ajusta automáticamente según FPS
- * - Provee estadísticas en tiempo real
- * - Sistema de calidad adaptativa
- * 
- * USO:
- * En PlayState.create():
- *   optimizationManager = new OptimizationManager();
- *   optimizationManager.init();
- * 
- * En PlayState.update():
- *   optimizationManager.update(elapsed);
- * 
- * En PlayState.draw():
- *   optimizationManager.render();
- */
 class OptimizationManager
 {
     // === SYSTEMS ===
@@ -58,25 +39,26 @@ class OptimizationManager
     /**
      * Inicializar todos los sistemas
      */
-    public function init():Void
+    public function init(?camera:FlxCamera):Void
     {
         if (initialized) return;
         
-        trace('[OptimizationManager] Inicializando sistemas...');
+        trace('[OptimizationManager] Iniciating systems...');
         
         // Inicializar NotePool
         NotePool.init();
         
-        // Crear GPU Renderer
-        gpuRenderer = new GPURenderer(FlxG.camera);
+        // Crear GPU Renderer con la cámara correcta
+        // ⚠️ IMPORTANTE: Usar la cámara del PlayState, NO FlxG.camera
+        gpuRenderer = new GPURenderer(camera != null ? camera : FlxG.camera);
         
         // Aplicar calidad inicial
         applyQualitySettings();
         
         initialized = true;
         
-        trace('[OptimizationManager] Sistemas inicializados');
-        trace('[OptimizationManager] Calidad: $qualityLevel');
+        trace('[OptimizationManager] Systems inicialized');
+        trace('[OptimizationManager] Quality: $qualityLevel');
         trace('[OptimizationManager] Adaptive Quality: $enableAdaptiveQuality');
     }
     
@@ -200,7 +182,7 @@ class OptimizationManager
             case QualityLevel.MEDIUM:
                 setQuality(QualityLevel.LOW);
             case QualityLevel.LOW:
-                trace('[OptimizationManager] Ya en calidad mínima');
+                trace('[OptimizationManager] Now in quality minimun');
         }
     }
     
@@ -218,7 +200,7 @@ class OptimizationManager
             case QualityLevel.HIGH:
                 setQuality(QualityLevel.ULTRA);
             case QualityLevel.ULTRA:
-                trace('[OptimizationManager] Ya en calidad máxima');
+                trace('[OptimizationManager] Now in quality max');
         }
     }
     
@@ -232,7 +214,7 @@ class OptimizationManager
         qualityLevel = level;
         applyQualitySettings();
         
-        trace('[OptimizationManager] Calidad cambiada a: $qualityLevel');
+        trace('[OptimizationManager] Quality changed to: $qualityLevel');
     }
     
     /**
@@ -296,7 +278,7 @@ class OptimizationManager
     {
         if (!initialized) return;
         
-        trace('[OptimizationManager] Limpiando...');
+        trace('[OptimizationManager] Cleaning...');
         
         NotePool.clear();
         
@@ -314,7 +296,7 @@ class OptimizationManager
     {
         if (!initialized) return;
         
-        trace('[OptimizationManager] Destruyendo...');
+        trace('[OptimizationManager] Destroying...');
         
         NotePool.destroy();
         

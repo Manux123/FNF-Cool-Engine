@@ -126,8 +126,12 @@ class CharacterController
 				slot.update(elapsed);
 		}
 		
-		// Legacy update (por si acaso)
-		updateLegacyAnimations(elapsed);
+		// Legacy update - SOLO si no hay slots (para compatibilidad)
+		// Si hay slots, ya se manejó arriba, no duplicar
+		if (characterSlots.length == 0)
+		{
+			updateLegacyAnimations(elapsed);
+		}
 	}
 	
 	/**
@@ -248,20 +252,24 @@ class CharacterController
 			}
 		}
 		
-		// Legacy dance
-		if (gf != null && curBeat % gfSpeed == 0)
-			gf.dance();
-		
-		if (boyfriend != null && boyfriend.animation != null && boyfriend.animation.curAnim != null)
+		// Legacy dance - SOLO si no hay slots (para compatibilidad con código antiguo)
+		// Si hay slots, ya se manejó arriba, no duplicar las llamadas
+		if (characterSlots.length == 0)
 		{
-			if (!boyfriend.animation.curAnim.name.startsWith("sing") && boyfriend.canSing && !specialAnim)
-				boyfriend.dance();
-		}
-		
-		if (dad != null && dad.animation != null && dad.animation.curAnim != null)
-		{
-			if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing && !specialAnim)
-				dad.dance();
+			if (gf != null && curBeat % gfSpeed == 0)
+				gf.dance();
+			
+			if (boyfriend != null && boyfriend.animation != null && boyfriend.animation.curAnim != null)
+			{
+				if (!boyfriend.animation.curAnim.name.startsWith("sing") && boyfriend.canSing && !specialAnim)
+					boyfriend.dance();
+			}
+			
+			if (dad != null && dad.animation != null && dad.animation.curAnim != null)
+			{
+				if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing && !specialAnim)
+					dad.dance();
+			}
 		}
 	}
 	

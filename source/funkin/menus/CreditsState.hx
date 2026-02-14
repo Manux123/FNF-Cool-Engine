@@ -53,11 +53,6 @@ class CreditsState extends funkin.statesMusicBeatState
 
 	override function create()
 	{
-		if(FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
-
 		#if desktop
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("In the Credits", null);

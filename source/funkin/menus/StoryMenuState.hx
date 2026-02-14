@@ -22,9 +22,9 @@ import lime.net.curl.CURLCode;
 import funkin.menus.substate.MenuItem;
 import funkin.menus.substate.MenuCharacter;
 import funkin.gameplay.objects.hud.Highscore;
+import funkin.scripting.StateScriptHandler;
 import funkin.gameplay.PlayState;
 import funkin.states.LoadingState;
-
 import funkin.data.Song;
 import funkin.cutscenes.VideoState;
 
@@ -70,8 +70,9 @@ class StoryMenuState extends funkin.states.MusicBeatState
 	var txtWeekTitle:FlxText;
 
 	public static var curWeek:Int = 0;
+
 	var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
-	
+
 	public static var bgcol:FlxColor = 0xFF0A0A0A;
 
 	var txtTracklist:FlxText;
@@ -95,7 +96,8 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		transIn = FlxTransitionableState.defaultTransIn;
 		transOut = FlxTransitionableState.defaultTransOut;
 
-		if (!MainMenuState.musicFreakyisPlaying){
+		if (!MainMenuState.musicFreakyisPlaying)
+		{
 			FlxG.sound.playMusic(Paths.music('freakyMenu'));
 			MainMenuState.musicFreakyisPlaying = true;
 		}
@@ -136,7 +138,7 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		add(grpLocks);
 
 		trace("Line 70");
-		
+
 		#if desktop
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("In the Story Mode", null);
@@ -176,6 +178,19 @@ class StoryMenuState extends funkin.states.MusicBeatState
 			grpWeekCharacters.add(weekCharacterThing);
 		}
 
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.init();
+		StateScriptHandler.loadStateScripts('StoryMenuState', this);
+		StateScriptHandler.callOnScripts('onCreate', []);
+
+		// Obtener semanas custom
+		var customWeeks = StateScriptHandler.callOnScriptsReturn('getCustomWeeks', [], null);
+		if (customWeeks != null && Std.isOfType(customWeeks, Array))
+		{
+			// Procesar semanas custom
+		}
+		#end
+
 		difficultySelectors = new FlxGroup();
 		add(difficultySelectors);
 
@@ -208,9 +223,8 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		trace("Line 150");
 
 		add(yellowBG);
-		//add(inverted);
+		// add(inverted);
 		add(grpWeekCharacters);
-
 
 		tracksMenu = new FlxSprite(FlxG.width * 0.07, yellowBG.y + 435).loadGraphic(Paths.image('storymenu/campaign_menu/tracksMenu'));
 		tracksMenu.antialiasing = true;
@@ -234,6 +248,9 @@ class StoryMenuState extends funkin.states.MusicBeatState
 
 	override function update(elapsed:Float)
 	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
+		#end
 		// scoreText.setFormat('VCR OSD Mono', 32);
 		lerpScore = Math.floor(FlxMath.lerp(lerpScore, intendedScore, 0.5));
 
@@ -295,6 +312,10 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		}
 
 		super.update(elapsed);
+
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
+		#end
 	}
 
 	var movedBack:Bool = false;
@@ -303,6 +324,12 @@ class StoryMenuState extends funkin.states.MusicBeatState
 
 	function selectWeek()
 	{
+		#if HSCRIPT_ALLOWED
+		var cancelled = StateScriptHandler.callOnScriptsReturn('onAccept', [], false);
+		if (cancelled)
+			return;
+		#end
+
 		if (weekUnlocked[curWeek])
 		{
 			if (stopspamming == false)
@@ -334,10 +361,10 @@ class StoryMenuState extends funkin.states.MusicBeatState
 			PlayState.SONG = Song.loadFromJson(PlayState.storyPlaylist[0].toLowerCase() + diffic, PlayState.storyPlaylist[0].toLowerCase());
 			PlayState.storyWeek = curWeek;
 			PlayState.campaignScore = 0;
-			if(curWeek == 0)
+			if (curWeek == 0)
 				new FlxTimer().start(1, function(tmr:FlxTimer)
 				{
-					LoadingState.loadAndSwitchState(new VideoState('test',new PlayState()),true);
+					LoadingState.loadAndSwitchState(new VideoState('test', new PlayState()), true);
 				});
 			else
 				new FlxTimer().start(1, function(tmr:FlxTimer)
@@ -411,14 +438,18 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		FlxG.sound.play(Paths.sound('scrollMenu'));
 
 		updateText();
+
+		var cancelled = StateScriptHandler.callOnScriptsReturn('onWeekSelected', [], false);
 	}
 
 	function updateText()
 	{
 		var weekArray:Array<String> = weekCharacters[0];
-		if(curWeek < weekCharacters.length) weekArray = weekCharacters[curWeek];
+		if (curWeek < weekCharacters.length)
+			weekArray = weekCharacters[curWeek];
 
-		for (i in 0...grpWeekCharacters.length) {
+		for (i in 0...grpWeekCharacters.length)
+		{
 			grpWeekCharacters.members[i].changeCharacter(weekArray[i]);
 		}
 
@@ -439,5 +470,15 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		#if !switch
 		intendedScore = Highscore.getWeekScore(curWeek, curDifficulty);
 		#end
+	}
+
+	override function destroy()
+	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onDestroy', []);
+		StateScriptHandler.clearStateScripts();
+		#end
+
+		super.destroy();
 	}
 }

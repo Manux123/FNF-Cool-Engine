@@ -42,6 +42,10 @@ class InputHandler
 
 	public function new()
 	{
+		leftBind[0] = FlxKey.fromString(FlxG.save.data.leftBind);
+		downBind[0] = FlxKey.fromString(FlxG.save.data.downBind);
+		upBind[0] = FlxKey.fromString(FlxG.save.data.upBind);
+		rightBind[0] = FlxKey.fromString(FlxG.save.data.rightBind);
 	}
 
 	/**

@@ -28,6 +28,7 @@ import funkin.data.Conductor;
 import funkin.states.OutdatedSubState;
 import data.PlayerSettings;
 import ui.Alphabet;
+import funkin.scripting.StateScriptHandler;
 
 using StringTools;
 
@@ -48,11 +49,6 @@ class TitleState extends funkin.states.MusicBeatState
 	{
 		PlayerSettings.init();
 
-		if (FlxG.save.data.FPSCap)
-			openfl.Lib.current.stage.frameRate = 120;
-		else
-			openfl.Lib.current.stage.frameRate = 240;
-
 		// curWacky = FlxG.random.getObject(getIntroTextShit());
 
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGtitle')));
@@ -60,7 +56,11 @@ class TitleState extends funkin.states.MusicBeatState
 
 		// DEBUG BULLSHIT
 
-		super.create();
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.init();
+		StateScriptHandler.loadStateScripts('TitleState', this);
+		StateScriptHandler.callOnScripts('onCreate', []);
+		#end
 
 		if (FlxG.save.data.weekUnlocked != null)
 		{
@@ -80,6 +80,8 @@ class TitleState extends funkin.states.MusicBeatState
 		#else
 		startIntro();
 		#end
+
+		super.create();
 	}
 
 	var logoBl:FlxSprite;
@@ -167,6 +169,10 @@ class TitleState extends funkin.states.MusicBeatState
 			Conductor.changeBPM(102);
 			initialized = true;
 		}
+
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('postCreate', []);
+		#end
 	}
 
 	var transitioning:Bool = false;
@@ -176,6 +182,10 @@ class TitleState extends funkin.states.MusicBeatState
 		if (FlxG.sound.music != null)
 			Conductor.songPosition = FlxG.sound.music.time;
 		// FlxG.watch.addQuick('amp', FlxG.sound.music.amplitude);
+
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
+		#end
 
 		if (FlxG.keys.justPressed.F11)
 		{
@@ -261,6 +271,10 @@ class TitleState extends funkin.states.MusicBeatState
 		}
 
 		super.update(elapsed);
+
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
+		#end
 	};
 
 	function createCoolText(textArray:Array<String>)
@@ -308,6 +322,10 @@ class TitleState extends funkin.states.MusicBeatState
 	override function beatHit()
 	{
 		super.beatHit();
+
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onBeatHit', [curBeat]);
+		#end
 
 		logoBl.animation.play('bump');
 		danceLeft = !danceLeft;
@@ -406,5 +424,15 @@ class TitleState extends funkin.states.MusicBeatState
 
 			skippedIntro = true;
 		}
+	}
+
+	override function destroy()
+	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onDestroy', []);
+		StateScriptHandler.clearStateScripts();
+		#end
+
+		super.destroy();
 	}
 }

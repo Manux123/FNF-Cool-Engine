@@ -14,6 +14,7 @@ import ui.FlxVirtualPad;
 import flixel.input.actions.FlxActionInput;
 #end
 import funkin.gameplay.controls.Controls;
+import ui.SoundTray;
 #if debug
 import funkin.debug.DebugConsole;
 #end
@@ -62,6 +63,18 @@ class MusicBeatState extends FlxUIState
 	#else
 	public function addVirtualPad(?DPad, ?Action){};
 	#end
+	
+	// Limpieza automática de caché al destruir estados
+	// Esto previene memory leaks entre estados
+	#if !mobileC
+	override function destroy():Void
+	{
+		// Limpiar caché local de Paths (suave)
+		Paths.clearCache();
+		
+		super.destroy();
+	}
+	#end
 
 	override function create()
 	{
@@ -69,6 +82,13 @@ class MusicBeatState extends FlxUIState
 			trace('reg ' + transIn.region);
 
 		super.create();
+		
+		// Add global SoundTray
+		// El SoundTray se auto-remueve del estado anterior cuando se agrega aquí
+		if (Main.soundTray != null)
+		{
+			add(Main.soundTray);
+		}
 	}
 
 	override function update(elapsed:Float)

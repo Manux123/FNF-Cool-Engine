@@ -38,6 +38,10 @@ class GameState
 	// === CONSTANTS ===
 	private static inline var MAX_HEALTH:Float = 2.0;
 	private static inline var MIN_HEALTH:Float = 0.0;
+
+	public static var listAuthor:String = 'KawaiSprite';
+
+	public static var deathCounter:Int = 0;
 	
 	public function new() 
 	{
@@ -65,8 +69,18 @@ class GameState
 	/**
 	 * Procesar hit de nota
 	 */
-	public function processNoteHit(noteDiff:Float):String
+	public function processNoteHit(noteDiff:Float, isSustain:Bool):String
 	{
+		if (isSustain)
+		{
+			totalNotesHit += 1.0;
+			totalNotesPlayed++;
+			updateAccuracy();
+			//thanks juanen
+			updateScore('shit');
+			return "sick";	
+		}
+		
 		var rating:String = getRating(noteDiff);
 		
 		// Actualizar counters

@@ -14,6 +14,7 @@ import flixel.FlxSprite;
 import flixel.effects.FlxFlicker;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.group.FlxGroup.FlxTypedGroup;
+import funkin.scripting.StateScriptHandler;
 import flixel.text.FlxText;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
@@ -56,6 +57,12 @@ class KeyBindMenu extends funkin.states.MusicBeatSubstate
 
 	override function create()
 	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.init();
+		StateScriptHandler.loadStateScripts('KeyBindMenu', this);
+		StateScriptHandler.callOnScripts('onCreate', []);
+		#end
+
 		if (PlayState.isPlaying){
 			PlayState.instance.camHUD.visible = false;
 			PlayState.instance.paused = true;
@@ -107,6 +114,9 @@ class KeyBindMenu extends funkin.states.MusicBeatSubstate
 
 	override function update(elapsed:Float)
 	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
+		#end
 		switch (state)
 		{
 			case "select":
@@ -172,6 +182,10 @@ class KeyBindMenu extends funkin.states.MusicBeatSubstate
 			textUpdate();
 
 		super.update(elapsed);
+
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
+		#end
 	}
 
 	function exitSubState()
@@ -306,5 +320,14 @@ class KeyBindMenu extends funkin.states.MusicBeatSubstate
 			curSelected = 0;
 		if (curSelected < 0)
 			curSelected = 4;
+	}
+
+	override function destroy()
+	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onDestroy', []);
+		StateScriptHandler.clearStateScripts();
+		#end
+		super.destroy();
 	}
 }

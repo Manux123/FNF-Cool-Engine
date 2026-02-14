@@ -1141,7 +1141,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		if (FlxG.mouse.justPressed && FlxG.mouse.overlaps(gridBG, camGame))
 		{
 			var mouseGridX = FlxG.mouse.x - gridBG.x;
-			var mouseGridY = FlxG.mouse.y - gridBG.y + gridScrollY;
+			var mouseGridY = FlxG.mouse.y - gridBG.y;
 
 			var noteData = Math.floor(mouseGridX / GRID_SIZE);
 

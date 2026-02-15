@@ -147,7 +147,7 @@ class Paths
 	inline static public function video(key:String)
 	{
 		trace('assets/videos/$key.mp4');
-		return getPath('videos/$key.mp4', BINARY);
+		return getPath('cutscenes/videos/$key.mp4', BINARY);
 	}
 
 	inline static public function music(key:String)

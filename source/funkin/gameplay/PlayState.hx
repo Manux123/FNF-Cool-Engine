@@ -190,7 +190,7 @@ class PlayState extends funkin.states.MusicBeatState
 	override public function create()
 	{
 		StickerTransition.reattachToState();
-		if (paused && StickerTransition.enabled)
+		if (StickerTransition.enabled)
 		{
 			transIn = null;
     		transOut = null;

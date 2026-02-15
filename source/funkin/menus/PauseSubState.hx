@@ -6,6 +6,7 @@ import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxSubState;
 import flixel.addons.transition.FlxTransitionableState;
+import funkin.transitions.StickerTransition;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import funkin.gameplay.GameState;
 import flixel.input.keyboard.FlxKey;
@@ -22,7 +23,7 @@ import ui.Alphabet;
 class PauseSubState extends funkin.states.MusicBeatSubstate
 {
 	var grpMenuShit:FlxTypedGroup<Alphabet>;
-	var menuItems:Array<String> = ['Resume', 'Restart Song', 'Options', /*'Change KeyBinds',*/ 'Exit to menu'];
+	var menuItems:Array<String> = ['Resume', 'Restart Song', /*'Options',*/ 'Change KeyBinds', 'Exit to menu'];
 	var curSelected:Int = 0;
 
 	var pauseMusic:FlxSound;
@@ -192,18 +193,24 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 					FlxG.resetState();
 				case "Skip Song":
 					if (PlayState.instance != null)
-						PlayState.instance.endSong();
+						PlayState.instance.endSong();/*
 				case "Options":
 					OptionsMenuState.optionsSong = PlayState.SONG.song;
-					FlxG.switchState(new OptionsMenuState());/*
+					FlxG.switchState(new OptionsMenuState());*/
 				case "Change KeyBinds":
-					FlxG.state.openSubState(new KeyBindMenu());*/
+					FlxG.state.openSubState(new KeyBindMenu());
 				case "Exit to menu":
 					PlayState.isPlaying = false;
-					if (PlayState.isStoryMode)
-						FlxG.switchState(new StoryMenuState());
-					else
-						FlxG.switchState(new FreeplayState());
+					if (PlayState.isStoryMode){
+						StickerTransition.start(function() {
+							FlxG.switchState(new StoryMenuState());
+						});
+					}
+					else{
+						StickerTransition.start(function() {
+							FlxG.switchState(new FreeplayState());
+						});
+					}
 			}
 		}
 
@@ -224,6 +231,8 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 
 	function changeSelection(change:Int = 0):Void
 	{
+		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+		
 		curSelected += change;
 
 		if (curSelected < 0)

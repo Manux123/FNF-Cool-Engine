@@ -24,9 +24,9 @@ import funkin.states.LoadingState;
 import flixel.effects.particles.FlxParticle;
 import funkin.gameplay.objects.character.HealthIcon;
 import funkin.data.Song;
-import funkin.menus.FreeplayEditorState;
 import funkin.gameplay.objects.hud.Highscore;
 import funkin.scripting.StateScriptHandler;
+import funkin.transitions.StickerTransition;
 import funkin.gameplay.PlayState;
 import funkin.data.Conductor;
 import extensions.CoolUtil;
@@ -36,6 +36,9 @@ using StringTools;
 
 import haxe.Json;
 import haxe.format.JsonParser;
+#if sys
+import sys.FileSystem;
+#end
 
 typedef Songs =
 {
@@ -86,6 +89,10 @@ class FreeplayState extends funkin.states.MusicBeatState
 	var intendedColor:Int;
 	var colorTween:FlxTween;
 
+	// Error message
+	var errorText:FlxText;
+	var errorTween:FlxTween;
+
 	// Nuevas variables para efectos visuales
 	var particleEmitter:FlxEmitter;
 	var screenBumpAmount:Float = 0;
@@ -100,8 +107,12 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 	override function create()
 	{
-		transIn = FlxTransitionableState.defaultTransIn;
-		transOut = FlxTransitionableState.defaultTransOut;
+		if (StickerTransition.enabled){
+			transIn = null;
+			transOut = null;
+		}
+
+		StickerTransition.reattachToState();
 
 		MainMenuState.musicFreakyisPlaying = false;
 		if (vocals == null)
@@ -259,6 +270,15 @@ class FreeplayState extends funkin.states.MusicBeatState
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.CYAN, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 
+		// Error message text
+		errorText = new FlxText(0, FlxG.height * 0.5 - 50, FlxG.width, "", 32);
+		errorText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.RED, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		errorText.setBorderStyle(OUTLINE, FlxColor.BLACK, 4);
+		errorText.scrollFactor.set();
+		errorText.alpha = 0;
+		errorText.visible = false;
+		add(errorText);
+
 		// Animación de entrada
 		FlxTween.tween(bg, {alpha: 1, "scale.x": 1, "scale.y": 1}, 0.6, {ease: FlxEase.expoOut});
 
@@ -271,6 +291,8 @@ class FreeplayState extends funkin.states.MusicBeatState
 		#if mobileC
 		addVirtualPad(FULL, A_B);
 		#end
+
+		StickerTransition.clearStickers();
 	}
 
 	function songsSystem()
@@ -333,6 +355,11 @@ class FreeplayState extends funkin.states.MusicBeatState
 		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
 		#end
 
+		if (StickerTransition.isActive())
+		{
+			StickerTransition.ensureCameraOnTop();
+		}
+
 		// Actualizar efectos visuales
 		updateScreenBump(elapsed);
 		updateVisualBars(elapsed);
@@ -390,19 +417,66 @@ class FreeplayState extends funkin.states.MusicBeatState
 				destroyFreeplayVocals();
 				FlxG.sound.music.volume = 0;
 
-				var poop:String = Highscore.formatSong(songs[curSelected].songName.toLowerCase(), curDifficulty);
-				PlayState.SONG = Song.loadFromJson(poop, songs[curSelected].songName.toLowerCase());
+				var songLowercase:String = songs[curSelected].songName.toLowerCase();
+				var poop:String = Highscore.formatSong(songLowercase, curDifficulty);
+				
+				// Verify if JSON exists before trying to preview
+				var jsonPath:String = 'assets/songs/$songLowercase/$poop.json';
+				var jsonExists:Bool = false;
+				
+				#if sys
+				jsonExists = FileSystem.exists(jsonPath);
+				#else
+				jsonExists = Assets.exists(Paths.json('songs/$songLowercase/$poop'));
+				#end
+
+				if (!jsonExists)
+				{
+					// Show error message
+					showError('Cannot preview: Chart file not found!\n"$poop.json" is missing');
+					FlxG.sound.play(Paths.sound('cancelMenu'));
+					return;
+				}
+
+				// Try to load JSON
+				try
+				{
+					PlayState.SONG = Song.loadFromJson(poop, songLowercase);
+					
+					if (PlayState.SONG == null || PlayState.SONG.song == null)
+					{
+						showError('Cannot preview: Chart file is corrupted!');
+						FlxG.sound.play(Paths.sound('cancelMenu'));
+						return;
+					}
+				}
+				catch (e:Dynamic)
+				{
+					showError('Cannot preview: Failed to load chart!');
+					FlxG.sound.play(Paths.sound('cancelMenu'));
+					trace('Error loading song JSON for preview: ' + e);
+					return;
+				}
+
+				// Cargar voces usando el método seguro
 				if (PlayState.SONG.needsVoices)
-					vocals = new FlxSound().loadEmbedded(Paths.voices(PlayState.SONG.song));
+					vocals = Paths.loadVoices(PlayState.SONG.song);
 				else
 					vocals = new FlxSound();
 
 				FlxG.sound.list.add(vocals);
-				FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), 0.7);
-				vocals.play();
+				
+				// Cargar instrumental usando el método seguro
+				FlxG.sound.music = Paths.loadInst(PlayState.SONG.song);
+				FlxG.sound.music.persist = true;
+				FlxG.sound.music.looped = true;
+				FlxG.sound.music.volume = 0.7;
+				FlxG.sound.music.play();
+				
 				vocals.persist = true;
 				vocals.looped = true;
 				vocals.volume = 0.7;
+				vocals.play();
 				instPlaying = curSelected;
 
 				// Establecer BPM para el screen bump
@@ -449,7 +523,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 			else
 			{
 				destroyFreeplayVocals();
-				FlxG.sound.playMusic(Paths.music('freakyMenu'));
+				FlxG.sound.playMusic(Paths.music('girlfriendsRingtone/girlfriendsRingtone'), 0.7);
 				instPlaying = -1;
 
 				if (discSpr != null)
@@ -481,9 +555,64 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 			var songLowercase:String = songs[curSelected].songName.toLowerCase();
 			var poop:String = Highscore.formatSong(songLowercase, curDifficulty);
-			trace(poop);
+			trace('[FreeplayState] Attempting to load song: $songLowercase');
+			trace('[FreeplayState] Formatted filename: $poop');
+			trace('[FreeplayState] Current difficulty: $curDifficulty');
 
-			PlayState.SONG = Song.loadFromJson(poop, songLowercase);
+			// Verify if JSON exists
+			var jsonPath:String = 'assets/songs/$songLowercase/$poop.json';
+			trace('[FreeplayState] Looking for JSON at: $jsonPath');
+			
+			var jsonExists:Bool = false;
+			
+			#if sys
+			jsonExists = FileSystem.exists(jsonPath);
+			trace('[FreeplayState] FileSystem.exists() = $jsonExists');
+			#else
+			jsonExists = Assets.exists(Paths.json('songs/$songLowercase/$poop'));
+			trace('[FreeplayState] Assets.exists() = $jsonExists');
+			#end
+
+			if (!jsonExists)
+			{
+				// Show error message
+				trace('[FreeplayState] ERROR: JSON not found!');
+				showError('ERROR: Chart file not found!\n"$poop.json" is missing');
+				FlxG.sound.play(Paths.sound('cancelMenu'));
+				FlxG.camera.shake(0.01, 0.3);
+				return;
+			}
+
+			// Try to load JSON
+			try
+			{
+				trace('[FreeplayState] Attempting to load JSON...');
+				PlayState.SONG = Song.loadFromJson(poop, songLowercase);
+				trace('[FreeplayState] JSON loaded successfully');
+				
+				// Validate song data
+				if (PlayState.SONG == null || PlayState.SONG.song == null)
+				{
+					trace('[FreeplayState] ERROR: Song data is null or corrupted');
+					showError('ERROR: Chart file is corrupted!\nPlease check "$poop.json"');
+					FlxG.sound.play(Paths.sound('cancelMenu'));
+					FlxG.camera.shake(0.01, 0.3);
+					return;
+				}
+				
+				trace('[FreeplayState] Song name in JSON: ${PlayState.SONG.song}');
+			}
+			catch (e:Dynamic)
+			{
+				// Show error message on load failure
+				trace('[FreeplayState] ERROR loading JSON: $e');
+				showError('ERROR: Failed to load chart!\n' + e);
+				FlxG.sound.play(Paths.sound('cancelMenu'));
+				FlxG.camera.shake(0.01, 0.3);
+				return;
+			}
+
+			trace('[FreeplayState] All validations passed, loading PlayState...');
 			PlayState.isStoryMode = false;
 			PlayState.storyDifficulty = curDifficulty;
 
@@ -498,7 +627,9 @@ class FreeplayState extends funkin.states.MusicBeatState
 			FlxG.camera.flash(FlxColor.WHITE, 1);
 			FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
 
-			LoadingState.loadAndSwitchState(new PlayState());
+			StickerTransition.start(function() {
+				LoadingState.loadAndSwitchState(new PlayState());
+			});
 
 			destroyFreeplayVocals();
 		}
@@ -727,6 +858,82 @@ class FreeplayState extends funkin.states.MusicBeatState
 		}
 
 		return value;
+	}
+
+	function showError(message:String):Void
+	{
+		// Cancel any existing error tween
+		if (errorTween != null)
+		{
+			errorTween.cancel();
+		}
+
+		// Set error message
+		errorText.text = message;
+		errorText.visible = true;
+		errorText.alpha = 0;
+
+		// Fade in
+		errorTween = FlxTween.tween(errorText, {alpha: 1}, 0.3, {
+			ease: FlxEase.expoOut,
+			onComplete: function(twn:FlxTween)
+			{
+				// Wait 3 seconds then fade out
+				errorTween = FlxTween.tween(errorText, {alpha: 0}, 0.5, {
+					ease: FlxEase.expoIn,
+					startDelay: 3.0,
+					onComplete: function(twn:FlxTween)
+					{
+						errorText.visible = false;
+					}
+				});
+			}
+		});
+	}
+
+	/**
+	 * Llamado cuando el juego pierde foco (minimizar ventana)
+	 * Pausa las vocals para que estén sincronizadas con el instrumental
+	 */
+	override public function onFocusLost():Void
+	{
+		super.onFocusLost();
+		
+		// Pausar vocals cuando se pierde foco
+		if (vocals != null && vocals.playing)
+		{
+			vocals.pause();
+			trace('[FreeplayState] Focus lost - vocals paused');
+		}
+		
+		// FlxG.sound.music se pausa automáticamente
+		trace('[FreeplayState] Focus lost - music will be paused by FlxG');
+	}
+
+	/**
+	 * Llamado cuando el juego recupera foco (volver a la ventana)
+	 * Reanuda TANTO el instrumental como las vocals
+	 */
+	override public function onFocus():Void
+	{
+		super.onFocus();
+		
+		// CRÍTICO: Con loadStream(), FlxG.sound.music NO se reanuda automáticamente
+		// Necesitamos reanudarlo manualmente si hay una preview sonando
+		if (FlxG.sound.music != null && instPlaying == curSelected)
+		{
+			// Reanudar el instrumental
+			FlxG.sound.music.play();
+			trace('[FreeplayState] Focus gained - music resumed');
+			
+			// Reanudar vocals sincronizadas con el instrumental
+			if (vocals != null)
+			{
+				vocals.time = FlxG.sound.music.time;
+				vocals.play();
+				trace('[FreeplayState] Focus gained - vocals resumed and resynced');
+			}
+		}
 	}
 
 	override function destroy()

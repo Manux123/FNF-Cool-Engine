@@ -1,0 +1,80 @@
+{
+	"enabled": true,
+	"stickerSets": [
+		{
+			"name": "stickers-set-1",
+			"path": "transitionSwag/stickers-set-1",
+			"stickers": [
+				"bfSticker1",
+				"bfSticker2",
+				"bfSticker3",
+				"picoSticker1",
+				"picoSticker2",
+				"picoSticker3",
+				"dadSticker1",
+				"dadSticker2",
+				"dadSticker3",
+				"gfSticker1",
+				"gfSticker2",
+				"gfSticker3",
+				"momSticker1",
+				"momSticker2",
+				"momSticker3",
+				"monsterSticker1",
+				"monsterSticker2",
+				"monsterSticker3"
+			]
+		},
+		{
+			"name": "stickers-set-2",
+			"path": "transitionSwag/stickers-set-2",
+			"stickers": [
+				"dadSticker1",
+				"dadSticker2",
+				"dadSticker3",
+				"alucardSticker1",
+				"alucardSticker2",
+				"cassandraSticker1",
+				"cassandraSticker2",
+				"cassandraSticker3",
+				"cyclopsSticker1",
+				"cyclopsSticker2",
+				"darnellSticker1",
+				"darnellSticker2",
+				"darnellSticker3",
+				"neneSticker1",
+				"neneSticker2",
+				"neneSticker3",
+				"miscSticker1",
+				"miscSticker2",
+				"miscSticker3",
+				"miscSticker4",
+				"miscSticker5",
+				"picoSticker1",
+				"picoSticker2",
+				"picoSticker3",
+				"someDeadGuySticker1",
+				"someDeadGuySticker2"
+			]
+		}
+	],
+	"soundPath": "stickersounds/keys",
+	"sounds": [
+		"keyClick1",
+		"keyClick2",
+		"keyClick3",
+		"keyClick4",
+		"keyClick5",
+		"keyClick7",
+		"keyClick8",
+		"keyClick9"
+	],
+	"stickersPerWave": 8,
+	"totalWaves": 12,
+	"delayBetweenStickers": 0.0,
+	"delayBetweenWaves": 0.1,
+	"minScale": 0.85,
+	"maxScale": 1.0,
+	"animationDuration": 0.35,
+	"stickerLifetime": 999
+}

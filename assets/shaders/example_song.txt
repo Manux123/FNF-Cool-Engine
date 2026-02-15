@@ -1,0 +1,336 @@
+// Ejemplo AVANZADO de uso de shaders
+// Demuestra transiciones entre shaders y efectos complejos
+// Coloca este archivo en: assets/songs/[tu-cancion]/scripts/
+
+var currentBeat = 0;
+var currentStep = 0;
+
+// Estado de shaders
+var activeShaders = {
+    bf: null,      // Shader activo en boyfriend
+    dad: null,     // Shader activo en dad
+    gf: null       // Shader activo en gf
+};
+
+// Configuración de efectos por sección
+var shaderSequence = [
+    // Sección 1 (beats 0-15): Sin efectos
+    {
+        beat: 0,
+        bf: null,
+        dad: null,
+        gf: null
+    },
+    // Sección 2 (beats 16-31): Chromatic en BF
+    {
+        beat: 16,
+        bf: "chromatic",
+        dad: null,
+        gf: null,
+        params: {
+            chromatic: { amount: 0.005 }
+        }
+    },
+    // Sección 3 (beats 32-47): Glitch en Dad
+    {
+        beat: 32,
+        bf: "chromatic",
+        dad: "glitch",
+        gf: null,
+        params: {
+            chromatic: { amount: 0.005 },
+            glitch: { intensity: 0.3 }
+        }
+    },
+    // Sección 4 (beats 48-63): Wave en GF
+    {
+        beat: 48,
+        bf: "chromatic",
+        dad: "glitch",
+        gf: "wave",
+        params: {
+            chromatic: { amount: 0.005 },
+            glitch: { intensity: 0.3 },
+            wave: { amplitude: 0.02, frequency: 10.0 }
+        }
+    },
+    // Sección 5 (beats 64-79): VHS en todos
+    {
+        beat: 64,
+        bf: "vhs",
+        dad: "vhs",
+        gf: "vhs",
+        params: {
+            vhs: { 
+                distortion: 3.0,
+                noiseIntensity: 0.1,
+                scanlineIntensity: 0.2
+            }
+        }
+    },
+    // Sección 6 (beats 80-95): Color Shift en todos
+    {
+        beat: 80,
+        bf: "colorshift",
+        dad: "colorshift",
+        gf: "colorshift",
+        params: {
+            colorshift: {
+                hueShift: 0.0,
+                saturation: 1.2,
+                brightness: 1.1
+            }
+        }
+    },
+    // Drop/Clímax (beats 96+): Todos los efectos combinados
+    {
+        beat: 96,
+        bf: "chromatic",
+        dad: "glitch",
+        gf: "wave",
+        params: {
+            chromatic: { amount: 0.01 },
+            glitch: { intensity: 0.5 },
+            wave: { amplitude: 0.03, frequency: 15.0 }
+        }
+    }
+];
+
+var currentSection = 0;
+
+function onCreate() {
+    trace("===============================================");
+    trace("Advanced Shader System - Script cargado");
+    trace("===============================================");
+    
+    var availableShaders = shaders.list();
+    trace("Shaders disponibles: " + availableShaders.join(", "));
+    trace("Secciones programadas: " + shaderSequence.length);
+    trace("===============================================");
+}
+
+function onCountdownStarted() {
+    trace("Iniciando secuencia de shaders...");
+}
+
+function onSongStart() {
+    trace("Canción iniciada - Sistema de shaders activo");
+    trace("Controles:");
+    trace("  F5 - Siguiente sección manualmente");
+    trace("  F6 - Sección anterior");
+    trace("  F7 - Remover todos los shaders");
+    trace("  F8 - Recargar todos los shaders");
+}
+
+function onBeatHit(beat) {
+    currentBeat = beat;
+    
+    // Verificar si debemos cambiar de sección
+    checkSectionChange(beat);
+    
+    // Efectos especiales en ciertos beats
+    applyBeatEffects(beat);
+}
+
+function onStepHit(step) {
+    currentStep = step;
+}
+
+function onUpdate(elapsed) {
+    var ps = PlayState.instance;
+    var time = Conductor.songPosition / 1000.0;
+    
+    // Actualizar parámetros de tiempo para shaders animados
+    updateAnimatedShaders(time);
+    
+    // Efectos dinámicos basados en música
+    updateMusicReactiveEffects();
+    
+    // Controles manuales
+    handleManualControls();
+}
+
+function checkSectionChange(beat) {
+    // Buscar la sección correspondiente al beat actual
+    for (i in 0...shaderSequence.length) {
+        var section = shaderSequence[i];
+        if (beat == section.beat) {
+            currentSection = i;
+            applySection(section);
+            trace("========================================");
+            trace("Cambiando a sección " + i + " (beat " + beat + ")");
+            trace("========================================");
+            break;
+        }
+    }
+}
+
+function applySection(section) {
+    var ps = PlayState.instance;
+    
+    // Aplicar shaders al boyfriend
+    if (section.bf != null) {
+        if (ps.boyfriend != null) {
+            shaders.apply(ps.boyfriend, section.bf);
+            activeShaders.bf = section.bf;
+            trace("BF: Shader '" + section.bf + "' aplicado");
+        }
+    } else if (ps.boyfriend != null) {
+        shaders.remove(ps.boyfriend);
+        activeShaders.bf = null;
+        trace("BF: Shader removido");
+    }
+    
+    // Aplicar shaders al dad
+    if (section.dad != null) {
+        if (ps.dad != null) {
+            shaders.apply(ps.dad, section.dad);
+            activeShaders.dad = section.dad;
+            trace("Dad: Shader '" + section.dad + "' aplicado");
+        }
+    } else if (ps.dad != null) {
+        shaders.remove(ps.dad);
+        activeShaders.dad = null;
+        trace("Dad: Shader removido");
+    }
+    
+    // Aplicar shaders a la gf
+    if (section.gf != null) {
+        if (ps.gf != null) {
+            shaders.apply(ps.gf, section.gf);
+            activeShaders.gf = section.gf;
+            trace("GF: Shader '" + section.gf + "' aplicado");
+        }
+    } else if (ps.gf != null) {
+        shaders.remove(ps.gf);
+        activeShaders.gf = null;
+        trace("GF: Shader removido");
+    }
+    
+    // Aplicar parámetros
+    if (section.params != null) {
+        for (shaderName in Reflect.fields(section.params)) {
+            var params = Reflect.field(section.params, shaderName);
+            for (paramName in Reflect.fields(params)) {
+                var value = Reflect.field(params, paramName);
+                shaders.setParam(shaderName, paramName, value);
+            }
+        }
+    }
+}
+
+function applyBeatEffects(beat) {
+    // Pulsos en beats principales
+    if (beat % 4 == 0) {
+        // Intensificar efectos momentáneamente
+        if (activeShaders.bf == "chromatic") {
+            shaders.setParam("chromatic", "amount", 0.015);
+        }
+        if (activeShaders.dad == "glitch") {
+            shaders.setParam("glitch", "intensity", 0.7);
+        }
+        if (activeShaders.gf == "wave") {
+            shaders.setParam("wave", "amplitude", 0.05);
+        }
+    }
+    
+    // Restaurar valores normales después de 2 steps
+    if ((beat * 4 + 2) % 16 == 0) {
+        if (activeShaders.bf == "chromatic") {
+            shaders.setParam("chromatic", "amount", 0.005);
+        }
+        if (activeShaders.dad == "glitch") {
+            shaders.setParam("glitch", "intensity", 0.3);
+        }
+        if (activeShaders.gf == "wave") {
+            shaders.setParam("wave", "amplitude", 0.02);
+        }
+    }
+}
+
+function updateAnimatedShaders(time) {
+    // Actualizar shaders que necesitan el parámetro de tiempo
+    if (activeShaders.dad == "glitch" || activeShaders.bf == "glitch" || activeShaders.gf == "glitch") {
+        shaders.setParam("glitch", "time", time);
+    }
+    
+    if (activeShaders.dad == "wave" || activeShaders.bf == "wave" || activeShaders.gf == "wave") {
+        shaders.setParam("wave", "time", time);
+    }
+    
+    if (activeShaders.dad == "vhs" || activeShaders.bf == "vhs" || activeShaders.gf == "vhs") {
+        shaders.setParam("vhs", "time", time);
+    }
+    
+    // Animar hue shift si está activo
+    if (activeShaders.bf == "colorshift" || activeShaders.dad == "colorshift" || activeShaders.gf == "colorshift") {
+        var hueShift = (Math.sin(time * 0.5) + 1.0) * 0.5; // 0.0 - 1.0
+        shaders.setParam("colorshift", "hueShift", hueShift);
+    }
+}
+
+function updateMusicReactiveEffects() {
+    // Reaccionar a la música (esto es un ejemplo simple)
+    // Podrías usar FFT o análisis de audio para efectos más complejos
+    
+    var ps = PlayState.instance;
+    if (ps == null) return;
+    
+    // Ejemplo: intensidad basada en la salud del jugador
+    var healthPercent = ps.health / 2.0; // 0.0 - 1.0
+    
+    if (activeShaders.bf == "chromatic") {
+        var intensity = 0.003 + (1.0 - healthPercent) * 0.007;
+        shaders.setParam("chromatic", "amount", intensity);
+    }
+}
+
+function handleManualControls() {
+    // F5 - Siguiente sección
+    if (FlxG.keys.justPressed.F5) {
+        currentSection = (currentSection + 1) % shaderSequence.length;
+        applySection(shaderSequence[currentSection]);
+        trace("Avanzado manualmente a sección " + currentSection);
+    }
+    
+    // F6 - Sección anterior
+    if (FlxG.keys.justPressed.F6) {
+        currentSection = (currentSection - 1 + shaderSequence.length) % shaderSequence.length;
+        applySection(shaderSequence[currentSection]);
+        trace("Retrocedido manualmente a sección " + currentSection);
+    }
+    
+    // F7 - Remover todos los shaders
+    if (FlxG.keys.justPressed.F7) {
+        var ps = PlayState.instance;
+        if (ps.boyfriend != null) shaders.remove(ps.boyfriend);
+        if (ps.dad != null) shaders.remove(ps.dad);
+        if (ps.gf != null) shaders.remove(ps.gf);
+        
+        activeShaders.bf = null;
+        activeShaders.dad = null;
+        activeShaders.gf = null;
+        
+        trace("Todos los shaders removidos");
+    }
+    
+    // F8 - Recargar todos los shaders
+    if (FlxG.keys.justPressed.F8) {
+        trace("Recargando todos los shaders...");
+        ShaderManager.reloadAllShaders();
+        trace("Shaders recargados. Re-aplicando sección actual...");
+        applySection(shaderSequence[currentSection]);
+    }
+}
+
+function onDestroy() {
+    trace("Advanced Shader System - Script destruido");
+    
+    // Limpiar shaders al salir
+    var ps = PlayState.instance;
+    if (ps != null) {
+        if (ps.boyfriend != null) shaders.remove(ps.boyfriend);
+        if (ps.dad != null) shaders.remove(ps.dad);
+        if (ps.gf != null) shaders.remove(ps.gf);
+    }
+}

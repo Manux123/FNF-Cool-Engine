@@ -8,6 +8,7 @@ import data.Discord.DiscordClient;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.addons.transition.FlxTransitionableState;
+import funkin.transitions.StickerTransition;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.tweens.FlxEase;
@@ -93,8 +94,12 @@ class StoryMenuState extends funkin.states.MusicBeatState
 
 	override function create()
 	{
-		transIn = FlxTransitionableState.defaultTransIn;
-		transOut = FlxTransitionableState.defaultTransOut;
+		StickerTransition.reattachToState();
+
+		if (StickerTransition.enabled){
+			transIn = null;
+			transOut = null;
+		}
 
 		if (!MainMenuState.musicFreakyisPlaying)
 		{
@@ -244,6 +249,8 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		trace("Line 165");
 
 		super.create();
+
+		StickerTransition.clearStickers();
 	}
 
 	override function update(elapsed:Float)
@@ -251,6 +258,12 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
 		#end
+
+		if (StickerTransition.isActive())
+		{
+			StickerTransition.ensureCameraOnTop();
+		}
+
 		// scoreText.setFormat('VCR OSD Mono', 32);
 		lerpScore = Math.floor(FlxMath.lerp(lerpScore, intendedScore, 0.5));
 

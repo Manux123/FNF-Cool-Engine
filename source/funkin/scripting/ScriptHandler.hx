@@ -11,6 +11,8 @@ import hscript.Interp;
 import hscript.Expr;
 #end
 
+import shaders.ShaderManager;
+
 using StringTools;
 /**
  * Sistema de scripts dinámicos - Similar a Psych Engine
@@ -323,6 +325,35 @@ class ScriptHandler
 		interp.variables.set('Std', Std);
 		interp.variables.set('StringTools', StringTools);
 		interp.variables.set('Paths', Paths);
+		
+		// ShaderManager - Sistema de shaders
+		interp.variables.set('ShaderManager', ShaderManager);
+		interp.variables.set('shaders', {
+			// Obtener shader
+			get: function(name:String) {
+				return ShaderManager.getShader(name);
+			},
+			// Aplicar shader a sprite
+			apply: function(sprite:flixel.FlxSprite, name:String) {
+				return ShaderManager.applyShader(sprite, name);
+			},
+			// Remover shader de sprite
+			remove: function(sprite:flixel.FlxSprite) {
+				ShaderManager.removeShader(sprite);
+			},
+			// Establecer parámetro
+			setParam: function(name:String, param:String, value:Dynamic) {
+				return ShaderManager.setShaderParam(name, param, value);
+			},
+			// Listar shaders disponibles
+			list: function() {
+				return ShaderManager.getAvailableShaders();
+			},
+			// Recargar shader
+			reload: function(name:String) {
+				return ShaderManager.reloadShader(name);
+			}
+		});
 		
 		// Funciones de debug
 		interp.variables.set('trace', function(v:Dynamic) { trace('[Script] $v'); });

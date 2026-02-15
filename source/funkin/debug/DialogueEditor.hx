@@ -13,6 +13,8 @@ import funkin.cutscenes.dialogue.DialogueData.DialogueConversation;
 import funkin.gameplay.PlayState;
 import flixel.addons.ui.FlxInputText;
 
+using StringTools;
+
 /**
  * Editor visual de diálogos (versión simplificada sin FlxUI)
  */

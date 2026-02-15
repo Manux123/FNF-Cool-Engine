@@ -86,7 +86,7 @@ class SoundTray extends FlxTypedGroup<FlxSprite>
         
         // Calcular posición para esconder completamente
         var totalHeight = Math.max(volumeBox.height, volumeBar.height);
-        var hiddenY = -(totalHeight + 35); // +40 píxeles extra
+        var hiddenY = -(totalHeight + 40); // +40 píxeles extra
         
         // Animar salida - ambos sprites a la misma posición
         currentTween = FlxTween.tween(volumeBox, {y: hiddenY}, 0.3);

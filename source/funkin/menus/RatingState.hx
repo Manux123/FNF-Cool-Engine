@@ -15,6 +15,7 @@ import flixel.effects.particles.FlxEmitter;
 import flixel.group.FlxSpriteGroup;
 import flixel.effects.particles.FlxParticle;
 import funkin.scripting.StateScriptHandler;
+import funkin.transitions.StickerTransition;
 import flixel.math.FlxMath;
 import flixel.util.FlxGradient;
 
@@ -620,7 +621,9 @@ class RatingState extends FlxSubState
 				}
 				else
 				{
-					FlxG.switchState(new funkin.menus.FreeplayState());
+					StickerTransition.start(function() {
+						FlxG.switchState(new funkin.menus.FreeplayState());
+					});
 				}
 			}
 		});

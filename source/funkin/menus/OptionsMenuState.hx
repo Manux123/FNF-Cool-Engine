@@ -275,7 +275,7 @@ class GraphicsOptionsMenu extends MusicBeatState
 
 	override function create()
 	{
-		//PlayState.isPlaying = false;
+		PlayState.isPlaying = false;
 		
 		// Cargar scripts
 		#if HSCRIPT_ALLOWED
@@ -508,7 +508,7 @@ class GameplayOptionsMenu extends MusicBeatState
 	
 	override function create()
 	{
-		//PlayState.isPlaying = false;
+		PlayState.isPlaying = false;
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 
 		menuBG.color = 0xFF453F3F;
@@ -652,7 +652,7 @@ class OptimizationOptions extends MusicBeatState
 	
 	override function create()
 	{
-		//PlayState.isPlaying = false;
+		PlayState.isPlaying = false;
 		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
 
 		menuBG.color = 0xFF453F3F;

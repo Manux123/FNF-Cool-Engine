@@ -47,6 +47,7 @@ import funkin.states.LoadingState;
 import funkin.states.GameOverSubstate;
 import funkin.menus.RatingState;
 import funkin.gameplay.objects.hud.ScoreManager;
+import funkin.transitions.StickerTransition;
 // Menu Pause
 import funkin.menus.GitarooPause;
 import funkin.menus.PauseSubState;
@@ -188,6 +189,12 @@ class PlayState extends funkin.states.MusicBeatState
 
 	override public function create()
 	{
+		StickerTransition.reattachToState();
+		if (paused && StickerTransition.enabled)
+		{
+			transIn = null;
+    		transOut = null;
+		}
 		instance = this;
 		isPlaying = true;
 
@@ -270,6 +277,8 @@ class PlayState extends funkin.states.MusicBeatState
 		startCountdown();
 
 		super.create();
+
+		StickerTransition.clearStickers();
 	}
 
 	/**
@@ -656,13 +665,15 @@ class PlayState extends funkin.states.MusicBeatState
 		trace('[PlayState] Conductor.crochet: ${Conductor.crochet}');
 		trace('[PlayState] Conductor.stepCrochet: ${Conductor.stepCrochet}');
 
-		// Cargar instrumental
-		FlxG.sound.playMusic(Paths.inst(SONG.song), 0, false);
+		// Cargar instrumental usando el método seguro que soporta archivos externos
+		FlxG.sound.music = Paths.loadInst(SONG.song);
+		FlxG.sound.music.volume = 0;
 		FlxG.sound.music.pause();
+		FlxG.sound.list.add(FlxG.sound.music);
 
-		// Cargar voces
+		// Cargar voces usando el método seguro
 		if (SONG.needsVoices)
-			vocals = new FlxSound().loadEmbedded(Paths.voices(SONG.song));
+			vocals = Paths.loadVoices(SONG.song);
 		else
 			vocals = new FlxSound();
 
@@ -822,6 +833,11 @@ class PlayState extends funkin.states.MusicBeatState
 	{
 		if (scriptsEnabled)
 			ScriptHandler.callOnScripts('onUpdate', [elapsed]);
+
+		if (StickerTransition.isActive())
+		{
+			StickerTransition.ensureCameraOnTop();
+		}
 
 		if (currentStage != null)
 			currentStage.update(elapsed);
@@ -1028,12 +1044,12 @@ class PlayState extends funkin.states.MusicBeatState
 		// Iniciar música e instrumental juntos
 		if (FlxG.sound.music != null && !inCutscene)
 		{
-			FlxG.sound.playMusic(Paths.inst(PlayState.SONG.song), 1, false);
+			// La música ya está cargada, solo necesitamos reproducirla
 			FlxG.sound.music.volume = 1;
 			FlxG.sound.music.time = 0;
 			FlxG.sound.music.play();
 			FlxG.sound.music.onComplete = endSong;
-
+			
 			trace('[PlayState] SONG INICIATES');
 		}
 
@@ -2129,6 +2145,51 @@ class PlayState extends funkin.states.MusicBeatState
 			FlxG.sound.music.stop();
 			vocals.stop();
 			LoadingState.loadAndSwitchState(new RatingState());
+		}
+	}
+
+	/**
+	 * Llamado cuando el juego pierde foco (minimizar ventana)
+	 * Pausa las vocals para que estén sincronizadas con el instrumental
+	 */
+	override public function onFocusLost():Void
+	{
+		super.onFocusLost();
+		
+		// Pausar vocals cuando se pierde foco
+		if (vocals != null && vocals.playing)
+		{
+			vocals.pause();
+			trace('[PlayState] Focus lost - vocals paused');
+		}
+		
+		// FlxG.sound.music se pausa automáticamente, pero lo marcamos
+		trace('[PlayState] Focus lost - music will be paused by FlxG');
+	}
+
+	/**
+	 * Llamado cuando el juego recupera foco (volver a la ventana)
+	 * Reanuda TANTO el instrumental como las vocals
+	 */
+	override public function onFocus():Void
+	{
+		super.onFocus();
+		
+		// CRÍTICO: Con loadStream(), FlxG.sound.music NO se reanuda automáticamente
+		// Necesitamos reanudarlo manualmente
+		if (FlxG.sound.music != null && !startingSong && generatedMusic && !paused)
+		{
+			// Reanudar el instrumental
+			FlxG.sound.music.play();
+			trace('[PlayState] Focus gained - music resumed');
+			
+			// Reanudar vocals sincronizadas con el instrumental
+			if (vocals != null && SONG.needsVoices)
+			{
+				vocals.time = FlxG.sound.music.time;
+				vocals.play();
+				trace('[PlayState] Focus gained - vocals resumed and resynced');
+			}
 		}
 	}
 }

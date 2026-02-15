@@ -62,7 +62,7 @@ class KeyBindMenu extends funkin.states.MusicBeatSubstate
 		StateScriptHandler.loadStateScripts('KeyBindMenu', this);
 		StateScriptHandler.callOnScripts('onCreate', []);
 		#end
-
+		
 		if (PlayState.isPlaying){
 			PlayState.instance.camHUD.visible = false;
 			PlayState.instance.paused = true;

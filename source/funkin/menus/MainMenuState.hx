@@ -46,6 +46,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 
 	override function create()
 	{
+		FlxG.mouse.visible = false;
 		// LOAD CUZ THIS SHIT DONT DO IT SOME IN THE CACHESTATE.HX FUCK
 		PlayerSettings.player1.controls.loadKeyBinds();
 

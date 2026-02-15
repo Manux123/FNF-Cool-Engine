@@ -1,0 +1,154 @@
+// Ejemplo de uso de shaders en un StateScript
+// Coloca este archivo en: assets/states/mainmenu/ o assets/states/freeplay/
+
+// Variables para animación
+var time = 0.0;
+var pulseIntensity = 0.0;
+
+function onCreate() {
+    trace("========================================");
+    trace("Menu Shaders Script cargado!");
+    trace("========================================");
+    
+    // Mostrar shaders disponibles
+    var available = shaders.list();
+    trace("Shaders disponibles: " + available.join(", "));
+}
+
+function postCreate() {
+    trace("State creado - Aplicando shaders al menú");
+    
+    // Intentar aplicar shader wave a elementos del menú
+    applyShaderToMenuItems();
+}
+
+function applyShaderToMenuItems() {
+    // Este es un ejemplo genérico
+    // Necesitarás ajustarlo según la estructura de tu menú
+    
+    try {
+        // Ejemplo: Si tienes un grupo de items de menú
+        var menuGroup = state.menuItems;
+        if (menuGroup != null && menuGroup.members != null) {
+            trace("Aplicando shaders a " + menuGroup.members.length + " items del menú");
+            
+            for (i in 0...menuGroup.members.length) {
+                var item = menuGroup.members[i];
+                if (item != null) {
+                    // Aplicar efecto wave sutil
+                    shaders.apply(item, "wave");
+                    shaders.setParam("wave", "amplitude", 0.01);
+                    shaders.setParam("wave", "frequency", 5.0 + i * 2.0);
+                    trace("Shader aplicado al item " + i);
+                }
+            }
+        }
+    } catch (e) {
+        trace("Error al aplicar shaders: " + e);
+    }
+}
+
+function onUpdate(elapsed) {
+    time += elapsed;
+    
+    // Actualizar parámetros de tiempo para todos los shaders wave
+    shaders.setParam("wave", "time", time);
+    
+    // Crear efecto de pulso suave
+    pulseIntensity = 0.01 + Math.sin(time * 2.0) * 0.005;
+    shaders.setParam("wave", "amplitude", pulseIntensity);
+    
+    // Controles especiales
+    handleSpecialControls();
+}
+
+function handleSpecialControls() {
+    // Tecla F1 - Aplicar chromatic a todos los elementos
+    if (FlxG.keys.justPressed.F1) {
+        trace("Aplicando chromatic a elementos del menú");
+        applyShaderToAll("chromatic");
+        shaders.setParam("chromatic", "amount", 0.005);
+    }
+    
+    // Tecla F2 - Aplicar glitch a todos los elementos
+    if (FlxG.keys.justPressed.F2) {
+        trace("Aplicando glitch a elementos del menú");
+        applyShaderToAll("glitch");
+        shaders.setParam("glitch", "intensity", 0.2);
+        shaders.setParam("glitch", "time", time);
+    }
+    
+    // Tecla F3 - Volver a wave
+    if (FlxG.keys.justPressed.F3) {
+        trace("Aplicando wave a elementos del menú");
+        applyShaderToAll("wave");
+        shaders.setParam("wave", "amplitude", 0.01);
+        shaders.setParam("wave", "frequency", 5.0);
+    }
+    
+    // Tecla F4 - Remover todos los shaders
+    if (FlxG.keys.justPressed.F4) {
+        trace("Removiendo todos los shaders");
+        removeAllShaders();
+    }
+}
+
+function applyShaderToAll(shaderName) {
+    try {
+        var menuGroup = state.menuItems;
+        if (menuGroup != null && menuGroup.members != null) {
+            for (i in 0...menuGroup.members.length) {
+                var item = menuGroup.members[i];
+                if (item != null) {
+                    shaders.apply(item, shaderName);
+                }
+            }
+        }
+    } catch (e) {
+        trace("Error al aplicar shader: " + e);
+    }
+}
+
+function removeAllShaders() {
+    try {
+        var menuGroup = state.menuItems;
+        if (menuGroup != null && menuGroup.members != null) {
+            for (i in 0...menuGroup.members.length) {
+                var item = menuGroup.members[i];
+                if (item != null) {
+                    shaders.remove(item);
+                }
+            }
+        }
+    } catch (e) {
+        trace("Error al remover shaders: " + e);
+    }
+}
+
+function onSelectionChanged(curSelected) {
+    // Aplicar efecto especial al item seleccionado
+    try {
+        var menuGroup = state.menuItems;
+        if (menuGroup != null && menuGroup.members != null) {
+            for (i in 0...menuGroup.members.length) {
+                var item = menuGroup.members[i];
+                if (item != null) {
+                    if (i == curSelected) {
+                        // Item seleccionado - efecto más fuerte
+                        shaders.setParam("wave", "amplitude", 0.02);
+                    } else {
+                        // Items no seleccionados - efecto normal
+                        shaders.setParam("wave", "amplitude", 0.01);
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        // Silenciar errores
+    }
+}
+
+function onDestroy() {
+    trace("Menu Shaders Script destruido");
+    removeAllShaders();
+}

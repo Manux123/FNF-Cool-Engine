@@ -4,6 +4,10 @@ import funkin.data.Section.SwagSection;
 import haxe.Json;
 import haxe.format.JsonParser;
 import lime.utils.Assets;
+#if sys
+import sys.FileSystem;
+import sys.io.File;
+#end
 
 using StringTools;
 
@@ -87,12 +91,41 @@ class Song
 		var rawJson = null;
 		var loadingJSON:Bool = true;
 
-		if(Assets.exists(Paths.jsonSong(folder.toLowerCase() + '/' + jsonInput.toLowerCase())))
-			rawJson = Assets.getText(Paths.jsonSong(folder.toLowerCase() + '/' + jsonInput.toLowerCase())).trim();
-		else{
-			trace('you are dumm, chek out the root than you select');
-			trace('loading tutorial-hard');
-			rawJson = Assets.getText(Paths.jsonSong('tutorial/tutorial-hard'));
+		var jsonPath = folder.toLowerCase() + '/' + jsonInput.toLowerCase();
+		
+		trace('[Song] loadFromJson called with: folder=$folder, jsonInput=$jsonInput');
+		trace('[Song] Constructed jsonPath: $jsonPath');
+		
+		// Check if file exists using appropriate method for platform
+		var fileExists:Bool = false;
+		
+		#if sys
+		// Desktop: use FileSystem
+		var fullPath = 'assets/songs/$jsonPath.json';
+		fileExists = FileSystem.exists(fullPath);
+		trace('[Song] Checking FileSystem.exists($fullPath) = $fileExists');
+		
+		if (fileExists)
+		{
+			rawJson = File.getContent(fullPath).trim();
+			trace('[Song] Loaded file with FileSystem');
+		}
+		#else
+		// Web/Mobile: use Assets
+		fileExists = Assets.exists(Paths.jsonSong(jsonPath));
+		trace('[Song] Checking Assets.exists(${Paths.jsonSong(jsonPath)}) = $fileExists');
+		
+		if (fileExists)
+		{
+			rawJson = Assets.getText(Paths.jsonSong(jsonPath)).trim();
+			trace('[Song] Loaded file with Assets');
+		}
+		#end
+		
+		if (!fileExists)
+		{
+			trace('[Song] ERROR: Chart file not found at: $jsonPath');
+			throw 'Chart file not found: $jsonPath.json';
 		}
 
 		while (!rawJson.endsWith("}")){

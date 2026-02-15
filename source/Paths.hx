@@ -6,6 +6,11 @@ import openfl.utils.AssetType;
 import openfl.utils.Assets as OpenFlAssets;
 import openfl.display.BitmapData as Bitmap;
 
+#if sys
+import sys.FileSystem;
+#end
+
+
 /**
  * Paths - Sistema mejorado de gestión de rutas con caché y optimizaciones
  * 
@@ -152,34 +157,106 @@ class Paths
 
 	inline static public function voices(song:String)
 	{
-		trace('Loading VOICES');
-		var loadingSong:Bool = true;
-		if (loadingSong)
-		{
-			trace('Done Loading VOICES!');
-			return 'assets/songs/${song.toLowerCase()}/Voices.$SOUND_EXT';
-		}
-		else
-		{
-			trace('ERROR Loading VOICES :c');
-			return 'assets/songs/test/Voices.$SOUND_EXT';
-		}
+		var songKey:String = song.toLowerCase();
+		var path:String = 'assets/songs/$songKey/Voices.$SOUND_EXT';
+		
+		#if sys
+		// Esto detecta archivos agregados sin compilar
+		if (FileSystem.exists(path))
+			return path;
+		#end
+
+		return path; 
 	}
 
 	inline static public function inst(song:String)
 	{
-		trace('Loading INST');
-		var loadingSong:Bool = true;
-		if (loadingSong)
+		var songKey:String = song.toLowerCase();
+		var path:String = 'assets/songs/$songKey/Inst.$SOUND_EXT';
+		
+		#if sys
+		// Si el archivo existe en la carpeta, lo devuelve aunque el juego no lo "conozca"
+		if (FileSystem.exists(path))
+			return path;
+		#end
+
+		return path;
+	}
+
+	/**
+	 * Carga el instrumental de una canción de forma segura
+	 * Soporta archivos externos agregados sin compilar
+	 */
+	static public function loadInst(song:String):flixel.sound.FlxSound
+	{
+		var songKey:String = song.toLowerCase();
+		var path:String = 'assets/songs/$songKey/Inst.$SOUND_EXT';
+		
+		#if sys
+		// Si el archivo existe físicamente, cargarlo desde el sistema de archivos
+		if (FileSystem.exists(path))
 		{
-			trace('Done Loading INST!');
-			return 'assets/songs/${song.toLowerCase()}/Inst.$SOUND_EXT';
+			trace('[Paths] Loading external Inst from file system: $path');
+			var sound = new flixel.sound.FlxSound();
+			// loadStream carga directamente desde el sistema de archivos
+			sound.loadStream(path);
+			return sound;
 		}
-		else
+		#end
+		
+		// Archivo en el asset manifest - usar método normal con Paths.inst()
+		trace('[Paths] Loading embedded Inst from assets: $path');
+		var sound = new flixel.sound.FlxSound();
+		
+		// Intentar cargar desde assets embebidos
+		try 
 		{
-			trace('ERROR Loading INST :c');
-			return 'assets/songs/test/Inst.$SOUND_EXT';
+			sound.loadEmbedded(inst(song), false, false);
 		}
+		catch (e:Dynamic)
+		{
+			trace('[Paths] ERROR loading Inst: $e');
+		}
+		
+		return sound;
+	}
+
+	/**
+	 * Carga las voces de una canción de forma segura
+	 * Soporta archivos externos agregados sin compilar
+	 */
+	static public function loadVoices(song:String):flixel.sound.FlxSound
+	{
+		var songKey:String = song.toLowerCase();
+		var path:String = 'assets/songs/$songKey/Voices.$SOUND_EXT';
+		
+		#if sys
+		// Si el archivo existe físicamente, cargarlo desde el sistema de archivos
+		if (FileSystem.exists(path))
+		{
+			trace('[Paths] Loading external Voices from file system: $path');
+			var sound = new flixel.sound.FlxSound();
+			// loadStream carga directamente desde el sistema de archivos
+			sound.loadStream(path);
+			return sound;
+		}
+		#end
+		
+		// Archivo en el asset manifest - usar método normal
+		trace('[Paths] Loading embedded Voices from assets: $path');
+		var sound = new flixel.sound.FlxSound();
+		
+		// Intentar cargar desde assets embebidos
+		try 
+		{
+			sound.loadEmbedded(voices(song), false, false);
+		}
+		catch (e:Dynamic)
+		{
+			trace('[Paths] ERROR loading Voices: $e');
+		}
+		
+		return sound;
 	}
 
 	inline static public function image(key:String)

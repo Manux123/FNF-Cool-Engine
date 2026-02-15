@@ -22,6 +22,8 @@ import haxe.io.Path;
 import funkin.debug.DebugConsole;
 #end
 
+import funkin.transitions.StickerTransition;
+
 #if desktop
 import data.Discord.DiscordClient;
 import sys.thread.Thread;
@@ -156,6 +158,8 @@ class Main extends Sprite
 		
 		// Create the FlxGame instance FIRST (required for FlxG to be initialized)
 		createGame();
+
+		StickerTransition.init();
 		
 		// Now initialize systems that depend on FlxG
 		initializeSaveSystem();

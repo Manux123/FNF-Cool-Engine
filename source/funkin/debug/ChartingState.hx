@@ -198,6 +198,29 @@ class ChartingState extends funkin.states.MusicBeatState
 			};
 		}
 
+		// CRÍTICO: Crear sección por defecto si el array está vacío
+		if (_song.notes == null || _song.notes.length == 0)
+		{
+			trace('[ChartingState] Notes array is empty, creating default section');
+			_song.notes = [
+				{
+					lengthInSteps: 16,
+					bpm: _song.bpm,
+					changeBPM: false,
+					mustHitSection: true,
+					sectionNotes: [],
+					typeOfSection: 0,
+					altAnim: false
+				}
+			];
+		}
+
+		// Asegurar que curSection sea válido
+		if (curSection < 0)
+			curSection = 0;
+		if (curSection >= _song.notes.length)
+			curSection = _song.notes.length - 1;
+
 		// Setup cameras
 		camGame = new FlxCamera();
 		camHUD = new FlxCamera();
@@ -1667,6 +1690,13 @@ class ChartingState extends funkin.states.MusicBeatState
 	{
 		curSection += change;
 
+		// Safety checks mejorados
+		if (_song.notes.length == 0)
+		{
+			trace('[ChartingState] ERROR: Cannot change section, notes array is empty!');
+			return;
+		}
+
 		if (curSection < 0)
 			curSection = 0;
 		if (curSection >= _song.notes.length)
@@ -1718,6 +1748,13 @@ class ChartingState extends funkin.states.MusicBeatState
 
 	function updateSectionUI():Void
 	{
+		// Safety check: asegurar que curSection es válido
+		if (curSection < 0 || curSection >= _song.notes.length)
+		{
+			trace('[ChartingState] WARNING: Invalid curSection ($curSection), clamping to valid range');
+			curSection = FlxMath.maxInt(0, FlxMath.minInt(curSection, _song.notes.length - 1));
+		}
+
 		if (check_mustHitSection != null)
 			check_mustHitSection.checked = _song.notes[curSection].mustHitSection;
 
@@ -2084,6 +2121,23 @@ class ChartingState extends funkin.states.MusicBeatState
 				_song.gfVersion = 'gf';
 			if (_song.stage == null)
 				_song.stage = CharacterList.getDefaultStageForSong(_song.song);
+
+			// CRÍTICO: Crear sección por defecto si el array está vacío
+			if (_song.notes == null || _song.notes.length == 0)
+			{
+				trace('[ChartingState] Loaded chart has empty notes array, creating default section');
+				_song.notes = [
+					{
+						lengthInSteps: 16,
+						bpm: _song.bpm,
+						changeBPM: false,
+						mustHitSection: true,
+						sectionNotes: [],
+						typeOfSection: 0,
+						altAnim: false
+					}
+				];
+			}
 
 			PlayState.SONG = _song;
 

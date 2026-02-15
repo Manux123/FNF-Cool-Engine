@@ -373,9 +373,10 @@ class NoteManager
 			{
 				// Nota normal - splash normal
 				createNormalSplash(note, true);
-				removeNote(note);
 			}
 		}
+		//Notes should always be removed regardless of the rating lmao
+		removeNote(note);
 
 		// Callback
 		if (onNoteHit != null)

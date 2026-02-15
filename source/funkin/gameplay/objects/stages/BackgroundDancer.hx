@@ -22,11 +22,13 @@ class BackgroundDancer extends FlxSprite
 
 	public function dance():Void
 	{
-		danceDir = !danceDir;
+		if (animation.curAnim == null || animation.curAnim.finished) {
+			danceDir = !danceDir;
 
-		if (danceDir)
-			animation.play('danceRight', true);
-		else
-			animation.play('danceLeft', true);
+			if (danceDir)
+				animation.play('danceRight', true);
+			else
+				animation.play('danceLeft', true);
+		}
 	}
 }

@@ -45,11 +45,14 @@ function onBeatHit(beat)
 	{
 		fastCarDrive();
 	}
+}
 
+function onStepHit(step)
+{
 	dancers.forEach(function(dancer:BackgroundDancer)
-				{
-					dancer.dance();
-				});
+			{
+				dancer.dance();
+			});
 }
 
 // ==========================================

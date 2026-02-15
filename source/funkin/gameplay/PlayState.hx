@@ -487,6 +487,13 @@ class PlayState extends funkin.states.MusicBeatState
 			{
 				cpuStrums = group.strums;
 				cpuStrumsGroup = group; // ✅ Guardar referencia al grupo completo
+				if(FlxG.save.data.downscroll)
+				{
+					for (i in 0...cpuStrums.members.length)
+					{
+						cpuStrums.members[i].y = FlxG.height - 150;
+					}
+				}
 				trace('[PlayState] ✅ cpuStrums asignado: ${cpuStrums.members.length} strums');
 			}
 			else if (!groupData.cpu && playerStrums == null)
@@ -499,6 +506,10 @@ class PlayState extends funkin.states.MusicBeatState
 				for (i in 0...playerStrums.members.length)
 				{
 					var s = playerStrums.members[i];
+
+					if(FlxG.save.data.downscroll)
+						playerStrums.members[i].y = FlxG.height - 150;
+
 					if (s != null)
 						trace('[PlayState]    Strum[$i]: x=${s.x}, y=${s.y}, visible=${s.visible}');
 				}

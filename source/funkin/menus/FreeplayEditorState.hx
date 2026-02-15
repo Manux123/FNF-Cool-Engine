@@ -29,7 +29,7 @@ import funkin.scripting.StateScriptHandler;
 import funkin.gameplay.PlayState;
 import funkin.data.Conductor;
 import extensions.CoolUtil;
-import funkin.menus.FreeplayState.Songs;
+import funkin.menus.StoryMenuState.Songs;
 import funkin.menus.FreeplayState.SongMetadata;
 import ui.Alphabet;
 
@@ -676,6 +676,9 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 			week.songIcons = [];
 			week.color = [];
 			week.bpm = [];
+			// NUEVO: También limpiar showInStoryMode
+			if (week.showInStoryMode != null)
+				week.showInStoryMode = [];
 		}
 
 		// Repopulate with current order
@@ -688,7 +691,8 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 					weekSongs: [],
 					songIcons: [],
 					color: [],
-					bpm: []
+					bpm: [],
+					showInStoryMode: [] // NUEVO
 				});
 			}
 
@@ -708,16 +712,29 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 			
 			// Get BPM from songInfo if it exists
 			var bpm:Float = 120; // default
+			var showInStory:Bool = true; // NUEVO: default
+			
 			for (w in songInfo.songsWeeks)
 			{
 				var idx = w.weekSongs.indexOf(song.songName);
 				if (idx != -1 && w.bpm.length > idx)
 				{
 					bpm = w.bpm[idx];
+					
+					// NUEVO: También obtener showInStoryMode
+					if (w.showInStoryMode != null && w.showInStoryMode.length > idx)
+					{
+						showInStory = w.showInStoryMode[idx];
+					}
 					break;
 				}
 			}
 			week.bpm.push(bpm);
+			
+			// NUEVO: Agregar showInStoryMode
+			if (week.showInStoryMode == null)
+				week.showInStoryMode = [];
+			week.showInStoryMode.push(showInStory);
 		}
 	}
 

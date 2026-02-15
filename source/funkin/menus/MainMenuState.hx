@@ -10,6 +10,7 @@ import flixel.addons.transition.FlxTransitionableState;
 import flixel.effects.FlxFlicker;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.group.FlxGroup.FlxTypedGroup;
+import funkin.transitions.StickerTransition;
 import flixel.text.FlxText;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
@@ -49,6 +50,13 @@ class MainMenuState extends funkin.states.MusicBeatState
 		FlxG.mouse.visible = false;
 		// LOAD CUZ THIS SHIT DONT DO IT SOME IN THE CACHESTATE.HX FUCK
 		PlayerSettings.player1.controls.loadKeyBinds();
+
+		if (StickerTransition.enabled){
+			transIn = null;
+			transOut = null;
+		}
+
+		StickerTransition.reattachToState();
 
 		#if desktop
 		// Updating Discord Rich Presence
@@ -134,11 +142,13 @@ class MainMenuState extends funkin.states.MusicBeatState
 		addVirtualPad(UP_DOWN, A_B);
 		#end
 
-		super.create();
+		StickerTransition.clearStickers();
 
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.callOnScripts('postCreate', []);
 		#end
+
+		super.create();
 	}
 
 	var selectedSomethin:Bool = false;
@@ -148,6 +158,11 @@ class MainMenuState extends funkin.states.MusicBeatState
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
 		#end
+
+		if (StickerTransition.isActive())
+		{
+			StickerTransition.ensureCameraOnTop();
+		}
 
 		#if !MAINMENU
 		if (FlxG.sound.music.volume < 0.8)

@@ -493,7 +493,6 @@ class GameplayOptionsMenu extends MusicBeatState
 {
 	var curSelected:Int = 0;
 	var options:Array<Option> = [
-		new NewInputOption(),
 		new GhostTappingOption(),
 		new NoteSplashesOption(),
 		new DownscrollOption(),
@@ -1168,21 +1167,6 @@ class AccuracyOption extends Option
 	}
 }
 
-class NewInputOption extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.newInput = !FlxG.save.data.newInput;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return !FlxG.save.data.newInput ? "Traditional Input" : "New Input";
-	}
-}
-
 class MiddleScroll extends Option
 {
 	public override function press():Bool
@@ -1370,14 +1354,8 @@ class OptionsData
 
 	public static function initSave()
 	{
-		if (FlxG.save.data.newInput == null)
-			FlxG.save.data.newInput = true;
-
 		if (FlxG.save.data.downscroll == null)
 			FlxG.save.data.downscroll = false;
-
-		if (FlxG.save.data.dfjk == null)
-			FlxG.save.data.dfjk = false;
 
 		if (FlxG.save.data.accuracyDisplay == null)
 			FlxG.save.data.accuracyDisplay = true;
@@ -1390,9 +1368,6 @@ class OptionsData
 
 		if(FlxG.save.data.HUD == null)
 			FlxG.save.data.HUD = false;
-		
-		if(FlxG.save.data.HUDTime == null)
-			FlxG.save.data.HUDTime = false;
 
 		if(FlxG.save.data.camZoom == null)
 			FlxG.save.data.camZoom = false;

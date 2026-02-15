@@ -49,7 +49,7 @@ function triggerLightning()
 	
 	// Reproducir sonido de trueno (aleatorio entre thunder_1 y thunder_2)
 	var thunderNum = FlxG.random.int(1, 2);
-	FlxG.sound.play(Paths.soundRandom('thunder_', 1, 2));
+	FlxG.sound.play(Paths.soundRandomStage('thunder_', 1, 2));
 	
 	// Animar el background
 	if (halloweenBG != null && halloweenBG.animation != null)

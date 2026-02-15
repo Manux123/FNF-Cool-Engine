@@ -27,6 +27,7 @@ import funkin.data.Song;
 import funkin.gameplay.objects.hud.Highscore;
 import funkin.scripting.StateScriptHandler;
 import funkin.transitions.StickerTransition;
+import funkin.menus.StoryMenuState.Songs;
 import funkin.gameplay.PlayState;
 import funkin.data.Conductor;
 import extensions.CoolUtil;
@@ -39,19 +40,6 @@ import haxe.format.JsonParser;
 #if sys
 import sys.FileSystem;
 #end
-
-typedef Songs =
-{
-	var songsWeeks:Array<SongsInfo>;
-}
-
-typedef SongsInfo =
-{
-	var weekSongs:Array<String>;
-	var songIcons:Array<String>;
-	var color:Array<String>;
-	var bpm:Array<Float>;
-}
 
 class FreeplayState extends funkin.states.MusicBeatState
 {
@@ -107,6 +95,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 	override function create()
 	{
+		FlxG.mouse.visible = false;
 		if (StickerTransition.enabled){
 			transIn = null;
 			transOut = null;
@@ -282,8 +271,6 @@ class FreeplayState extends funkin.states.MusicBeatState
 		// Animación de entrada
 		FlxTween.tween(bg, {alpha: 1, "scale.x": 1, "scale.y": 1}, 0.6, {ease: FlxEase.expoOut});
 
-		super.create();
-
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.callOnScripts('postCreate', []);
 		#end
@@ -293,6 +280,8 @@ class FreeplayState extends funkin.states.MusicBeatState
 		#end
 
 		StickerTransition.clearStickers();
+
+		super.create();
 	}
 
 	function songsSystem()

@@ -33,12 +33,18 @@ class InputHandler
 
 	// === CONFIG ===
 	public var ghostTapping:Bool = true; // No penalizar teclas incorrectas
+	public var inputBuffering:Bool = true; // Buffer de inputs para mejor timing
+	public var bufferTime:Float = 0.1; // Tiempo de buffer en segundos (100ms)
 
 	// === ANTI-MASH ===
 	private var mashCounter:Int = 0;
 	private var mashViolations:Int = 0;
 
 	private static inline var MAX_MASH_VIOLATIONS:Int = 8;
+	
+	// === INPUT BUFFER ===
+	private var bufferedInputs:Array<Float> = [0, 0, 0, 0]; // Tiempo del último input por dirección
+	private var inputProcessed:Array<Bool> = [false, false, false, false]; // Si el input ya fue procesado
 
 	public function new()
 	{
@@ -119,6 +125,8 @@ class InputHandler
 
 	/**
 	 * Procesar inputs contra notas disponibles
+	 * OPTIMIZADO: Una sola pasada por todas las notas
+	 * MEJORADO: Con sistema de input buffering
 	 */
 	public function processInputs(notes:FlxTypedGroup<Note>):Void
 	{
@@ -129,49 +137,84 @@ class InputHandler
 				keysPressed++;
 
 		mashCounter = keysPressed;
-
-		// Procesar cada dirección presionada
+		
+		// Actualizar buffer de inputs
+		var currentTime = FlxG.game.ticks / 1000.0; // Tiempo actual en segundos
 		for (dir in 0...4)
 		{
-			if (!pressed[dir])
+			if (pressed[dir])
+			{
+				bufferedInputs[dir] = currentTime;
+				inputProcessed[dir] = false;
+			}
+		}
+
+		// OPTIMIZACIÓN: Una sola pasada para obtener todas las notas disponibles
+		var possibleNotesByDir:Array<Array<Note>> = [[], [], [], []];
+		
+		notes.forEachAlive(function(note:Note)
+		{
+			if (note.canBeHit && note.mustPress && !note.tooLate && !note.wasGoodHit && !note.isSustainNote)
+			{
+				possibleNotesByDir[note.noteData].push(note);
+			}
+		});
+
+		// Ordenar cada dirección por tiempo (solo una vez)
+		for (dir in 0...4)
+		{
+			if (possibleNotesByDir[dir].length > 0)
+				possibleNotesByDir[dir].sort((a, b) -> Std.int(a.strumTime - b.strumTime));
+		}
+
+		// Procesar cada dirección (buffered o pressed)
+		for (dir in 0...4)
+		{
+			// Verificar si hay input válido (recién presionado o en buffer)
+			var hasValidInput = false;
+			
+			if (pressed[dir])
+			{
+				hasValidInput = true;
+			}
+			else if (inputBuffering && !inputProcessed[dir])
+			{
+				// Verificar si hay un input en buffer que no ha expirado
+				var timeSinceInput = currentTime - bufferedInputs[dir];
+				if (timeSinceInput <= bufferTime)
+					hasValidInput = true;
+			}
+			
+			if (!hasValidInput)
 				continue;
 
-			// Buscar notas disponibles en esta dirección
-			var possibleNotes:Array<Note> = [];
-
-			notes.forEachAlive(function(note:Note)
-			{
-				if (note.canBeHit && note.mustPress && !note.tooLate && !note.wasGoodHit)
-				{
-					if (note.noteData == dir)
-						possibleNotes.push(note);
-				}
-			});
-
-			// Ordenar por tiempo
-			possibleNotes.sort((a, b) -> Std.int(a.strumTime - b.strumTime));
+			var possibleNotes = possibleNotesByDir[dir];
 
 			if (possibleNotes.length > 0)
 			{
 				// Hit la nota más cercana
 				var note = possibleNotes[0];
 
-				// Anti-mash check
-				if (mashCounter <= getAvailableNotes(notes, dir) + 1 || mashViolations > MAX_MASH_VIOLATIONS)
+				// Anti-mash check - OPTIMIZADO: usar length en vez de llamar a getAvailableNotes()
+				if (mashCounter <= possibleNotes.length + 1 || mashViolations > MAX_MASH_VIOLATIONS)
 				{
 					if (onNoteHit != null)
+					{
 						onNoteHit(note);
+						inputProcessed[dir] = true; // Marcar como procesado
+					}
 				}
 				else
 				{
 					mashViolations++;
 				}
 			}
-			else if (!ghostTapping)
+			else if (!ghostTapping && pressed[dir]) // Solo penalizar si fue presionado este frame
 			{
 				// Miss por ghost tap
 				if (onNoteMiss != null)
 					onNoteMiss(dir);
+				inputProcessed[dir] = true;
 			}
 		}
 	}
@@ -198,50 +241,46 @@ class InputHandler
 	}
 
 	/**
-	 * Contar notas disponibles en una dirección
-	 */
-	private function getAvailableNotes(notes:FlxTypedGroup<Note>, direction:Int):Int
-	{
-		var count:Int = 0;
-		notes.forEachAlive(function(note:Note)
-		{
-			if (note.canBeHit && note.mustPress && !note.tooLate && note.noteData == direction)
-				count++;
-		});
-		return count;
-	}
-
-	/**
 	 * Procesar sustain notes (hold)
+	 * OPTIMIZADO: Una sola pasada por todas las notas
 	 */
 	public function processSustains(notes:FlxTypedGroup<Note>):Void
 	{
-		for (dir in 0...4)
+		// OPTIMIZACIÓN: Una sola pasada, procesar todas las direcciones
+		notes.forEachAlive(function(note:Note)
 		{
-			if (!held[dir])
-				continue;
-
-			notes.forEachAlive(function(note:Note)
+			// Solo procesar sustains que están siendo presionadas
+			if (note.canBeHit && note.mustPress && note.isSustainNote && !note.wasGoodHit)
 			{
-				if (note.canBeHit && note.mustPress && note.isSustainNote && !note.wasGoodHit)
+				// Verificar si la tecla correspondiente está siendo presionada
+				if (held[note.noteData])
 				{
-					if (note.noteData == dir)
-					{
-						if (onNoteHit != null)
-							onNoteHit(note);
-					}
+					if (onNoteHit != null)
+						onNoteHit(note);
 				}
-			});
-		}
+			}
+		});
 	}
 
 	/**
-	 * Reset mashing
+	 * Reset mashing y buffer de inputs
 	 */
 	public function resetMash():Void
 	{
 		mashViolations = 0;
 		mashCounter = 0;
+	}
+	
+	/**
+	 * Limpiar buffer de inputs (útil al pausar/resetear)
+	 */
+	public function clearBuffer():Void
+	{
+		for (i in 0...4)
+		{
+			bufferedInputs[i] = 0;
+			inputProcessed[i] = false;
+		}
 	}
 
 	/**

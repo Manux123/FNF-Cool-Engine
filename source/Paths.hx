@@ -264,6 +264,11 @@ class Paths
 		return getPath('images/$key.png', IMAGE);
 	}
 
+	inline static public function imageCutscene(key:String)
+	{
+		return '$key.png';
+	}
+
 	inline static public function characterimage(key:String)
 	{
 		return getPath('characters/images/$key.png', IMAGE);
@@ -350,6 +355,40 @@ class Paths
 		
 		// Cargar atlas
 		var atlas = FlxAtlasFrames.fromSparrow(image(key), file('images/$key.xml'));
+		
+		// Agregar al caché
+		if (cacheEnabled && atlas != null)
+		{
+			// Limpiar caché si está lleno
+			if ([for (k in atlasCache.keys()) k].length >= maxCacheSize)
+			{
+				clearOldestAtlasCache();
+			}
+			
+			atlasCache.set(cacheKey, atlas);
+			bitmapCount++;
+		}
+		
+		return atlas;
+	}
+
+	static public function getSparrowAtlasCutscene(key:String):FlxAtlasFrames
+	{
+		totalLoads++;
+		
+		var cacheKey = key;
+		
+		// Revisar caché
+		if (cacheEnabled && atlasCache.exists(cacheKey))
+		{
+			cacheHits++;
+			return atlasCache.get(cacheKey);
+		}
+		
+		cacheMisses++;
+		
+		// Cargar atlas
+		var atlas = FlxAtlasFrames.fromSparrow(imageCutscene(key), '$key.xml');
 		
 		// Agregar al caché
 		if (cacheEnabled && atlas != null)

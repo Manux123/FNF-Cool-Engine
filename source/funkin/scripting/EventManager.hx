@@ -3,14 +3,17 @@ package funkin.scripting;
 import flixel.FlxG;
 import funkin.gameplay.PlayState;
 
+using StringTools;
+
 /**
  * Sistema de eventos para PlayState
  * Compatible con editor visual de eventos
+ * Soporta cancelación desde scripts
  */
 class EventManager
 {
 	public static var events:Array<EventData> = [];
-	public static var customEventHandlers:Map<String, Array<EventData>->Void> = new Map();
+	public static var customEventHandlers:Map<String, Array<EventData>->Bool> = new Map();
 	
 	/**
 	 * Registrar eventos desde la canción
@@ -79,69 +82,101 @@ class EventManager
 	{
 		trace('[EventManager] Evento: ${event.name} (${event.value1}, ${event.value2})');
 		
-		// Primero intentar llamar scripts
-		ScriptHandler.callOnScripts('onEvent', [event.name, event.value1, event.value2, event.time]);
+		// === SISTEMA DE CANCELACIÓN ===
+		// Los scripts pueden cancelar eventos retornando true
 		
-		// Luego handlers personalizados
+		// 1. Primero llamar scripts con onEvent
+		var cancelled = StateScriptHandler.callOnScripts('onEvent', [event.name, event.value1, event.value2, event.time]);
+		if (cancelled)
+		{
+			trace('[EventManager] Evento ${event.name} cancelado por script');
+			return;
+		}
+		
+		// 2. Luego handlers personalizados (también pueden cancelar)
 		if (customEventHandlers.exists(event.name))
 		{
 			var handler = customEventHandlers.get(event.name);
-			handler([event]);
+			cancelled = handler([event]);
+			if (cancelled)
+			{
+				trace('[EventManager] Evento ${event.name} cancelado por handler personalizado');
+				return;
+			}
 		}
-		else
+		
+		// 3. Si no fue cancelado, ejecutar evento built-in
+		if (!cancelled)
 		{
-			// Eventos built-in
 			handleBuiltInEvent(event);
 		}
 	}
 	
 	/**
 	 * Manejar eventos integrados
+	 * @return true si el evento fue cancelado
 	 */
-	private static function handleBuiltInEvent(event:EventData):Void
+	private static function handleBuiltInEvent(event:EventData):Bool
 	{
 		var playState = PlayState.instance;
 		if (playState == null)
-			return;
+			return false;
+		
+		// Llamar script específico para cada evento
+		// El script puede cancelar el evento retornando true
+		var eventFuncName = 'on${event.name.replace(' ', '')}';
+		var cancelled = StateScriptHandler.callOnScripts(eventFuncName, [event.value1, event.value2, event.time]);
+		
+		if (cancelled)
+		{
+			trace('[EventManager] Evento built-in ${event.name} cancelado por script');
+			return true;
+		}
 		
 		switch (event.name.toLowerCase())
 		{
 			case 'hey!':
-				handleHeyEvent(event);
+				return handleHeyEvent(event);
 			
 			case 'set gf speed':
-				handleGFSpeedEvent(event);
+				return handleGFSpeedEvent(event);
 			
 			case 'camera zoom':
-				handleCameraZoomEvent(event);
+				return handleCameraZoomEvent(event);
 			
 			case 'camera flash':
-				handleCameraFlashEvent(event);
+				return handleCameraFlashEvent(event);
 			
 			case 'camera fade':
-				handleCameraFadeEvent(event);
+				return handleCameraFadeEvent(event);
 			
 			case 'change character':
-				handleChangeCharacterEvent(event);
+				return handleChangeCharacterEvent(event);
 			
 			case 'play animation':
-				handlePlayAnimationEvent(event);
+				return handlePlayAnimationEvent(event);
 			
 			case 'screen shake':
-				handleScreenShakeEvent(event);
+				return handleScreenShakeEvent(event);
 			
 			default:
 				trace('[EventManager] Evento desconocido: ${event.name}');
+				return false;
 		}
 	}
 	
 	/**
 	 * Evento: Hey!
+	 * @return true si fue cancelado
 	 */
-	private static function handleHeyEvent(event:EventData):Void
+	private static function handleHeyEvent(event:EventData):Bool
 	{
 		var playState = PlayState.instance;
 		var target = event.value1.toLowerCase();
+		
+		// Permitir cancelación desde scripts
+		var cancelled = StateScriptHandler.callOnScripts('onHeyEvent', [target]);
+		if (cancelled) return true;
 		
 		if (target == 'bf' || target == 'boyfriend' || target == '')
 		{
@@ -154,24 +189,31 @@ class EventManager
 			if (playState.gf != null)
 				playState.gf.playAnim('cheer', true);
 		}
+		
+		return false;
 	}
 	
 	/**
 	 * Evento: Set GF Speed
 	 */
-	private static function handleGFSpeedEvent(event:EventData):Void
+	private static function handleGFSpeedEvent(event:EventData):Bool
 	{
 		var speed = Std.parseInt(event.value1);
 		if (speed == null) speed = 1;
 		
+		var cancelled = StateScriptHandler.callOnScripts('onSetGFSpeed', [speed]);
+		if (cancelled) return true;
+		
 		// Necesitarías exponer gfSpeed en PlayState
 		// playState.gfSpeed = speed;
+		
+		return false;
 	}
 	
 	/**
 	 * Evento: Camera Zoom
 	 */
-	private static function handleCameraZoomEvent(event:EventData):Void
+	private static function handleCameraZoomEvent(event:EventData):Bool
 	{
 		var playState = PlayState.instance;
 		var amount = Std.parseFloat(event.value1);
@@ -179,6 +221,9 @@ class EventManager
 		
 		if (Math.isNaN(amount)) amount = 0.05;
 		if (Math.isNaN(duration)) duration = 0;
+		
+		var cancelled = StateScriptHandler.callOnScripts('onCameraZoom', [amount, duration]);
+		if (cancelled) return true;
 		
 		if (duration > 0)
 		{
@@ -188,12 +233,14 @@ class EventManager
 		{
 			playState.camGame.zoom += amount;
 		}
+		
+		return false;
 	}
 	
 	/**
 	 * Evento: Camera Flash
 	 */
-	private static function handleCameraFlashEvent(event:EventData):Void
+	private static function handleCameraFlashEvent(event:EventData):Bool
 	{
 		var playState = PlayState.instance;
 		var duration = Std.parseFloat(event.value1);
@@ -207,13 +254,18 @@ class EventManager
 			color = flixel.util.FlxColor.fromString(colorStr);
 		}
 		
+		var cancelled = StateScriptHandler.callOnScripts('onCameraFlash', [duration, color]);
+		if (cancelled) return true;
+		
 		playState.camHUD.flash(color, duration);
+		
+		return false;
 	}
 	
 	/**
 	 * Evento: Camera Fade
 	 */
-	private static function handleCameraFadeEvent(event:EventData):Void
+	private static function handleCameraFadeEvent(event:EventData):Bool
 	{
 		var playState = PlayState.instance;
 		var duration = Std.parseFloat(event.value1);
@@ -227,36 +279,49 @@ class EventManager
 			color = flixel.util.FlxColor.fromString(colorStr);
 		}
 		
+		var cancelled = StateScriptHandler.callOnScripts('onCameraFade', [duration, color]);
+		if (cancelled) return true;
+		
 		playState.camHUD.fade(color, duration);
+		
+		return false;
 	}
 	
 	/**
 	 * Evento: Change Character
 	 */
-	private static function handleChangeCharacterEvent(event:EventData):Void
+	private static function handleChangeCharacterEvent(event:EventData):Bool
 	{
 		var playState = PlayState.instance;
 		var target = event.value1.toLowerCase();
 		var newChar = event.value2;
 		
 		if (newChar == null || newChar == '')
-			return;
+			return false;
+		
+		var cancelled = StateScriptHandler.callOnScripts('onChangeCharacter', [target, newChar]);
+		if (cancelled) return true;
 		
 		// Implementar cambio de personaje
 		// Necesitarías un método changeCharacter en PlayState
+		
+		return false;
 	}
 	
 	/**
 	 * Evento: Play Animation
 	 */
-	private static function handlePlayAnimationEvent(event:EventData):Void
+	private static function handlePlayAnimationEvent(event:EventData):Bool
 	{
 		var playState = PlayState.instance;
 		var target = event.value1.toLowerCase();
 		var anim = event.value2;
 		
 		if (anim == null || anim == '')
-			return;
+			return false;
+		
+		var cancelled = StateScriptHandler.callOnScripts('onPlayAnimation', [target, anim]);
+		if (cancelled) return true;
 		
 		switch (target)
 		{
@@ -272,12 +337,14 @@ class EventManager
 				if (playState.gf != null)
 					playState.gf.playAnim(anim, true);
 		}
+		
+		return false;
 	}
 	
 	/**
 	 * Evento: Screen Shake
 	 */
-	private static function handleScreenShakeEvent(event:EventData):Void
+	private static function handleScreenShakeEvent(event:EventData):Bool
 	{
 		var playState = PlayState.instance;
 		var intensity = Std.parseFloat(event.value1);
@@ -286,16 +353,36 @@ class EventManager
 		if (Math.isNaN(intensity)) intensity = 0.05;
 		if (Math.isNaN(duration)) duration = 0.5;
 		
+		var cancelled = StateScriptHandler.callOnScripts('onScreenShake', [intensity, duration]);
+		if (cancelled) return true;
+		
 		playState.camGame.shake(intensity, duration);
+		
+		return false;
 	}
 	
 	/**
 	 * Registrar handler personalizado
+	 * @param handler Función que retorna true para cancelar el evento
 	 */
-	public static function registerCustomEvent(eventName:String, handler:Array<EventData>->Void):Void
+	public static function registerCustomEvent(eventName:String, handler:Array<EventData>->Bool):Void
 	{
 		customEventHandlers.set(eventName, handler);
 		trace('[EventManager] Evento personalizado registrado: $eventName');
+	}
+	
+	/**
+	 * Disparar un evento manualmente desde código o script
+	 */
+	public static function fireEvent(eventName:String, value1:String = '', value2:String = ''):Void
+	{
+		var event = new EventData();
+		event.name = eventName;
+		event.value1 = value1;
+		event.value2 = value2;
+		event.time = FlxG.sound.music != null ? FlxG.sound.music.time : 0;
+		
+		triggerEvent(event);
 	}
 	
 	/**
@@ -318,6 +405,7 @@ class EventData
 	public var value1:String = '';
 	public var value2:String = '';
 	public var triggered:Bool = false;
+	public var cancelled:Bool = false; // Nuevo: si fue cancelado
 	
 	public function new() {}
 	

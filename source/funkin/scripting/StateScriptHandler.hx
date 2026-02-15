@@ -17,12 +17,17 @@ import shaders.ShaderManager;
 using StringTools;
 
 /**
- * Sistema de scripts para States
- * Permite modificar y extender cualquier FlxState mediante scripts
+ * Sistema de scripts para States con soporte para:
+ * - Cancelación de eventos
+ * - Override de funciones
+ * - Prioridades de scripts
  */
 class StateScriptHandler
 {
 	public static var stateScripts:Map<String, StateScriptInstance> = new Map();
+	
+	// Sistema de overrides - permite sobrescribir funciones completamente
+	public static var functionOverrides:Map<String, FunctionOverride> = new Map();
 	
 	#if HSCRIPT_ALLOWED
 	private static var parser:Parser;
@@ -60,7 +65,7 @@ class StateScriptHandler
 	/**
 	 * Cargar un script desde archivo
 	 */
-	public static function loadScript(scriptPath:String, state:FlxState):StateScriptInstance
+	public static function loadScript(scriptPath:String, state:FlxState, ?priority:Int = 0):StateScriptInstance
 	{
 		#if HSCRIPT_ALLOWED
 		if (!FileSystem.exists(scriptPath))
@@ -72,7 +77,7 @@ class StateScriptHandler
 		var scriptName = getScriptName(scriptPath);
 		var content = File.getContent(scriptPath);
 		
-		var script = new StateScriptInstance(scriptName, scriptPath);
+		var script = new StateScriptInstance(scriptName, scriptPath, priority);
 		script.state = state;
 		
 		try
@@ -82,7 +87,7 @@ class StateScriptHandler
 			script.interp = new Interp();
 			
 			// Exponer variables globales al script
-			exposeGlobals(script.interp, state);
+			exposeGlobals(script.interp, state, script);
 			
 			// Ejecutar el script
 			script.interp.execute(program);
@@ -93,7 +98,7 @@ class StateScriptHandler
 			// Guardar script
 			stateScripts.set(scriptName, script);
 			
-			trace('[StateScriptHandler] Script cargado: $scriptName');
+			trace('[StateScriptHandler] Script cargado: $scriptName (prioridad: $priority)');
 			return script;
 		}
 		catch (e:Exception)
@@ -137,23 +142,63 @@ class StateScriptHandler
 	
 	/**
 	 * Llamar función en todos los scripts
+	 * Si algún script retorna true, se cancela la ejecución
+	 * @return true si el evento fue cancelado
 	 */
-	public static function callOnScripts(funcName:String, ?args:Array<Dynamic>):Void
+	public static function callOnScripts(funcName:String, ?args:Array<Dynamic>):Bool
 	{
 		if (args == null) args = [];
 		
-		for (script in stateScripts)
-			script.call(funcName, args);
+		// Primero verificar si hay un override
+		if (functionOverrides.exists(funcName))
+		{
+			var funcOverride = functionOverrides.get(funcName);
+			if (funcOverride.enabled)
+			{
+				trace('[StateScriptHandler] Usando override para $funcName');
+				funcOverride.call(args);
+				return true; // El override cancela la ejecución original
+			}
+		}
+		
+		// Ordenar scripts por prioridad (mayor prioridad primero)
+		var sortedScripts = getSortedScripts();
+		
+		for (script in sortedScripts)
+		{
+			var result = script.call(funcName, args);
+			
+			// Si el script retorna true, cancela el evento
+			if (result == true)
+			{
+				trace('[StateScriptHandler] Evento $funcName cancelado por script ${script.name}');
+				return true;
+			}
+		}
+		
+		return false; // No se canceló
 	}
 	
 	/**
-	 * Llamar función y obtener resultado (el primer script que retorne algo)
+	 * Llamar función y obtener resultado (el primer script que retorne algo no-null)
 	 */
 	public static function callOnScriptsReturn(funcName:String, ?args:Array<Dynamic>, ?defaultValue:Dynamic = null):Dynamic
 	{
 		if (args == null) args = [];
 		
-		for (script in stateScripts)
+		// Verificar override primero
+		if (functionOverrides.exists(funcName))
+		{
+			var funcOverride = functionOverrides.get(funcName);
+			if (funcOverride.enabled)
+			{
+				return funcOverride.call(args);
+			}
+		}
+		
+		var sortedScripts = getSortedScripts();
+		
+		for (script in sortedScripts)
 		{
 			var result = script.call(funcName, args);
 			if (result != null)
@@ -161,6 +206,65 @@ class StateScriptHandler
 		}
 		
 		return defaultValue;
+	}
+	
+	/**
+	 * Registrar un override de función
+	 * Permite sobrescribir completamente el comportamiento de una función
+	 */
+	public static function registerOverride(funcName:String, script:StateScriptInstance, func:Dynamic):Void
+	{
+		var funcOverride = new FunctionOverride(funcName, script, func);
+		functionOverrides.set(funcName, funcOverride);
+		
+		trace('[StateScriptHandler] Override registrado para $funcName por script ${script.name}');
+	}
+	
+	/**
+	 * Desregistrar un override
+	 */
+	public static function unregisterOverride(funcName:String):Void
+	{
+		if (functionOverrides.exists(funcName))
+		{
+			functionOverrides.remove(funcName);
+			trace('[StateScriptHandler] Override removido para $funcName');
+		}
+	}
+	
+	/**
+	 * Habilitar/deshabilitar un override sin eliminarlo
+	 */
+	public static function toggleOverride(funcName:String, enabled:Bool):Void
+	{
+		if (functionOverrides.exists(funcName))
+		{
+			functionOverrides.get(funcName).enabled = enabled;
+			trace('[StateScriptHandler] Override $funcName ${enabled ? "habilitado" : "deshabilitado"}');
+		}
+	}
+	
+	/**
+	 * Verificar si una función tiene override
+	 */
+	public static function hasOverride(funcName:String):Bool
+	{
+		return functionOverrides.exists(funcName) && functionOverrides.get(funcName).enabled;
+	}
+	
+	/**
+	 * Obtener scripts ordenados por prioridad
+	 */
+	private static function getSortedScripts():Array<StateScriptInstance>
+	{
+		var scripts:Array<StateScriptInstance> = [];
+		for (script in stateScripts)
+			scripts.push(script);
+		
+		// Ordenar por prioridad (mayor primero)
+		scripts.sort((a, b) -> b.priority - a.priority);
+		
+		return scripts;
 	}
 	
 	/**
@@ -226,12 +330,13 @@ class StateScriptHandler
 			script.destroy();
 		
 		stateScripts.clear();
+		functionOverrides.clear();
 	}
 	
 	/**
 	 * Exponer variables y funciones globales al script
 	 */
-	private static function exposeGlobals(interp:Interp, state:FlxState):Void
+	private static function exposeGlobals(interp:Interp, state:FlxState, script:StateScriptInstance):Void
 	{
 		#if HSCRIPT_ALLOWED
 		// Clases de Flixel
@@ -317,6 +422,46 @@ class StateScriptHandler
 			}
 		});
 		
+		// === NUEVAS FUNCIONES PARA CONTROL DE EVENTOS ===
+		
+		// Función para cancelar el evento actual
+		// Retornar true en cualquier callback cancela la ejecución
+		interp.variables.set('cancelEvent', function() {
+			return true;
+		});
+		
+		// Función para continuar con el evento
+		interp.variables.set('continueEvent', function() {
+			return false;
+		});
+		
+		// Registrar un override de función
+		// Ejemplo: overrideFunction('changeWeek', function(change) { trace('Custom week change!'); })
+		interp.variables.set('overrideFunction', function(funcName:String, func:Dynamic) {
+			StateScriptHandler.registerOverride(funcName, script, func);
+		});
+		
+		// Remover un override
+		interp.variables.set('removeOverride', function(funcName:String) {
+			StateScriptHandler.unregisterOverride(funcName);
+		});
+		
+		// Habilitar/deshabilitar override temporalmente
+		interp.variables.set('toggleOverride', function(funcName:String, enabled:Bool) {
+			StateScriptHandler.toggleOverride(funcName, enabled);
+		});
+		
+		// Verificar si hay override
+		interp.variables.set('hasOverride', function(funcName:String):Bool {
+			return StateScriptHandler.hasOverride(funcName);
+		});
+		
+		// Establecer prioridad del script
+		interp.variables.set('setPriority', function(priority:Int) {
+			script.priority = priority;
+			trace('[${script.name}] Prioridad establecida a $priority');
+		});
+		
 		// Funciones de debug
 		interp.variables.set('trace', function(v:Dynamic) { trace('[StateScript] $v'); });
 		interp.variables.set('debugLog', function(v:Dynamic) { trace('[DEBUG] $v'); });
@@ -355,16 +500,18 @@ class StateScriptInstance
 	public var path:String;
 	public var active:Bool = true;
 	public var state:FlxState;
+	public var priority:Int = 0; // Mayor prioridad = se ejecuta primero
 	
 	#if HSCRIPT_ALLOWED
 	public var interp:Interp;
 	public var program:Expr;
 	#end
 	
-	public function new(name:String, path:String)
+	public function new(name:String, path:String, ?priority:Int = 0)
 	{
 		this.name = name;
 		this.path = path;
+		this.priority = priority;
 	}
 	
 	/**
@@ -434,5 +581,47 @@ class StateScriptInstance
 		}
 		program = null;
 		#end
+	}
+}
+
+/**
+ * Override de función
+ * Permite reemplazar completamente el comportamiento de una función
+ */
+class FunctionOverride
+{
+	public var funcName:String;
+	public var script:StateScriptInstance;
+	public var func:Dynamic;
+	public var enabled:Bool = true;
+	
+	public function new(funcName:String, script:StateScriptInstance, func:Dynamic)
+	{
+		this.funcName = funcName;
+		this.script = script;
+		this.func = func;
+	}
+	
+	/**
+	 * Llamar la función override
+	 */
+	public function call(args:Array<Dynamic>):Dynamic
+	{
+		if (!enabled || !script.active)
+			return null;
+		
+		try
+		{
+			if (Reflect.isFunction(func))
+			{
+				return Reflect.callMethod(null, func, args);
+			}
+		}
+		catch (e:Exception)
+		{
+			trace('[FunctionOverride] Error en $funcName: ${e.message}');
+		}
+		
+		return null;
 	}
 }

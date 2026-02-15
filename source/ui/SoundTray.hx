@@ -32,6 +32,8 @@ class SoundTray extends FlxTypedGroup<FlxSprite>
         // Crear el contenedor del volumen
         volumeBox = new FlxSprite(0, 0);
         volumeBox.loadGraphic("assets/images/soundtray/volumebox.png");
+        volumeBox.scale.set(0.7,0.7);
+        volumeBox.updateHitbox();
         volumeBox.screenCenter(X);
         volumeBox.scrollFactor.set();
         add(volumeBox);
@@ -39,6 +41,8 @@ class SoundTray extends FlxTypedGroup<FlxSprite>
         // Crear las barras de volumen
         volumeBar = new FlxSprite(volumeBox.x, volumeBox.y);
         volumeBar.loadGraphic("assets/images/soundtray/bars_10.png");
+        volumeBar.scale.set(0.7,0.7);
+        volumeBar.updateHitbox();
         volumeBar.scrollFactor.set();
         add(volumeBar);
         
@@ -157,8 +161,8 @@ class SoundTray extends FlxTypedGroup<FlxSprite>
         volumeBar.loadGraphic("assets/images/soundtray/bars_" + barLevel + ".png");
         
         // Centrar horizontalmente las barras con respecto al volumeBox
-        volumeBar.x = volumeBox.x + (volumeBox.width - volumeBar.width) / 2;
-        volumeBar.y = volumeBox.y;
+        volumeBar.x = volumeBox.x + (volumeBox.width - volumeBar.width) / 2 + 35;
+        volumeBar.y = volumeBox.y + 50;
     }
     
     // Guardar volumen en FlxG.save

@@ -72,7 +72,14 @@ class UIManager extends FlxGroup
 	 */
 	private function createHealthBar():Void
 	{
-		healthBarBG = new FlxSprite(0, FlxG.height * 0.9).loadGraphic(Paths.image('UI/healthBar'));
+		// Calcular posición según downscroll
+		var healthBarY:Float;
+		if (FlxG.save.data.downscroll)
+			healthBarY = FlxG.height * 0.1; // Arriba para downscroll
+		else
+			healthBarY = FlxG.height * 0.9; // Abajo para upscroll (default)
+		
+		healthBarBG = new FlxSprite(0, healthBarY).loadGraphic(Paths.image('UI/healthBar'));
 		healthBarBG.screenCenter(X);
 		healthBarBG.scrollFactor.set();
 		healthBarBG.cameras = [camHUD];
@@ -110,7 +117,7 @@ class UIManager extends FlxGroup
 			scoreTxt.cameras = [camHUD];
 			add(scoreTxt); */
 
-		scoreTxt = new FlxText(45, healthBarBG.y + 50, 0, "", 32);
+		scoreTxt = new FlxText(45, FlxG.height * 0.9, 0, "", 32);
 		scoreTxt.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 4, 1);
 		scoreTxt.color = FlxColor.WHITE;
 		scoreTxt.size = 22;

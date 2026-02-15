@@ -194,6 +194,19 @@ class CharacterController
 	}
 	
 	/**
+	 * NUEVO: Reproducir animación de miss por índice
+	 */
+	public function missByIndex(charIndex:Int, noteData:Int):Void
+	{
+		if (charIndex < 0 || charIndex >= characterSlots.length)
+			return;
+		
+		var slot = characterSlots[charIndex];
+		if (slot != null && slot.isActive)
+			slot.playMiss(noteData);
+	}
+	
+	/**
 	 * NUEVO: Hacer cantar a múltiples personajes
 	 */
 	public function singMultiple(charIndices:Array<Int>, noteData:Int, ?altAnim:String = ""):Void

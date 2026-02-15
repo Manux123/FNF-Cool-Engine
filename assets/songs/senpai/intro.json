@@ -1,39 +1,52 @@
 {
   "name": "intro",
-  "style": "pixel",
-  "backgroundColor": "#B3DFD8",
-  "fadeTime": 0.83,
+  "skinName": "pixel",
   "messages": [
     {
       "character": "dad",
       "text": "Ah, a new fair maiden has come in search of true love!",
+      "portrait": "senpai_normal",
+      "boxSprite": "pixel_box",
+      "bubbleType": "normal",
+      "speed": 0.04,
+      "sound": "pixelText",
+      "music": "gameplay/week6/Lunchbox"
+    },
+    {
+      "character": "dad",
+      "text": "A serenade between gentlemen shall decide where her beautiful heart shall reside.",
+      "portrait": "senpai_normal",
+      "boxSprite": "pixel_box",
       "bubbleType": "normal",
       "speed": 0.04,
       "sound": "pixelText"
     },
     {
-      "character": "dad",
-      "text": "A serenade between gentlemen shall decide where her beautiful heart shall reside.",
-      "bubbleType": "normal",
-      "speed": 0.04
-    },
-    {
       "character": "bf",
       "text": "Beep bo bop",
+      "portrait": "bf_normal",
+      "boxSprite": "pixel_box",
       "bubbleType": "normal",
-      "speed": 0.05
+      "speed": 0.05,
+      "sound": "pixelText"
     },
     {
       "character": "dad",
       "text": "Hmph! The small man speaks in a peculiar manner!",
+      "portrait": "senpai_normal",
+      "boxSprite": "pixel_box",
       "bubbleType": "loud",
-      "speed": 0.035
+      "speed": 0.035,
+      "sound": "pixelText"
     },
     {
       "character": "dad",
       "text": "But nonetheless, let us engage in a battle of melodies!",
+      "portrait": "senpai_normal",
+      "boxSprite": "pixel_box",
       "bubbleType": "normal",
-      "speed": 0.04
+      "speed": 0.04,
+      "sound": "pixelText"
     }
   ]
 }

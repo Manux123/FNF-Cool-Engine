@@ -561,8 +561,18 @@ class PlayState extends funkin.states.MusicBeatState
 		inputHandler.onNoteHit = onPlayerNoteHit;
 		inputHandler.onNoteMiss = onPlayerNoteMiss;
 
+		// NUEVO: Configurar buffering si lo deseas
+		inputHandler.inputBuffering = true;
+		inputHandler.bufferTime = 0.1; // 100ms
+
 		// NUEVO: Callback para release de hold notes
 		//inputHandler.onKeyRelease = onKeyRelease;  for now note hold splashes disabled :(
+
+		// AJUSTE: Calcular posición de strums según downscroll
+		if (FlxG.save.data.downscroll)
+			strumLiney = FlxG.height - 150; // Flechas abajo
+		else
+			strumLiney = PlayStateConfig.STRUM_LINE_Y; // Flechas arriba (50 por defecto)
 
 		// Note manager - MEJORADO con splashes
 		// ✅ Pasar referencias a StrumsGroup para animaciones de confirm
@@ -727,26 +737,42 @@ class PlayState extends funkin.states.MusicBeatState
 			trace('[PlayState] Diálogo de intro encontrado, mostrando...');
 			showDialogue('intro', function()
 			{
-				if (FlxG.sound.music != null)
-					FlxG.sound.music.stop();
-				if (vocals != null)
+				trace('[PlayState] Diálogo terminado, restaurando música y vocales...');
+				
+				// CRÍTICO: Restaurar FlxG.sound.music con el instrumental de la canción
+				// El diálogo pudo haber usado FlxG.sound.music, así que lo restauramos
+				FlxG.sound.music = Paths.loadInst(SONG.song);
+				FlxG.sound.music.volume = 0;
+				FlxG.sound.music.pause();
+				FlxG.sound.list.add(FlxG.sound.music);
+				
+				// CRÍTICO: Recargar las vocales también
+				if (SONG.needsVoices)
 				{
-					vocals.stop();
-					vocals.volume = 0;
+					vocals = Paths.loadVoices(SONG.song);
 				}
+				else
+				{
+					vocals = new FlxSound();
+				}
+				
+				vocals.volume = 0;
+				vocals.pause();
+				FlxG.sound.list.add(vocals);
+				
+				trace('[PlayState] Música y vocales restauradas, ejecutando countdown...');
 				// Cuando termina el diálogo, ejecutar el countdown
 				executeCountdown();
-				isCutscene = false;
 			});
 			return;
 		}
-
-		if (!isCutscene)
+		else
 			executeCountdown();
 	}
 
 	private function executeCountdown():Void
 	{
+		isCutscene = false;
 		trace('[PlayState] === INICIANDO COUNTDOWN ===');
 		Conductor.songPosition = 0;
 		Conductor.songPosition = -Conductor.crochet * 5;
@@ -889,6 +915,9 @@ class PlayState extends funkin.states.MusicBeatState
 				inputHandler.processInputs(notes);
 				inputHandler.processSustains(notes);
 				updatePlayerStrums();
+
+				if (paused)
+    				inputHandler.clearBuffer();
 
 				// ✅ Actualizar animaciones de StrumsGroups
 				for (group in strumsGroups)
@@ -1406,19 +1435,32 @@ class PlayState extends funkin.states.MusicBeatState
 				gameState.modifyHealth(0.023);
 			}
 
-			// Animate character
-			var section:Section = getSectionAsClass(curStep);
-			var charIndices = section.getActiveCharacterIndices(1, 2);
-
-			// Solo hacer cantar al BF (índice 2 o 3 típicamente)
-			var bfIndex = charIndices.length > 0 ? charIndices[charIndices.length - 1] : 2;
-			characterController.singByIndex(bfIndex, note.noteData);
+			// Animate character - USAR ÍNDICE FIJO DEL JUGADOR
+			// El jugador SIEMPRE es el slot 2 (boyfriend) en el array de characterSlots
+			// Esto mantiene el sistema de múltiples personajes funcionando
+			var playerCharIndex:Int = 2; // Índice fijo del jugador
+			
+			// Intentar usar el sistema de múltiples personajes
+			if (characterSlots.length > playerCharIndex)
+			{
+				characterController.singByIndex(playerCharIndex, note.noteData);
+				
+				// Camera offset - usar el personaje del slot del jugador
+				var playerChar = characterController.getCharacter(playerCharIndex);
+				if (playerChar != null)
+					cameraController.applyNoteOffset(playerChar, note.noteData);
+				else if (boyfriend != null)
+					cameraController.applyNoteOffset(boyfriend, note.noteData);
+			}
+			else if (boyfriend != null)
+			{
+				// Fallback al sistema legacy si no hay slots
+				characterController.sing(boyfriend, note.noteData);
+				cameraController.applyNoteOffset(boyfriend, note.noteData);
+			}
 
 			// Animate strum
 			noteManager.hitNote(note,rating);
-
-			// Camera offset
-			cameraController.applyNoteOffset(boyfriend, note.noteData);
 
 			// Vocals
 			vocals.volume = 1;
@@ -1450,14 +1492,25 @@ class PlayState extends funkin.states.MusicBeatState
 		// Sound
 		FlxG.sound.play(Paths.soundRandom('missnote', 1, 3), FlxG.random.float(0.1, 0.2));
 
-		// Animate
-		if (boyfriend != null && gf != null)
+		// Animate - USAR ÍNDICE FIJO DEL JUGADOR
+		// El jugador SIEMPRE es el slot 2 (boyfriend) en el array de characterSlots
+		var playerCharIndex:Int = 2; // Índice fijo del jugador
+		
+		// Intentar usar el sistema de múltiples personajes
+		if (characterSlots.length > playerCharIndex)
 		{
-			if (gf.animOffsets.exists('sad'))
-				gf.playAnim('sad', true);
+			characterController.missByIndex(playerCharIndex, direction);
+		}
+		else if (boyfriend != null)
+		{
+			// Fallback al sistema legacy si no hay slots
 			var anims = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
 			boyfriend.playAnim('sing' + anims[direction] + 'miss', true);
 		}
+		
+		// Hacer sad a GF si existe
+		if (gf != null && gf.animOffsets.exists('sad'))
+			gf.playAnim('sad', true);
 
 		// Popup
 		uiManager.showMissPopup();
@@ -1522,15 +1575,37 @@ class PlayState extends funkin.states.MusicBeatState
 		{
 			var charIndices = section.getActiveCharacterIndices(1, 2); // (dadIndex, bfIndex)
 
-			// Hacer cantar a todos los personajes activos
-			for (charIndex in charIndices)
+			// Hacer cantar a todos los personajes activos del CPU
+			if (charIndices.length > 0)
 			{
-				characterController.singByIndex(charIndex, note.noteData, getHasAltAnim(curStep) ? '-alt' : '');
+				for (charIndex in charIndices)
+				{
+					characterController.singByIndex(charIndex, note.noteData, altAnim);
+				}
+				
+				// Camera offset - usar el primer personaje activo del CPU
+				var activeChar = characterController.getCharacter(charIndices[0]);
+				if (activeChar != null)
+					cameraController.applyNoteOffset(activeChar, note.noteData);
+				else if (dad != null)
+					cameraController.applyNoteOffset(dad, note.noteData);
+			}
+			else if (dad != null)
+			{
+				// Fallback: usar dad si no hay personajes activos en la sección
+				characterController.sing(dad, note.noteData, altAnim);
+				cameraController.applyNoteOffset(dad, note.noteData);
 			}
 		}
-
-		// Camera offset
-		cameraController.applyNoteOffset(dad, note.noteData);
+		else
+		{
+			// FALLBACK: Si la sección es null, usar dad directamente
+			if (dad != null)
+			{
+				characterController.sing(dad, note.noteData, altAnim);
+				cameraController.applyNoteOffset(dad, note.noteData);
+			}
+		}
 
 		// Vocals
 		if (SONG.needsVoices)
@@ -1850,7 +1925,7 @@ class PlayState extends funkin.states.MusicBeatState
 		var swagSection = getSection(step);
 		if (swagSection == null)
 			return null;
-
+		
 		var section = new Section();
 		section.sectionNotes = swagSection.sectionNotes;
 		section.lengthInSteps = swagSection.lengthInSteps;
@@ -2030,15 +2105,13 @@ class PlayState extends funkin.states.MusicBeatState
 		isCutscene = true;
 
 		var songName = SONG.song.toLowerCase();
-		var dialoguePath = 'assets/songs/${songName}/${type}.json';
-
-		trace('[PlayState] Cargando diálogo: $dialoguePath');
 
 		var doof:DialogueBoxImproved = null;
 
 		try
 		{
-			doof = new DialogueBoxImproved(dialoguePath);
+			doof = new DialogueBoxImproved(songName);
+			trace('[PlayState] Loading dialogue: $doof');
 		}
 		catch (e:Dynamic)
 		{
@@ -2069,25 +2142,6 @@ class PlayState extends funkin.states.MusicBeatState
 		add(doof);
 
 		doof.cameras = [camHUD];
-
-		// Reproducir música de diálogo si existe (para Week 6 por ejemplo)
-		playDialogueMusic();
-	}
-
-	/**
-	 * Reproducir música específica de diálogo según la canción
-	 */
-	private function playDialogueMusic():Void
-	{
-		switch (SONG.song.toLowerCase())
-		{
-			case 'senpai':
-				FlxG.sound.playMusic(Paths.music('gameplay/week6/Lunchbox'), 0);
-				FlxG.sound.music.fadeIn(1, 0, 0.8);
-			case 'thorns':
-				FlxG.sound.playMusic(Paths.music('gameplay/week6/LunchboxScary'), 0);
-				FlxG.sound.music.fadeIn(1, 0, 0.8);
-		}
 	}
 
 	/**

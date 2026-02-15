@@ -1,0 +1,76 @@
+{
+  "name": "normal",
+  "style": "normal",
+  "backgroundColor": "#2C1B3D",
+  "fadeTime": 0.83,
+  "portraits": {
+    "dad_normal": {
+      "name": "dad_normal",
+      "fileName": "dad-portrait",
+      "x": 50,
+      "y": 220,
+      "scaleX": 1.0,
+      "scaleY": 1.0,
+      "flipX": false,
+      "animation": "dad portrait"
+    },
+    "bf_normal": {
+      "name": "bf_normal",
+      "fileName": "bf-portrait",
+      "x": 870,
+      "y": 220,
+      "scaleX": 1.0,
+      "scaleY": 1.0,
+      "flipX": false,
+      "animation": "bf portrait"
+    },
+    "mom_normal": {
+      "name": "mom_normal",
+      "fileName": "mom-portrait",
+      "x": 50,
+      "y": 220,
+      "scaleX": 1.0,
+      "scaleY": 1.0,
+      "flipX": false,
+      "animation": "mom portrait"
+    },
+    "gf_normal": {
+      "name": "gf_normal",
+      "fileName": "gf-portrait",
+      "x": 50,
+      "y": 220,
+      "scaleX": 1.0,
+      "scaleY": 1.0,
+      "flipX": false,
+      "animation": "gf portrait"
+    }
+  },
+  "boxes": {
+    "speech_normal": {
+      "name": "speech_normal",
+      "fileName": "speech_bubble_talking",
+      "x": 0,
+      "y": 370,
+      "scaleX": 1.0,
+      "scaleY": 1.0,
+      "animation": "Speech Bubble Normal Open"
+    },
+    "speech_loud": {
+      "name": "speech_loud",
+      "fileName": "speech_bubble_loud",
+      "x": 0,
+      "y": 370,
+      "scaleX": 1.0,
+      "scaleY": 1.0,
+      "animation": "speech bubble loud open"
+    }
+  },
+  "textConfig": {
+    "x": 180,
+    "y": 470,
+    "width": 900,
+    "size": 42,
+    "font": "VCR OSD Mono",
+    "color": "#000000"
+  }
+}

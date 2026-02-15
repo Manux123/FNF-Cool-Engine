@@ -1,0 +1,47 @@
+{
+  "name": "pixel",
+  "style": "pixel",
+  "backgroundColor": "#B3DFD8",
+  "fadeTime": 0.83,
+  "portraits": {
+    "senpai_normal": {
+      "name": "senpai_normal",
+      "fileName": "senpaiPortrait",
+      "x": -20,
+      "y": 40,
+      "scaleX": 5.4,
+      "scaleY": 5.4,
+      "flipX": false,
+      "animation": "Senpai Portrait Enter"
+    },
+    "bf_normal": {
+      "name": "bf_normal",
+      "fileName": "bfPortrait",
+      "x": 0,
+      "y": 40,
+      "scaleX": 5.4,
+      "scaleY": 5.4,
+      "flipX": false,
+      "animation": "Boyfriend portrait enter"
+    }
+  },
+  "boxes": {
+    "pixel_box": {
+      "name": "pixel_box",
+      "fileName": "dialogueBox-pixel",
+      "x": -20,
+      "y": 45,
+      "scaleX": 5.4,
+      "scaleY": 5.4,
+      "animation": "Text Box Appear"
+    }
+  },
+  "textConfig": {
+    "x": 240,
+    "y": 500,
+    "width": 800,
+    "size": 32,
+    "font": "Pixel Arial 11 Bold",
+    "color": "#3F2021"
+  }
+}

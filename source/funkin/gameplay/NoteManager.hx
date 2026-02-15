@@ -304,6 +304,16 @@ class NoteManager
 			noteY = strumLineY - (songPosition - note.strumTime) * _scrollSpeed;
 
 		note.y = noteY;
+		
+		// NUEVO: Sincronizar X con strum cada frame
+		// Esto asegura que las notas siempre sigan a los strums (middlescroll, animaciones, etc)
+		var strum = getStrumForDirection(note.noteData, note.mustPress);
+		if (strum != null)
+		{
+			note.x = strum.x;
+			// Centrar la nota en el strum
+			note.x += (strum.width - note.width) / 2;
+		}
 
 		if (note.isSustainNote && downscroll && !note.mustPress)
 		{

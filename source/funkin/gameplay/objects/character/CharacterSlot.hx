@@ -77,6 +77,26 @@ class CharacterSlot
 	}
 	
 	/**
+	 * Reproducir animación de miss
+	 */
+	public function playMiss(noteData:Int):Void
+	{
+		if (!isActive)
+			return;
+		
+		var notesAnim:Array<String> = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
+		var animName:String = 'sing' + notesAnim[noteData] + 'miss';
+		
+		// Solo reproducir si existe la animación
+		if (character.animOffsets.exists(animName) || character.animation.getByName(animName) != null)
+		{
+			character.playAnim(animName, true);
+			holdTimer = 0;
+			animFinished = false;
+		}
+	}
+	
+	/**
 	 * Update del personaje
 	 */
 	public function update(elapsed:Float):Void

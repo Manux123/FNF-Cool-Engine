@@ -6,7 +6,7 @@ This system allows you to define characters using JSON files instead of hardcode
 
 ```json
 {
-	"path": "path/to/sprite",
+	"path": "folder/sprite",
 	"isPlayer": false,
 	"antialiasing": true,
 	"scale": 1.0,

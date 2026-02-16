@@ -10,7 +10,7 @@ echo This script will install a STABLE and COMPATIBLE
 echo HaxeFlixel environment for FNF-based projects.
 echo.
 echo Make sure the following are already installed:
-echo  - Haxe 4.2.5
+echo  - Haxe 4.3.6
 echo  - Git
 echo  - Visual Studio Build Tools (for Windows)
 echo.

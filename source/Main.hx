@@ -231,6 +231,9 @@ class Main extends Sprite
 		// Initialize player settings
 		PlayerSettings.init();
 		PlayerSettings.player1.controls.loadKeyBinds();
+
+		FlxG.mouse.useSystemCursor = false;
+		FlxG.mouse.load(Paths.image('menu/cursor/cursor-default'));
 	}
 	
 	/**

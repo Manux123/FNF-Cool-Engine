@@ -26,7 +26,7 @@ class NoteManager
 	// === STRUMS ===
 	private var playerStrums:FlxTypedGroup<FlxSprite>;
 	private var cpuStrums:FlxTypedGroup<FlxSprite>;
-	
+
 	// ✅ Referencias a StrumsGroup para animaciones
 	private var playerStrumsGroup:StrumsGroup;
 	private var cpuStrumsGroup:StrumsGroup;
@@ -185,7 +185,7 @@ class NoteManager
 	{
 		var playerNotesCount = 0;
 		var checkedNotes = 0;
-		
+
 		notes.forEachAlive(function(note:Note)
 		{
 			updateNotePosition(note, songPosition);
@@ -195,12 +195,12 @@ class NoteManager
 				handleCPUNote(note);
 				return;
 			}
-			
+
 			// Contar notas del jugador para debug
 			if (note.mustPress && !note.isSustainNote)
 			{
 				playerNotesCount++;
-				
+
 				// Debug cada 60 frames (aproximadamente 1 segundo)
 				if (checkedNotes % 60 == 0)
 				{
@@ -260,7 +260,7 @@ class NoteManager
 			removeNote(note);
 		}
 	}
-	
+
 	private function updateStrumAnimations():Void
 	{
 		var resetStrum = function(spr:FlxSprite)
@@ -274,11 +274,11 @@ class NoteManager
 		cpuStrums.forEach(resetStrum);
 		playerStrums.forEach(resetStrum);
 	}
-	
+
 	private function handleStrumAnimation(data:Int, isPlayer:Bool):Void
 	{
 		var noteID = Std.int(Math.abs(data));
-		
+
 		// ✅ Intentar usar StrumsGroup primero
 		var strumsGroup = isPlayer ? playerStrumsGroup : cpuStrumsGroup;
 		if (strumsGroup != null)
@@ -286,7 +286,7 @@ class NoteManager
 			strumsGroup.playConfirm(noteID);
 			return;
 		}
-		
+
 		// Fallback: usar FlxTypedGroup directamente
 		var targetGroup = isPlayer ? playerStrums : cpuStrums;
 
@@ -316,6 +316,26 @@ class NoteManager
 		});
 	}
 
+	/**
+	 * Limpia las notas que ocurren antes de un tiempo específico.
+	 * Útil para saltar secciones en el Charting State.
+	 */
+	public function clearNotesBefore(time:Float):Void
+	{
+		// Mientras haya notas y la primera nota sea anterior al tiempo deseado (con un pequeño margen de 100ms)
+		while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime < time - 100)
+		{
+			var note = unspawnNotes.shift(); // Eliminar de la lista de espera
+			if (note != null)
+			{
+				note.kill(); // Marcar como muerta
+				note.destroy(); // Liberar memoria
+			}
+		}
+
+		trace('[NoteManager] Notas antiguas eliminadas para iniciar en: ' + time);
+	}
+
 	private function updateNotePosition(note:Note, songPosition:Float):Void
 	{
 		var noteY:Float = 0;
@@ -326,7 +346,7 @@ class NoteManager
 			noteY = strumLineY - (songPosition - note.strumTime) * _scrollSpeed;
 
 		note.y = noteY;
-		
+
 		// NUEVO: Sincronizar X con strum cada frame
 		// Esto asegura que las notas siempre sigan a los strums (middlescroll, animaciones, etc)
 		var strum = getStrumForDirection(note.noteData, note.mustPress);
@@ -366,7 +386,7 @@ class NoteManager
 			// No eliminar hasta que se marque como tooLate
 			return false;
 		}
-		
+
 		// Eliminar notas que ya salieron de la pantalla
 		if (!downscroll)
 			return note.y < -note.height;
@@ -386,7 +406,7 @@ class NoteManager
 	/**
 	 * MEJORADO: Procesar hit de nota del jugador con splashes
 	 */
-	public function hitNote(note:Note,rating:String):Void
+	public function hitNote(note:Note, rating:String):Void
 	{
 		if (note.wasGoodHit)
 			return;
@@ -394,8 +414,9 @@ class NoteManager
 		note.wasGoodHit = true;
 		handleStrumAnimation(note.noteData, true);
 
-		if (rating == "sick"){
-		// NUEVO: Gestionar splashes según tipo de nota
+		if (rating == "sick")
+		{
+			// NUEVO: Gestionar splashes según tipo de nota
 			if (note.isSustainNote)
 			{
 				handleSustainNoteHit(note);
@@ -406,7 +427,7 @@ class NoteManager
 				createNormalSplash(note, true);
 			}
 		}
-		//Notes should always be removed regardless of the rating lmao
+		// Notes should always be removed regardless of the rating lmao
 		removeNote(note);
 
 		// Callback

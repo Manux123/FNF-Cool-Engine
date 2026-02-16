@@ -1,12 +1,12 @@
 {
-	"path": "week2/spooky_kids_assets",
+	"path": "week2/SpookyKids",
 	"isPlayer": false,
 	"antialiasing": true,
 	"scale": 1.0,
 	"animations": [
 		{
 			"name": "singUP",
-			"prefix": "spooky UP NOTE",
+			"prefix": "SingUP",
 			"framerate": 24,
 			"looped": false,
 			"offsetX": -20,
@@ -14,7 +14,7 @@
 		},
 		{
 			"name": "singDOWN",
-			"prefix": "spooky DOWN note",
+			"prefix": "SingDOWN",
 			"framerate": 24,
 			"looped": false,
 			"offsetX": -50,
@@ -22,7 +22,7 @@
 		},
 		{
 			"name": "singLEFT",
-			"prefix": "note sing left",
+			"prefix": "SingLEFT",
 			"framerate": 24,
 			"looped": false,
 			"offsetX": 130,
@@ -30,7 +30,7 @@
 		},
 		{
 			"name": "singRIGHT",
-			"prefix": "spooky sing right",
+			"prefix": "SingRIGHT",
 			"framerate": 24,
 			"looped": false,
 			"offsetX": -130,
@@ -38,7 +38,7 @@
 		},
 		{
 			"name": "danceLeft",
-			"prefix": "spooky dance idle",
+			"prefix": "Idle",
 			"indices": [0, 2, 6],
 			"framerate": 12,
 			"looped": false,
@@ -47,7 +47,7 @@
 		},
 		{
 			"name": "danceRight",
-			"prefix": "spooky dance idle",
+			"prefix": "Idle",
 			"indices": [8, 10, 12, 14],
 			"framerate": 12,
 			"looped": false,

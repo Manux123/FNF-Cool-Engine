@@ -27,7 +27,7 @@ class DataInfoUI extends Sprite
         // Fondo más grande para incluir GPU stats
         var bg:Shape = new Shape();
         bg.graphics.beginFill(0x000000, 0.6);
-        bg.graphics.drawRect(x, y, 180, 70); // Aumentado de 70 a 110
+        bg.graphics.drawRect(x, y, 150, 70); // Aumentado de 70 a 110
         bg.graphics.endFill();
         addChild(bg);
         /*

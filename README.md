@@ -3,16 +3,16 @@
 **FNF': Cool Engine is a modification of the original FNF' source code the mod includes new Options and better Graphics!!**
 ----------------------------------------------
 
-![](/art/cool-logo.png)
+![](/art/cool-logo-animated.gif)
 ----------------------------------------------
 
 ## The Cool Engine Team Credits
-- [Manux (me)](https://twitter.com/ActionsAnimati1) - Programmer Friday Night Funkin: Cool Engine
+- [Manux (me)](https://x.com/ManuxAc) - Programmer Friday Night Funkin: Cool Engine
 - [Jloor](https://twitter.com/GamerJloor) - Programmer Friday Night Funkin: Cool Engine
-- [Chasetodie](https://twitter.com/Chasetodie10) - Programmer Friday Night Funkin: Cool Engine
+- [Chasetodie](https://x.com/Chasetodie10) - Programmer Friday Night Funkin: Cool Engine
 - [MrClogsworthYT](https://youtube.com/c/MrClogsworthYT) - Programmer and composer Friday Night Funkin: Cool Engine
 - [Overcharged Dev](https://www.youtube.com/channel/UCkcscIIXyUsfj2DsnNDWQbg/) - Programmer Friday Night Funkin: Cool Engine
-- [FairyBoy](https://twitter.com/JulianSamwise?s=09) and [Zero Artist](https://twitter.com/zero_artist02) - Artists Friday Night Funkin: Cool Engine
+- [Kass.wav](https://x.com/SoyJulian_XP) and [Zero Artist](https://x.com/zero_artist24) - Artists Friday Night Funkin: Cool Engine
 
 ## FNF
 - [Kawaisprite](https://twitter.com/kawaisprite) - Musician of fnf

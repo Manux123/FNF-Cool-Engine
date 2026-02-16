@@ -76,6 +76,9 @@ class PlayState extends funkin.states.MusicBeatState
 	public static var storyDifficulty:Int = 1;
 	public static var weekSong:Int = 0;
 
+	// ✨ CHART TESTING: Tiempo desde el cual empezar (para testear secciones específicas)
+	public static var startFromTime:Null<Float> = null;
+
 	// === LEGACY STATS ===
 	public static var misses:Int = 0;
 	public static var shits:Int = 0;
@@ -189,11 +192,10 @@ class PlayState extends funkin.states.MusicBeatState
 
 	override public function create()
 	{
-		StickerTransition.reattachToState();
 		if (StickerTransition.enabled)
 		{
 			transIn = null;
-    		transOut = null;
+			transOut = null;
 		}
 		instance = this;
 		isPlaying = true;
@@ -235,6 +237,8 @@ class PlayState extends funkin.states.MusicBeatState
 		// Crear stage y personajes
 		loadStageAndCharacters();
 
+		StickerTransition.clearStickers();
+
 		if (scriptsEnabled)
 		{
 			ScriptHandler.setOnScripts('boyfriend', boyfriend);
@@ -273,12 +277,11 @@ class PlayState extends funkin.states.MusicBeatState
 		optimizationManager = new OptimizationManager();
 		optimizationManager.init();
 
-		// Start song
-		startCountdown();
+		//StickerTransition.clearStickers(function() {
+			startCountdown();
+		//});
 
 		super.create();
-
-		StickerTransition.clearStickers();
 	}
 
 	/**
@@ -487,7 +490,7 @@ class PlayState extends funkin.states.MusicBeatState
 			{
 				cpuStrums = group.strums;
 				cpuStrumsGroup = group; // ✅ Guardar referencia al grupo completo
-				if(FlxG.save.data.downscroll)
+				if (FlxG.save.data.downscroll)
 				{
 					for (i in 0...cpuStrums.members.length)
 					{
@@ -507,7 +510,7 @@ class PlayState extends funkin.states.MusicBeatState
 				{
 					var s = playerStrums.members[i];
 
-					if(FlxG.save.data.downscroll)
+					if (FlxG.save.data.downscroll)
 						playerStrums.members[i].y = FlxG.height - 150;
 
 					if (s != null)
@@ -577,7 +580,7 @@ class PlayState extends funkin.states.MusicBeatState
 		inputHandler.bufferTime = 0.1; // 100ms
 
 		// NUEVO: Callback para release de hold notes
-		//inputHandler.onKeyRelease = onKeyRelease;  for now note hold splashes disabled :(
+		// inputHandler.onKeyRelease = onKeyRelease;  for now note hold splashes disabled :(
 
 		// AJUSTE: Calcular posición de strums según downscroll
 		if (FlxG.save.data.downscroll)
@@ -715,19 +718,11 @@ class PlayState extends funkin.states.MusicBeatState
 	/**
 	 * Start countdown
 	 */
-	var ready:FlxSprite;
-
-	var set:FlxSprite;
-	var go:FlxSprite;
-
-	var introAssets:Map<String, Array<String>> = new Map<String, Array<String>>();
-	var altSuffix:String = '';
 	var startedCountdown:Bool = false;
 
-	var startTimer:FlxTimer;
-	var introAlts:Array<String> = [];
+	var startTimer:FlxTimer = null;
 
-	private function startCountdown():Void
+	public function startCountdown():Void
 	{
 		if (scriptsEnabled)
 		{
@@ -749,14 +744,14 @@ class PlayState extends funkin.states.MusicBeatState
 			showDialogue('intro', function()
 			{
 				trace('[PlayState] Diálogo terminado, restaurando música y vocales...');
-				
+
 				// CRÍTICO: Restaurar FlxG.sound.music con el instrumental de la canción
 				// El diálogo pudo haber usado FlxG.sound.music, así que lo restauramos
 				FlxG.sound.music = Paths.loadInst(SONG.song);
 				FlxG.sound.music.volume = 0;
 				FlxG.sound.music.pause();
 				FlxG.sound.list.add(FlxG.sound.music);
-				
+
 				// CRÍTICO: Recargar las vocales también
 				if (SONG.needsVoices)
 				{
@@ -766,11 +761,11 @@ class PlayState extends funkin.states.MusicBeatState
 				{
 					vocals = new FlxSound();
 				}
-				
+
 				vocals.volume = 0;
 				vocals.pause();
 				FlxG.sound.list.add(vocals);
-				
+
 				trace('[PlayState] Música y vocales restauradas, ejecutando countdown...');
 				// Cuando termina el diálogo, ejecutar el countdown
 				executeCountdown();
@@ -781,10 +776,122 @@ class PlayState extends funkin.states.MusicBeatState
 			executeCountdown();
 	}
 
-	private function executeCountdown():Void
+	public function executeCountdown():Void
 	{
 		isCutscene = false;
 		trace('[PlayState] === INICIANDO COUNTDOWN ===');
+
+		// ✨ CHART TESTING: Si hay un tiempo de inicio específico, skipear countdown
+		if (startFromTime != null)
+		{
+			trace('[PlayState] ==========================================');
+			trace('[PlayState] INICIANDO DESDE SECCIÓN ESPECÍFICA');
+			trace('[PlayState] Tiempo de inicio: ${startFromTime}ms');
+			trace('[PlayState] ==========================================');
+
+			// Verificar que la música esté cargada
+			if (FlxG.sound.music == null)
+			{
+				trace('[PlayState] ERROR: FlxG.sound.music is null!');
+				startFromTime = null;
+				// Continuar con countdown normal como fallback
+			}
+			else
+			{
+				var targetTime = startFromTime; // Guardar el tiempo antes de resetear
+
+				// Configurar estado del juego
+				startingSong = false;
+				startedCountdown = true;
+
+				// Resetear startFromTime inmediatamente
+				startFromTime = null;
+
+				// ✨ LIMPIAR NOTAS ANTIGUAS antes de empezar (marcarlas como ya golpeadas)
+				// ✨ NUEVO: Limpieza profunda de notas (internas y activas)
+				trace('[PlayState] Limpiando sistema de notas para inicio en ${targetTime}ms...');
+
+				if (noteManager != null)
+				{
+					// 1. Limpiar las notas que aún no han "nacido" (unspawnNotes) en el manager
+					noteManager.clearNotesBefore(targetTime);
+				}
+
+				// 2. Limpiar cualquier nota que ya esté en el grupo activo por error
+				notes.forEachAlive(function(note:Note)
+				{
+					if (note.strumTime < targetTime - 100)
+					{
+						note.kill();
+						notes.remove(note, true);
+					}
+				});
+
+				// 3. Limpiar el buffer de entrada para evitar inputs residuales
+				if (inputHandler != null)
+				{
+					inputHandler.resetMash();
+					inputHandler.clearBuffer();
+				}
+
+				trace('[PlayState] ✅ Removidas notas antiguas (marcadas como ya golpeadas)');
+
+				// ✨ Usar un delay para asegurar que la música esté lista
+				new FlxTimer().start(0.2, function(tmr:FlxTimer)
+				{
+					if (FlxG.sound.music == null)
+					{
+						trace('[PlayState] ERROR: Música se volvió null!');
+						return;
+					}
+
+					// Configurar callbacks y volumen
+					FlxG.sound.music.volume = 1;
+					FlxG.sound.music.onComplete = endSong;
+
+					// ✨ CRITICAL: Primero REPRODUCIR, luego setear el tiempo
+					FlxG.sound.music.play();
+					trace('[PlayState] Música en play() - time antes de setear: ${FlxG.sound.music.time}ms');
+
+					// Ahora setear el tiempo DESPUÉS de play()
+					FlxG.sound.music.time = targetTime;
+					var actualTime = FlxG.sound.music.time;
+					trace('[PlayState] Tiempo seteado DESPUÉS de play() - targetTime: ${targetTime}ms, actualTime: ${actualTime}ms');
+
+					// Verificar que el tiempo se haya seteado correctamente
+					if (Math.abs(actualTime - targetTime) > 100)
+					{
+						trace('[PlayState] WARNING: El tiempo no se seteó correctamente! Reintentando...');
+						FlxG.sound.music.time = targetTime;
+						actualTime = FlxG.sound.music.time;
+						trace('[PlayState] Segundo intento - actualTime: ${actualTime}ms');
+					}
+
+					// Setear tiempo para vocals
+					if (vocals != null)
+					{
+						vocals.volume = 1;
+						vocals.play();
+						vocals.time = targetTime;
+						var vocalsTime = vocals.time;
+						trace('[PlayState] Vocals time seteado - targetTime: ${targetTime}ms, actualTime: ${vocalsTime}ms');
+					}
+
+					// Actualizar Conductor.songPosition
+					Conductor.songPosition = actualTime;
+					trace('[PlayState] Conductor.songPosition seteado a: ${Conductor.songPosition}ms');
+
+					trace('[PlayState] Estado final - music.time: ${FlxG.sound.music.time}ms, playing: ${FlxG.sound.music.playing}');
+					trace('[PlayState] ==========================================');
+					trace('[PlayState] INICIO DESDE SECCIÓN COMPLETADO');
+					trace('[PlayState] ==========================================');
+				});
+
+				return;
+			}
+		}
+
+		// Countdown normal
 		Conductor.songPosition = 0;
 		Conductor.songPosition = -Conductor.crochet * 5;
 		trace('[PlayState] Conductor.songPosition inicial: ${Conductor.songPosition}');
@@ -793,22 +900,23 @@ class PlayState extends funkin.states.MusicBeatState
 
 		var swagCounter:Int = 0;
 
-		introAssets = new Map<String, Array<String>>();
-		introAssets.set('default', ['UI/normal/ready', "UI/normal/set", "UI/normal/go"]);
-		introAssets.set('school', ['UI/pixelUI/ready-pixel', 'UI/pixelUI/set-pixel', 'UI/pixelUI/date-pixel']);
-		introAssets.set('schoolEvil', ['UI/pixelUI/ready-pixel', 'UI/pixelUI/set-pixel', 'UI/pixelUI/date-pixel']);
-
-		introAlts = introAssets.get('default');
-
-		if (introAssets.exists(curStage))
-		{
-			introAlts = introAssets.get(curStage);
-			altSuffix = '-pixel';
-		}
-
 		// Configurar startingSong ANTES del timer
 		startingSong = true;
 		startedCountdown = true;
+
+		var introSprPaths:Array<String> = ["UI/normal/ready", "UI/normal/set", "UI/normal/go"];
+		var altSuffix:String = "";
+
+		if (curStage.startsWith('school'))
+		{
+			altSuffix = '-pixel';
+			introSprPaths = ['UI/pixelUI/ready-pixel', 'UI/pixelUI/set-pixel', 'UI/pixelUI/date-pixel'];
+		}
+
+		var introSndPaths:Array<String> = [
+			"intro3" + altSuffix, "intro2" + altSuffix,
+			"intro1" + altSuffix, "introGo" + altSuffix
+		];
 
 		startTimer = new FlxTimer().start(Conductor.crochet / 1000, function(tmr:FlxTimer)
 		{
@@ -816,40 +924,26 @@ class PlayState extends funkin.states.MusicBeatState
 
 			characterController.danceOnBeat(curBeat);
 
-			switch (swagCounter)
-			{
-				case 0:
-					FlxG.sound.play(Paths.sound('intro3' + altSuffix), 0.6);
-				case 1:
-					getCountdown(ready, 0, 2, introAlts);
-				case 2:
-					getCountdown(set, 1, 1, introAlts);
-				case 3:
-					getCountdown(go, 2, 32 // nose
-						, introAlts, true);
-			}
+			if (swagCounter > 0)
+				getCountdown(introSprPaths[swagCounter - 1]);
 
+			FlxG.sound.play(Paths.sound(introSndPaths[swagCounter]), 0.6);
 			swagCounter += 1;
-		}, 5);
+		},4);
 	}
 
-	function getCountdown(asset:FlxSprite, sip:Int, wea:Int, introAlts:Array<String>, ?isGo = false)
+	function getCountdown(path:String)
 	{
-		asset = new FlxSprite().loadGraphic(Paths.image(introAlts[sip]));
+		var asset:FlxSprite = new FlxSprite().loadGraphic(Paths.image(path));
 		asset.cameras = [camCountdown];
 		asset.scrollFactor.set();
-
 		asset.scale.set(0.7, 0.7);
-
 		if (curStage.startsWith('school'))
 			asset.setGraphicSize(Std.int(asset.width * PlayStateConfig.PIXEL_ZOOM));
 		else
 			asset.antialiasing = FlxG.save.data.antialiasing;
-
 		asset.updateHitbox();
-
 		asset.screenCenter();
-
 		asset.y -= 100;
 		add(asset);
 		FlxTween.tween(asset, {y: asset.y += 100, alpha: 0}, Conductor.crochet / 1000, {
@@ -859,22 +953,12 @@ class PlayState extends funkin.states.MusicBeatState
 				asset.destroy();
 			}
 		});
-
-		if (!isGo)
-			FlxG.sound.play(Paths.sound('intro' + wea + altSuffix), 0.6);
-		else
-			FlxG.sound.play(Paths.sound('introGo' + altSuffix), 0.6);
 	}
 
 	override public function update(elapsed:Float)
 	{
 		if (scriptsEnabled)
 			ScriptHandler.callOnScripts('onUpdate', [elapsed]);
-
-		if (StickerTransition.isActive())
-		{
-			StickerTransition.ensureCameraOnTop();
-		}
 
 		if (currentStage != null)
 			currentStage.update(elapsed);
@@ -928,7 +1012,7 @@ class PlayState extends funkin.states.MusicBeatState
 				updatePlayerStrums();
 
 				if (paused)
-    				inputHandler.clearBuffer();
+					inputHandler.clearBuffer();
 
 				// ✅ Actualizar animaciones de StrumsGroups
 				for (group in strumsGroups)
@@ -1089,7 +1173,7 @@ class PlayState extends funkin.states.MusicBeatState
 			FlxG.sound.music.time = 0;
 			FlxG.sound.music.play();
 			FlxG.sound.music.onComplete = endSong;
-			
+
 			trace('[PlayState] SONG INICIATES');
 		}
 
@@ -1450,12 +1534,12 @@ class PlayState extends funkin.states.MusicBeatState
 			// El jugador SIEMPRE es el slot 2 (boyfriend) en el array de characterSlots
 			// Esto mantiene el sistema de múltiples personajes funcionando
 			var playerCharIndex:Int = 2; // Índice fijo del jugador
-			
+
 			// Intentar usar el sistema de múltiples personajes
 			if (characterSlots.length > playerCharIndex)
 			{
 				characterController.singByIndex(playerCharIndex, note.noteData);
-				
+
 				// Camera offset - usar el personaje del slot del jugador
 				var playerChar = characterController.getCharacter(playerCharIndex);
 				if (playerChar != null)
@@ -1471,7 +1555,7 @@ class PlayState extends funkin.states.MusicBeatState
 			}
 
 			// Animate strum
-			noteManager.hitNote(note,rating);
+			noteManager.hitNote(note, rating);
 
 			// Vocals
 			vocals.volume = 1;
@@ -1491,7 +1575,7 @@ class PlayState extends funkin.states.MusicBeatState
 	private function onPlayerNoteMiss(direction:Int):Void
 	{
 		trace('[PlayState] 🎵 onPlayerNoteMiss llamado! direction=$direction');
-		
+
 		if (scriptsEnabled)
 		{
 			var cancel = ScriptHandler.callOnScriptsReturn('onPlayerNoteMiss', [direction], false);
@@ -1511,11 +1595,11 @@ class PlayState extends funkin.states.MusicBeatState
 		// Animate - USAR ÍNDICE FIJO DEL JUGADOR
 		// El jugador SIEMPRE es el slot 2 (boyfriend) en el array de characterSlots
 		var playerCharIndex:Int = 2; // Índice fijo del jugador
-		
+
 		trace('[PlayState] Intentando reproducir animación de miss...');
 		trace('[PlayState] characterSlots.length: ${characterSlots.length}');
 		trace('[PlayState] playerCharIndex: $playerCharIndex');
-		
+
 		// Intentar usar el sistema de múltiples personajes
 		if (characterSlots.length > playerCharIndex)
 		{
@@ -1545,7 +1629,7 @@ class PlayState extends funkin.states.MusicBeatState
 		{
 			trace('[PlayState] ERROR: boyfriend es NULL y no hay slots!');
 		}
-		
+
 		// Hacer sad a GF si existe
 		if (gf != null && gf.animOffsets.exists('sad'))
 			gf.playAnim('sad', true);
@@ -1558,7 +1642,7 @@ class PlayState extends funkin.states.MusicBeatState
 
 		if (scriptsEnabled)
 			ScriptHandler.callOnScripts('onPlayerNoteMissPost', [direction]);
-			
+
 		trace('[PlayState] onPlayerNoteMiss completado');
 	}
 
@@ -1619,7 +1703,7 @@ class PlayState extends funkin.states.MusicBeatState
 			// ✅ ARREGLADO: Solo hacer cantar al personaje DAD (índice 1)
 			// GF (índice 0) NO debe cantar, solo bailar
 			var dadIndex:Int = 1; // Dad es siempre el índice 1
-			
+
 			if (characterSlots.length > dadIndex)
 			{
 				var dadSlot = characterSlots[dadIndex];
@@ -1634,7 +1718,7 @@ class PlayState extends funkin.states.MusicBeatState
 				// Fallback al sistema legacy si no hay slots
 				characterController.sing(dad, note.noteData, altAnim);
 			}
-			
+
 			// Camera offset - usar el primer personaje activo del CPU para el offset de cámara
 			if (charIndices.length > 0)
 			{
@@ -1653,7 +1737,7 @@ class PlayState extends funkin.states.MusicBeatState
 		{
 			// FALLBACK: Si la sección es null, animar solo a Dad (índice 1)
 			var dadIndex:Int = 1;
-			
+
 			if (characterSlots.length > dadIndex)
 			{
 				var dadSlot = characterSlots[dadIndex];
@@ -1667,7 +1751,7 @@ class PlayState extends funkin.states.MusicBeatState
 				// Fallback al sistema legacy
 				characterController.sing(dad, note.noteData, altAnim);
 			}
-			
+
 			// Fallback para offset de cámara
 			if (dad != null)
 			{
@@ -1781,7 +1865,7 @@ class PlayState extends funkin.states.MusicBeatState
 			#if desktop
 			updatePresence();
 			#end
-			if (!startTimer.finished)
+			if (startTimer != null && !startTimer.finished)
 				startTimer.active = false;
 		}
 
@@ -1797,12 +1881,12 @@ class PlayState extends funkin.states.MusicBeatState
 				resyncVocals();
 			}
 
-			if (!startTimer.finished)
+			if (startTimer != null && !startTimer.finished)
 				startTimer.active = true;
 			paused = false;
 
 			#if desktop
-			if (startTimer.finished)
+			if (startTimer == null || startTimer.finished)
 			{
 				updatePresence();
 			}
@@ -1993,7 +2077,7 @@ class PlayState extends funkin.states.MusicBeatState
 		var swagSection = getSection(step);
 		if (swagSection == null)
 			return null;
-		
+
 		var section = new Section();
 		section.sectionNotes = swagSection.sectionNotes;
 		section.lengthInSteps = swagSection.lengthInSteps;
@@ -2283,11 +2367,11 @@ class PlayState extends funkin.states.MusicBeatState
 			trace('[PlayState] WARNING: Cannot update settings while game is playing');
 			return;
 		}
-		
+
 		trace('[PlayState] Updating SAFE gameplay settings in real-time');
-		
+
 		// === CAMBIOS SEGUROS (no afectan lógica del juego) ===
-		
+
 		// 1. Actualizar visibilidad del HUD (100% seguro)
 		if (uiManager != null)
 		{
@@ -2295,22 +2379,22 @@ class PlayState extends funkin.states.MusicBeatState
 			uiManager.visible = !hideHud; // Controlar visibilidad del grupo completo
 			trace('[PlayState] HUD visible: ' + !hideHud);
 		}
-		
+
 		// 2. Actualizar antialiasing (solo visual, 100% seguro)
 		updateAntialiasing();
-		
+
 		// 3. Actualizar ghost tapping (seguro, solo afecta siguiente input)
 		if (inputHandler != null)
 		{
 			inputHandler.ghostTapping = FlxG.save.data.ghosttap;
 			trace('[PlayState] Ghost tapping: ' + inputHandler.ghostTapping);
 		}
-		
+
 		// === CAMBIOS QUE REQUIEREN MÁS CUIDADO ===
 		// NO actualizar downscroll/middlescroll en tiempo real
 		// Estos cambios pueden causar confusión y bugs con las notas en vuelo
 		// El usuario debe reiniciar la canción para aplicar estos cambios
-		
+
 		trace('[PlayState] Safe gameplay settings updated successfully');
 	}
 
@@ -2319,10 +2403,11 @@ class PlayState extends funkin.states.MusicBeatState
 	 */
 	private function updateAntialiasing():Void
 	{
-		if (currentStage == null) return;
-		
+		if (currentStage == null)
+			return;
+
 		trace('[PlayState] Updating antialiasing: ' + FlxG.save.data.antialiasing);
-		
+
 		// Actualizar antialiasing del stage
 		for (sprite in currentStage.members)
 		{
@@ -2332,11 +2417,14 @@ class PlayState extends funkin.states.MusicBeatState
 				spr.antialiasing = cast(FlxG.save.data.antialiasing, Bool);
 			}
 		}
-		
+
 		// Actualizar antialiasing de personajes
-		if (boyfriend != null) boyfriend.antialiasing = cast(FlxG.save.data.antialiasing, Bool);
-		if (dad != null) dad.antialiasing = cast(FlxG.save.data.antialiasing, Bool);
-		if (gf != null) gf.antialiasing = cast(FlxG.save.data.antialiasing, Bool);
+		if (boyfriend != null)
+			boyfriend.antialiasing = cast(FlxG.save.data.antialiasing, Bool);
+		if (dad != null)
+			dad.antialiasing = cast(FlxG.save.data.antialiasing, Bool);
+		if (gf != null)
+			gf.antialiasing = cast(FlxG.save.data.antialiasing, Bool);
 	}
 
 	/**
@@ -2346,14 +2434,14 @@ class PlayState extends funkin.states.MusicBeatState
 	override public function onFocusLost():Void
 	{
 		super.onFocusLost();
-		
+
 		// Pausar vocals cuando se pierde foco
 		if (vocals != null && vocals.playing)
 		{
 			vocals.pause();
 			trace('[PlayState] Focus lost - vocals paused');
 		}
-		
+
 		// FlxG.sound.music se pausa automáticamente, pero lo marcamos
 		trace('[PlayState] Focus lost - music will be paused by FlxG');
 	}
@@ -2365,7 +2453,7 @@ class PlayState extends funkin.states.MusicBeatState
 	override public function onFocus():Void
 	{
 		super.onFocus();
-		
+
 		// CRÍTICO: Con loadStream(), FlxG.sound.music NO se reanuda automáticamente
 		// Necesitamos reanudarlo manualmente
 		if (FlxG.sound.music != null && !startingSong && generatedMusic && !paused)
@@ -2373,7 +2461,7 @@ class PlayState extends funkin.states.MusicBeatState
 			// Reanudar el instrumental
 			FlxG.sound.music.play();
 			trace('[PlayState] Focus gained - music resumed');
-			
+
 			// Reanudar vocals sincronizadas con el instrumental
 			if (vocals != null && SONG.needsVoices)
 			{

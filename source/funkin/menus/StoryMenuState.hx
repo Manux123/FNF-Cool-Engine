@@ -103,8 +103,6 @@ class StoryMenuState extends funkin.states.MusicBeatState
 
 	override function create()
 	{
-		StickerTransition.reattachToState();
-
 		if (StickerTransition.enabled)
 		{
 			transIn = null;

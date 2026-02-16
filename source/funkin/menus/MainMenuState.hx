@@ -56,8 +56,6 @@ class MainMenuState extends funkin.states.MusicBeatState
 			transOut = null;
 		}
 
-		StickerTransition.reattachToState();
-
 		#if desktop
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("In the Menu", null);
@@ -158,11 +156,6 @@ class MainMenuState extends funkin.states.MusicBeatState
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
 		#end
-
-		if (StickerTransition.isActive())
-		{
-			StickerTransition.ensureCameraOnTop();
-		}
 
 		#if !MAINMENU
 		if (FlxG.sound.music.volume < 0.8)

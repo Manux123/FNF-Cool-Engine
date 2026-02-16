@@ -105,8 +105,6 @@ class FreeplayState extends funkin.states.MusicBeatState
 			transOut = null;
 		}
 
-		StickerTransition.reattachToState();
-
 		MainMenuState.musicFreakyisPlaying = false;
 		if (vocals == null)
 			FlxG.sound.playMusic(Paths.music('girlfriendsRingtone/girlfriendsRingtone'), 0.7);
@@ -253,6 +251,8 @@ class FreeplayState extends funkin.states.MusicBeatState
 		textBG.alpha = 0.8;
 		add(textBG);
 
+		StickerTransition.clearStickers();
+
 		var leText:FlxText = new FlxText(0, FlxG.height - 26, FlxG.width, "SPACE: Preview Song | ENTER: Play | ESC: Back | E: Editor", 16);
 		leText.scrollFactor.set();
 		leText.setFormat('VCR OSD Mono', 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -282,8 +282,6 @@ class FreeplayState extends funkin.states.MusicBeatState
 		#if mobileC
 		addVirtualPad(FULL, A_B);
 		#end
-
-		StickerTransition.clearStickers();
 
 		super.create();
 	}
@@ -353,10 +351,8 @@ class FreeplayState extends funkin.states.MusicBeatState
 		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
 		#end
 
-		// ✅ FIX: Bloquear inputs mientras la transición está activa
 		if (StickerTransition.isActive())
 		{
-			StickerTransition.ensureCameraOnTop();
 			super.update(elapsed);
 			return; // ← CRÍTICO: No procesar inputs durante la transición
 		}

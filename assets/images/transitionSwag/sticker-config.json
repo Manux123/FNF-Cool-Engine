@@ -70,7 +70,7 @@
 		"keyClick9"
 	],
 	"stickersPerWave": 8,
-	"totalWaves": 12,
+	"totalWaves": 10,
 	"delayBetweenStickers": 0.0,
 	"delayBetweenWaves": 0.1,
 	"minScale": 0.85,

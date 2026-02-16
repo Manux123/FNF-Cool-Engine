@@ -50,13 +50,21 @@ class CacheState extends funkin.states.MusicBeatState
         else
             openfl.Lib.current.stage.frameRate = 240;
 
-        var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/funkay'));
+        var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/loading/funkay'));
         bg.scale.set(0.8,0.8);
         bg.scrollFactor.set();
+        bg.antialiasing = FlxG.save.data.antialiasing;
         bg.updateHitbox();
         bg.screenCenter();
-        bg.y += 50;
         add(bg);
+
+        var bg2:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/loading/chars'));
+        bg2.scale.set(0.65,0.65);
+        bg2.scrollFactor.set();
+        bg2.antialiasing = FlxG.save.data.antialiasing;
+        bg2.updateHitbox();
+        bg2.screenCenter();
+        add(bg2);
 
         var barBG:FlxSprite = new FlxSprite(0, 500).makeGraphic(FlxG.width - 100, 40, 0xFF333333);
         barBG.screenCenter(X);

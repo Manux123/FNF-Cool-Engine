@@ -49,8 +49,17 @@
 
 	<classpath name="source" />
 	
-	<assets path="assets" exclude="*.md" embed="false" if="desktop" />
-	<assets path="assets" exclude="*.md" unless="desktop" />
+	<define name="PRELOAD_ALL" unless="web" />
+	<define name="NO_PRELOAD_ALL" unless="PRELOAD_ALL"/>
+
+	<library name="assets"    preload="true"  if="PRELOAD_ALL"/>
+	<library name="assets"    preload="false" if="NO_PRELOAD_ALL" />
+
+	<section unless="BUILD">
+		<assets path="assets/"    rename="assets"	exclude="*.ogg" if="web"/>
+		<assets path="assets/"    rename="assets"	exclude="*.mp3" unless="web"/>
+		<assets path='mods' rename='mods' embed='false' />
+	</section>
 
 	<assets path="plugins/" rename="" if="windows" />
 	<assets path="dlls/" rename="" if="windows" />
@@ -60,7 +69,6 @@
 	<!-- <template path="mods" /> -->
 	
 	<assets path="CHANGELOG.md" rename="changelog.txt" />
-	<assets path="NoteSkinSupport.md" rename="noteSkinGuide.txt" />
 
 	<define name="HSCRIPT_ALLOWED" />
 

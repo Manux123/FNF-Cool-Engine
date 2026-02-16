@@ -951,9 +951,6 @@ class OptionsData
 
 		if (FlxG.save.data.offset == null)
 			FlxG.save.data.offset = 0;
-		
-		if(FlxG.save.data.perfectmode == null)
-			FlxG.save.data.perfectmode = false;
 
 		if(FlxG.save.data.sickmode == null)
 			FlxG.save.data.sickmode = false;
@@ -963,12 +960,6 @@ class OptionsData
 
 		if(FlxG.save.data.specialVisualEffects == null)
 			FlxG.save.data.specialVisualEffects = true;
-
-		if(FlxG.save.data.gfbye == null)
-			FlxG.save.data.gfbye = false;
-
-		if(FlxG.save.data.byebg == null)
-			FlxG.save.data.byebg = false;
 
 		if (FlxG.save.data.ghosttap == null)
 			FlxG.save.data.ghosttap = false;

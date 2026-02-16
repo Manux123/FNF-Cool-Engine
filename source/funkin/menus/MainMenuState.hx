@@ -181,13 +181,13 @@ class MainMenuState extends funkin.states.MusicBeatState
 		{
 			if (controls.UP_P)
 			{
-				FlxG.sound.play(Paths.sound('scrollMenu'));
+				FlxG.sound.play(Paths.sound('menus/scrollMenu'));
 				changeItem(-1);
 			}
 
 			if (controls.DOWN_P)
 			{
-				FlxG.sound.play(Paths.sound('scrollMenu'));
+				FlxG.sound.play(Paths.sound('menus/scrollMenu'));
 				changeItem(1);
 			}
 
@@ -224,7 +224,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 				{
 					// FlxTween.tween(menuItem, {x: menuItem.x + 200}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
 					selectedSomethin = true;
-					FlxG.sound.play(Paths.sound('confirmMenu'));
+					FlxG.sound.play(Paths.sound('menus/confirmMenu'));
 					FlxG.camera.flash(FlxColor.WHITE);
 
 					menuItems.forEach(function(spr:FlxSprite)

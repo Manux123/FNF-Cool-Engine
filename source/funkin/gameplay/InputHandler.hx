@@ -20,6 +20,7 @@ class InputHandler
 	public var downBind:Array<FlxKey> = [S, DOWN];
 	public var upBind:Array<FlxKey> = [W, UP];
 	public var rightBind:Array<FlxKey> = [D, RIGHT];
+	public var killBind:Array<FlxKey> = [R];
 
 	// === INPUT STATE ===
 	public var pressed:Array<Bool> = [false, false, false, false]; // Presionado este frame
@@ -52,6 +53,7 @@ class InputHandler
 		downBind[0] = FlxKey.fromString(FlxG.save.data.downBind);
 		upBind[0] = FlxKey.fromString(FlxG.save.data.upBind);
 		rightBind[0] = FlxKey.fromString(FlxG.save.data.rightBind);
+		killBind[0] = FlxKey.fromString(FlxG.save.data.killBind);
 	}
 
 	/**
@@ -226,13 +228,22 @@ class InputHandler
 			// Si la nota debe ser presionada, no ha sido golpeada y ya es tarde
 			if (note.mustPress && !note.wasGoodHit && note.tooLate)
 			{
+				trace('[InputHandler] ❌ MISS DETECTADO! noteData=${note.noteData}, tooLate=${note.tooLate}');
+				
 				// Evitamos que se procese de nuevo
 				note.tooLate = false;
 				note.canBeHit = false;
 
 				// Ejecutamos el callback de fallo (penalización)
 				if (onNoteMiss != null)
+				{
+					trace('[InputHandler] Llamando onNoteMiss para noteData=${note.noteData}');
 					onNoteMiss(note.noteData);
+				}
+				else
+				{
+					trace('[InputHandler] ERROR: onNoteMiss es NULL!');
+				}
 
 				// Opcional: eliminar la nota para optimizar
 				note.kill();

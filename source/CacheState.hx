@@ -303,7 +303,7 @@ class CacheState extends funkin.states.MusicBeatState
     function useFallbackList():Void
     {
         var essentialSounds = [
-            "confirmMenu", "cancelMenu", "scrollMenu",
+            "menus/confirmMenu", "menus/cancelMenu", "menus/scrollMenu",
             "soundtray/Volup", "soundtray/Voldown", "soundtray/VolMAX"
         ];
         
@@ -413,7 +413,7 @@ class CacheState extends funkin.states.MusicBeatState
         {
             try
             {
-                FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
+                FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.7);
             }
             catch (e:Dynamic)
             {

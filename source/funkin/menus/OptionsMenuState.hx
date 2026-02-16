@@ -1,1358 +1,932 @@
 package funkin.menus;
 
-import openfl.display.FPS;
 #if desktop
 import data.Discord.DiscordClient;
 #end
-import funkin.menus.KeyBindMenu;
 import funkin.scripting.StateScriptHandler;
 import funkin.gameplay.controls.CustomControlsState;
-import funkin.gameplay.controls.Controls.KeyboardScheme;
-import funkin.gameplay.controls.Controls.Control;
-import funkin.data.Section.SwagSection;
+import funkin.gameplay.notes.NoteSkinOptions;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
-import funkin.gameplay.notes.NoteSkinOptions;
-import funkin.data.Song.SwagSong;
-import flash.text.TextField;
 import flixel.FlxG;
 import flixel.FlxSprite;
-import flixel.addons.display.FlxGridOverlay;
-import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.input.keyboard.FlxKey;
 import flixel.FlxSubState;
-import flixel.math.FlxMath;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
+import flixel.group.FlxGroup.FlxTypedGroup;
+import flixel.math.FlxMath;
 import extensions.CoolUtil;
-import lime.utils.Assets;
-import funkin.menus.FreeplayState;
 import funkin.gameplay.PlayState;
 import funkin.states.MusicBeatState;
+import funkin.states.MusicBeatSubstate;
 import funkin.menus.MainMenuState;
-import ui.Alphabet;
-
-using StringTools;
+import data.PlayerSettings;
+import openfl.Lib;
 
 /**
- * Main Options Menu - Categorized options with visual interface
+ * Options Menu - Sistema de tabs integrado con keybinds
+ * EXTENSIBLE: Usa StateScriptHandler para opciones dinámicas
  */
-class OptionsMenuState extends MusicBeatState
+class OptionsMenuState extends MusicBeatSubstate
 {
-	var selector:FlxText;
-	var curSelected:Int = 0;
+	// Categorías principales (se pueden agregar más desde scripts)
+	var categories:Array<String> = ['General', 'Graphics', 'Gameplay', 'Controls', 'Note Skin', 'Offset'];
+	var curCategory:Int = 0;
+	
+	// UI Elements
 	var menuBG:FlxSprite;
-
-	var controlsStrings:Array<String> = [];
-	private var grpControls:FlxTypedGroup<Alphabet>;
+	var categoryTexts:FlxTypedGroup<FlxText>;
+	var contentPanel:FlxTypedGroup<FlxSprite>;
 	
-	// Visual elements
-	var categoryDesc:FlxText;
-	var categoryIcons:FlxTypedGroup<FlxSprite>;
-
-	public static var isPlayingMusic:Bool = false;
-	public static var fromPause:Bool = false; // Track if opened from pause menu
-
-	public static var optionsSong:String = '';
+	// Current tab content
+	var optionNames:FlxTypedGroup<FlxText>;
+	var optionValues:FlxTypedGroup<FlxText>;
+	var curSelected:Int = 0;
+	var currentOptions:Array<Dynamic> = [];
 	
+	// Keybind state
+	var bindingState:String = "select"; // "select", "binding"
+	var tempKey:String = "";
+	var keyBindNames:Array<String> = ["LEFT", "DOWN", "UP", "RIGHT", "RESET"];
+	var defaultKeys:Array<String> = ["A", "S", "W", "D", "R"];
+	var blacklistKeys:Array<String> = ["ESCAPE", "ENTER", "BACKSPACE", "SPACE"];
+	var keys:Array<String> = [];
+	
+	var warningText:FlxText;
+	var bindingIndicator:FlxText;
+	
+	public static var fromPause:Bool = false;
+
 	override function create()
 	{
-		// Cargar scripts del state
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.init();
 		StateScriptHandler.loadStateScripts('OptionsMenuState', this);
+		
+		// Cargar categorías custom desde scripts
+		loadCustomCategoriesFromScripts();
+		
 		StateScriptHandler.callOnScripts('onCreate', []);
 		#end
 		
-		menuBG = new FlxSprite().loadGraphic(Paths.image('menu/menuBG'));
-		controlsStrings = CoolUtil.coolStringFile(
-			("\n" + 'Graphics') +
-			("\n" + 'Gameplay') +
-			("\n" + 'Optimization') +
-			("\n" + 'Note Skin') +
-			("\n" + 'Controls'));
+		#if desktop
+		DiscordClient.changePresence("Options Menu", null);
+		#end
+
+		// Inicializar keybinds
+		loadKeyBinds();
+
+		// Background semi-transparente (ajustar alpha si viene desde pause)
+		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
+		bg.alpha = fromPause ? 0.5 : 0.7;
+		bg.scrollFactor.set();
+		add(bg);
+
+		// Borde del panel (agregar primero para que esté detrás)
+		var borderThickness = 3;
+		var panelBorder = new FlxSprite(50 - borderThickness, 80 - borderThickness)
+			.makeGraphic(Std.int(FlxG.width - 100 + borderThickness * 2), Std.int(FlxG.height - 160 + borderThickness * 2), 0xFF2a2a2a);
+		panelBorder.scrollFactor.set();
+		add(panelBorder);
 		
-		// Añadir categorías custom desde scripts
-		#if HSCRIPT_ALLOWED
+		// Panel principal con borde
+		menuBG = new FlxSprite(50, 80).makeGraphic(FlxG.width - 100, FlxG.height - 160, 0xFF0a0a0a);
+		menuBG.scrollFactor.set();
+		add(menuBG);
+
+		// Título del menú
+		var titleText = new FlxText(0, 20, FlxG.width, "OPTIONS MENU", 48);
+		titleText.setFormat(Paths.font("Funkin.otf"), 48, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+		titleText.borderSize = 3;
+		titleText.scrollFactor.set();
+		add(titleText);
+
+		// Crear contentPanel ANTES de usarlo
+		contentPanel = new FlxTypedGroup<FlxSprite>();
+		add(contentPanel);
+
+		// Categorías en la parte superior con backgrounds individuales
+		categoryTexts = new FlxTypedGroup<FlxText>();
+		add(categoryTexts);
+
+		var categoryWidth = (FlxG.width - 120) / categories.length;
+		var tabHeight = 40;
+		var tabY = 85;
+		
+		for (i in 0...categories.length)
+		{
+			// Background de la pestaña (inicialmente inactiva)
+			var tabBG = new FlxSprite(60 + (i * categoryWidth), tabY).makeGraphic(Std.int(categoryWidth - 4), tabHeight, 0xFF1a1a1a);
+			tabBG.scrollFactor.set();
+			tabBG.ID = i;
+			contentPanel.add(tabBG);
+			
+			// Borde superior de la pestaña
+			var tabBorder = new FlxSprite(tabBG.x, tabBG.y - 2).makeGraphic(Std.int(tabBG.width), 2, 0xFF444444);
+			tabBorder.scrollFactor.set();
+			tabBorder.ID = i;
+			contentPanel.add(tabBorder);
+			
+			var categoryText:FlxText = new FlxText(60 + (i * categoryWidth), tabY + 8, categoryWidth, categories[i], 24);
+			categoryText.setFormat(Paths.font("Funkin.otf"), 22, 0xFF888888, CENTER, OUTLINE, FlxColor.BLACK);
+			categoryText.borderSize = 2;
+			categoryText.ID = i;
+			categoryText.scrollFactor.set();
+			categoryTexts.add(categoryText);
+		}
+		
+		// Separador horizontal entre pestañas y contenido
+		var separator = new FlxSprite(menuBG.x, tabY + tabHeight).makeGraphic(Std.int(menuBG.width), 3, 0xFF444444);
+		separator.scrollFactor.set();
+		add(separator);
+		
+		// Indicador de pestaña activa (barra inferior)
+		var activeIndicator = new FlxSprite(0, tabY + tabHeight - 3).makeGraphic(Std.int(categoryWidth - 4), 3, FlxColor.CYAN);
+		activeIndicator.scrollFactor.set();
+		activeIndicator.ID = -1; // ID especial para el indicador
+		contentPanel.add(activeIndicator);
+
+		optionNames = new FlxTypedGroup<FlxText>();
+		add(optionNames);
+
+		optionValues = new FlxTypedGroup<FlxText>();
+		add(optionValues);
+
+		// Warning text para keybinds
+		warningText = new FlxText(0, 140, FlxG.width, "", 20);
+		warningText.setFormat(Paths.font("Funkin.otf"), 20, FlxColor.RED, CENTER, OUTLINE, FlxColor.BLACK);
+		warningText.borderSize = 2;
+		warningText.alpha = 0;
+		warningText.scrollFactor.set();
+		add(warningText);
+
+		// Binding indicator
+		bindingIndicator = new FlxText(0, FlxG.height - 120, FlxG.width, "", 22);
+		bindingIndicator.setFormat(Paths.font("Funkin.otf"), 22, FlxColor.YELLOW, CENTER, OUTLINE, FlxColor.BLACK);
+		bindingIndicator.borderSize = 2;
+		bindingIndicator.visible = false;
+		bindingIndicator.scrollFactor.set();
+		add(bindingIndicator);
+
+		// Footer con ayuda de controles
+		var footerBG = new FlxSprite(menuBG.x, FlxG.height - 100).makeGraphic(Std.int(menuBG.width), 50, 0xFF1a1a1a);
+		footerBG.scrollFactor.set();
+		add(footerBG);
+		
+		var footerBorder = new FlxSprite(footerBG.x, footerBG.y).makeGraphic(Std.int(footerBG.width), 2, 0xFF444444);
+		footerBorder.scrollFactor.set();
+		add(footerBorder);
+		
+		var helpText = new FlxText(footerBG.x + 20, footerBG.y + 12, footerBG.width - 40, 
+			"← → : Change Tab  |  ↑ ↓ : Navigate  |  ENTER : Toggle/Select  |  ESC : Back", 18);
+		helpText.setFormat(Paths.font("Funkin.otf"), 18, 0xFFAAAAAA, CENTER, OUTLINE, FlxColor.BLACK);
+		helpText.borderSize = 1.5;
+		helpText.scrollFactor.set();
+		add(helpText);
+
+		loadCategory(curCategory);
+
+		// Configurar cámaras si se abre desde pause menu
+		if (fromPause)
+		{
+			cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
+		}
+
+		super.create();
+	}
+
+	#if HSCRIPT_ALLOWED
+	/**
+	 * Carga categorías custom registradas desde scripts
+	 */
+	function loadCustomCategoriesFromScripts():Void
+	{
 		var customCategories = StateScriptHandler.getCustomCategories();
-		for (category in customCategories)
+		for (categoryName in customCategories)
 		{
-			controlsStrings.push(category);
-		}
-		#end
-		
-		#if desktop
-		DiscordClient.changePresence("In the Options", null);
-		#end
-
-		MainMenuState.musicFreakyisPlaying = false;
-		if (!isPlayingMusic && FreeplayState.vocals == null && !fromPause){
-			FlxG.sound.playMusic(Paths.music('configurator'));
-		}
-
-		menuBG.screenCenter();
-		menuBG.antialiasing = FlxG.save.data.antialiasing;
-		menuBG.color = 0xFF453F3F;
-		add(menuBG);
-
-		// Title text
-		var titleText:FlxText = new FlxText(0, 30, FlxG.width, "OPTIONS MENU", 32);
-		titleText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
-		titleText.borderSize = 2;
-		add(titleText);
-
-		grpControls = new FlxTypedGroup<Alphabet>();
-		add(grpControls);
-
-		for(i in 0... controlsStrings.length){
-			var controlLabel:Alphabet = new Alphabet(0, (i + 1) * 100, controlsStrings[i], true, false);
-			controlLabel.isMenuItem = false;
-			controlLabel.targetY = i;
-
-			controlLabel.alpha = 0.3;
-			if(i == curSelected)
-				controlLabel.alpha = 1;
-
-			controlLabel.screenCenter(X);
-			grpControls.add(controlLabel);
-		}
-
-		// Category description
-		categoryDesc = new FlxText(0, FlxG.height - 80, FlxG.width, "", 20);
-		categoryDesc.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
-		categoryDesc.borderSize = 1.5;
-		add(categoryDesc);
-		
-		updateCategoryDesc();
-
-		#if mobileC
-		addVirtualPad(UP_DOWN, A_B);
-		#end
-		super.create();
-	}
-
-	function updateCategoryDesc():Void
-	{
-		switch(curSelected)
-		{
-			case 0:
-				categoryDesc.text = "Resolution, FPS, Window Mode";
-			case 1:
-				categoryDesc.text = "Downscroll, Ghost Tapping, Accuracy, etc.";
-			case 2:
-				categoryDesc.text = "Performance settings and optimizations";
-			case 3:
-				categoryDesc.text = "Customize your note appearance";
-			case 4:
-				categoryDesc.text = "Configure keyboard and gamepad controls";
-		}
-	}
-
-	override function update(elapsed:Float)
-	{
-		super.update(elapsed);
-		
-		#if HSCRIPT_ALLOWED
-		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
-		#end
-
-		if (controls.UP_P)
-			changeSelection(-1);
-		if (controls.DOWN_P)
-			changeSelection(1);
-
-		if (controls.ACCEPT)
-		{
-			#if HSCRIPT_ALLOWED
-			var cancelled = StateScriptHandler.callOnScriptsReturn('onAccept', [], false);
-			if (cancelled) {
-				FlxG.save.flush();
-				return;
-			}
-			#end
-			
-			isPlayingMusic = true;
-			switch(curSelected)
+			if (!categories.contains(categoryName))
 			{
-				case 0:
-					FlxG.switchState(new GraphicsOptionsMenu());
-				case 1:
-					FlxG.switchState(new GameplayOptionsMenu());
-				case 2:
-					FlxG.switchState(new OptimizationOptions());
-				case 3:
+				categories.push(categoryName);
+			}
+		}
+	}
+	#end
+
+	function loadKeyBinds()
+	{
+		// Verificar que existan los keybinds
+		if (FlxG.save.data.leftBind == null) FlxG.save.data.leftBind = "A";
+		if (FlxG.save.data.downBind == null) FlxG.save.data.downBind = "S";
+		if (FlxG.save.data.upBind == null) FlxG.save.data.upBind = "W";
+		if (FlxG.save.data.rightBind == null) FlxG.save.data.rightBind = "D";
+		if (FlxG.save.data.killBind == null) FlxG.save.data.killBind = "R";
+
+		keys = [
+			FlxG.save.data.leftBind,
+			FlxG.save.data.downBind,
+			FlxG.save.data.upBind,
+			FlxG.save.data.rightBind,
+			FlxG.save.data.killBind
+		];
+	}
+
+	function saveKeyBinds()
+	{
+		FlxG.save.data.leftBind = keys[0];
+		FlxG.save.data.downBind = keys[1];
+		FlxG.save.data.upBind = keys[2];
+		FlxG.save.data.rightBind = keys[3];
+		FlxG.save.data.killBind = keys[4];
+
+		FlxG.save.flush();
+		PlayerSettings.player1.controls.loadKeyBinds();
+	}
+
+	function loadCategory(index:Int)
+	{
+		// Limpiar contenido anterior
+		optionNames.clear();
+		optionValues.clear();
+		currentOptions = [];
+		curSelected = 0;
+		bindingState = "select";
+		bindingIndicator.visible = false;
+
+		var categoryName = categories[index];
+
+		switch (categoryName)
+		{
+			case 'General':
+				loadGeneralOptions();
+			case 'Graphics':
+				loadGraphicsOptions();
+			case 'Gameplay':
+				loadGameplayOptions();
+			case 'Controls':
+				loadControlsOptions();
+			case 'Note Skin':
+				loadNoteSkinOptions();
+			case 'Offset':
+				loadOffsetOptions();
+			default:
+				// Categoría custom desde script
+				#if HSCRIPT_ALLOWED
+				loadCustomCategory(categoryName);
+				#end
+		}
+
+		// Agregar opciones custom a categorías existentes desde scripts
+		#if HSCRIPT_ALLOWED
+		loadCustomOptionsForCategory(categoryName);
+		#end
+
+		updateCategoryDisplay();
+		updateOptionDisplay();
+	}
+
+	#if HSCRIPT_ALLOWED
+	/**
+	 * Carga una categoría custom completa desde scripts
+	 */
+	function loadCustomCategory(categoryName:String):Void
+	{
+		// Llamar a los scripts para obtener opciones de esta categoría
+		var customOptions = StateScriptHandler.callOnScriptsReturn('getOptionsForCategory', [categoryName]);
+		
+		if (customOptions != null && Std.isOfType(customOptions, Array))
+		{
+			var optionsArray:Array<Dynamic> = cast customOptions;
+			for (opt in optionsArray)
+			{
+				currentOptions.push(opt);
+			}
+		}
+		
+		createOptionTexts();
+	}
+
+	/**
+	 * Carga opciones custom que se agregan a categorías existentes
+	 */
+	function loadCustomOptionsForCategory(categoryName:String):Void
+	{
+		// Llamar a los scripts para obtener opciones adicionales para esta categoría
+		var additionalOptions = StateScriptHandler.callOnScriptsReturn('getAdditionalOptionsForCategory', [categoryName]);
+		
+		if (additionalOptions != null && Std.isOfType(additionalOptions, Array))
+		{
+			var optionsArray:Array<Dynamic> = cast additionalOptions;
+			for (opt in optionsArray)
+			{
+				currentOptions.push(opt);
+			}
+			
+			// Recrear los textos con las opciones adicionales
+			optionNames.clear();
+			optionValues.clear();
+			createOptionTexts();
+		}
+	}
+	#end
+
+	function loadGeneralOptions()
+	{
+		currentOptions = [
+			{
+				name: "Flashing Lights",
+				get: function() return FlxG.save.data.flashing ? "ON" : "OFF",
+				toggle: function() { FlxG.save.data.flashing = !FlxG.save.data.flashing; }
+			},
+			{
+				name: "Camera Zoom",
+				get: function() return FlxG.save.data.camZoom ? "ON" : "OFF",
+				toggle: function() { FlxG.save.data.camZoom = !FlxG.save.data.camZoom; }
+			},
+			{
+				name: "Show HUD",
+				get: function() return FlxG.save.data.HUD ? "OFF" : "ON",
+				toggle: function() { FlxG.save.data.HUD = !FlxG.save.data.HUD; }
+			},
+			{
+				name: "FPS Counter",
+				get: function() {
+					var mainInstance = cast(openfl.Lib.current.getChildAt(0), Main);
+					return mainInstance.data.visible ? "ON" : "OFF";
+				},
+				toggle: function() {
+					var mainInstance = cast(openfl.Lib.current.getChildAt(0), Main);
+					mainInstance.data.visible = !mainInstance.data.visible;
+				}
+			}
+		];
+
+		createOptionTexts();
+	}
+
+	function loadGraphicsOptions()
+	{
+		currentOptions = [
+			{
+				name: "Anti-Aliasing",
+				get: function() return FlxG.save.data.antialiasing ? "ON" : "OFF",
+				toggle: function() { FlxG.save.data.antialiasing = !FlxG.save.data.antialiasing; }
+			},
+			{
+				name: "Note Splashes",
+				get: function() return FlxG.save.data.notesplashes ? "ON" : "OFF",
+				toggle: function() { FlxG.save.data.notesplashes = !FlxG.save.data.notesplashes; }
+			},
+			{
+				name: "Visual Effects",
+				get: function() return FlxG.save.data.specialVisualEffects ? "ON" : "OFF",
+				toggle: function() { FlxG.save.data.specialVisualEffects = !FlxG.save.data.specialVisualEffects; }
+			},
+			{
+				name: "Static Stage",
+				get: function() return FlxG.save.data.staticstage ? "ON" : "OFF",
+				toggle: function() { FlxG.save.data.staticstage = !FlxG.save.data.staticstage; }
+			}
+		];
+
+		createOptionTexts();
+	}
+
+	function loadGameplayOptions()
+	{
+		currentOptions = [
+			{
+				name: "Downscroll",
+				get: function() return FlxG.save.data.downscroll ? "ON" : "OFF",
+				toggle: function() { FlxG.save.data.downscroll = !FlxG.save.data.downscroll; }
+			},
+			{
+				name: "Middlescroll",
+				get: function() return FlxG.save.data.middlescroll ? "ON" : "OFF",
+				toggle: function() { FlxG.save.data.middlescroll = !FlxG.save.data.middlescroll; }
+			},
+			{
+				name: "Ghost Tapping",
+				get: function() return FlxG.save.data.ghosttap ? "ON" : "OFF",
+				toggle: function() { FlxG.save.data.ghosttap = !FlxG.save.data.ghosttap; }
+			},
+			{
+				name: "Accuracy Display",
+				get: function() return FlxG.save.data.accuracyDisplay ? "ON" : "OFF",
+				toggle: function() { FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay; }
+			},
+			{
+				name: "Sick Mode",
+				get: function() return FlxG.save.data.sickmode ? "ON" : "OFF",
+				toggle: function() { FlxG.save.data.sickmode = !FlxG.save.data.sickmode; }
+			},
+			{
+				name: "Hit Sounds",
+				get: function() return FlxG.save.data.hitsounds ? "ON" : "OFF",
+				toggle: function() { FlxG.save.data.hitsounds = !FlxG.save.data.hitsounds; }
+			}
+		];
+
+		createOptionTexts();
+	}
+
+	function loadControlsOptions()
+	{
+		currentOptions = [];
+
+		// Cargar keybinds actuales
+		for (i in 0...5)
+		{
+			var keyIndex = i;
+			currentOptions.push({
+				name: keyBindNames[i],
+				get: function() return keys[keyIndex],
+				toggle: function() { startBinding(keyIndex); },
+				isKeybind: true
+			});
+		}
+
+		// Opción de resetear
+		currentOptions.push({
+			name: "Reset to Default",
+			get: function() return "BACKSPACE",
+			toggle: function() { resetKeybinds(); },
+			isKeybind: false
+		});
+
+		createOptionTexts();
+	}
+
+	function loadNoteSkinOptions()
+	{
+		currentOptions = [
+			{
+				name: "Note Skin Settings",
+				get: function() return "PRESS ENTER",
+				toggle: function() { 
 					FlxG.switchState(new NoteSkinOptions());
-				case 4:
-					#if mobileC
-					FlxG.switchState(new CustomControlsState());
-					#else
-					FlxG.state.openSubState(new KeyBindMenu());
-					#end
-				default:
-					// Manejar categorías custom desde scripts
-					#if HSCRIPT_ALLOWED
-					StateScriptHandler.callOnScripts('onCategorySelected', [curSelected]);
-					#end
+				}
 			}
-		}
+		];
 
-		if (controls.BACK){
-			#if HSCRIPT_ALLOWED
-			var cancelled = StateScriptHandler.callOnScriptsReturn('onBack', [], false);
-			if (cancelled) {
-				FlxG.save.flush();
-				return;
-			}
-			#end
-			
-			FlxG.sound.play(Paths.sound('cancelMenu'));
-			if (!PlayState.isPlaying)
-				FlxG.switchState(new MainMenuState());
-			else{
-				if (PlayState.SONG.song == null)
-					PlayState.SONG.song = optionsSong;
-				FlxG.switchState(new PlayState());
-			}
-			OptionsData.initSave();
-			isPlayingMusic = false;
-		}
-		
-		#if HSCRIPT_ALLOWED
-		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
-		#end
-		
-		FlxG.save.flush();
+		createOptionTexts();
 	}
 
-	function changeSelection(change:Int = 0)
+	function loadOffsetOptions()
 	{
-		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
-
-		curSelected += change;
-
-		if (curSelected < 0)
-			curSelected = grpControls.length - 1;
-		if (curSelected >= grpControls.length)
-			curSelected = 0;
-
-		var bullShit:Int = 0;
-
-		for (item in grpControls.members)
-		{
-			item.targetY = bullShit - curSelected;
-			bullShit++;
-
-			item.alpha = 0.3;
-
-			if (item.targetY == 0)
+		currentOptions = [
 			{
-				item.alpha = 1;
+				name: "Audio Offset",
+				get: function() return FlxG.save.data.offset + " ms",
+				toggle: function() { 
+					openSubState(new OffsetCalibrationState());
+				}
 			}
-		}
-		
-		updateCategoryDesc();
-		
-		#if HSCRIPT_ALLOWED
-		StateScriptHandler.callOnScripts('onSelectionChanged', [curSelected]);
-		#end
+		];
+
+		createOptionTexts();
 	}
-}
 
-/**
- * Graphics Options Menu - Resolution, FPS, Window Mode
- */
-class GraphicsOptionsMenu extends MusicBeatState
-{
-	var curSelected:Int = 0;
-	var options:Array<Option> = [];
-	private var grpControls:FlxTypedGroup<Alphabet>;
-	private var grpValues:FlxTypedGroup<FlxText>;
-	
-	// Visual info panel
-	var infoPanel:FlxSprite;
-	var infoText:FlxText;
-	var currentSettingsText:FlxText;
-
-	override function create()
+	function createOptionTexts()
 	{
-		PlayState.isPlaying = false;
-		
-		// Cargar scripts
-		#if HSCRIPT_ALLOWED
-		StateScriptHandler.init();
-		StateScriptHandler.loadStateScripts('GraphicsOptionsMenu', this);
-		StateScriptHandler.callOnScripts('onCreate', []);
-		#end
-		
-		// Background
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
-		menuBG.color = 0xFF453F3F;
-		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
-		menuBG.updateHitbox();
-		menuBG.screenCenter();
-		menuBG.antialiasing = FlxG.save.data.antialiasing;
-		add(menuBG);
+		var startY = 180; // Más abajo para dar espacio a las pestañas
+		var spacing = 55; // Más espaciado para mejor lectura
 
-		#if desktop
-		DiscordClient.changePresence("Graphics Settings", null);
-		
-		options = [
-			new ResolutionOption(),
-			new FPSOption(),
-			new WindowModeOption(),
-			new AntiAliasingOption(),
-			new FullscreenOption()
-		];
-		#else
-		options = [
-			new FPSOption(),
-			new AntiAliasingOption()
-		];
-		#end
-		
-		// Añadir opciones custom desde scripts
-		#if HSCRIPT_ALLOWED
-		var customOptions = StateScriptHandler.getCustomOptions();
-		for (customOpt in customOptions)
+		for (i in 0...currentOptions.length)
 		{
-			options.push(new ScriptOption(customOpt));
+			var nameText:FlxText = new FlxText(90, startY + (i * spacing), 600, currentOptions[i].name, 26);
+			nameText.setFormat(Paths.font("Funkin.otf"), 26, FlxColor.WHITE, LEFT, OUTLINE, FlxColor.BLACK);
+			nameText.borderSize = 2;
+			nameText.ID = i;
+			nameText.scrollFactor.set();
+			optionNames.add(nameText);
+
+			var valueText:FlxText = new FlxText(FlxG.width - 400, startY + (i * spacing), 320, currentOptions[i].get(), 26);
+			valueText.setFormat(Paths.font("Funkin.otf"), 26, FlxColor.CYAN, RIGHT, OUTLINE, FlxColor.BLACK);
+			valueText.borderSize = 2;
+			valueText.ID = i;
+			valueText.scrollFactor.set();
+			optionValues.add(valueText);
 		}
-		#end
+	}
 
-		// Title
-		var titleText:FlxText = new FlxText(0, 20, FlxG.width, "GRAPHICS OPTIONS", 32);
-		titleText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
-		titleText.borderSize = 2;
-		add(titleText);
-
-		// Info panel background
-		infoPanel = new FlxSprite(0, FlxG.height - 160).makeGraphic(FlxG.width, 160, FlxColor.BLACK);
-		infoPanel.alpha = 0.7;
-		add(infoPanel);
-
-		// Current settings display
-		currentSettingsText = new FlxText(20, FlxG.height - 150, FlxG.width - 40, "", 16);
-		currentSettingsText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, OUTLINE, FlxColor.BLACK);
-		add(currentSettingsText);
+	function updateCategoryDisplay()
+	{
+		var categoryWidth = (FlxG.width - 120) / categories.length;
 		
-		// Info text
-		infoText = new FlxText(20, FlxG.height - 90, FlxG.width - 40, "", 18);
-		infoText.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.YELLOW, LEFT, OUTLINE, FlxColor.BLACK);
-		infoText.borderSize = 1.5;
-		add(infoText);
-
-		grpControls = new FlxTypedGroup<Alphabet>();
-		add(grpControls);
-		
-		grpValues = new FlxTypedGroup<FlxText>();
-		add(grpValues);
-
-		for (i in 0...options.length)
+		// Actualizar textos de categorías
+		categoryTexts.forEach(function(txt:FlxText)
 		{
-			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 90, options[i].getName(), true, false);
-			controlLabel.isMenuItem = true;
-			controlLabel.targetY = i;
-			controlLabel.alpha = 0.3;
-			if(i == curSelected)
-				controlLabel.alpha = 1;
-			grpControls.add(controlLabel);
+			if (txt.ID == curCategory)
+			{
+				txt.color = FlxColor.WHITE;
+				txt.setFormat(Paths.font("Funkin.otf"), 24, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+				
+				// Animar el texto
+				FlxTween.cancelTweensOf(txt.scale);
+				FlxTween.tween(txt.scale, {x: 1.05, y: 1.05}, 0.2, {ease: FlxEase.quadOut});
+			}
+			else
+			{
+				txt.color = 0xFF888888;
+				txt.setFormat(Paths.font("Funkin.otf"), 22, 0xFF888888, CENTER, OUTLINE, FlxColor.BLACK);
+				
+				FlxTween.cancelTweensOf(txt.scale);
+				FlxTween.tween(txt.scale, {x: 1, y: 1}, 0.2, {ease: FlxEase.quadOut});
+			}
+		});
+		
+		// Actualizar backgrounds de pestañas
+		contentPanel.forEach(function(sprite:FlxSprite)
+		{
+			if (sprite.ID >= 0 && sprite.ID < categories.length)
+			{
+				if (sprite.ID == curCategory)
+				{
+					// Pestaña activa - más clara y brillante
+					sprite.color = 0xFF2a2a2a;
+					sprite.alpha = 1;
+				}
+				else
+				{
+					// Pestaña inactiva - más oscura
+					sprite.color = 0xFF1a1a1a;
+					sprite.alpha = 0.7;
+				}
+			}
 			
-			// Value display on the right
-			var valueText:FlxText = new FlxText(FlxG.width - 400, (70 * i) + 100, 380, options[i].getValue(), 24);
-			valueText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.CYAN, RIGHT, OUTLINE, FlxColor.BLACK);
-			valueText.borderSize = 1.5;
-			valueText.alpha = 0.3;
-			if(i == curSelected)
-				valueText.alpha = 1;
-			grpValues.add(valueText);
-		}
-
-		updateInfoPanel();
-		updateCurrentSettings();
-
-		#if mobileC
-		addVirtualPad(FULL, A_B);
-		#end
-
-		super.create();
+			// Mover el indicador de pestaña activa
+			if (sprite.ID == -1) // El indicador tiene ID -1
+			{
+				var targetX = 60 + (curCategory * categoryWidth);
+				FlxTween.cancelTweensOf(sprite);
+				FlxTween.tween(sprite, {x: targetX}, 0.3, {ease: FlxEase.quadOut});
+			}
+		});
 	}
 
-	function updateInfoPanel():Void
+	function updateOptionDisplay()
 	{
-		infoText.text = options[curSelected].getDescription();
-	}
-	
-	function updateCurrentSettings():Void
-	{
-		var res = OptionsData.getResolutionString();
-		var fps = FlxG.drawFramerate;
-		var mode = OptionsData.getWindowModeString();
-		
-		currentSettingsText.text = 'Current: $res @ ${fps}FPS | Mode: $mode';
+		optionNames.forEach(function(txt:FlxText)
+		{
+			if (txt.ID == curSelected)
+			{
+				txt.color = FlxColor.CYAN;
+				txt.alpha = 1;
+				
+				// Animar el texto seleccionado
+				FlxTween.cancelTweensOf(txt.scale);
+				FlxTween.tween(txt.scale, {x: 1.08, y: 1.08}, 0.15, {ease: FlxEase.quadOut});
+			}
+			else
+			{
+				txt.color = FlxColor.WHITE;
+				txt.alpha = 0.6;
+				
+				FlxTween.cancelTweensOf(txt.scale);
+				FlxTween.tween(txt.scale, {x: 1, y: 1}, 0.15, {ease: FlxEase.quadOut});
+			}
+		});
+
+		optionValues.forEach(function(txt:FlxText)
+		{
+			if (txt.ID == curSelected)
+			{
+				txt.alpha = 1;
+				txt.color = FlxColor.YELLOW;
+				
+				// Animar el valor seleccionado
+				FlxTween.cancelTweensOf(txt.scale);
+				FlxTween.tween(txt.scale, {x: 1.08, y: 1.08}, 0.15, {ease: FlxEase.quadOut});
+			}
+			else
+			{
+				txt.alpha = 0.6;
+				txt.color = FlxColor.CYAN;
+				
+				FlxTween.cancelTweensOf(txt.scale);
+				FlxTween.tween(txt.scale, {x: 1, y: 1}, 0.15, {ease: FlxEase.quadOut});
+			}
+			
+			txt.text = currentOptions[txt.ID].get();
+		});
 	}
 
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
-		
+
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
 		#end
 
-		if (controls.BACK) {
-			FlxG.sound.play(Paths.sound('cancelMenu'));
-			#if HSCRIPT_ALLOWED
-			StateScriptHandler.clearStateScripts();
-			#end
-			FlxG.switchState(new OptionsMenuState());
+		// Si estamos esperando un keybind
+		if (bindingState == "binding")
+		{
+			handleKeyBinding();
+			return;
 		}
-		
+
+		// Navegación de categorías
+		if (controls.LEFT_P && currentOptions.length > 0)
+		{
+			changeCategory(-1);
+		}
+		if (controls.RIGHT_P && currentOptions.length > 0)
+		{
+			changeCategory(1);
+		}
+
+		// Navegación de opciones
 		if (controls.UP_P)
+		{
 			changeSelection(-1);
+		}
 		if (controls.DOWN_P)
+		{
 			changeSelection(1);
+		}
 
-		if (controls.LEFT_P || controls.RIGHT_P)
+		// Aceptar/Toggle opción
+		if (controls.ACCEPT && currentOptions.length > 0)
 		{
-			var change = controls.LEFT_P ? -1 : 1;
-			if (options[curSelected].change(change)) {
-				updateValue();
-				updateCurrentSettings();
-				FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
-				
-				#if HSCRIPT_ALLOWED
-				StateScriptHandler.callOnScripts('onOptionChanged', [options[curSelected].getName(), options[curSelected].getValue()]);
-				#end
+			FlxG.sound.play(Paths.sound('menus/confirmMenu'));
+			var optionName = currentOptions[curSelected].name;
+			currentOptions[curSelected].toggle();
+			updateOptionDisplay();
+			FlxG.save.flush();
+			
+			// Si estamos en pause menu
+			if (fromPause)
+			{
+				// Verificar si es una configuración SEGURA para aplicar en tiempo real
+				if (isGameplaySetting(optionName))
+				{
+					applyGameplaySettingsRealtime();
+				}
+				// Advertir si requiere reinicio
+				else if (requiresRestart(optionName))
+				{
+					showWarning("Restart song to apply changes");
+				}
 			}
 		}
 
-		if (controls.ACCEPT)
+		// Reset keybinds con BACKSPACE (solo en Controls)
+		if (FlxG.keys.justPressed.BACKSPACE && categories[curCategory] == 'Controls')
 		{
-			if (options[curSelected].press()) {
-				updateValue();
-				updateCurrentSettings();
-				FlxG.sound.play(Paths.sound('confirmMenu'));
-				
-				#if HSCRIPT_ALLOWED
-				StateScriptHandler.callOnScripts('onOptionSelected', [options[curSelected].getName()]);
-				#end
+			resetKeybinds();
+		}
+
+		// Volver
+		if (controls.BACK)
+		{
+			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
+			
+			if (fromPause)
+			{
+				fromPause = false;
+				close();
+			}
+			else
+			{
+				FlxG.switchState(new MainMenuState());
 			}
 		}
-		
+
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
 		#end
-		
-		FlxG.save.flush();
 	}
 
-	function updateValue():Void
+	function changeCategory(change:Int)
 	{
-		grpValues.members[curSelected].text = options[curSelected].getValue();
+		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
+		curCategory += change;
+
+		if (curCategory < 0)
+			curCategory = categories.length - 1;
+		if (curCategory >= categories.length)
+			curCategory = 0;
+
+		loadCategory(curCategory);
 	}
 
-	function changeSelection(change:Int = 0)
+	function changeSelection(change:Int)
 	{
-		FlxG.sound.play(Paths.sound("scrollMenu"), 0.4);
+		if (currentOptions.length == 0) return;
 
+		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 		curSelected += change;
 
 		if (curSelected < 0)
-			curSelected = options.length - 1;
-		if (curSelected >= options.length)
+			curSelected = currentOptions.length - 1;
+		if (curSelected >= currentOptions.length)
 			curSelected = 0;
 
-		var bullShit:Int = 0;
+		updateOptionDisplay();
+	}
 
-		for (item in grpControls.members)
+	// === KEYBIND FUNCTIONS ===
+
+	function startBinding(keyIndex:Int)
+	{
+		bindingState = "binding";
+		tempKey = keys[keyIndex];
+		
+		bindingIndicator.text = "Press any key for " + keyBindNames[keyIndex] + "...\nESC to cancel";
+		bindingIndicator.visible = true;
+		
+		// Cambiar el valor mostrado a "?"
+		optionValues.members[curSelected].text = "?";
+	}
+
+	function handleKeyBinding()
+	{
+		// Cancelar con ESC
+		if (FlxG.keys.justPressed.ESCAPE)
 		{
-			item.targetY = bullShit - curSelected;
-			bullShit++;
-			item.alpha = 0.3;
-			if (item.targetY == 0)
-				item.alpha = 1;
+			keys[curSelected] = tempKey;
+			bindingState = "select";
+			bindingIndicator.visible = false;
+			updateOptionDisplay();
+			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
+			return;
+		}
+
+		// Esperar cualquier tecla
+		if (FlxG.keys.justPressed.ANY)
+		{
+			var pressedKey = FlxG.keys.getIsDown()[0].ID.toString();
+			
+			if (isKeyValid(pressedKey, curSelected))
+			{
+				keys[curSelected] = pressedKey;
+				saveKeyBinds();
+				bindingState = "select";
+				bindingIndicator.visible = false;
+				updateOptionDisplay();
+				FlxG.sound.play(Paths.sound('menus/scrollMenu'));
+				
+				// Advertir si hay duplicados (pero permitirlos)
+				if (hasDuplicateKeys())
+				{
+					showWarning("Warning: Duplicate keys detected");
+				}
+			}
+			else
+			{
+				// Mostrar warning
+				keys[curSelected] = tempKey;
+				showWarning("Invalid key! Key is blocked.");
+				bindingState = "select";
+				bindingIndicator.visible = false;
+				updateOptionDisplay();
+				FlxG.sound.play(Paths.sound('menus/cancelMenu'));
+			}
+		}
+	}
+
+	function isKeyValid(key:String, keyIndex:Int):Bool
+	{
+		// Verificar si está en la blacklist (estas teclas NUNCA se permiten)
+		for (blockedKey in blacklistKeys)
+		{
+			if (key == blockedKey)
+				return false;
+		}
+
+		// Para RESET, no puede usar ninguna tecla de dirección
+		// (esto sí es importante para evitar problemas de input)
+		if (keyIndex == 4)
+		{
+			for (i in 0...4)
+			{
+				if (keys[i] == key)
+					return false;
+			}
+		}
+
+		// ✅ CAMBIO: Ya NO bloqueamos duplicados en direcciones
+		// Permitimos que el usuario configure DFJK aunque D ya esté en uso
+		// Solo mostramos una advertencia
+
+		return true;
+	}
+
+	/**
+	 * Verifica si hay teclas duplicadas en las direcciones
+	 */
+	function hasDuplicateKeys():Bool
+	{
+		for (i in 0...4)
+		{
+			for (j in i + 1...4)
+			{
+				if (keys[i] == keys[j])
+					return true;
+			}
+		}
+		return false;
+	}
+
+	function resetKeybinds()
+	{
+		FlxG.sound.play(Paths.sound('menus/confirmMenu'));
+		
+		for (i in 0...5)
+		{
+			keys[i] = defaultKeys[i];
 		}
 		
-		bullShit = 0;
-		for (item in grpValues.members)
-		{
-			item.alpha = 0.3;
-			if (bullShit == curSelected)
-				item.alpha = 1;
-			bullShit++;
-		}
+		saveKeyBinds();
+		loadCategory(curCategory); // Recargar para actualizar valores
 		
-		updateInfoPanel();
+		showWarning("Keybinds reset to default!");
+	}
+
+	function showWarning(text:String)
+	{
+		warningText.text = text;
+		warningText.alpha = 1;
+		
+		FlxTween.tween(warningText, {alpha: 0}, 0.5, {
+			ease: FlxEase.circOut,
+			startDelay: 2
+		});
+	}
+
+	/**
+	 * Determina si una configuración es SEGURA para aplicar en tiempo real
+	 * Solo configuraciones visuales/UI que no afectan la lógica del juego
+	 */
+	function isGameplaySetting(optionName:String):Bool
+	{
+		var safeGameplaySettings = [
+			"Ghost Tapping",      // Seguro: solo afecta siguiente input
+			"Show HUD",           // Seguro: solo visual
+			"Note Splashes",      // Seguro: solo visual
+			"Accuracy Display",   // Seguro: solo visual
+			"Anti-Aliasing"       // Seguro: solo visual
+		];
+		
+		// Configuraciones que REQUIEREN REINICIO (NO en tiempo real):
+		// - Downscroll: requiere reposicionar strums y notas en vuelo
+		// - Middlescroll: requiere reorganizar layout completo
+		// - Perfect Mode/Sick Mode: cambian lógica de scoring
+		// - Static Stage: puede causar memory leaks
+		
+		return safeGameplaySettings.contains(optionName);
+	}
+
+	/**
+	 * Verifica si una configuración requiere reiniciar la canción
+	 */
+	function requiresRestart(optionName:String):Bool
+	{
+		var restartRequired = [
+			"Downscroll",
+			"Middlescroll",
+			"Perfect Mode",
+			"Sick Mode",
+			"Static Stage",
+			"Special Visual Effects",
+			"GF Bye",
+			"Background Bye"
+		];
+		
+		return restartRequired.contains(optionName);
+	}
+
+	/**
+	 * Aplica las configuraciones de gameplay en tiempo real al PlayState
+	 */
+	function applyGameplaySettingsRealtime():Void
+	{
+		if (PlayState.instance != null)
+		{
+			trace('[OptionsMenuState] Applying gameplay settings in real-time');
+			PlayState.instance.updateGameplaySettings();
+		}
+	}
+
+	// === CLASE DE COMPATIBILIDAD PARA Main.hx ===
+	
+	/**
+	 * Inicializa los valores por defecto de las opciones
+	 * Llamado desde Main.hx
+	 */
+	public static function initSave():Void
+	{
+		OptionsData.initSave();
 	}
 }
 
 /**
- * Gameplay Options Menu - Game-specific settings
+ * Clase de compatibilidad con el sistema antiguo
  */
-class GameplayOptionsMenu extends MusicBeatState
-{
-	var curSelected:Int = 0;
-	var options:Array<Option> = [
-		new GhostTappingOption(),
-		new NoteSplashesOption(),
-		new DownscrollOption(),
-		new MiddleScroll(),
-		new HitSoundsOption(),
-		new SickModeOption(),
-		new AccuracyOption()
-	];
-
-	private var grpControls:FlxTypedGroup<Alphabet>;
-	var versionShit:FlxText;
-	
-	override function create()
-	{
-		PlayState.isPlaying = false;
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
-
-		menuBG.color = 0xFF453F3F;
-		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
-		menuBG.updateHitbox();
-		menuBG.screenCenter();
-		menuBG.antialiasing = FlxG.save.data.antialiasing;
-		add(menuBG);
-
-		grpControls = new FlxTypedGroup<Alphabet>();
-		add(grpControls);
-		
-		#if desktop
-		DiscordClient.changePresence("Gameplay Settings", null);
-		#end
-
-		// Title
-		var titleText:FlxText = new FlxText(0, 20, FlxG.width, "GAMEPLAY OPTIONS", 32);
-		titleText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
-		titleText.borderSize = 2;
-		add(titleText);
-
-		for (i in 0...options.length)
-		{
-			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 90, options[i].getDisplay(), true, false);
-			controlLabel.isMenuItem = true;
-			controlLabel.targetY = i;
-
-			controlLabel.alpha = 0.3;
-			if(i == curSelected)
-				controlLabel.alpha = 1;
-
-			grpControls.add(controlLabel);
-		}
-
-		var optionsBG:FlxSprite = new FlxSprite();
-		optionsBG.frames = Paths.getSparrowAtlas('menu/menu_options');
-	    optionsBG.animation.addByPrefix('idle', 'options basic', 24, false);
-	    optionsBG.animation.play('idle');
-	    optionsBG.antialiasing = FlxG.save.data.antialiasing;
-		optionsBG.screenCenter(X);
-	    add(optionsBG);
-
-		versionShit = new FlxText(5, FlxG.height - 18, 0, "Offset (Left, Right): " + FlxG.save.data.offset, 12);
-		versionShit.scrollFactor.set();
-		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		add(versionShit);
-
-		#if mobileC
-		addVirtualPad(FULL, A_B);
-		#end
-
-		super.create();
-	}
-
-	override function update(elapsed:Float)
-	{
-		super.update(elapsed);
-
-		if (controls.BACK)
-			FlxG.switchState(new OptionsMenuState());
-		if (controls.UP_P)
-			changeSelection(-1);
-		if (controls.DOWN_P)
-			changeSelection(1);
-
-		if (controls.RIGHT_R)
-		{
-			FlxG.save.data.offset++;
-			versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset;
-		}
-
-		if (controls.LEFT_R)
-		{
-			FlxG.save.data.offset--;
-			versionShit.text = "Offset (Left, Right): " + FlxG.save.data.offset;
-		}
-
-		if (controls.ACCEPT)
-		{
-			if (options[curSelected].press()) {
-				grpControls.remove(grpControls.members[curSelected]);
-				var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 90, options[curSelected].getDisplay(), true, false);
-				ctrl.isMenuItem = true;
-				grpControls.add(ctrl);
-			}
-		}
-		FlxG.save.flush();
-	}
-
-	function changeSelection(change:Int = 0)
-	{
-		FlxG.sound.play(Paths.sound("scrollMenu"), 0.4);
-
-		curSelected += change;
-
-		if (curSelected < 0)
-			curSelected = grpControls.length - 1;
-		if (curSelected >= grpControls.length)
-			curSelected = 0;
-
-		var bullShit:Int = 0;
-
-		for (item in grpControls.members)
-		{
-			item.targetY = bullShit - curSelected;
-			bullShit++;
-
-			item.alpha = 0.3;
-
-			if (item.targetY == 0)
-			{
-				item.alpha = 1;
-			}
-		}
-	}
-}
-
-class OptimizationOptions extends MusicBeatState
-{
-	var selector:FlxText;
-	var curSelected:Int = 0;
-
-	public static var canDoRight:Bool = false;
-	public static var canDoLeft:Bool = false;
-
-	var options:Array<Option> = [
-		new GPURenderingOption(),
-		new QualityLevelOption(),
-		new AdaptiveQualityOption(),
-		new TextureCacheOption(),
-		new ShowStatsOption(),
-		new StaticStageOption(),
-		new ByeGF(),
-		new ByePeople(),
-		new EffectsOption()
-	];
-
-	private var grpControls:FlxTypedGroup<Alphabet>;
-	var versionShit:FlxText;
-	
-	override function create()
-	{
-		PlayState.isPlaying = false;
-		var menuBG:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
-
-		menuBG.color = 0xFF453F3F;
-		menuBG.setGraphicSize(Std.int(menuBG.width * 1.1));
-		menuBG.updateHitbox();
-		menuBG.screenCenter();
-		menuBG.antialiasing = FlxG.save.data.antialiasing;
-		add(menuBG);
-
-		grpControls = new FlxTypedGroup<Alphabet>();
-		add(grpControls);
-		
-		#if desktop
-		DiscordClient.changePresence("Optimization Settings", null);
-		#end
-
-		// Title
-		var titleText:FlxText = new FlxText(0, 20, FlxG.width, "OPTIMIZATION", 32);
-		titleText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
-		titleText.borderSize = 2;
-		add(titleText);
-
-		for (i in 0...options.length)
-		{
-			var controlLabel:Alphabet = new Alphabet(0, (70 * i) + 90, options[i].getDisplay(), true, false);
-			controlLabel.isMenuItem = true;
-			controlLabel.targetY = i;
-
-			controlLabel.alpha = 0.3;
-			if(i == curSelected)
-				controlLabel.alpha = 1;
-
-			grpControls.add(controlLabel);
-		}
-
-		#if mobileC
-		addVirtualPad(UP_DOWN, A_B);
-		#end
-
-		super.create();
-	}
-
-	override function update(elapsed:Float)
-	{
-		super.update(elapsed);
-
-		if (controls.BACK)
-			FlxG.switchState(new OptionsMenuState());
-		if (controls.UP_P)
-			changeSelection(-1);
-		if (controls.DOWN_P)
-			changeSelection(1);
-
-		if (controls.ACCEPT)
-		{
-			if (options[curSelected].press()) {
-				grpControls.remove(grpControls.members[curSelected]);
-				var ctrl:Alphabet = new Alphabet(0, (70 * curSelected) + 90, options[curSelected].getDisplay(), true, false);
-				ctrl.isMenuItem = true;
-				grpControls.add(ctrl);
-			}
-		}
-		FlxG.save.flush();
-	}
-
-	function changeSelection(change:Int = 0)
-	{
-		FlxG.sound.play(Paths.sound("scrollMenu"), 0.4);
-
-		curSelected += change;
-
-		if (curSelected < 0)
-			curSelected = grpControls.length - 1;
-		if (curSelected >= grpControls.length)
-			curSelected = 0;
-
-		var bullShit:Int = 0;
-
-		for (item in grpControls.members)
-		{
-			item.targetY = bullShit - curSelected;
-			bullShit++;
-
-			item.alpha = 0.3;
-
-			if (item.targetY == 0)
-			{
-				item.alpha = 1;
-			}
-		}
-	}
-}
-
-// ========================================
-// OPTION BASE CLASS
-// ========================================
-
-class Option
-{
-	public function new()
-	{
-		display = updateDisplay();
-	}
-
-	private var description:String = "";
-	private var display:String;
-	private var acceptValues:Bool = false;
-
-	public final function getDisplay():String
-	{
-		return display;
-	}
-
-	public final function getAccept():Bool
-	{
-		return acceptValues;
-	}
-
-	public function getDescription():String
-	{
-		return description;
-	}
-
-	public function getName():String
-	{
-		return display;
-	}
-
-	public function getValue():String
-	{
-		return "";
-	}
-
-	public function press():Bool
-	{
-		return false;
-	}
-	
-	public function change(direction:Int):Bool
-	{
-		return false;
-	}
-
-	private function updateDisplay():String
-	{
-		return "";
-	}
-}
-
-// ========================================
-// GRAPHICS OPTIONS
-// ========================================
-
-class ResolutionOption extends Option
-{
-	var resolutions:Array<Array<Int>> = [
-		[1280, 720],   // 720p
-		[1920, 1080],  // 1080p
-		[2560, 1440],  // 1440p
-		[3840, 2160]   // 4K
-	];
-	var resNames:Array<String> = ["720p", "1080p", "1440p", "4K"];
-	
-	public override function getName():String { return "Resolution"; }
-	
-	public override function getValue():String
-	{
-		var idx = OptionsData.getCurrentResolutionIndex();
-		return resNames[idx];
-	}
-	
-	public override function getDescription():String
-	{
-		return "Change game resolution. Higher = Better quality but lower FPS.\nRequires restart to apply.";
-	}
-	
-	public override function change(direction:Int):Bool
-	{
-		var current = OptionsData.getCurrentResolutionIndex();
-		current += direction;
-		
-		if (current < 0) current = resolutions.length - 1;
-		if (current >= resolutions.length) current = 0;
-		
-		FlxG.save.data.resolutionIndex = current;
-		
-		#if desktop
-		// Apply immediately if not fullscreen
-		if (!FlxG.fullscreen) {
-			FlxG.resizeWindow(resolutions[current][0], resolutions[current][1]);
-		}
-		#end
-		
-		return true;
-	}
-}
-
-class FPSOption extends Option
-{
-	var fpsOptions:Array<Int> = [60, 120, 144, 240, 999];
-	var fpsNames:Array<String> = ["60 FPS", "120 FPS", "144 FPS", "240 FPS", "Unlimited"];
-	
-	public override function getName():String { return "Frame Rate"; }
-	
-	public override function getValue():String
-	{
-		var idx = OptionsData.getCurrentFPSIndex();
-		return fpsNames[idx];
-	}
-	
-	public override function getDescription():String
-	{
-		return "Target frame rate. 60 FPS recommended for best compatibility.\nHigher values = smoother but more CPU usage.";
-	}
-	
-	public override function change(direction:Int):Bool
-	{
-		var current = OptionsData.getCurrentFPSIndex();
-		current += direction;
-		
-		if (current < 0) current = fpsOptions.length - 1;
-		if (current >= fpsOptions.length) current = 0;
-		
-		FlxG.save.data.fpsIndex = current;
-		
-		var targetFPS = fpsOptions[current];
-		openfl.Lib.current.stage.frameRate = targetFPS;
-		FlxG.updateFramerate = targetFPS;
-		FlxG.drawFramerate = targetFPS;
-		
-		return true;
-	}
-}
-
-class WindowModeOption extends Option
-{
-	var modes:Array<String> = ["Windowed", "Fullscreen", "Borderless"];
-	
-	public override function getName():String { return "Window Mode"; }
-	
-	public override function getValue():String
-	{
-		return modes[OptionsData.getWindowModeIndex()];
-	}
-	
-	public override function getDescription():String
-	{
-		return "Window display mode.\nWindowed = Resizable window\nFullscreen = Exclusive fullscreen\nBorderless = Fullscreen window";
-	}
-	
-	public override function change(direction:Int):Bool
-	{
-		#if desktop
-		var current = OptionsData.getWindowModeIndex();
-		current += direction;
-		
-		if (current < 0) current = modes.length - 1;
-		if (current >= modes.length) current = 0;
-		
-		FlxG.save.data.windowMode = current;
-		
-		switch(current) {
-			case 0: // Windowed
-				FlxG.fullscreen = false;
-			case 1: // Fullscreen
-				FlxG.fullscreen = true;
-			case 2: // Borderless
-				FlxG.fullscreen = true;
-				// Would need native extension for true borderless
-		}
-		
-		return true;
-		#else
-		return false;
-		#end
-	}
-}
-
-class AntiAliasingOption extends Option
-{
-	public override function getName():String { return "Anti-Aliasing"; }
-	
-	public override function getValue():String
-	{
-		return FlxG.save.data.antialiasing ? "ON" : "OFF";
-	}
-	
-	public override function getDescription():String
-	{
-		return "Smooth sprite edges. ON = Better quality, OFF = Better performance.";
-	}
-	
-	public override function press():Bool
-	{
-		FlxG.save.data.antialiasing = !FlxG.save.data.antialiasing;
-		return true;
-	}
-}
-
-class FullscreenOption extends Option
-{
-	public override function press():Bool
-	{
-		#if desktop
-		FlxG.fullscreen = !FlxG.fullscreen;
-		display = updateDisplay();
-		#end
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return !FlxG.fullscreen ? "Fullscreen Off" : "Fullscreen On";
-	}
-	
-	public override function getDescription():String
-	{
-		return "Toggle fullscreen mode. Also accessible with F11.";
-	}
-}
-
-// ========================================
-// OPTIMIZATION OPTIONS
-// ========================================
-
-class GPURenderingOption extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.gpuRendering = !FlxG.save.data.gpuRendering;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.gpuRendering ? "GPU Rendering: ON" : "GPU Rendering: OFF";
-	}
-}
-
-class QualityLevelOption extends Option
-{
-	var qualityLevels:Array<String> = ["LOW", "MEDIUM", "HIGH", "ULTRA"];
-	
-	public override function getName():String { return "Quality Level"; }
-	
-	public override function getValue():String
-	{
-		if (FlxG.save.data.qualityLevel == null) FlxG.save.data.qualityLevel = 2;
-		return qualityLevels[FlxG.save.data.qualityLevel];
-	}
-	
-	public override function change(direction:Int):Bool
-	{
-		if (FlxG.save.data.qualityLevel == null) FlxG.save.data.qualityLevel = 2;
-		
-		FlxG.save.data.qualityLevel += direction;
-		
-		if (FlxG.save.data.qualityLevel < 0) 
-			FlxG.save.data.qualityLevel = qualityLevels.length - 1;
-		if (FlxG.save.data.qualityLevel >= qualityLevels.length) 
-			FlxG.save.data.qualityLevel = 0;
-		
-		return true;
-	}
-	
-	private override function updateDisplay():String
-	{
-		return "Quality: " + getValue();
-	}
-}
-
-class AdaptiveQualityOption extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.adaptiveQuality = !FlxG.save.data.adaptiveQuality;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.adaptiveQuality ? "Adaptive Quality: ON" : "Adaptive Quality: OFF";
-	}
-}
-
-class TextureCacheOption extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.textureCache = !FlxG.save.data.textureCache;
-		Paths.setCacheEnabled(FlxG.save.data.textureCache);
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.textureCache ? "Texture Cache: ON" : "Texture Cache: OFF";
-	}
-}
-
-class ShowStatsOption extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.showStats = !FlxG.save.data.showStats;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.showStats ? "Show Stats: ON" : "Show Stats: OFF";
-	}
-}
-
-// ========================================
-// STAGE/VISUAL OPTIONS
-// ========================================
-
-class StaticStageOption extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.staticstage = !FlxG.save.data.staticstage;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.staticstage ? "Static Stage" : "Normal Stage";
-	}
-}
-
-class ByeGF extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.gfbye = !FlxG.save.data.gfbye;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.gfbye ? "Remove GF" : "Add GF";
-	}
-}
-
-class ByePeople extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.byebg = !FlxG.save.data.byebg;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.byebg ? "Remove BG Stuff" : "Add BG Stuff";
-	}
-}
-
-// ========================================
-// GAMEPLAY OPTIONS
-// ========================================
-
-class DownscrollOption extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.downscroll = !FlxG.save.data.downscroll;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.downscroll ? "Downscroll" : "Upscroll";
-	}
-}
-
-class GhostTappingOption extends Option{
-	public override function press():Bool
-		{
-			FlxG.save.data.ghosttap = !FlxG.save.data.ghosttap;
-			display = updateDisplay();
-			return true;
-		}
-	
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.ghosttap ? "Ghost Tapping: ON" : "Ghost Tapping: Off";
-	}
-}
-
-class AccuracyOption extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return "Accuracy " + (!FlxG.save.data.accuracyDisplay ? "off" : "on");
-	}
-}
-
-class MiddleScroll extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.middlescroll = !FlxG.save.data.middlescroll;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return !FlxG.save.data.middlescroll ? "Middlescroll Off" : "Middlescroll On";
-	}
-}
-
-class SickModeOption extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.sickmode = !FlxG.save.data.sickmode;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.sickmode ? "Only Sick Mode" : "SGB Mode";
-	}
-}
-
-class NoteSplashesOption extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.notesplashes = !FlxG.save.data.notesplashes;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.notesplashes ? "Notes Splashes On" : "Notes Splashes Off";
-	}
-}
-
-class EffectsOption extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.specialVisualEffects = !FlxG.save.data.specialVisualEffects;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.specialVisualEffects ? "Visual Effects On" : "Visual Effects Off";
-	}
-}
-
-class HitSoundsOption extends Option
-{
-	public override function press():Bool
-	{
-		FlxG.save.data.hitsounds = !FlxG.save.data.hitsounds;
-		display = updateDisplay();
-		return true;
-	}
-
-	private override function updateDisplay():String
-	{
-		return FlxG.save.data.hitsounds ? "Hit Sounds On" : "Hit Sounds Off";
-	}
-}
-
-// ========================================
-// SCRIPT OPTION - Wrapper para opciones de scripts
-// ========================================
-
-class ScriptOption extends Option
-{
-	var scriptData:Dynamic;
-	
-	public function new(scriptData:Dynamic)
-	{
-		this.scriptData = scriptData;
-		super();
-	}
-	
-	public override function getName():String 
-	{ 
-		if (scriptData.name != null)
-			return scriptData.name;
-		return "Script Option";
-	}
-	
-	public override function getValue():String
-	{
-		if (scriptData.getValue != null && Reflect.isFunction(scriptData.getValue))
-		{
-			try {
-				return Reflect.callMethod(null, scriptData.getValue, []);
-			} catch (e:Dynamic) {
-				trace('[ScriptOption] Error in getValue: $e');
-			}
-		}
-		return "";
-	}
-	
-	public override function getDescription():String
-	{
-		if (scriptData.description != null)
-			return scriptData.description;
-		return "Custom option from script";
-	}
-	
-	public override function press():Bool
-	{
-		if (scriptData.onPress != null && Reflect.isFunction(scriptData.onPress))
-		{
-			try {
-				var result = Reflect.callMethod(null, scriptData.onPress, []);
-				return result == true;
-			} catch (e:Dynamic) {
-				trace('[ScriptOption] Error in onPress: $e');
-			}
-		}
-		return false;
-	}
-	
-	public override function change(direction:Int):Bool
-	{
-		if (scriptData.onChange != null && Reflect.isFunction(scriptData.onChange))
-		{
-			try {
-				var result = Reflect.callMethod(null, scriptData.onChange, [direction]);
-				return result == true;
-			} catch (e:Dynamic) {
-				trace('[ScriptOption] Error in onChange: $e');
-			}
-		}
-		return false;
-	}
-}
-
-// ========================================
-// OPTIONS DATA HELPER
-// ========================================
-
 class OptionsData
-{	
-	public static function getResolutionString():String
-	{
-		var resolutions:Array<String> = ["1280x720", "1920x1080", "2560x1440", "3840x2160"];
-		var idx = getCurrentResolutionIndex();
-		return resolutions[idx];
-	}
-	
-	public static function getCurrentResolutionIndex():Int
-	{
-		if (FlxG.save.data.resolutionIndex == null)
-			FlxG.save.data.resolutionIndex = 1; // Default to 1080p
-		return FlxG.save.data.resolutionIndex;
-	}
-	
-	public static function getCurrentFPSIndex():Int
-	{
-		if (FlxG.save.data.fpsIndex == null)
-			FlxG.save.data.fpsIndex = 0; // Default to 60 FPS
-		return FlxG.save.data.fpsIndex;
-	}
-	
-	public static function getWindowModeIndex():Int
-	{
-		if (FlxG.save.data.windowMode == null)
-			FlxG.save.data.windowMode = 0; // Default to windowed
-		return FlxG.save.data.windowMode;
-	}
-	
-	public static function getWindowModeString():String
-	{
-		var modes:Array<String> = ["Windowed", "Fullscreen", "Borderless"];
-		return modes[getWindowModeIndex()];
-	}
-
-	public static function initSave()
+{
+	public static function initSave():Void
 	{
 		if (FlxG.save.data.downscroll == null)
 			FlxG.save.data.downscroll = false;
@@ -1397,47 +971,254 @@ class OptionsData
 			FlxG.save.data.byebg = false;
 
 		if (FlxG.save.data.ghosttap == null)
-    		FlxG.save.data.ghosttap = false;
+			FlxG.save.data.ghosttap = false;
 
 		if(FlxG.save.data.hitsounds == null)
 			FlxG.save.data.hitsounds = false;
 		
 		if(FlxG.save.data.antialiasing == null)
 			FlxG.save.data.antialiasing = true;
-		
-		// GPU OPTIMIZATION SETTINGS
-		if (FlxG.save.data.gpuRendering == null)
-			FlxG.save.data.gpuRendering = true;
-		
-		if (FlxG.save.data.qualityLevel == null)
-			FlxG.save.data.qualityLevel = 2; // HIGH by default
-		
-		if (FlxG.save.data.adaptiveQuality == null)
-			FlxG.save.data.adaptiveQuality = true;
-		
-		if (FlxG.save.data.textureCache == null)
-			FlxG.save.data.textureCache = true;
-		
-		if (FlxG.save.data.showStats == null)
-			FlxG.save.data.showStats = false;
-		
-		// GRAPHICS SETTINGS
-		if (FlxG.save.data.resolutionIndex == null)
-			FlxG.save.data.resolutionIndex = 1; // 1080p default
-		
-		if (FlxG.save.data.fpsIndex == null)
-			FlxG.save.data.fpsIndex = 0; // 60 FPS default
-		
-		if (FlxG.save.data.windowMode == null)
-			FlxG.save.data.windowMode = 0; // Windowed default
+	}
+}
 
-		Paths.setCacheEnabled(FlxG.save.data.textureCache);
+/**
+ * Offset Calibration State - Metrónomo a 100 BPM
+ */
+class OffsetCalibrationState extends MusicBeatSubstate
+{
+	var metronomeSound:String = "menus/chartingSounds/metronome";
+	var bpm:Float = 100;
+	var beatTime:Float = 0;
+	var currentBeat:Int = 0;
+	
+	var instructions:FlxText;
+	var offsetDisplay:FlxText;
+	var beatIndicator:FlxSprite;
+	var visualMetronome:FlxSprite;
+	var tapCounter:FlxText;
+	
+	var taps:Array<Float> = [];
+	var maxTaps:Int = 8;
+	
+	var countdownText:FlxText;
+	var isCountingDown:Bool = true;
+	var countdownTimer:Float = 3;
+
+	override function create()
+	{
+		super.create();
+
+		// Background
+		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
+		bg.alpha = 0.85;
+		add(bg);
+
+		// Panel principal
+		var panel:FlxSprite = new FlxSprite(0, 0).makeGraphic(800, 600, 0xFF1a1a1a);
+		panel.screenCenter();
+		add(panel);
+
+		// Título
+		var title:FlxText = new FlxText(0, panel.y + 30, FlxG.width, "OFFSET CALIBRATION", 40);
+		title.setFormat(Paths.font("Funkin.otf"), 40, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+		title.borderSize = 3;
+		add(title);
+
+		// Instrucciones
+		instructions = new FlxText(0, panel.y + 100, FlxG.width, 
+			"Press SPACE in sync with the beat!\n\n" +
+			"The metronome will play at 100 BPM\n" +
+			"Press 8 times to calculate your offset", 24);
+		instructions.setFormat(Paths.font("Funkin.otf"), 24, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+		instructions.borderSize = 2;
+		add(instructions);
+
+		// Indicador visual de beat (círculo que pulsa)
+		visualMetronome = new FlxSprite(0, 0).makeGraphic(120, 120, FlxColor.TRANSPARENT);
+		visualMetronome.screenCenter();
+		visualMetronome.y = panel.y + 280;
+		add(visualMetronome);
+
+		// Beat indicator
+		beatIndicator = new FlxSprite(0, 0).makeGraphic(100, 100, FlxColor.CYAN);
+		beatIndicator.screenCenter();
+		beatIndicator.y = visualMetronome.y + 10;
+		beatIndicator.alpha = 0;
+		add(beatIndicator);
+
+		// Display de offset actual
+		offsetDisplay = new FlxText(0, panel.y + 420, FlxG.width, "Current Offset: " + FlxG.save.data.offset + " ms", 28);
+		offsetDisplay.setFormat(Paths.font("Funkin.otf"), 28, FlxColor.YELLOW, CENTER, OUTLINE, FlxColor.BLACK);
+		offsetDisplay.borderSize = 2;
+		add(offsetDisplay);
+
+		// Contador de taps
+		tapCounter = new FlxText(0, panel.y + 470, FlxG.width, "Taps: 0/" + maxTaps, 24);
+		tapCounter.setFormat(Paths.font("Funkin.otf"), 24, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+		tapCounter.borderSize = 2;
+		add(tapCounter);
+
+		// Countdown
+		countdownText = new FlxText(0, 0, FlxG.width, "3", 80);
+		countdownText.setFormat(Paths.font("Funkin.otf"), 80, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
+		countdownText.borderSize = 4;
+		countdownText.screenCenter();
+		add(countdownText);
+
+		// Controles en la parte inferior
+		var controlsText:FlxText = new FlxText(0, panel.y + 530, FlxG.width, 
+			"SPACE: Tap | R: Reset | +/-: Adjust manually | ESC: Back", 18);
+		controlsText.setFormat(Paths.font("Funkin.otf"), 18, FlxColor.GRAY, CENTER, OUTLINE, FlxColor.BLACK);
+		controlsText.borderSize = 1.5;
+		add(controlsText);
+
+		// Inicializar offset si no existe
+		if (FlxG.save.data.offset == null)
+			FlxG.save.data.offset = 0;
+	}
+
+	override function update(elapsed:Float)
+	{
+		super.update(elapsed);
+
+		// Countdown inicial
+		if (isCountingDown)
+		{
+			countdownTimer -= elapsed;
+			countdownText.text = Std.string(Math.ceil(countdownTimer));
+			
+			if (countdownTimer <= 0)
+			{
+				isCountingDown = false;
+				countdownText.visible = false;
+				beatTime = 0;
+			}
+			return;
+		}
+
+		// Actualizar timer del beat
+		beatTime += elapsed;
+		var beatDuration = 60 / bpm; // Tiempo por beat en segundos
+
+		// Reproducir metrónomo en cada beat
+		if (beatTime >= beatDuration)
+		{
+			beatTime = 0;
+			currentBeat++;
+			playMetronome();
+			flashBeatIndicator();
+		}
+
+		// Input del usuario
+		if (FlxG.keys.justPressed.SPACE)
+		{
+			recordTap();
+		}
+
+		// Ajuste manual con PLUS o MINUS
+		if (FlxG.keys.justPressed.PLUS || FlxG.keys.justPressed.NUMPADPLUS)
+		{
+			FlxG.save.data.offset += 1;
+			updateOffsetDisplay();
+			FlxG.sound.play(Paths.sound('menus/scrollMenu'));
+		}
+		if (FlxG.keys.justPressed.MINUS || FlxG.keys.justPressed.NUMPADMINUS)
+		{
+			FlxG.save.data.offset -= 1;
+			updateOffsetDisplay();
+			FlxG.sound.play(Paths.sound('menus/scrollMenu'));
+		}
+
+		// Reset
+		if (FlxG.keys.justPressed.R)
+		{
+			taps = [];
+			updateTapCounter();
+			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
+		}
+
+		// Volver
+		if (FlxG.keys.justPressed.ESCAPE || controls.BACK)
+		{
+			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
+			FlxG.save.flush();
+			close();
+		}
+
+		// Animación del indicador visual
+		beatIndicator.alpha = FlxMath.lerp(beatIndicator.alpha, 0, elapsed * 5);
+		beatIndicator.scale.set(FlxMath.lerp(beatIndicator.scale.x, 1, elapsed * 8), 
+								FlxMath.lerp(beatIndicator.scale.y, 1, elapsed * 8));
+	}
+
+	function playMetronome()
+	{
+		FlxG.sound.play(Paths.soundRandom(metronomeSound,1,2), 0.5);
+	}
+
+	function flashBeatIndicator()
+	{
+		beatIndicator.alpha = 1;
+		beatIndicator.scale.set(1.3, 1.3);
+	}
+
+	function recordTap()
+	{
+		// Registrar el tiempo del tap relativo al beat
+		var tapOffset = beatTime * 1000; // Convertir a milisegundos
+		taps.push(tapOffset);
+
+		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.7);
+
+		// Visual feedback
+		beatIndicator.alpha = 0.5;
+		beatIndicator.color = FlxColor.YELLOW;
+
+		updateTapCounter();
+
+		// Si completamos los taps necesarios, calcular offset
+		if (taps.length >= maxTaps)
+		{
+			calculateOffset();
+		}
+	}
+
+	function calculateOffset()
+	{
+		// Calcular el promedio de los offsets
+		var sum:Float = 0;
+		for (tap in taps)
+		{
+			sum += tap;
+		}
 		
-		// Apply FPS setting
-		var fpsOptions:Array<Int> = [60, 120, 144, 240, 999];
-		var targetFPS = fpsOptions[getCurrentFPSIndex()];
-		openfl.Lib.current.stage.frameRate = targetFPS;
-		FlxG.updateFramerate = targetFPS;
-		FlxG.drawFramerate = targetFPS;
+		var average = sum / taps.length;
+		var beatDurationMs = (60 / bpm) * 1000;
+		
+		// Calcular el offset real (cuánto antes o después está presionando)
+		var offset = Std.int(average - (beatDurationMs / 2));
+		
+		FlxG.save.data.offset = offset;
+		updateOffsetDisplay();
+		
+		// Reset taps
+		taps = [];
+		updateTapCounter();
+		
+		FlxG.sound.play(Paths.sound('menus/confirmMenu'));
+		
+		// Feedback visual
+		beatIndicator.color = FlxColor.LIME;
+		flashBeatIndicator();
+	}
+
+	function updateOffsetDisplay()
+	{
+		offsetDisplay.text = "Current Offset: " + FlxG.save.data.offset + " ms";
+	}
+
+	function updateTapCounter()
+	{
+		tapCounter.text = "Taps: " + taps.length + "/" + maxTaps;
 	}
 }

@@ -183,6 +183,9 @@ class NoteManager
 
 	private function updateActiveNotes(songPosition:Float):Void
 	{
+		var playerNotesCount = 0;
+		var checkedNotes = 0;
+		
 		notes.forEachAlive(function(note:Note)
 		{
 			updateNotePosition(note, songPosition);
@@ -192,11 +195,30 @@ class NoteManager
 				handleCPUNote(note);
 				return;
 			}
-
-			if (note.mustPress && !note.wasGoodHit && songPosition > note.strumTime + 350)
+			
+			// Contar notas del jugador para debug
+			if (note.mustPress && !note.isSustainNote)
 			{
-				missNote(note);
-				return;
+				playerNotesCount++;
+				
+				// Debug cada 60 frames (aproximadamente 1 segundo)
+				if (checkedNotes % 60 == 0)
+				{
+					var timeDiff = songPosition - note.strumTime;
+					trace('[NoteManager] 🔍 Nota jugador - noteData=${note.noteData}, strumTime=${note.strumTime}, songPos=$songPosition, diff=$timeDiff, wasGoodHit=${note.wasGoodHit}, tooLate=${note.tooLate}');
+				}
+				checkedNotes++;
+			}
+
+			// ✅ FIX: Marcar la nota como tooLate si pasó el tiempo límite
+			// Esto permite que InputHandler.checkMisses() detecte la nota correctamente
+			// SOLO para notas normales (no sustain notes)
+			if (note.mustPress && !note.wasGoodHit && !note.isSustainNote && songPosition > note.strumTime + 350)
+			{
+				note.tooLate = true;
+				note.canBeHit = false;
+				trace('[NoteManager] ⚠️ Nota marcada como tooLate! noteData=${note.noteData}, strumTime=${note.strumTime}, songPos=$songPosition');
+				// No llamamos a missNote aquí - InputHandler.checkMisses() lo hará
 			}
 
 			manageNoteVisibility(note);
@@ -337,6 +359,15 @@ class NoteManager
 
 	private function shouldRemoveNote(note:Note):Bool
 	{
+		// ✅ CRÍTICO: NO eliminar notas del jugador que no han sido golpeadas
+		// Estas notas deben marcarse como tooLate primero para generar el miss
+		if (note.mustPress && !note.wasGoodHit && !note.tooLate)
+		{
+			// No eliminar hasta que se marque como tooLate
+			return false;
+		}
+		
+		// Eliminar notas que ya salieron de la pantalla
 		if (!downscroll)
 			return note.y < -note.height;
 		else

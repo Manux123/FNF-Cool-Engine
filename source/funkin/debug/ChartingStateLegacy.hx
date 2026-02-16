@@ -670,7 +670,7 @@ class ChartingStateLegacy extends states.MusicBeatState
 			var curBeat:Int = Math.floor(curStep / 4);
 			if (curBeat != lastMetronomeBeat)
 			{
-				FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
+				FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.6);
 				lastMetronomeBeat = curBeat;
 			}
 		}
@@ -1404,7 +1404,7 @@ class ChartingStateLegacy extends states.MusicBeatState
 
 			// Play hitsound
 			if (hitsoundsEnabled)
-				FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+				FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 		}
 
 		updateGrid();

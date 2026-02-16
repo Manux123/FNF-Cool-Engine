@@ -275,7 +275,7 @@ class AddSongSubState extends FlxSubState
 		{
 			showInStoryMode = !showInStoryMode;
 			updateToggleButton();
-			FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
+			FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.6);
 		});
 		styleToggleButton(storyModeToggleBtn);
 		storyModeToggleBtn.alpha = 0;
@@ -441,7 +441,7 @@ class AddSongSubState extends FlxSubState
 			{
 				selectedColor = colorPresets[i].hex;
 				updateColorButtons();
-				FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+				FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 			});
 			colorBtn.makeGraphic(btnSize, btnSize, Std.parseInt(colorPresets[i].hex));
 			colorBtn.alpha = 0;
@@ -567,7 +567,7 @@ class AddSongSubState extends FlxSubState
 			return;
 		}
 		
-		FlxG.sound.play(Paths.sound('confirmMenu'));
+		FlxG.sound.play(Paths.sound('menus/confirmMenu'));
 		
 		if (editMode)
 		{
@@ -855,7 +855,7 @@ class AddSongSubState extends FlxSubState
 	
 	function closeWindow():Void
 	{
-		FlxG.sound.play(Paths.sound('cancelMenu'));
+		FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 		
 		FlxTween.tween(bgDarkener, {alpha: 0}, 0.3);
 		FlxTween.tween(windowBg, {alpha: 0, "scale.x": 0.8, "scale.y": 0.8}, 0.3, {
@@ -877,14 +877,14 @@ class AddSongSubState extends FlxSubState
 			currentIconIndex--;
 			if (currentIconIndex < 0) currentIconIndex = iconPresets.length - 1;
 			iconNameInput.text = iconPresets[currentIconIndex];
-			FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+			FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 		}
 		else if (FlxG.keys.justPressed.RIGHT)
 		{
 			currentIconIndex++;
 			if (currentIconIndex >= iconPresets.length) currentIconIndex = 0;
 			iconNameInput.text = iconPresets[currentIconIndex];
-			FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+			FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 		}
 		
 		// ESC to close

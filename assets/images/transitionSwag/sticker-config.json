@@ -75,6 +75,6 @@
 	"delayBetweenWaves": 0.1,
 	"minScale": 0.85,
 	"maxScale": 1.0,
-	"animationDuration": 0.35,
+	"animationDuration": 0.25,
 	"stickerLifetime": 999
 }

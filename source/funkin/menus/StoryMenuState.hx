@@ -693,7 +693,7 @@ class StoryMenuState extends funkin.states.MusicBeatState
 
 		if (controls.BACK && !movedBack && !selectedWeek)
 		{
-			FlxG.sound.play(Paths.sound('cancelMenu'));
+			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 			movedBack = true;
 			FlxG.switchState(new MainMenuState());
 			return; // IMPORTANTE: Detener la ejecución aquí
@@ -733,7 +733,7 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		{
 			if (stopspamming == false)
 			{
-				FlxG.sound.play(Paths.sound('confirmMenu'));
+				FlxG.sound.play(Paths.sound('menus/confirmMenu'));
 				FlxG.camera.flash(FlxColor.WHITE, 1);
 
 				if (grpWeekText != null
@@ -901,7 +901,7 @@ class StoryMenuState extends funkin.states.MusicBeatState
 			}
 		}
 
-		FlxG.sound.play(Paths.sound('scrollMenu'));
+		FlxG.sound.play(Paths.sound('menus/scrollMenu'));
 
 		// Asegurar que curWeek es válido justo antes de updateText
 		if (curWeek >= 0 && curWeek < weekData.length)

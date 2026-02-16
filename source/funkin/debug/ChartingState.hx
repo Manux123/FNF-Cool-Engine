@@ -1020,7 +1020,7 @@ class ChartingState extends funkin.states.MusicBeatState
 			var curBeat = Math.floor(Conductor.songPosition / Conductor.crochet);
 			if (curBeat != lastMetronomeBeat)
 			{
-				FlxG.sound.play(Paths.sound('scrollMenu'), 0.5);
+				FlxG.sound.play(Paths.soundRandom('menus/chartingSounds/metronome',1,2), 0.5);
 				lastMetronomeBeat = curBeat;
 			}
 		}
@@ -1247,7 +1247,7 @@ class ChartingState extends funkin.states.MusicBeatState
 				});
 				_song.notes[targetSection].sectionNotes.remove(i);
 				noteExists = true;
-				FlxG.sound.play(Paths.sound('scrollMenu'), 0.3);
+				FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.3);
 				break;
 			}
 		}
@@ -1262,7 +1262,7 @@ class ChartingState extends funkin.states.MusicBeatState
 			_song.notes[targetSection].sectionNotes.push([noteStrumTime, noteData, 0]);
 
 			if (hitsoundsEnabled)
-				FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+				FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 		}
 		updateGrid();
 	}
@@ -1302,7 +1302,7 @@ class ChartingState extends funkin.states.MusicBeatState
 					note: [i[0], i[1], i[2]]
 				});
 				_song.notes[targetSection].sectionNotes.remove(i);
-				FlxG.sound.play(Paths.sound('scrollMenu'), 0.3);
+				FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.3);
 				updateGrid();
 				return;
 			}
@@ -1507,7 +1507,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		_song.notes[curSection].sectionNotes.push([strumTime, noteData, 0]);
 
 		if (hitsoundsEnabled)
-			FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+			FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 
 		updateGrid();
 		showMessage('➕ Note placed', ACCENT_SUCCESS);
@@ -1835,7 +1835,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		}
 
 		showMessage('📋 Copied ${clipboard.length} notes', ACCENT_SUCCESS);
-		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 	}
 
 	function pasteSection():Void
@@ -1859,7 +1859,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		updateGrid();
 		showMessage('📌 Pasted ${clipboard.length} notes', ACCENT_SUCCESS);
-		FlxG.sound.play(Paths.sound('confirmMenu'), 0.4);
+		FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.4);
 	}
 
 	function cutSection():Void
@@ -1885,7 +1885,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		updateGrid();
 		showMessage('🔄 Section mirrored (P1 ↔ P2)', ACCENT_CYAN);
-		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 	}
 
 	function mirrorHorizontal():Void
@@ -1957,7 +1957,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		updateGrid();
 		showMessage('↶ Undo', ACCENT_CYAN);
-		FlxG.sound.play(Paths.sound('scrollMenu'), 0.3);
+		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.3);
 	}
 
 	function redo():Void
@@ -1987,7 +1987,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		updateGrid();
 		showMessage('↷ Redo', ACCENT_CYAN);
-		FlxG.sound.play(Paths.sound('scrollMenu'), 0.3);
+		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.3);
 	}
 
 	function calculateNPS():Float
@@ -2062,7 +2062,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		_file = null;
 
 		showMessage('✅ Chart saved successfully!', ACCENT_SUCCESS);
-		FlxG.sound.play(Paths.sound('confirmMenu'), 0.6);
+		FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.6);
 	}
 
 	function onSaveCancel(_):Void
@@ -2155,7 +2155,7 @@ class ChartingState extends funkin.states.MusicBeatState
 				stepperSpeed.value = _song.speed;
 
 			showMessage('✅ Chart loaded: ${_song.song}', ACCENT_SUCCESS);
-			FlxG.sound.play(Paths.sound('confirmMenu'), 0.6);
+			FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.6);
 		}
 		catch (e:Dynamic)
 		{

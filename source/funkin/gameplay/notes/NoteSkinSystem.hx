@@ -124,7 +124,7 @@ class NoteSkinSystem
 	private static inline var DEFAULT_NORMAL:String = "Default/NOTE_assets";
 	private static inline var DEFAULT_PIXEL:String = "Default/arrows-pixels";
 	private static inline var DEFAULT_PIXEL_ENDS:String = "Default/arrowEnds";
-	private static inline var DEFAULT_SPLASH:String = "Default/noteSplashes_clasic";
+	private static inline var DEFAULT_SPLASH:String = "Default/noteSplashes";
 
 	public static function init():Void
 	{
@@ -441,7 +441,7 @@ class NoteSkinSystem
 			description: "Default note splash effects",
 			folder: "Default", // CORREGIDO: Folder Default
 			assets: {
-				path: "noteSplashes_clasic",
+				path: "noteSplashes",
 				type: "sparrow",
 				scale: 1.0,
 				antialiasing: true,
@@ -712,7 +712,7 @@ class NoteSkinSystem
 		if (assets == null || assets.path == null)
 		{
 			trace('Invalid splash assets, loading default');
-			return Paths.splashSprite('Default/noteSplashes_clasic');
+			return Paths.splashSprite('Default/noteSplashes');
 		}
 
 		var path:String = assets.path;
@@ -722,7 +722,7 @@ class NoteSkinSystem
 		if (!splashAssetExists(path, folder))
 		{
 			trace('Splash asset not found at $folder/$path, loading default');
-			return Paths.splashSprite('Default/noteSplashes_clasic');
+			return Paths.splashSprite('Default/noteSplashes');
 		}
 
 		try
@@ -751,7 +751,7 @@ class NoteSkinSystem
 		catch (e:Dynamic)
 		{
 			trace('Error loading splash atlas at $folder/$path: $e');
-			return Paths.splashSprite('Default/noteSplashes_clasic');
+			return Paths.splashSprite('Default/noteSplashes');
 		}
 	}
 

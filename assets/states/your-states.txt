@@ -66,7 +66,7 @@ function onIntroBeat(beat) {
 
 function onIntroComplete() {
     trace("¡Intro completada!");
-    FlxG.sound.play(Paths.sound('confirmMenu'));
+    FlxG.sound.play(Paths.sound('menus/confirmMenu'));
 }
 ```
 
@@ -249,7 +249,7 @@ function onCreate() {
 function registerCodes() {
     secretCodes.set("KONAMI", function() {
         trace("¡Código Konami activado!");
-        FlxG.sound.play(Paths.sound('confirmMenu'));
+        FlxG.sound.play(Paths.sound('menus/confirmMenu'));
         unlockAllContent();
     });
     

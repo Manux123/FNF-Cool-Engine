@@ -948,7 +948,7 @@ class PlayState extends funkin.states.MusicBeatState
 			syncLegacyStats();
 
 			// Check death
-			if (gameState.isDead())
+			if (gameState.isDead() || FlxG.keys.anyJustPressed(inputHandler.killBind))
 				gameOver();
 
 			// Limpiar hold splashes de CPU que ya no tienen notas activas
@@ -1490,11 +1490,16 @@ class PlayState extends funkin.states.MusicBeatState
 	 */
 	private function onPlayerNoteMiss(direction:Int):Void
 	{
+		trace('[PlayState] 🎵 onPlayerNoteMiss llamado! direction=$direction');
+		
 		if (scriptsEnabled)
 		{
 			var cancel = ScriptHandler.callOnScriptsReturn('onPlayerNoteMiss', [direction], false);
 			if (cancel == true)
+			{
+				trace('[PlayState] onPlayerNoteMiss cancelado por script');
 				return;
+			}
 		}
 		// Process miss
 		gameState.processMiss();
@@ -1507,16 +1512,38 @@ class PlayState extends funkin.states.MusicBeatState
 		// El jugador SIEMPRE es el slot 2 (boyfriend) en el array de characterSlots
 		var playerCharIndex:Int = 2; // Índice fijo del jugador
 		
+		trace('[PlayState] Intentando reproducir animación de miss...');
+		trace('[PlayState] characterSlots.length: ${characterSlots.length}');
+		trace('[PlayState] playerCharIndex: $playerCharIndex');
+		
 		// Intentar usar el sistema de múltiples personajes
 		if (characterSlots.length > playerCharIndex)
 		{
-			characterController.missByIndex(playerCharIndex, direction);
+			trace('[PlayState] Usando sistema de slots para miss');
+			var slot = characterSlots[playerCharIndex];
+			if (slot != null)
+			{
+				trace('[PlayState] Slot encontrado, isActive: ${slot.isActive}');
+				trace('[PlayState] Llamando characterController.missByIndex($playerCharIndex, $direction)');
+				characterController.missByIndex(playerCharIndex, direction);
+			}
+			else
+			{
+				trace('[PlayState] ERROR: Slot es NULL!');
+			}
 		}
 		else if (boyfriend != null)
 		{
 			// Fallback al sistema legacy si no hay slots
+			trace('[PlayState] Usando sistema legacy para miss');
 			var anims = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
-			boyfriend.playAnim('sing' + anims[direction] + 'miss', true);
+			var animName = 'sing' + anims[direction] + 'miss';
+			trace('[PlayState] Reproduciendo animación: $animName en boyfriend');
+			boyfriend.playAnim(animName, true);
+		}
+		else
+		{
+			trace('[PlayState] ERROR: boyfriend es NULL y no hay slots!');
 		}
 		
 		// Hacer sad a GF si existe
@@ -1531,6 +1558,8 @@ class PlayState extends funkin.states.MusicBeatState
 
 		if (scriptsEnabled)
 			ScriptHandler.callOnScripts('onPlayerNoteMissPost', [direction]);
+			
+		trace('[PlayState] onPlayerNoteMiss completado');
 	}
 
 	/**
@@ -1580,21 +1609,35 @@ class PlayState extends funkin.states.MusicBeatState
 
 		var altAnim:String = getHasAltAnim(curStep) ? '-alt' : '';
 
-		// GF/Dad singing logic
+		// ✅ FIX: Animar solo al personaje DAD (índice 1), NO a GF
+		// GF (índice 0) solo baila, no canta
 		var section = getSectionAsClass(curStep);
 		if (section != null)
 		{
 			var charIndices = section.getActiveCharacterIndices(1, 2); // (dadIndex, bfIndex)
 
-			// Hacer cantar a todos los personajes activos del CPU
+			// ✅ ARREGLADO: Solo hacer cantar al personaje DAD (índice 1)
+			// GF (índice 0) NO debe cantar, solo bailar
+			var dadIndex:Int = 1; // Dad es siempre el índice 1
+			
+			if (characterSlots.length > dadIndex)
+			{
+				var dadSlot = characterSlots[dadIndex];
+				if (dadSlot != null && dadSlot.isActive && dadSlot.character != null)
+				{
+					// Hacer cantar solo a Dad
+					characterController.singByIndex(dadIndex, note.noteData, altAnim);
+				}
+			}
+			else if (dad != null)
+			{
+				// Fallback al sistema legacy si no hay slots
+				characterController.sing(dad, note.noteData, altAnim);
+			}
+			
+			// Camera offset - usar el primer personaje activo del CPU para el offset de cámara
 			if (charIndices.length > 0)
 			{
-				for (charIndex in charIndices)
-				{
-					characterController.singByIndex(charIndex, note.noteData, altAnim);
-				}
-				
-				// Camera offset - usar el primer personaje activo del CPU
 				var activeChar = characterController.getCharacter(charIndices[0]);
 				if (activeChar != null)
 					cameraController.applyNoteOffset(activeChar, note.noteData);
@@ -1603,17 +1646,31 @@ class PlayState extends funkin.states.MusicBeatState
 			}
 			else if (dad != null)
 			{
-				// Fallback: usar dad si no hay personajes activos en la sección
-				characterController.sing(dad, note.noteData, altAnim);
 				cameraController.applyNoteOffset(dad, note.noteData);
 			}
 		}
 		else
 		{
-			// FALLBACK: Si la sección es null, usar dad directamente
+			// FALLBACK: Si la sección es null, animar solo a Dad (índice 1)
+			var dadIndex:Int = 1;
+			
+			if (characterSlots.length > dadIndex)
+			{
+				var dadSlot = characterSlots[dadIndex];
+				if (dadSlot != null && dadSlot.isActive && dadSlot.character != null)
+				{
+					characterController.singByIndex(dadIndex, note.noteData, altAnim);
+				}
+			}
+			else if (dad != null)
+			{
+				// Fallback al sistema legacy
+				characterController.sing(dad, note.noteData, altAnim);
+			}
+			
+			// Fallback para offset de cámara
 			if (dad != null)
 			{
-				characterController.sing(dad, note.noteData, altAnim);
 				cameraController.applyNoteOffset(dad, note.noteData);
 			}
 		}
@@ -2211,6 +2268,75 @@ class PlayState extends funkin.states.MusicBeatState
 			vocals.stop();
 			LoadingState.loadAndSwitchState(new RatingState());
 		}
+	}
+
+	/**
+	 * Actualiza las configuraciones de gameplay en tiempo real
+	 * Se llama cuando se modifican opciones desde el pause menu
+	 * SOLO aplica cambios SEGUROS que no pueden causar bugs
+	 */
+	public function updateGameplaySettings():Void
+	{
+		// Verificación de seguridad: solo actualizar si el juego está pausado
+		if (!paused)
+		{
+			trace('[PlayState] WARNING: Cannot update settings while game is playing');
+			return;
+		}
+		
+		trace('[PlayState] Updating SAFE gameplay settings in real-time');
+		
+		// === CAMBIOS SEGUROS (no afectan lógica del juego) ===
+		
+		// 1. Actualizar visibilidad del HUD (100% seguro)
+		if (uiManager != null)
+		{
+			var hideHud = FlxG.save.data.HUD;
+			uiManager.visible = !hideHud; // Controlar visibilidad del grupo completo
+			trace('[PlayState] HUD visible: ' + !hideHud);
+		}
+		
+		// 2. Actualizar antialiasing (solo visual, 100% seguro)
+		updateAntialiasing();
+		
+		// 3. Actualizar ghost tapping (seguro, solo afecta siguiente input)
+		if (inputHandler != null)
+		{
+			inputHandler.ghostTapping = FlxG.save.data.ghosttap;
+			trace('[PlayState] Ghost tapping: ' + inputHandler.ghostTapping);
+		}
+		
+		// === CAMBIOS QUE REQUIEREN MÁS CUIDADO ===
+		// NO actualizar downscroll/middlescroll en tiempo real
+		// Estos cambios pueden causar confusión y bugs con las notas en vuelo
+		// El usuario debe reiniciar la canción para aplicar estos cambios
+		
+		trace('[PlayState] Safe gameplay settings updated successfully');
+	}
+
+	/**
+	 * Actualiza el antialiasing de todos los sprites del stage
+	 */
+	private function updateAntialiasing():Void
+	{
+		if (currentStage == null) return;
+		
+		trace('[PlayState] Updating antialiasing: ' + FlxG.save.data.antialiasing);
+		
+		// Actualizar antialiasing del stage
+		for (sprite in currentStage.members)
+		{
+			if (sprite != null && Std.isOfType(sprite, FlxSprite))
+			{
+				var spr:FlxSprite = cast sprite;
+				spr.antialiasing = cast(FlxG.save.data.antialiasing, Bool);
+			}
+		}
+		
+		// Actualizar antialiasing de personajes
+		if (boyfriend != null) boyfriend.antialiasing = cast(FlxG.save.data.antialiasing, Bool);
+		if (dad != null) dad.antialiasing = cast(FlxG.save.data.antialiasing, Bool);
+		if (gf != null) gf.antialiasing = cast(FlxG.save.data.antialiasing, Bool);
 	}
 
 	/**

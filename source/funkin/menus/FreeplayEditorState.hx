@@ -465,7 +465,7 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 				return;
 			#end
 
-			FlxG.sound.play(Paths.sound('cancelMenu'));
+			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 			FlxG.switchState(new FreeplayState());
 		}
 
@@ -480,14 +480,14 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 			if (curSelected == 0)
 			{
 				// Open add song substate
-				FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
+				FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.7);
 				openSubState(new AddSongSubState());
 			}
 			else
 			{
 				// Open edit song substate
 				var songIndex = curSelected - 1;
-				FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
+				FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.7);
 				openSubState(new AddSongSubState(songs[songIndex]));
 			}
 		}
@@ -526,7 +526,7 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 		// Reload list
 		reloadSongList();
 
-		FlxG.sound.play(Paths.sound('cancelMenu'));
+		FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 		FlxG.camera.flash(FlxColor.RED, 0.3);
 	}
 
@@ -573,7 +573,7 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 						if (draggedIcon != null)
 							draggedIcon.alpha = 0.6;
 						
-						FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+						FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 						break;
 					}
 				}
@@ -621,7 +621,7 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 				{
 					// Reorder songs
 					reorderSong(draggedIndex, hoverIndex);
-					FlxG.sound.play(Paths.sound('confirmMenu'), 0.5);
+					FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.5);
 				}
 				else
 				{
@@ -800,7 +800,7 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 
 	function changeSelection(change:Int = 0)
 	{
-		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 
 		curSelected += change;
 

@@ -112,18 +112,18 @@ class CreditsState extends funkin.statesMusicBeatState
 
 		if (upP)
 		{
-			FlxG.sound.play(Paths.sound('scrollMenu'));
+			FlxG.sound.play(Paths.sound('menus/scrollMenu'));
 			changeSelection(-1);
 		}
 		if (downP)
 		{
-			FlxG.sound.play(Paths.sound('scrollMenu'));
+			FlxG.sound.play(Paths.sound('menus/scrollMenu'));
 			changeSelection(1);
 		}
 
 		if (controls.BACK)
 		{
-			FlxG.sound.play(Paths.sound('cancelMenu'));
+			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 			FlxG.switchState(new MainMenuState());
 		}
 		if(controls.ACCEPT) {

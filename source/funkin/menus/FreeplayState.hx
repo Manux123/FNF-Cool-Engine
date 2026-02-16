@@ -96,6 +96,10 @@ class FreeplayState extends funkin.states.MusicBeatState
 	override function create()
 	{
 		FlxG.mouse.visible = false;
+		
+		// ✅ FIX: Limpiar inputs al inicio para evitar inputs residuales del state anterior
+		FlxG.keys.reset();
+		
 		if (StickerTransition.enabled){
 			transIn = null;
 			transOut = null;
@@ -313,6 +317,11 @@ class FreeplayState extends funkin.states.MusicBeatState
 	override function closeSubState()
 	{
 		changeSelection();
+		
+		// ✅ FIX: Limpiar inputs residuales al volver de un substate
+		// Esto evita que un ENTER usado para salir del pause menu se procese en FreeplayState
+		FlxG.keys.reset();
+		
 		super.closeSubState();
 	}
 
@@ -344,9 +353,12 @@ class FreeplayState extends funkin.states.MusicBeatState
 		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
 		#end
 
+		// ✅ FIX: Bloquear inputs mientras la transición está activa
 		if (StickerTransition.isActive())
 		{
 			StickerTransition.ensureCameraOnTop();
+			super.update(elapsed);
+			return; // ← CRÍTICO: No procesar inputs durante la transición
 		}
 
 		// Actualizar efectos visuales
@@ -388,7 +400,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 		if (controls.BACK)
 		{
-			FlxG.sound.play(Paths.sound('cancelMenu'));
+			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 			FlxG.switchState(new MainMenuState());
 		}
 
@@ -423,7 +435,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 				{
 					// Show error message
 					showError('Cannot preview: Chart file not found!\n"$poop.json" is missing');
-					FlxG.sound.play(Paths.sound('cancelMenu'));
+					FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 					return;
 				}
 
@@ -435,14 +447,14 @@ class FreeplayState extends funkin.states.MusicBeatState
 					if (PlayState.SONG == null || PlayState.SONG.song == null)
 					{
 						showError('Cannot preview: Chart file is corrupted!');
-						FlxG.sound.play(Paths.sound('cancelMenu'));
+						FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 						return;
 					}
 				}
 				catch (e:Dynamic)
 				{
 					showError('Cannot preview: Failed to load chart!');
-					FlxG.sound.play(Paths.sound('cancelMenu'));
+					FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 					trace('Error loading song JSON for preview: ' + e);
 					return;
 				}
@@ -567,7 +579,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 				// Show error message
 				trace('[FreeplayState] ERROR: JSON not found!');
 				showError('ERROR: Chart file not found!\n"$poop.json" is missing');
-				FlxG.sound.play(Paths.sound('cancelMenu'));
+				FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 				FlxG.camera.shake(0.01, 0.3);
 				return;
 			}
@@ -584,7 +596,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 				{
 					trace('[FreeplayState] ERROR: Song data is null or corrupted');
 					showError('ERROR: Chart file is corrupted!\nPlease check "$poop.json"');
-					FlxG.sound.play(Paths.sound('cancelMenu'));
+					FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 					FlxG.camera.shake(0.01, 0.3);
 					return;
 				}
@@ -596,7 +608,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 				// Show error message on load failure
 				trace('[FreeplayState] ERROR loading JSON: $e');
 				showError('ERROR: Failed to load chart!\n' + e);
-				FlxG.sound.play(Paths.sound('cancelMenu'));
+				FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 				FlxG.camera.shake(0.01, 0.3);
 				return;
 			}
@@ -614,7 +626,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 			FlxG.sound.music.volume = 0;
 
 			FlxG.camera.flash(FlxColor.WHITE, 1);
-			FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
+			FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.7);
 
 			StickerTransition.start(function() {
 				LoadingState.loadAndSwitchState(new PlayState());
@@ -733,7 +745,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 	function changeSelection(change:Int = 0)
 	{
-		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 
 		curSelected += change;
 

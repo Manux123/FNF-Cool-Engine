@@ -259,9 +259,22 @@ class CharacterController
 				// GF dance cada gfSpeed beats
 				if (slot.index == 0 && curBeat % gfSpeed == 0)
 					slot.dance();
-				// Otros personajes dance cada beat
+				// Boyfriend (índice 2) requiere verificación especial para no interrumpir misses
+				else if (slot.index == 2)
+				{
+					// Solo hacer dance si NO está en ninguna animación de sing (incluye miss, que empieza con "sing")
+					if (slot.character != null && slot.character.animation != null && slot.character.animation.curAnim != null)
+					{
+						var curAnimName = slot.character.animation.curAnim.name;
+						if (!curAnimName.startsWith("sing") && slot.character.canSing && !specialAnim)
+							slot.dance();
+					}
+				}
+				// Dad y otros personajes dance normalmente cada beat
 				else if (slot.index != 0)
+				{
 					slot.dance();
+				}
 			}
 		}
 		

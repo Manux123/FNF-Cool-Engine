@@ -1,6 +1,5 @@
 package funkin.menus;
 
-import funkin.menus.KeyBindMenu;
 import funkin.gameplay.controls.Controls.Control;
 import flixel.FlxG;
 import flixel.FlxSprite;
@@ -23,7 +22,7 @@ import ui.Alphabet;
 class PauseSubState extends funkin.states.MusicBeatSubstate
 {
 	var grpMenuShit:FlxTypedGroup<Alphabet>;
-	var menuItems:Array<String> = ['Resume', 'Restart Song', /*'Options',*/ 'Change KeyBinds', 'Exit to menu'];
+	var menuItems:Array<String> = ['Resume', 'Restart Song', 'Options', 'Exit to menu'];
 	var curSelected:Int = 0;
 
 	var pauseMusic:FlxSound;
@@ -193,12 +192,10 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 					FlxG.resetState();
 				case "Skip Song":
 					if (PlayState.instance != null)
-						PlayState.instance.endSong();/*
+						PlayState.instance.endSong();
 				case "Options":
-					OptionsMenuState.optionsSong = PlayState.SONG.song;
-					FlxG.switchState(new OptionsMenuState());*/
-				case "Change KeyBinds":
-					FlxG.state.openSubState(new KeyBindMenu());
+					OptionsMenuState.fromPause = true;
+					openSubState(new OptionsMenuState());
 				case "Exit to menu":
 					PlayState.isPlaying = false;
 					if (PlayState.isStoryMode){
@@ -231,7 +228,7 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 
 	function changeSelection(change:Int = 0):Void
 	{
-		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 		
 		curSelected += change;
 

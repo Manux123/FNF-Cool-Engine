@@ -3,7 +3,7 @@
   "author": "FNF Team",
   "description": "Classic Friday Night Funkin' note splash effects",
   "assets": {
-    "path": "noteSplashes_clasic",
+    "path": "noteSplashes",
     "type": "sparrow",
     "scale": 1.0,
     "antialiasing": true,
@@ -11,7 +11,7 @@
   },
   "animations": {
     "left": ["note impact 1 purple", "note impact 2 purple"],
-    "down": ["note impact 1 blue", "note impact 2 blue"],
+    "down": ["note impact 1  blue", "note impact 2 blue"],
     "up": ["note impact 1 green", "note impact 2 green"],
     "right": ["note impact 1 red", "note impact 2 red"],
     "framerate": 24,

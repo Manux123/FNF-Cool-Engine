@@ -87,7 +87,7 @@ overrideFunction('changeWeek', function(change) {
     
     // Fully custom logic
     FlxG.camera.flash(FlxColor.WHITE, 0.5);
-    FlxG.sound.play(Paths.sound('scrollMenu'));
+    FlxG.sound.play(Paths.sound('menus/scrollMenu'));
     
     // Do whatever you want here
     state.curWeek += change * 2; // Change 2 at a time!

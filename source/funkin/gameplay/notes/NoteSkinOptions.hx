@@ -497,7 +497,7 @@ class NoteSkinOptions extends funkin.states.MusicBeatState
 			case 0: // Reset to Default
 				NoteSkinSystem.setSkin("Default");
 				NoteSkinSystem.setSplash("Default");
-				FlxG.sound.play(Paths.sound('confirmMenu'));
+				FlxG.sound.play(Paths.sound('menus/confirmMenu'));
 				updateStatsText();
 				showNotification("Reset to default!");
 
@@ -506,7 +506,7 @@ class NoteSkinOptions extends funkin.states.MusicBeatState
 				var splashExample = NoteSkinSystem.exportSplashExample();
 				trace("=== SKIN EXAMPLE ===\n" + skinExample);
 				trace("=== SPLASH EXAMPLE ===\n" + splashExample);
-				FlxG.sound.play(Paths.sound('confirmMenu'));
+				FlxG.sound.play(Paths.sound('menus/confirmMenu'));
 				showNotification("Config exported to console!");
 
 			case 2: // Preview Mode
@@ -517,16 +517,16 @@ class NoteSkinOptions extends funkin.states.MusicBeatState
 				settingsOptions[3] = "Show Animation Names: " + (showAnimNames ? "ON" : "OFF");
 				refreshSettingsList();
 				updatePreview();
-				FlxG.sound.play(Paths.sound('scrollMenu'));
+				FlxG.sound.play(Paths.sound('menus/scrollMenu'));
 
 			case 4: // Edit Animations
 				// NUEVO: Abrir editor de animaciones
-				FlxG.sound.play(Paths.sound('confirmMenu'));
+				FlxG.sound.play(Paths.sound('menus/confirmMenu'));
 				openAnimationEditor();
 
 			case 5: // Refresh Skins List
 				initialize();
-				FlxG.sound.play(Paths.sound('confirmMenu'));
+				FlxG.sound.play(Paths.sound('menus/confirmMenu'));
 				showNotification("Lists refreshed!");
 		}
 	}
@@ -572,7 +572,7 @@ class NoteSkinOptions extends funkin.states.MusicBeatState
 
 		refreshSettingsList();
 		updatePreview();
-		FlxG.sound.play(Paths.sound('scrollMenu'));
+		FlxG.sound.play(Paths.sound('menus/scrollMenu'));
 	}
 
 	function refreshSettingsList():Void
@@ -632,7 +632,7 @@ class NoteSkinOptions extends funkin.states.MusicBeatState
 		// Navigation
 		if (controls.BACK)
 		{
-			FlxG.sound.play(Paths.sound('cancelMenu'));
+			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 			FlxG.switchState(new OptionsMenuState());
 		}
 
@@ -655,7 +655,7 @@ class NoteSkinOptions extends funkin.states.MusicBeatState
 			{
 				var selectedSkin:String = noteSkins[curSelected];
 				NoteSkinSystem.setSkin(selectedSkin);
-				FlxG.sound.play(Paths.sound('confirmMenu'));
+				FlxG.sound.play(Paths.sound('menus/confirmMenu'));
 				highlightSelection(grpSkins, FlxColor.LIME);
 				updateStatsText();
 				updatePreview();
@@ -665,7 +665,7 @@ class NoteSkinOptions extends funkin.states.MusicBeatState
 			{
 				var selectedSplash:String = noteSplashes[curSelected];
 				NoteSkinSystem.setSplash(selectedSplash);
-				FlxG.sound.play(Paths.sound('confirmMenu'));
+				FlxG.sound.play(Paths.sound('menus/confirmMenu'));
 				highlightSelection(grpSplashes, FlxColor.CYAN);
 				updateStatsText();
 				showNotification('$selectedSplash selected!');
@@ -766,7 +766,7 @@ class NoteSkinOptions extends funkin.states.MusicBeatState
 	function changeSelection(change:Int = 0):Void
 	{
 		if (change != 0)
-			FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+			FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 
 		curSelected += change;
 
@@ -799,7 +799,7 @@ class NoteSkinOptions extends funkin.states.MusicBeatState
 	function changeTab(change:Int = 0):Void
 	{
 		if (change != 0)
-			FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+			FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 
 		currentTab += change;
 

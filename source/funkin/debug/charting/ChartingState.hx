@@ -159,6 +159,8 @@ class ChartingState extends funkin.states.MusicBeatState
 	var bpmInputActive:FlxUIInputText;
 	var sectionInputActive:FlxUIInputText;
 
+	var openSectionNav:Bool = false;
+
 	// HERRAMIENTAS
 	var clipboard:Array<Dynamic> = [];
 	var currentSnap:Int = 16;
@@ -1613,7 +1615,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 	function handleKeyboardInput():Void
 	{
-		if (isAnyPopupOpen())
+		if (isAnyPopupOpen() || openSectionNav)
 			return;
 		// ESC - Volver al PlayState (empezar desde el inicio)
 		if (FlxG.keys.justPressed.ESCAPE)
@@ -1830,6 +1832,7 @@ class ChartingState extends funkin.states.MusicBeatState
 	// Abre un diálogo rápido para saltar a una sección específica
 	function openSectionNavigator():Void
 	{
+		openSectionNav = true;
 		// Crear overlay temporal de navegación
 		var overlay = new FlxSprite(0, 0).makeGraphic(FlxG.width, FlxG.height, 0x88000000);
 		overlay.scrollFactor.set();
@@ -1863,6 +1866,7 @@ class ChartingState extends funkin.states.MusicBeatState
 			remove(label);
 			remove(input);
 			remove(confirmBtn);
+			openSectionNav = false;
 		});
 		confirmBtn.scrollFactor.set();
 		confirmBtn.cameras = [camHUD];

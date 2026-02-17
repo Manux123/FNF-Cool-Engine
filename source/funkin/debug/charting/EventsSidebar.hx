@@ -351,7 +351,7 @@ class EventPopup extends FlxGroup
 		titleText.cameras = [camHUD];
 		add(titleText);
 
-		var typeLabel = new FlxText(cx + 15, cy + 45, 0, "Tipo:", 11);
+		var typeLabel = new FlxText(cx + 15, cy + 45, 0, "Type:", 11);
 		typeLabel.setFormat(Paths.font("vcr.ttf"), 11, TEXT_GRAY, LEFT);
 		typeLabel.scrollFactor.set();
 		typeLabel.cameras = [camHUD];
@@ -362,7 +362,6 @@ class EventPopup extends FlxGroup
 		});
 		typeDropDown.scrollFactor.set();
 		typeDropDown.cameras = [camHUD];
-		add(typeDropDown);
 
 		var valueLabel = new FlxText(cx + 15, cy + 100, 0, "Valor:", 11);
 		valueLabel.setFormat(Paths.font("vcr.ttf"), 11, TEXT_GRAY, LEFT);
@@ -385,6 +384,8 @@ class EventPopup extends FlxGroup
 		addBtn.scrollFactor.set();
 		addBtn.cameras = [camHUD];
 		add(addBtn);
+
+		add(typeDropDown);
 
 		closeBtn = new FlxButton(cx + POPUP_W - 90, cy + POPUP_H - 40, "Cancel", close);
 		closeBtn.scrollFactor.set();

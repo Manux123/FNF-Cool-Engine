@@ -493,7 +493,6 @@ class CharacterDataPopup extends FlxGroup
 		});
 		typeDropDown.scrollFactor.set();
 		typeDropDown.cameras = [camHUD];
-		add(typeDropDown);
 
 		// Strums Group
 		lbl(cx + 15, cy + 100, "Strums Group ID:");
@@ -507,6 +506,8 @@ class CharacterDataPopup extends FlxGroup
 		hint.scrollFactor.set();
 		hint.cameras = [camHUD];
 		add(hint);
+
+		add(typeDropDown);
 
 		// Pos X
 		lbl(cx + 15, cy + 158, "Pos X:");

@@ -234,7 +234,7 @@ class NoteManager
 		handleStrumAnimation(note.noteData, false);
 
 		// NUEVO: No crear splash para CPU notes si son sustain notes intermedias
-		if (!note.isSustainNote)
+		if (!note.isSustainNote && !FlxG.save.data.middlescroll && FlxG.save.data.notesplashes)
 		{
 			createNormalSplash(note, false);
 		}

@@ -16,9 +16,10 @@ class MenuCharacter extends FlxSprite
 
 	public function changeCharacter(?character:String = 'bf') {
 		if(character == this.character) return;
-	
+
 		this.character = character;
 		antialiasing = true;
+		visible = true;
 
 		switch(character) {
 			case 'bf':
@@ -54,9 +55,8 @@ class MenuCharacter extends FlxSprite
 				frames = Paths.getSparrowAtlas('storymenu/campaign_menu/Menu_Senpai');
 				animation.addByPrefix('idle', "M Senpai Idle", 24);
 			
-			case '':
-				frames = Paths.getSparrowAtlas('storymenu/campaign_menu/Menu_');
-				animation.addByPrefix('idle', "M Senpai Idle", 24);
+			default:
+				visible = false;
 		}
 		animation.play('idle');
 		updateHitbox();
@@ -81,9 +81,6 @@ class MenuCharacter extends FlxSprite
 				offset.set(110, 10);
 
 			case 'senpai':
-				offset.set(60, -70);
-
-			case '':
 				offset.set(60, -70);
 		}
 	}

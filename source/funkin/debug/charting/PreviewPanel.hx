@@ -36,6 +36,10 @@ class PreviewPanel extends FlxGroup
 	var previewChar:Character    = null;
 	var charController:CharacterController = null;
 
+	// Carga diferida: se setea en update() y se procesa al inicio del siguiente frame
+	// (evita destruir previewChar mientras super.update() lo está iterando)
+	var _pendingCharName:String  = null;
+
 	// ── Ajustes en vivo ──────────────────────────────────
 	var debugOffsetX:Float = 0;
 	var debugOffsetY:Float = 0;
@@ -357,8 +361,17 @@ class PreviewPanel extends FlxGroup
 			// controla el render del personaje de forma aislada
 			add(previewChar);
 
-			// Crear el controller con previewChar como "dad" — maneja idle/hold automáticamente
-			charController = new CharacterController(null, previewChar, null);
+			// Crear controller con el personaje en el slot correcto según su tipo:
+			// - Opponent (0) → dad
+			// - Player (1)   → boyfriend
+			// - Girlfriend (2) → gf
+			// Esto hace que CharacterController.sing() use la lógica correcta
+			if (selectedCharType == 1) // Player/BF
+				charController = new CharacterController(previewChar, null, null);
+			else if (selectedCharType == 2) // Girlfriend
+				charController = new CharacterController(null, null, previewChar);
+			else // Opponent/Dad (default)
+				charController = new CharacterController(null, previewChar, null);
 
 			// Idle inicial para obtener dimensiones reales (protegido)
 			try { previewChar.dance(); } catch (e:Dynamic) { trace('[PreviewPanel] dance() falló: $e'); }
@@ -399,8 +412,8 @@ class PreviewPanel extends FlxGroup
 		if (previewChar == null) return;
 		// targetX/Y = posición visual deseada (dentro de camPreview 0..CAM_W, 0..CAM_H)
 		// x = targetX + offset.x  porque FNF renderiza en (x - offset.x, y - offset.y)
-		var targetX = CAM_W / 2 - previewChar.width  / 2 + debugOffsetX;
-		var targetY = CAM_H     - previewChar.height  - 5 + debugOffsetY;
+		var targetX = CAM_W / 2 - previewChar.width  / 2 - 160 + debugOffsetX;
+		var targetY = CAM_H     - previewChar.height  - 5 - 290 + debugOffsetY;
 		previewChar.x = targetX + previewChar.offset.x;
 		previewChar.y = targetY + previewChar.offset.y;
 	}
@@ -488,6 +501,15 @@ class PreviewPanel extends FlxGroup
 
 	override public function update(elapsed:Float):Void
 	{
+		// Procesar carga diferida ANTES de super.update() para que el personaje
+		// anterior ya no esté en la lista de iteración cuando se destruye
+		if (_pendingCharName != null)
+		{
+			var name = _pendingCharName;
+			_pendingCharName = null;
+			loadPreviewCharacter(name);
+		}
+
 		if (camPreview != null)
 			camPreview.scroll.set(0, 0);
 
@@ -495,8 +517,9 @@ class PreviewPanel extends FlxGroup
 
 		if (previewChar != null && isPreviewActive)
 		{
-			// CharacterController.update() maneja el holdTimer e idle automáticamente
-			if (charController != null) charController.update(elapsed);
+			// NO llamar charController.update() aquí — previewChar ya fue actualizado
+			// por super.update() (es parte del grupo), y Character.update() maneja
+			// su propio holdTimer e idle. CharacterController solo se usa para sing().
 			applyCharPosition();
 
 			if (debugInfoTxt != null)
@@ -529,14 +552,14 @@ class PreviewPanel extends FlxGroup
 		{
 			debugScale = Math.max(0.1, debugScale - 0.05);
 			if (adjSValTxt != null) adjSValTxt.text = '${Math.round(debugScale * 100) / 100}';
-			if (isPreviewActive && previewChar != null) loadPreviewCharacter(getCharNameForType(selectedCharType));
+			if (isPreviewActive) _pendingCharName = getCharNameForType(selectedCharType);
 			return;
 		}
 		if (FlxG.mouse.justPressed && FlxG.mouse.overlaps(adjSPlusBtn, camHUD))
 		{
 			debugScale += 0.05;
 			if (adjSValTxt != null) adjSValTxt.text = '${Math.round(debugScale * 100) / 100}';
-			if (isPreviewActive && previewChar != null) loadPreviewCharacter(getCharNameForType(selectedCharType));
+			if (isPreviewActive) _pendingCharName = getCharNameForType(selectedCharType);
 			return;
 		}
 
@@ -549,7 +572,7 @@ class PreviewPanel extends FlxGroup
 				updateOptionColors();
 				autoSelectGroupForType(i);
 				if (isPreviewActive)
-					loadPreviewCharacter(getCharNameForType(i));
+					_pendingCharName = getCharNameForType(i);
 				break;
 			}
 		}

@@ -46,6 +46,8 @@ class NoteManager
 
 	private var _scrollSpeed:Float = 0.45;
 
+	var downscrollOff:Float = 0;
+
 	// === CALLBACKS ===
 	public var onNoteMiss:Note->Void = null;
 	public var onCPUNoteHit:Note->Void = null;
@@ -370,7 +372,9 @@ class NoteManager
 
 				clipRect.width = note.frameWidth * 2;
 				clipRect.height = (strumLineThreshold - note.y) / note.scale.y;
-				clipRect.y = note.frameHeight - clipRect.height;
+				if (FlxG.save.data.downscroll)
+					downscrollOff = 10;
+				clipRect.y = note.frameHeight - clipRect.height + downscrollOff;
 
 				note.clipRect = clipRect;
 			}

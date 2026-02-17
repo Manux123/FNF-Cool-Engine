@@ -75,6 +75,8 @@ echo ===============================================
 
 haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
 
+haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate
+
 echo ===============================================
 echo Re-locking Lime and OpenFL versions...
 echo ===============================================

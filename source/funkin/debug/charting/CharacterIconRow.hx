@@ -48,9 +48,9 @@ class CharacterIconRow extends FlxGroup
 	var addCharBtn:FlxSprite;
 	var addCharBtnText:FlxText;
 
-	var rowY:Float = 50;
+	var rowY:Float = 30;
 	var iconSize:Int = 38;
-	var iconSpacing:Int = 46;
+	var iconSpacing:Int = 66;
 	var gridX:Float;
 
 	var charDataPopup:CharacterDataPopup;

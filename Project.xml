@@ -90,6 +90,8 @@
 	<haxelib name="actuate" />
 	<haxelib name="discord_rpc" if="desktop" />
 
+	<haxelib name="flxanimate"/>
+
 	<!-- ______________________________ Haxedefines _____________________________ -->
 
 	<!--Disable the Flixel core focus lost screen-->

@@ -274,6 +274,13 @@ class Paths
 		return getPath('characters/images/$key.png', IMAGE);
 	}
 
+	public static function characterFolder(key:String):String
+	{
+		var path = 'assets/characters/images/$key/';
+		
+		return path;
+	}
+
 	inline static public function imageStage(key:String)
 	{
 		return getPath('stages/' + getCurrentStage() + '/images/' + key + '.png', IMAGE);

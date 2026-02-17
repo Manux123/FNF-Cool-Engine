@@ -1,62 +1,79 @@
 package funkin.gameplay.objects.character;
 
-import flixel.FlxG;
 import flixel.FlxSprite;
-import flixel.animation.FlxBaseAnimation;
-import flixel.graphics.frames.FlxAtlasFrames;
-import flixel.math.FlxMath;
 import flixel.util.FlxColor;
 import funkin.data.Conductor;
+import haxe.Json;
+import sys.io.File;
+import sys.FileSystem;
+
+// ── Librería oficial FlxAnimate (Dot-Stuff/flxanimate) ────────────────────────
+import flxanimate.FlxAnimate;
 
 using StringTools;
 
-import haxe.Json;
-import haxe.format.JsonParser;
-import lime.utils.Assets;
-// Importar parsers de Adobe Animate
-import animationdata.AdobeAnimateAnimationParser;
-import animationdata.AnimateAtlasParser;
-
-typedef CharacterData = {
+typedef CharacterData =
+{
 	var path:String;
 	var animations:Array<AnimData>;
 	var isPlayer:Bool;
 	var antialiasing:Bool;
 	var scale:Float;
 	@:optional var flipX:Bool;
-	@:optional var indices:Array<Int>;
 	@:optional var isTxt:Bool;
 	@:optional var isSpritemap:Bool;
-	@:optional var isAdobeAnimate:Bool; // Nuevo: indica formato Adobe Animate
-	@:optional var animationFile:String; // Nuevo: ruta al Animation.json
+	/** Si es true, usa la librería FlxAnimate (Dot-Stuff/flxanimate) */
+	@:optional var isFlxAnimate:Bool;
+	/** Solo informativo — flxanimate auto-detecta los spritemaps en la carpeta */
+	@:optional var spritemapName:String;
 	@:optional var healthIcon:String;
 	@:optional var healthBarColor:String;
 	@:optional var cameraOffset:Array<Float>;
 }
 
-typedef AnimData = {
+typedef AnimData =
+{
 	var offsetX:Float;
 	var offsetY:Float;
 	var name:String;
 	var looped:Bool;
 	var framerate:Float;
+	/**
+	 * Sprites normales : prefix del XML/TXT.
+	 * FlxAnimate       : nombre exacto del símbolo (campo SN en Animation.json).
+	 */
 	var prefix:String;
 	@:optional var specialAnim:Bool;
 	@:optional var indices:Array<Int>;
 }
 
-class Character extends FlxSprite {
+/**
+ * Character — Personaje jugable/NPC.
+ *
+ * Extiende FlxSprite (NO FlxAnimate). Para personajes con atlas Adobe Animate
+ * se crea un sub-sprite FlxAnimate (_flxAnimate) cuyo ciclo de vida se maneja
+ * completamente desde aquí. Esto evita que el pipeline de FlxAnimate interfiera
+ * con los personajes de sprite normal.
+ *
+ *   Modo normal    → frames = Paths.characterSprite(...)
+ *                    animation.addByPrefix / animation.play
+ *
+ *   Modo FlxAnimate → _flxAnimate = new FlxAnimate(x, y)
+ *                     _flxAnimate.loadAtlas(folderPath)
+ *                     _flxAnimate.anim.addBySymbol / _flxAnimate.anim.play
+ */
+class Character extends FlxSprite
+{
 	public var animOffsets:Map<String, Array<Dynamic>>;
 	public var debugMode:Bool = false;
 
-	public var canSing:Bool = true;
-	public var stunned:Bool = false;
-	public var isPlayer:Bool = false;
+	public var canSing:Bool     = true;
+	public var stunned:Bool     = false;
+	public var isPlayer:Bool    = false;
 	public var specialAnim:Bool = false;
 	public var curCharacter:String = 'bf';
-	public var holdTimer:Float = 0;
+	public var holdTimer:Float  = 0;
 
-	// Additional properties
 	public var healthIcon:String = 'bf';
 	public var healthBarColor:FlxColor = FlxColor.fromString("#31B0D1");
 	public var cameraOffset:Array<Float> = [0, 0];
@@ -64,562 +81,444 @@ class Character extends FlxSprite {
 	var characterData:CharacterData;
 	var danced:Bool = false;
 
-	// Performance optimization: cache frequently used values
+	/** true sólo cuando el JSON tiene isFlxAnimate:true */
+	public var _useFlxAnimate:Bool = false;
+	/** Sub-sprite FlxAnimate; null para personajes de sprite normal */
+	var _flxAnimate:FlxAnimate = null;
+	/** Nombre de la animación actual en modo FlxAnimate (FlxAnim no expone .name) */
+	var _curFlxAnimName:String = "";
+
 	var _singAnimPrefix:String = "sing";
-	var _idleAnim:String = "idle";
+	var _idleAnim:String       = "idle";
 
-	// Adobe Animate support
-	var _adobeAnimateAnims:Map<String, AdobeAnimateAnimation>;
-	var _spritIndexMap:Map<String, Int>;
+	// ── Acceso a la API de FlxAnimate para AnimationDebug ────────────────────
 
-	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false) {
+	/**
+	 * Acceso al FlxAnim interno cuando el personaje usa FlxAnimate.
+	 * Devuelve null si el personaje es un sprite normal.
+	 */
+	public var anim(get, never):flxanimate.animate.FlxAnim;
+	inline function get_anim():flxanimate.animate.FlxAnim
+		return _flxAnimate != null ? _flxAnimate.anim : null;
+
+	// ── Constructor ───────────────────────────────────────────────────────────
+
+	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false)
+	{
 		super(x, y);
 
-		animOffsets = new Map<String, Array<Dynamic>>();
-		curCharacter = character;
+		animOffsets   = new Map<String, Array<Dynamic>>();
+		curCharacter  = character;
 		this.isPlayer = isPlayer;
+		antialiasing  = true;
 
-		antialiasing = true;
-
-		// Load character from JSON
 		loadCharacterData(character);
 
-		if (characterData != null) {
+		if (characterData != null)
+		{
 			characterLoad(curCharacter);
-			trace("Loaded character data for: " + character);
-		} else {
-			trace("Character data not found for: " + character + ", loading default");
+			trace('[Character] Cargado: ' + character);
+		}
+		else
+		{
+			trace('[Character] No se encontraron datos para "' + character + '", usando bf');
 			loadCharacterData("bf");
 			characterLoad("bf");
 		}
 
 		dance();
-		
+
 		isPlayer = characterData.isPlayer;
 
-		if (isPlayer) {
+		if (isPlayer)
+		{
 			flipX = !flipX;
-
-			// Doesn't flip for BF, since his are already in the right place
-			if (!curCharacter.startsWith('bf')) {
+			if (!curCharacter.startsWith('bf'))
 				flipAnimations();
-			}
 		}
 	}
 
-	function loadCharacterData(character:String):Void {
-		try {
-			var file:String = Assets.getText(Paths.characterJSON(character));
-			characterData = cast Json.parse(file);
+	// ── Carga de datos ────────────────────────────────────────────────────────
 
-			// Load additional properties
-			if (characterData.healthIcon != null)
-				healthIcon = characterData.healthIcon;
+	function loadCharacterData(character:String):Void
+	{
+		var jsonPath = Paths.characterJSON(character);
+
+		try
+		{
+			var content:String;
+			if (FileSystem.exists(jsonPath))
+				content = File.getContent(jsonPath);
 			else
-				healthIcon = character;
+				content = lime.utils.Assets.getText(jsonPath);
 
-			if (characterData.healthBarColor != null)
-				healthBarColor = FlxColor.fromString(characterData.healthBarColor);
+			characterData = cast Json.parse(content);
 
-			if (characterData.cameraOffset != null)
-				cameraOffset = characterData.cameraOffset;
-		} catch (e:Dynamic) {
-			trace("Error loading character data for " + character + ": " + e);
+			healthIcon     = characterData.healthIcon     != null ? characterData.healthIcon     : character;
+			healthBarColor = characterData.healthBarColor != null ? FlxColor.fromString(characterData.healthBarColor) : healthBarColor;
+			cameraOffset   = characterData.cameraOffset   != null ? characterData.cameraOffset   : cameraOffset;
+		}
+		catch (e:Dynamic)
+		{
+			trace('[Character] Error cargando datos de "' + character + '": ' + e);
 			characterData = null;
 		}
 	}
 
-	function characterLoad(character:String):Void {
-		// Determinar el formato y cargar sprites
-		if (characterData.isAdobeAnimate != null && characterData.isAdobeAnimate) {
-			// NUEVO: Cargar desde formato Adobe Animate
-			loadFromAdobeAnimate(characterData.path, characterData.animationFile);
-		} else if (characterData.isSpritemap != null && characterData.isSpritemap) {
-			// Load from spritesheet JSON format
-			loadSpritesheetJSON(characterData.path);
-		} else if (characterData.isTxt != null && characterData.isTxt) {
-			// Load from TXT format
-			frames = Paths.characterSpriteTxt(characterData.path);
-		} else {
-			// Load from standard XML format
-			frames = Paths.characterSprite(characterData.path);
+	function characterLoad(character:String):Void
+	{
+		_useFlxAnimate = (characterData.isFlxAnimate != null && characterData.isFlxAnimate);
+
+		if (_useFlxAnimate)
+		{
+			// ── Modo FlxAnimate ──────────────────────────────────────────────
+			var folderPath = Paths.characterFolder(characterData.path);
+            // Aseguramos quitar la barra final para que FlxAnimate no se confunda
+			folderPath = haxe.io.Path.removeTrailingSlashes(folderPath);
+
+			trace('Ruta FlxAnimate: ' + folderPath);
+			
+			trace('[Character] Intentando cargar FlxAnimate en: ' + folderPath);
+
+            // IMPORTANTE: FlxAnimate a veces falla si no se le dan Settings.
+            // Creamos la instancia.
+			_flxAnimate = new FlxAnimate(x, y, folderPath);
+
+			if (_flxAnimate.anim.metadata == null)
+			{
+				trace('[Character] ERROR: Atlas FlxAnimate no cargado o metadata corrupta para "' + curCharacter + '"');
+				_flxAnimate = null;
+				_useFlxAnimate = false;
+                // Intentar cargar como sprite normal por seguridad o dejar como placeholder
+			}
+			else
+			{
+				for (animData in characterData.animations)
+				{
+                    // NOTA: addBySymbol requiere el nombre del SÍMBOLO en Adobe Animate, 
+                    // no el nombre de la animación en el XML. Asegúrate que animData.prefix
+                    // coincida con el nombre en la biblioteca de Animate.
+					_flxAnimate.anim.addBySymbol(animData.name, animData.prefix, Std.int(animData.framerate));
+					addOffset(animData.name, animData.offsetX, animData.offsetY);
+				}
+			}
+		}
+		else
+		{
+			// ── Modo sprite normal ───────────────────────────────────────────
+			if (characterData.isTxt != null && characterData.isTxt)
+				frames = Paths.characterSpriteTxt(characterData.path);
+			else
+				frames = Paths.characterSprite(characterData.path);
+
+			if (frames == null)
+			{
+				trace('[Character] ERROR CRITICO: frames null para "' + curCharacter + '" path="' + characterData.path + '"');
+			}
+			else
+			{
+				trace('[Character] frames OK: ' + frames.frames.length + ' frames para "' + curCharacter + '"');
+
+				for (animData in characterData.animations)
+				{
+					if (animData.indices != null && animData.indices.length > 0)
+						animation.addByIndices(animData.name, animData.prefix, animData.indices, "", Std.int(animData.framerate), animData.looped);
+					else
+						animation.addByPrefix(animData.name, animData.prefix, Std.int(animData.framerate), animData.looped);
+
+					var flxAnim = animation.getByName(animData.name);
+					if (flxAnim == null || flxAnim.numFrames == 0)
+						trace('[Character] WARN: "' + animData.name + '" 0 frames (prefix="' + animData.prefix + '")');
+
+					addOffset(animData.name, animData.offsetX, animData.offsetY);
+				}
+			}
 		}
 
-		// Add animations
-		for (anim in characterData.animations) {
-			// Check if animation uses indices
-			if (anim.indices != null && anim.indices.length > 0) {
-				animation.addByIndices(anim.name, anim.prefix, anim.indices, "", Std.int(anim.framerate), anim.looped);
-			} else {
-				animation.addByPrefix(anim.name, anim.prefix, Std.int(anim.framerate), anim.looped);
-			}
-
-			if (anim.specialAnim != null && anim.specialAnim) {
-				specialAnim = true;
-			}
-
-			addOffset(anim.name, anim.offsetX, anim.offsetY);
-		}
-
-		// Apply character properties
 		antialiasing = characterData.antialiasing;
 		scale.set(characterData.scale, characterData.scale);
 		updateHitbox();
 
-		// Handle character-specific adjustments
 		applyCharacterSpecificAdjustments();
 
-		// Play initial animation
-		// Para personajes con danceLeft/danceRight (GF, Spooky, etc)
-		if (animOffsets.exists('danceRight'))
-			playAnim('danceRight');
-		else if (animOffsets.exists('danceLeft'))
-			playAnim('danceLeft');
-		else if (animOffsets.exists(_idleAnim))
-			playAnim(_idleAnim);
+		// Animación inicial
+		if (animOffsets.exists('danceRight'))        playAnim('danceRight');
+		else if (animOffsets.exists('danceLeft'))     playAnim('danceLeft');
+		else if (animOffsets.exists(_idleAnim))       playAnim(_idleAnim);
 
-		// Apply flipX from JSON if specified
-		if (characterData.flipX != null && characterData.flipX) {
+		if (characterData.flipX != null && characterData.flipX)
 			flipX = true;
-		}
 	}
 
-	/**
-	 * VERSIÓN MEJORADA: Carga sprites y animaciones desde formato Adobe Animate
-	 * - Soporte para Sparrow XML (GF_assets.xml) 
-	 * - Soporte para JSON con AnimateAtlasParser
-	 * - Validación de sprites
-	 * - Mejor manejo de errores
-	 * - Logging detallado
-	 */
-	function loadFromAdobeAnimate(atlasPath:String, ?animationPath:String):Void {
-		try {
-			trace("╔════════════════════════════════════════╗");
-			trace("║  Cargando Adobe Animate Atlas         ║");
-			trace("╚════════════════════════════════════════╝");
+	// ── playAnim ──────────────────────────────────────────────────────────────
 
-			// Construir ruta al archivo de animaciones
-			var animJsonPath = animationPath != null ? Paths.characterJSON('images/$curCharacter/' + animationPath) : null;
-
-			if (animJsonPath == null || animJsonPath == "") {
-				trace("✗ ERROR: Se requiere archivo de animaciones (Animation.json)");
-				return;
-			}
-
-			trace("\n📦 Formato detectado: JSON personalizado");
-
-			var atlasJsonPath = Paths.characterJSON('images/$curCharacter/' + atlasPath);
-
-			trace("  📄 Animation JSON: " + animJsonPath);
-			trace("  📄 Atlas JSON: " + atlasJsonPath);
-
-			// ═══ VALIDACIÓN DE SPRITES (solo en debug) ═══
-			#if debug
-			trace("\n🔍 Validando sprites...");
-			var missingSprites = AnimateAtlasParser.validateSprites(animJsonPath, atlasJsonPath);
-
-			if (Lambda.count(missingSprites) > 0) {
-				trace("⚠️  ADVERTENCIA: Se encontraron sprites faltantes:");
-				for (symbolName in missingSprites.keys()) {
-					trace("  ├─ Símbolo: " + symbolName);
-					var sprites = missingSprites.get(symbolName);
-					for (i in 0...sprites.length) {
-						var isLast = (i == sprites.length - 1);
-						var prefix = isLast ? "  └──" : "  ├──";
-						trace(prefix + " Falta: " + sprites[i]);
-					}
-				}
-				trace("\n💡 SOLUCIÓN: Usa '.xml' en lugar de 'spritemap1.json'");
-			} else {
-				trace("✓ Todos los sprites están presentes");
-			}
-			#end
-
-			// ═══ PARSEAR ANIMATEATLAS ═══
-			trace("\n⚙️  Parseando AnimateAtlas...");
-			frames = AnimateAtlasParser.parseAnimateAtlas(animJsonPath, atlasJsonPath, 800, // frameWidth - aumentado para sprites grandes
-				800 // frameHeight - aumentado para sprites grandes
-			);
-
-			if (frames == null) {
-				trace("✗ ERROR: No se pudo parsear AnimateAtlas");
-				trace("\n🔎 Posibles causas:");
-				trace("  1. Los nombres en Animation.json no coinciden con el atlas");
-				trace("  2. El archivo atlas está corrupto o mal formateado");
-				trace("  3. Necesitas usar .xml en lugar de spritemap1.json");
-				trace("\n💡 Solución recomendada:");
-				trace("  En tu JSON de personaje, cambia:");
-				trace('    "path": ".xml"  ← Usa este');
-				trace('    NO uses: "path": "spritemap1.json"');
-				return;
-			}
-
-			trace("✓ AnimateAtlas parseado exitosamente");
-			trace("  Total de frames compuestos: " + frames.frames.length);
-
-			// ═══════════════════════════════════════════════════════
-			// AGREGAR ANIMACIONES
-			// ═══════════════════════════════════════════════════════
-			trace("\n🎬 Agregando animaciones...");
-			trace("─────────────────────────────────────────");
-
-			var successCount = 0;
-			var failCount = 0;
-
-			for (anim in characterData.animations) {
-				var symbolName = anim.prefix;
-
-				if (symbolName == null || symbolName == "") {
-					trace("⚠️  '" + anim.name + "' sin prefix → Saltando");
-					failCount++;
-					continue;
-				}
-
-				try {
-					if (anim.indices != null && anim.indices.length > 0) {
-						// Usar índices específicos
-						animation.addByIndices(anim.name, symbolName, anim.indices, "", Std.int(anim.framerate), anim.looped);
-
-						trace("✓ " + StringTools.rpad(anim.name, " ", 20) + " │ Indices: " + anim.indices.length + " frames de '" + symbolName + "'");
-					} else {
-						// Usar todos los frames del símbolo
-						animation.addByPrefix(anim.name, symbolName, Std.int(anim.framerate), anim.looped);
-
-						trace("✓ " + StringTools.rpad(anim.name, " ", 20) + " │ Prefix: '" + symbolName + "' @ " + anim.framerate + "fps");
-					}
-
-					// Agregar offset
-					addOffset(anim.name, anim.offsetX, anim.offsetY);
-					successCount++;
-				} catch (e:Dynamic) {
-					trace("✗ ERROR en '" + anim.name + "': " + e);
-					failCount++;
-				}
-			}
-
-			trace("─────────────────────────────────────────");
-			trace("📊 Resumen de carga:");
-			trace("  ✓ Exitosas: " + successCount);
-			if (failCount > 0)
-				trace("  ✗ Fallidas:  " + failCount);
-			trace("  📝 Total:    " + (successCount + failCount));
-
-			if (successCount == 0) {
-				trace("\n⚠️  ADVERTENCIA CRÍTICA: No se agregó ninguna animación");
-				trace("  Verifica que characterData.animations tenga los nombres correctos");
-				trace("  Los 'prefix' deben coincidir con los símbolos en Animation.json");
-			} else {
-				trace("\n🎉 ¡Carga completada exitosamente!");
-			}
-
-			trace("╚════════════════════════════════════════╝\n");
-		} catch (e:Dynamic) {
-			trace("\n╔════════════════════════════════════════╗");
-			trace("║  ✗✗✗ ERROR CRÍTICO ✗✗✗                ║");
-			trace("╚════════════════════════════════════════╝");
-			trace("Error: " + e);
-
-			#if debug
-			trace("\n📋 Stack trace:");
-			var stack = haxe.CallStack.exceptionStack();
-			for (item in stack) {
-				trace("  " + item);
-			}
-			#end
-
-			// Intentar fallback
-			trace("\n🔄 Intentando fallback a carga estándar...");
-			try {
-				frames = Paths.characterSprite(characterData.path);
-				trace("✓ Fallback exitoso - usando carga estándar");
-			} catch (fallbackError:Dynamic) {
-				trace("✗ Fallback también falló: " + fallbackError);
-				trace("💀 No se puede cargar el personaje");
-			}
-		}
-	}
-
-	/**
-	 * NUEVO: Crea automáticamente animaciones desde el archivo de Adobe Animate
-	 */
-	function autoCreateAnimationsFromAdobe():Void {
-		if (_adobeAnimateAnims == null)
+	public function playAnim(AnimName:String, Force:Bool = false, Reversed:Bool = false, Frame:Int = 0):Void
+	{
+		if (!canSing && specialAnim)
 			return;
 
-		trace("Auto-creando animaciones desde Adobe Animate...");
+		if (_useFlxAnimate && _flxAnimate != null)
+		{
+			// Nunca llamar play() si el atlas no se cargó correctamente:
+			// anim.metadata null → crash en FlxAnim.hx línea 284 (metadata.name).
+			if (_flxAnimate.anim.metadata == null) return;
 
-		for (animName in _adobeAnimateAnims.keys()) {
-			var adobeAnim = _adobeAnimateAnims.get(animName);
-
-			// Obtener índices de frames
-			var frameIndices = AdobeAnimateAnimationParser.getFrameIndices(adobeAnim, _spritIndexMap);
-
-			if (frameIndices.length > 0) {
-				// Agregar animación por índices
-				animation.addByIndices(animName, "", // prefix vacío porque usamos índices directos
-					frameIndices, "", Std.int(adobeAnim.framerate), adobeAnim.looped);
-
-				// Agregar offset por defecto (puede ser ajustado luego)
-				addOffset(animName, 0, 0);
-
-				trace("Animación auto-creada: " + animName + " (" + frameIndices.length + " frames)");
-			}
+			// Force=true en la primera llamada: FlxAnim.play() comprueba finished
+			// antes de que exista un símbolo activo y petaría sin este flag.
+			var forcePlay = Force || (_curFlxAnimName == "");
+			_flxAnimate.anim.play(AnimName, forcePlay, Reversed, Frame);
+			_curFlxAnimName = AnimName;
 		}
+		else
+		{
+			animation.play(AnimName, Force, Reversed, Frame);
+		}
+
+		var daOffset = animOffsets.get(AnimName);
+		if (daOffset != null)
+			offset.set(daOffset[0], daOffset[1]);
+		else
+			offset.set(0, 0);
 	}
 
-	function loadSpritesheetJSON(path:String):Void {
-		// For spritesheet JSON, we need to create frames from the PNG and JSON data
-		// This assumes the JSON contains frame data in a standard format
+	// ── Estado de animación ───────────────────────────────────────────────────
 
-		try {
-			// Load the PNG
-			var imagePath = Paths.characterimage('$curCharacter/' + path);
-
-			// Try to load a corresponding JSON file for frame data
-			// The JSON might be in the same directory with a .json extension
-			var jsonPath = path + ".json";
-
-			// For now, we'll use the standard frame loading
-			// This can be extended to parse custom JSON formats
-			loadGraphic(imagePath);
-
-			trace("Loaded spritesheet from: " + path);
-		} catch (e:Dynamic) {
-			trace("Error loading spritesheet: " + e);
-			// Fallback to standard loading
-			frames = Paths.characterSprite(path);
-		}
+	public function getCurAnimName():String
+	{
+		if (_useFlxAnimate)
+			return _curFlxAnimName;
+		return animation.curAnim != null ? animation.curAnim.name : "";
 	}
 
-	function applyCharacterSpecificAdjustments():Void {
-		// Handle pixel characters or specific character adjustments
-		switch (curCharacter) {
-			case 'bf-pixel-enemy':
-				width -= 100;
-				height -= 100;
-				// Add more character-specific adjustments here
-		}
+	public function isCurAnimFinished():Bool
+	{
+		if (_useFlxAnimate && _flxAnimate != null)
+			return _flxAnimate.anim.finished;
+		return animation.curAnim != null ? animation.curAnim.finished : true;
 	}
 
-	function flipAnimations():Void {
-		// Flip LEFT and RIGHT animations for player characters
-		if (animation.getByName('singRIGHT') != null && animation.getByName('singLEFT') != null) {
-			var oldRight = animation.getByName('singRIGHT').frames;
-			animation.getByName('singRIGHT').frames = animation.getByName('singLEFT').frames;
-			animation.getByName('singLEFT').frames = oldRight;
-		}
-
-		// Flip MISS animations if they exist
-		if (animation.getByName('singRIGHTmiss') != null && animation.getByName('singLEFTmiss') != null) {
-			var oldMiss = animation.getByName('singRIGHTmiss').frames;
-			animation.getByName('singRIGHTmiss').frames = animation.getByName('singLEFTmiss').frames;
-			animation.getByName('singLEFTmiss').frames = oldMiss;
-		}
+	public function hasCurAnim():Bool
+	{
+		if (_useFlxAnimate)
+			return _curFlxAnimName != "";
+		return animation.curAnim != null;
 	}
 
-	override function update(elapsed:Float) {
-		if (animation.curAnim == null) {
-			super.update(elapsed);
-			return;
-		}
+	// ── Update ────────────────────────────────────────────────────────────────
 
-		// Handle non-BF characters (DAD, GF, etc)
-		if (!curCharacter.startsWith('bf')) {
-			if (animation.curAnim.name.startsWith(_singAnimPrefix)) {
-				holdTimer += elapsed;
-
-				var dadVar:Float = 4;
-				if (curCharacter == 'dad')
-					dadVar = 6.1;
-
-				if (holdTimer >= Conductor.stepCrochet * dadVar * 0.001) {
-					dance();
-					holdTimer = 0;
-				}
-			} else {
-				// FIX: Solo resetear holdTimer y dance si NO es un personaje con danceLeft/danceRight
-				holdTimer = 0;
-				
-				// Detectar personajes con sistema de danceLeft/danceRight
-				var hasDanceAnims = animOffsets.exists('danceLeft') && animOffsets.exists('danceRight');
-				
-				// Para personajes con danceLeft/danceRight (GF, Spooky, etc), NO llamar dance() aquí
-				// El dance() será manejado solo desde beatHit() para mantener el toggle correcto
-				if (!hasDanceAnims && animation.curAnim.finished) {
-					dance();
-				}
-			}
-		} else if (!debugMode) {
-			// Handle BF characters
-			if (animation.curAnim.name.startsWith(_singAnimPrefix)) {
-				holdTimer += elapsed;
-				
-				// Volver a idle después de cantar por un tiempo
-				var threshold = Conductor.stepCrochet * 4 * 0.001;
-				if (holdTimer >= threshold && canSing) {
-					playAnim(_idleAnim, true);
-					holdTimer = 0;
-				}
-			} else {
-				holdTimer = 0;
-
-				// FIX PROBLEMA 3: Boyfriend idle hace loop
-				if (animation.curAnim.name == _idleAnim && animation.curAnim.finished) {
-					playAnim(_idleAnim, true);
-				}
-			}
-
-			// Handle miss animations
-			if (animation.curAnim.name.endsWith('miss') && animation.curAnim.finished) {
-				playAnim(_idleAnim, true, false, 10);
-			}
-
-			// Handle death animations
-			if (animation.curAnim.name == 'firstDeath' && animation.curAnim.finished) {
-				playAnim('deathLoop');
-			}
-		}
-
-		// Handle GF specific animations
-		handleSpecialAnimations();
+	override function update(elapsed:Float)
+	{
+		// Actualizar el sub-sprite FlxAnimate (avanza su sistema anim interno)
+		if (_useFlxAnimate && _flxAnimate != null)
+			_flxAnimate.update(elapsed);
 
 		super.update(elapsed);
+
+		if (!hasCurAnim())
+			return;
+
+		var curAnimName = getCurAnimName();
+		var curAnimDone = isCurAnimFinished();
+
+		if (!curCharacter.startsWith('bf'))
+		{
+			if (curAnimName.startsWith(_singAnimPrefix))
+			{
+				holdTimer += elapsed;
+				var dadVar:Float = (curCharacter == 'dad') ? 6.1 : 4.0;
+				if (holdTimer >= Conductor.stepCrochet * dadVar * 0.001)
+				{
+					dance();
+					holdTimer = 0;
+				}
+			}
+			else
+			{
+				holdTimer = 0;
+				var hasDanceAnims = animOffsets.exists('danceLeft') && animOffsets.exists('danceRight');
+				if (!hasDanceAnims && curAnimDone)
+					dance();
+			}
+		}
+		else if (!debugMode)
+		{
+			if (curAnimName.startsWith(_singAnimPrefix))
+			{
+				holdTimer += elapsed;
+				if (holdTimer >= Conductor.stepCrochet * 4 * 0.001 && canSing)
+				{
+					playAnim(_idleAnim, true);
+					holdTimer = 0;
+				}
+			}
+			else
+			{
+				holdTimer = 0;
+				if (curAnimName == _idleAnim && curAnimDone)
+					playAnim(_idleAnim, true);
+			}
+
+			if (curAnimName.endsWith('miss') && curAnimDone)
+				playAnim(_idleAnim, true, false, 10);
+
+			if (curAnimName == 'firstDeath' && curAnimDone)
+				playAnim('deathLoop');
+		}
+
+		handleSpecialAnimations();
 	}
 
-	function handleSpecialAnimations():Void {
-		switch (curCharacter) {
-			case 'gf' | 'gf-christmas' | 'gf-pixel' | 'gf-car':
-				if (animation.curAnim != null && animation.curAnim.name == 'hairFall' && animation.curAnim.finished) {
-					playAnim('danceRight');
-				}
+	// ── Draw ─────────────────────────────────────────────────────────────────
+
+	override function draw()
+	{
+        // Si usamos FlxAnimate, secuestramos el draw para pintar el sub-sprite
+		if (_useFlxAnimate && _flxAnimate != null)
+		{
+            // Sincronización completa antes de dibujar
+			_flxAnimate.setPosition(x, y); // Usar setPosition es más limpio
+			_flxAnimate.offset.copyFrom(offset); // Cuidado aquí (ver nota abajo)
+			_flxAnimate.scale.copyFrom(scale);
+			_flxAnimate.flipX = flipX;
+			_flxAnimate.flipY = flipY;
+			_flxAnimate.alpha = alpha;
+			_flxAnimate.antialiasing = antialiasing;
+			_flxAnimate.cameras = cameras; // ¡Muy importante!
+			_flxAnimate.scrollFactor.copyFrom(scrollFactor);
+            
+            // Forzar el color si es necesario (FlxAnimate a veces ignora color si no se aplica a los frames)
+            if (color != FlxColor.WHITE) _flxAnimate.color = color;
+
+			_flxAnimate.draw();
+		}
+		else
+		{
+			super.draw();
 		}
 	}
 
-	/**
-	 * FOR GF DANCING SHIT
-	 */
-	public function dance():Void {
-		if (!debugMode && !specialAnim) {
-			// Detectar personajes con sistema de danceLeft/danceRight
-			var hasDanceAnims = animOffsets.exists('danceLeft') && animOffsets.exists('danceRight');
-			
-			switch (curCharacter) {
-				case 'gf' | 'gf-car' | 'gf-pixel' | 'gf-christmas' | 'gf-tankmen':
-					// GF: SOLO usa danceLeft/danceRight, NUNCA idle
-					if (animation.curAnim == null || !animation.curAnim.name.startsWith(_singAnimPrefix)) {
-						// Solo cambiar el lado del baile si la animación de 'hair' terminó o no existe
-						if (animation.curAnim == null || !animation.curAnim.name.startsWith('hair') || animation.curAnim.finished) {
-							danced = !danced;
+	// ── Animaciones especiales ────────────────────────────────────────────────
 
-							if (danced)
-								playAnim('danceRight');
-							else
-								playAnim('danceLeft');
+	function handleSpecialAnimations():Void
+	{
+		switch (curCharacter)
+		{
+			case 'gf' | 'gf-christmas' | 'gf-pixel' | 'gf-car':
+				if (hasCurAnim() && getCurAnimName() == 'hairFall' && isCurAnimFinished())
+					playAnim('danceRight');
+		}
+	}
+
+	// ── Dance ─────────────────────────────────────────────────────────────────
+
+	public function dance():Void
+	{
+		if (!debugMode && !specialAnim)
+		{
+			var hasDanceAnims = animOffsets.exists('danceLeft') && animOffsets.exists('danceRight');
+
+			switch (curCharacter)
+			{
+				case 'gf' | 'gf-car' | 'gf-pixel' | 'gf-christmas' | 'gf-tankmen':
+					if (!hasCurAnim() || !getCurAnimName().startsWith(_singAnimPrefix))
+					{
+						if (!hasCurAnim() || !getCurAnimName().startsWith('hair') || isCurAnimFinished())
+						{
+							danced = !danced;
+							playAnim(danced ? 'danceRight' : 'danceLeft');
 						}
 					}
 
 				case 'spooky':
-					// Spooky también usa danceLeft/danceRight
-					if (animation.curAnim == null || !animation.curAnim.name.startsWith(_singAnimPrefix)) {
+					if (!hasCurAnim() || !getCurAnimName().startsWith(_singAnimPrefix))
+					{
 						danced = !danced;
-
-						if (danced)
-							playAnim('danceRight');
-						else
-							playAnim('danceLeft');
+						playAnim(danced ? 'danceRight' : 'danceLeft');
 					}
 
 				default:
-					// Para personajes normales con idle
-					// PERO: si el personaje tiene danceLeft/danceRight, usarlos en vez de idle
-					if (hasDanceAnims) {
-						// Este personaje usa sistema dance aunque no esté en el switch
-						if (animation.curAnim == null || !animation.curAnim.name.startsWith(_singAnimPrefix)) {
+					if (hasDanceAnims)
+					{
+						if (!hasCurAnim() || !getCurAnimName().startsWith(_singAnimPrefix))
+						{
 							danced = !danced;
-
-							if (danced)
-								playAnim('danceRight');
-							else
-								playAnim('danceLeft');
+							playAnim(danced ? 'danceRight' : 'danceLeft');
 						}
-					} else {
-						// Personaje normal con idle
+					}
+					else
+					{
 						playAnim(_idleAnim);
 					}
 			}
 		}
 	}
 
-	public function playAnim(AnimName:String, Force:Bool = false, Reversed:Bool = false, Frame:Int = 0):Void {
-		if (!canSing && specialAnim)
-			return;
+	// ── Ajustes específicos ───────────────────────────────────────────────────
 
-		animation.play(AnimName, Force, Reversed, Frame);
-
-		// Apply offset
-		var daOffset = animOffsets.get(AnimName);
-		if (daOffset != null) {
-			offset.set(daOffset[0], daOffset[1]);
-		} else
-			offset.set(0, 0);
-	}
-
-	public function addOffset(name:String, x:Float = 0, y:Float = 0):Void {
-		animOffsets[name] = [x, y];
-	}
-
-	/**
-	 * Get all animation names
-	 */
-	public function getAnimationList():Array<String> {
-		var list:Array<String> = [];
-		for (anim in animOffsets.keys()) {
-			list.push(anim);
+	function applyCharacterSpecificAdjustments():Void
+	{
+		switch (curCharacter)
+		{
+			case 'bf-pixel-enemy':
+				width  -= 100;
+				height -= 100;
 		}
+	}
+
+	function flipAnimations():Void
+	{
+		// Solo aplica en modo sprite normal (FlxAnimationController)
+		if (_useFlxAnimate) return;
+
+		if (animation.getByName('singRIGHT') != null && animation.getByName('singLEFT') != null)
+		{
+			var oldRight = animation.getByName('singRIGHT').frames;
+			animation.getByName('singRIGHT').frames = animation.getByName('singLEFT').frames;
+			animation.getByName('singLEFT').frames  = oldRight;
+		}
+		if (animation.getByName('singRIGHTmiss') != null && animation.getByName('singLEFTmiss') != null)
+		{
+			var oldMiss = animation.getByName('singRIGHTmiss').frames;
+			animation.getByName('singRIGHTmiss').frames = animation.getByName('singLEFTmiss').frames;
+			animation.getByName('singLEFTmiss').frames  = oldMiss;
+		}
+	}
+
+	// ── API pública ───────────────────────────────────────────────────────────
+
+	public function addOffset(name:String, x:Float = 0, y:Float = 0):Void
+		animOffsets[name] = [x, y];
+
+	public function getAnimationList():Array<String>
+	{
+		var list:Array<String> = [];
+		for (a in animOffsets.keys()) list.push(a);
 		return list;
 	}
 
-	/**
-	 * Check if animation exists
-	 */
-	public function hasAnimation(name:String):Bool {
+	public function hasAnimation(name:String):Bool
 		return animOffsets.exists(name);
-	}
 
-	/**
-	 * Get animation offset
-	 */
-	public function getOffset(name:String):Array<Dynamic> {
+	public function getOffset(name:String):Array<Dynamic>
 		return animOffsets.get(name);
-	}
 
-	/**
-	 * Update animation offset
-	 */
-	public function updateOffset(name:String, x:Float, y:Float):Void {
-		if (animOffsets.exists(name)) {
+	public function updateOffset(name:String, x:Float, y:Float):Void
+	{
+		if (animOffsets.exists(name))
 			animOffsets.set(name, [x, y]);
-		}
 	}
 
-	/**
-	 * Clean up
-	 */
-	override function destroy():Void {
-		animOffsets.clear();
-		animOffsets = null;
+	// ── Destruir ──────────────────────────────────────────────────────────────
+
+	override function destroy():Void
+	{
+		if (_flxAnimate != null)
+		{
+			_flxAnimate.destroy();
+			_flxAnimate = null;
+		}
+		if (animOffsets != null) { animOffsets.clear(); animOffsets = null; }
 		characterData = null;
-
-		if (_adobeAnimateAnims != null) {
-			_adobeAnimateAnims.clear();
-			_adobeAnimateAnims = null;
-		}
-
-		if (_spritIndexMap != null) {
-			_spritIndexMap.clear();
-			_spritIndexMap = null;
-		}
-
 		super.destroy();
 	}
 }

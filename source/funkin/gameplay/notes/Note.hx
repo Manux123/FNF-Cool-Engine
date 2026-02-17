@@ -24,6 +24,9 @@ class Note extends FlxSprite
 	public var noteScore:Float = 1;
 	public var noteRating:String = 'sick';
 
+	// Índice del StrumsGroup al que pertenece esta nota (0 = grupo 0, 1 = grupo 1, etc.)
+	public var strumsGroupIndex:Int = 0;
+
 	public static var swagWidth:Float = 160 * 0.7;
 	public static var PURP_NOTE:Int = 0;
 	public static var BLUE_NOTE:Int = 1;
@@ -114,6 +117,7 @@ class Note extends FlxSprite
 		this.wasGoodHit = false;
 		this.noteScore = 1;
 		this.noteRating = 'sick';
+		this.strumsGroupIndex = 0;
 		this.alpha = sustainNote ? 0.6 : 1.0;
 		this.visible = true;
 		

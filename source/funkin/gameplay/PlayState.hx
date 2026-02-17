@@ -601,6 +601,7 @@ class PlayState extends funkin.states.MusicBeatState
 
 		// Note manager - MEJORADO con splashes
 		// ✅ Pasar referencias a StrumsGroup para animaciones de confirm
+		// ✅ Pasar todos los grupos para soporte de personajes extra
 		noteManager = new NoteManager(notes, playerStrums, cpuStrums, grpNoteSplashes, playerStrumsGroup, cpuStrumsGroup);
 		noteManager.strumLineY = strumLiney;
 		noteManager.downscroll = FlxG.save.data.downscroll;

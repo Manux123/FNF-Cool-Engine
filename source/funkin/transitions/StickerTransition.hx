@@ -724,8 +724,8 @@ class StickerTransitionContainer extends openfl.display.Sprite
 				if (sticker.scale != null)
 					FlxTween.cancelTweensOf(sticker.scale);
 
-				var disperseX = FlxG.random.float(-800, 800);
-				var disperseY = FlxG.random.float(-800, 800);
+				var disperseX = FlxG.random.float(-1000, 1000);
+				var disperseY = FlxG.random.float(-1100, 1100);
 
 				// ✅ REDUCIDO: Animación más rápida (antes: 0.4, ahora: 0.3)
 				FlxTween.tween(sticker.scale, {x: 0.05, y: 0.05}, 0.3, {

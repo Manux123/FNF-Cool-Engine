@@ -1,4 +1,4 @@
-package funkin.debug;
+package funkin.debug.charting;
 
 import funkin.data.Conductor.BPMChangeEvent;
 import funkin.data.Section.SwagSection;
@@ -94,7 +94,7 @@ class ChartingState extends funkin.states.MusicBeatState
 	var tab_group_song:FlxUI;
 	var tab_group_section:FlxUI;
 	var tab_group_note:FlxUI;
-	var tab_group_characters:FlxUI;
+	// tab_group_characters fue REEMPLAZADO por CharacterIconRow
 	var tab_group_settings:FlxUI;
 
 	// UI MODERNA
@@ -127,20 +127,11 @@ class ChartingState extends funkin.states.MusicBeatState
 	var curRenderedSustains:FlxTypedGroup<FlxSprite>;
 	var dummyArrow:FlxSprite;
 
-	// ICONOS
-	var leftIcon:HealthIcon;
-	var rightIcon:HealthIcon;
-	var middleIcon:HealthIcon;
-
 	// INDICADORES DE SECCIÓN
 	var sectionIndicators:FlxTypedGroup<FlxSprite>;
 
-	// DROPDOWNS
-	var bfDropDown:FlxUIDropDownMenu;
-	var dadDropDown:FlxUIDropDownMenu;
-	var gfDropDown:FlxUIDropDownMenu;
-	var stageDropDown:FlxUIDropDownMenu;
-
+	// DROPDOWNS (characters dropdowns moved to CharacterIconRow extension)
+	// bfDropDown, dadDropDown, gfDropDown, stageDropDown -> removed
 	// STEPPERS
 	var stepperLength:FlxUINumericStepper;
 	var stepperBPM:FlxUINumericStepper;
@@ -152,7 +143,21 @@ class ChartingState extends funkin.states.MusicBeatState
 	var check_changeBPM:FlxUICheckBox;
 	var check_altAnim:FlxUICheckBox;
 
-	var multiCharExtension:ChartingState_MultiCharExtension;
+	// ===== NUEVAS EXTENSIONES =====
+	public var charIconRow:CharacterIconRow;
+
+	var eventsSidebar:EventsSidebar;
+	var previewPanel:PreviewPanel;
+	var metaPopup:MetaPopup;
+
+	// Botón META en toolbar (zona clickeable)
+	var metaBtn:FlxSprite;
+	var metaBtnText:FlxText;
+
+	// BPM y Section clickeables - indicadores en toolbar
+	var bpmClickable:Bool = false; // ¿Está en modo edición de BPM?
+	var bpmInputActive:FlxUIInputText;
+	var sectionInputActive:FlxUIInputText;
 
 	// HERRAMIENTAS
 	var clipboard:Array<Dynamic> = [];
@@ -241,10 +246,10 @@ class ChartingState extends funkin.states.MusicBeatState
 		setupToolbar();
 		setupGrid();
 		setupNotes();
-		setupIcons();
 		setupUITabs();
 		setupInfoPanel();
 		setupStatusBar();
+		setupNewExtensions(); // ← NUEVAS EXTENSIONES
 
 		// Cargar audio
 		loadSong(_song.song);
@@ -312,7 +317,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		toolbar.cameras = [camHUD];
 		add(toolbar);
 
-		// Botones
+		// Botones de playback
 		playBtn = createToolButton(10, 40, "▶");
 		pauseBtn = createToolButton(55, 40, "⏸");
 		stopBtn = createToolButton(100, 40, "⏹");
@@ -323,24 +328,55 @@ class ChartingState extends funkin.states.MusicBeatState
 		add(stopBtn);
 		add(testBtn);
 
-		// Info texts
-		timeText = new FlxText(200, 45, 0, "⏱ 00:00.000", 12);
+		// Time (solo display)
+		timeText = new FlxText(200, 45, 0, "00:00.000", 12);
 		timeText.setFormat(Paths.font("vcr.ttf"), 12, TEXT_GRAY, LEFT);
 		timeText.scrollFactor.set();
 		timeText.cameras = [camHUD];
 		add(timeText);
 
-		bpmText = new FlxText(340, 45, 0, "🎵 120 BPM", 12);
-		bpmText.setFormat(Paths.font("vcr.ttf"), 12, TEXT_GRAY, LEFT);
+		// BPM - CLICKEABLE para editar
+		var bpmBg = new FlxSprite(320, 10).makeGraphic(70, 18, 0xFF2A2A00);
+		bpmBg.scrollFactor.set();
+		bpmBg.cameras = [camHUD];
+		add(bpmBg);
+
+		bpmText = new FlxText(322, 11, 66, "120 BPM", 11);
+		bpmText.setFormat(Paths.font("vcr.ttf"), 11, ACCENT_WARNING, CENTER);
 		bpmText.scrollFactor.set();
 		bpmText.cameras = [camHUD];
 		add(bpmText);
 
-		sectionText = new FlxText(470, 45, 0, "📊 Section 1/1", 12);
-		sectionText.setFormat(Paths.font("vcr.ttf"), 12, TEXT_GRAY, LEFT);
+		// Section - CLICKEABLE para navegar
+		var secBg = new FlxSprite(400, 10).makeGraphic(90, 18, 0xFF002A1A);
+		secBg.scrollFactor.set();
+		secBg.cameras = [camHUD];
+		add(secBg);
+
+		sectionText = new FlxText(402, 11, 86, "Section 1/1", 11);
+		sectionText.setFormat(Paths.font("vcr.ttf"), 11, ACCENT_GREEN, CENTER);
 		sectionText.scrollFactor.set();
 		sectionText.cameras = [camHUD];
 		add(sectionText);
+
+		// Botón META
+		metaBtn = new FlxSprite(502, 10).makeGraphic(55, 22, 0xFF1A1A3A);
+		metaBtn.scrollFactor.set();
+		metaBtn.cameras = [camHUD];
+		add(metaBtn);
+
+		metaBtnText = new FlxText(502, 10, 55, "Meta", 12);
+		metaBtnText.setFormat(Paths.font("vcr.ttf"), 12, ACCENT_CYAN, CENTER);
+		metaBtnText.scrollFactor.set();
+		metaBtnText.cameras = [camHUD];
+		add(metaBtnText);
+
+		// Borde del botón Meta
+		var metaBorder = new FlxSprite(502, 29).makeGraphic(55, 2, ACCENT_CYAN);
+		metaBorder.alpha = 0.6;
+		metaBorder.scrollFactor.set();
+		metaBorder.cameras = [camHUD];
+		add(metaBorder);
 	}
 
 	function createToolButton(x:Float, y:Float, icon:String):FlxSprite
@@ -359,11 +395,19 @@ class ChartingState extends funkin.states.MusicBeatState
 		return btn;
 	}
 
+	function getGridColumns():Int
+	{
+		// 4 columnas por cada grupo de strums. Mínimo 8 (2 grupos default)
+		if (_song.strumsGroups != null && _song.strumsGroups.length > 0)
+			return _song.strumsGroups.length * 4;
+		return 8;
+	}
+
 	function setupGrid():Void
 	{
 		// Calcular altura total del grid basado en todas las secciones
 		totalGridHeight = 0;
-		
+
 		// VALIDACIÓN CRÍTICA: Asegurar que hay secciones
 		if (_song.notes == null || _song.notes.length == 0)
 		{
@@ -380,21 +424,21 @@ class ChartingState extends funkin.states.MusicBeatState
 				}
 			];
 		}
-		
+
 		for (sec in _song.notes)
 		{
 			// Validar que lengthInSteps sea válido (mayor que 0)
 			var steps = (sec.lengthInSteps > 0) ? sec.lengthInSteps : 16;
 			totalGridHeight += steps * GRID_SIZE;
 		}
-		
+
 		// VALIDACIÓN: Asegurar altura mínima
 		if (totalGridHeight <= 0)
 		{
 			trace('[GRID ERROR] totalGridHeight es 0 o negativo! Forzando altura mínima.');
 			totalGridHeight = 16 * GRID_SIZE; // Al menos 16 steps
 		}
-		
+
 		// VALIDACIÓN: Limitar altura máxima para evitar problemas de memoria
 		var MAX_GRID_HEIGHT = 16000; // Máximo ~250 secciones
 		if (totalGridHeight > MAX_GRID_HEIGHT)
@@ -402,78 +446,89 @@ class ChartingState extends funkin.states.MusicBeatState
 			trace('[GRID WARNING] totalGridHeight muy grande (${totalGridHeight}), limitando a $MAX_GRID_HEIGHT');
 			totalGridHeight = MAX_GRID_HEIGHT;
 		}
-		
+
 		trace('[GRID] Song: ${_song.song}, totalGridHeight: $totalGridHeight, secciones: ${_song.notes.length}');
 
 		maxScroll = totalGridHeight - (FlxG.height - 100);
 		if (maxScroll < 0)
 			maxScroll = 0;
 
-		// Grid BG - Con alternancia de colores estilo tablero
-		var gridWidth = GRID_SIZE * 8;
+		// === COLUMNAS DINÁMICAS basadas en strumsGroups ===
+		var numCols = getGridColumns();
+		var gridWidth = GRID_SIZE * numCols;
+
+		// Centrar el grid según su ancho real
+		var centerX = (FlxG.width / 2) - (gridWidth / 2);
+		// Si el grid es muy ancho, colocarlo más a la izquierda
+		if (gridWidth > FlxG.width * 0.6)
+			centerX = (FlxG.width - gridWidth) / 2;
+
 		gridBG = new FlxSprite();
-		gridBG.makeGraphic(gridWidth, Std.int(totalGridHeight), 0xFF000000, true); // Fondo negro base
-		
-		// Dibujar patrón de tablero alternado
+		gridBG.makeGraphic(gridWidth, Std.int(totalGridHeight), 0xFF000000, true);
+
 		var numRows = Std.int(totalGridHeight / GRID_SIZE) + 1;
-		var numCols = 8;
-		
+
+		// Dibujar celdas con colores alternados POR GRUPO
 		for (row in 0...numRows)
 		{
 			for (col in 0...numCols)
 			{
 				var xPos = col * GRID_SIZE;
 				var yPos = row * GRID_SIZE;
-				
-				// Alternar colores como tablero de ajedrez
+
+				var groupIndex = Math.floor(col / 4);
+				// Alternar tono de fondo por grupo de strums
+				var baseLight = (groupIndex % 2 == 0) ? 0x40 : 0x35;
+				var baseDark = (groupIndex % 2 == 0) ? 0x2A : 0x22;
+
 				var isEven = (row + col) % 2 == 0;
-				var cellColor = isEven ? 0xFF404040 : 0xFF2A2A2A;
-				
+				var r = isEven ? baseLight : baseDark;
+				var cellColor = (0xFF << 24) | (r << 16) | (r << 8) | r;
 				FlxSpriteUtil.drawRect(gridBG, xPos, yPos, GRID_SIZE, GRID_SIZE, cellColor);
 			}
 		}
-		
-		// Dibujar líneas horizontales
+
+		// Líneas horizontales (beats)
 		for (row in 0...numRows)
 		{
 			var yPos = row * GRID_SIZE;
-			var lineColor = (row % 4 == 0) ? 0xFF707070 : 0xFF505050; // Líneas más visibles cada 4 filas
+			var lineColor = (row % 4 == 0) ? 0xFF707070 : 0xFF505050;
 			FlxSpriteUtil.drawRect(gridBG, 0, yPos, gridWidth, 1, lineColor);
 		}
-		
-		// Dibujar líneas verticales
-		for (col in 0...9)
+
+		// Líneas verticales — más gruesas en las divisiones de grupos
+		for (col in 0...(numCols + 1))
 		{
 			var xPos = col * GRID_SIZE;
-			// Líneas más gruesas y visibles en los separadores
-			var lineColor = (col == 0 || col == 4 || col == 8) ? 0xFFB0B0B0 : 0xFF707070;
-			var lineWidth = (col == 0 || col == 4 || col == 8) ? 2 : 1;
+			var isGroupBorder = (col % 4 == 0);
+			var lineColor = isGroupBorder ? 0xFFB0B0B0 : 0xFF707070;
+			var lineWidth = isGroupBorder ? 2 : 1;
 			FlxSpriteUtil.drawRect(gridBG, xPos, 0, lineWidth, totalGridHeight, lineColor);
 		}
-		
-		gridBG.x = (FlxG.width / 2) - (GRID_SIZE * 4);
+
+		gridBG.x = centerX;
 		gridBG.y = 100;
 		gridBG.scrollFactor.set();
 		gridBG.cameras = [camGame];
 		add(gridBG);
-		
-		trace('[GRID] Grid creado: ${gridWidth}x${Std.int(totalGridHeight)}');
 
-		// Overlay de LÍNEAS divisoras de secciones (en lugar de rectángulos)
+		trace('[GRID] Grid creado: ${gridWidth}x${Std.int(totalGridHeight)}, $numCols columnas (${Std.int(numCols / 4)} grupos)');
+
+		// Overlay divisores de sección
 		gridBlackWhite = new FlxSprite(gridBG.x, gridBG.y);
-		gridBlackWhite.makeGraphic(GRID_SIZE * 8, Std.int(totalGridHeight), 0x00000000, true);
+		gridBlackWhite.makeGraphic(gridWidth, Std.int(totalGridHeight), 0x00000000, true);
 
 		var currentY:Float = 0;
 		for (i in 0..._song.notes.length)
 		{
 			var steps = (_song.notes[i].lengthInSteps > 0) ? _song.notes[i].lengthInSteps : 16;
 			var sectionHeight = steps * GRID_SIZE;
-			
+
 			// Dibujar solo una LÍNEA al inicio de cada sección
-			var lineColor = (i % 2 == 0) ? 0x80FFFFFF : 0x4000D9FF; // Líneas visibles pero no invasivas
-			var lineHeight = 2; // Líneas de 2px de altura
-			FlxSpriteUtil.drawRect(gridBlackWhite, 0, currentY, GRID_SIZE * 8, lineHeight, lineColor);
-			
+			var lineColor = (i % 2 == 0) ? 0x80FFFFFF : 0x4000D9FF;
+			var lineHeight = 2;
+			FlxSpriteUtil.drawRect(gridBlackWhite, 0, currentY, GRID_SIZE * getGridColumns(), lineHeight, lineColor);
+
 			currentY += sectionHeight;
 		}
 
@@ -496,6 +551,9 @@ class ChartingState extends funkin.states.MusicBeatState
 		highlight.visible = false;
 		add(highlight);
 
+		// Etiquetas de grupos de strums encima de cada grupo de 4 columnas
+		drawStrumsGroupLabels();
+
 		// Sección indicators
 		sectionIndicators = new FlxTypedGroup<FlxSprite>();
 		add(sectionIndicators);
@@ -504,6 +562,109 @@ class ChartingState extends funkin.states.MusicBeatState
 		// Dummy arrow
 		dummyArrow = new FlxSprite().makeGraphic(GRID_SIZE, GRID_SIZE);
 		add(dummyArrow);
+	}
+
+	// Etiquetas de nombre del grupo encima de cada bloque de 4 columnas
+	var strumsGroupLabels:FlxTypedGroup<FlxText>;
+
+	function drawStrumsGroupLabels():Void
+	{
+		if (strumsGroupLabels != null)
+		{
+			for (lbl in strumsGroupLabels.members)
+				remove(lbl, true);
+			strumsGroupLabels.clear();
+		}
+		else
+			strumsGroupLabels = new FlxTypedGroup<FlxText>();
+
+		var orderedGroups = getOrderedStrumsGroups();
+		var numGroups = orderedGroups.length;
+		var groupColors:Array<Int> = [0xFFFF8888, 0xFF88FFFF, 0xFF88FF88, 0xFFFFFF88, 0xFFFF88FF, 0xFF88AAFF];
+
+		for (g in 0...numGroups)
+		{
+			var gd = orderedGroups[g];
+			var groupX = gridBG.x + (g * 4 * GRID_SIZE);
+			var groupW = 4 * GRID_SIZE;
+			var isInvis = !gd.visible;
+
+			var labelBg = new FlxSprite(groupX, gridBG.y - 18).makeGraphic(groupW, 18, isInvis ? 0xAA2A1500 : 0xAA000000);
+			labelBg.scrollFactor.set();
+			labelBg.cameras = [camHUD];
+			add(labelBg);
+
+			var cpuTag = gd.cpu ? " [CPU]" : " [P]";
+			var visTag = isInvis ? " 👁" : "";
+			var groupName = gd.id + cpuTag + visTag;
+
+			var labelColor = isInvis ? 0xFFFFAA00 : groupColors[g % groupColors.length];
+
+			var lbl = new FlxText(groupX + 2, gridBG.y - 16, groupW - 4, groupName, 9);
+			lbl.setFormat(Paths.font("vcr.ttf"), 9, labelColor, CENTER);
+			lbl.scrollFactor.set();
+			lbl.cameras = [camHUD];
+			strumsGroupLabels.add(lbl);
+			add(lbl);
+		}
+	}
+
+	/**
+	 * Reconstruye todo el grid desde cero.
+	 * Llamar cuando se agregan/eliminan grupos de strums.
+	 */
+	public function rebuildGrid():Void
+	{
+		// Limpiar sprites del grid anteriores
+		if (gridBG != null)
+		{
+			remove(gridBG, true);
+			gridBG.destroy();
+		}
+		if (gridBlackWhite != null)
+		{
+			remove(gridBlackWhite, true);
+			gridBlackWhite.destroy();
+		}
+		if (strumLine != null)
+		{
+			remove(strumLine, true);
+			strumLine.destroy();
+		}
+		if (highlight != null)
+		{
+			remove(highlight, true);
+			highlight.destroy();
+		}
+		if (sectionIndicators != null)
+			sectionIndicators.clear();
+
+		// ← NUEVO: sacar los grupos de notas de la lista para re-insertarlos encima del grid
+		if (curRenderedSustains != null)
+			remove(curRenderedSustains);
+		if (curRenderedNotes != null)
+			remove(curRenderedNotes);
+
+		// Recrear grid (añade los sprites del fondo)
+		setupGrid();
+
+		// ← NUEVO: volver a añadir notas y sustains ENCIMA del grid
+		if (curRenderedSustains != null)
+			add(curRenderedSustains);
+		if (curRenderedNotes != null)
+			add(curRenderedNotes);
+
+		// Actualizar notas y extensiones
+		updateGrid();
+
+		if (eventsSidebar != null)
+			eventsSidebar.setScrollY(gridScrollY, gridBG.y);
+
+		if (charIconRow != null)
+			charIconRow.refreshIcons();
+
+		showMessage('🔧 Grid actualizado: ${getGridColumns() / 4} grupos de strums', ACCENT_CYAN);
+		trace('[ChartingState] Grid reconstruido con ${getGridColumns()} columnas');
 	}
 
 	function setupNotes():Void
@@ -515,18 +676,12 @@ class ChartingState extends funkin.states.MusicBeatState
 		add(curRenderedNotes);
 	}
 
-	function setupIcons():Void
-	{
-		updateHeads();
-	}
-
 	function setupUITabs():Void
 	{
 		UI_box = new FlxUITabMenu(null, [
 			{name: "Song", label: 'Song'},
 			{name: "Section", label: 'Section'},
 			{name: "Note", label: 'Note'},
-			{name: "Characters", label: 'Characters'},
 			{name: "Settings", label: 'Settings'}
 		], true);
 
@@ -539,16 +694,10 @@ class ChartingState extends funkin.states.MusicBeatState
 		addSongUI();
 		addSectionUI();
 		addNoteUI();
-		addCharactersUI();
 		addSettingsUI();
+		// ↑ El tab de Characters fue reemplazado por la fila de iconos encima del grid
 
 		add(UI_box);
-
-		if (multiCharExtension != null)
-		{
-			multiCharExtension = new ChartingState_MultiCharExtension(this, UI_box, _song);
-			multiCharExtension.setupTab();
-		}
 	}
 
 	function addSongUI():Void
@@ -677,95 +826,8 @@ class ChartingState extends funkin.states.MusicBeatState
 		UI_box.addGroup(tab_group_note);
 	}
 
-	function addCharactersUI():Void
-	{
-		tab_group_characters = new FlxUI(null, UI_box);
-		tab_group_characters.name = 'Characters';
-
-		// Boyfriend
-		var bfLabel = new FlxText(10, 10, 0, 'BOYFRIEND:', 10);
-		tab_group_characters.add(bfLabel);
-
-		var bfList = CharacterList.boyfriends.map(function(char:String)
-		{
-			return CharacterList.getCharacterName(char);
-		});
-
-		bfDropDown = new FlxUIDropDownMenu(10, 25, FlxUIDropDownMenu.makeStrIdLabelArray(bfList, true), function(character:String)
-		{
-			_song.player1 = CharacterList.boyfriends[Std.parseInt(character)];
-			updateHeads();
-		});
-
-		// Dad/Opponent
-		var dadLabel = new FlxText(10, 70, 0, 'OPPONENT:', 10);
-
-		var dadList = CharacterList.opponents.map(function(char:String)
-		{
-			return CharacterList.getCharacterName(char);
-		});
-
-		dadDropDown = new FlxUIDropDownMenu(10, 85, FlxUIDropDownMenu.makeStrIdLabelArray(dadList, true), function(character:String)
-		{
-			_song.player2 = CharacterList.opponents[Std.parseInt(character)];
-			updateHeads();
-		});
-		tab_group_characters.add(dadDropDown);
-
-		// GF
-		var gfLabel = new FlxText(10, 130, 0, 'GIRLFRIEND:', 10);
-		tab_group_characters.add(gfLabel);
-
-		var gfList = CharacterList.girlfriends.map(function(char:String)
-		{
-			return CharacterList.getCharacterName(char);
-		});
-
-		gfDropDown = new FlxUIDropDownMenu(10, 145, FlxUIDropDownMenu.makeStrIdLabelArray(gfList, true), function(character:String)
-		{
-			_song.gfVersion = CharacterList.girlfriends[Std.parseInt(character)];
-			updateHeads();
-		});
-
-		// Stage
-		var stageLabel = new FlxText(10, 190, 0, 'STAGE:', 10);
-		tab_group_characters.add(stageLabel);
-
-		var stageList = CharacterList.stages.map(function(stage:String)
-		{
-			return CharacterList.getStageName(stage);
-		});
-
-		stageDropDown = new FlxUIDropDownMenu(10, 205, FlxUIDropDownMenu.makeStrIdLabelArray(stageList, true), function(stage:String)
-		{
-			_song.stage = CharacterList.stages[Std.parseInt(stage)];
-		});
-
-		if (_song.stage != null && CharacterList.stages.contains(_song.stage))
-		{
-			var stageIndex = CharacterList.stages.indexOf(_song.stage);
-			stageDropDown.selectedId = '$stageIndex';
-			stageDropDown.selectedLabel = CharacterList.getStageName(_song.stage);
-		}
-
-		// Auto-detect button
-		var autoBtn = new FlxButton(10, 250, "Auto-detect", function()
-		{
-			var detectedStage = CharacterList.getDefaultStageForSong(_song.song);
-			_song.stage = detectedStage;
-			var detectedGF = CharacterList.getDefaultGFForStage(detectedStage);
-			_song.gfVersion = detectedGF;
-			updateHeads();
-		});
-		tab_group_characters.add(autoBtn);
-
-		tab_group_characters.add(stageDropDown);
-		tab_group_characters.add(gfDropDown);
-		tab_group_characters.add(dadLabel);
-		tab_group_characters.add(bfDropDown);
-
-		UI_box.addGroup(tab_group_characters);
-	}
+	// addCharactersUI() fue REEMPLAZADO por CharacterIconRow
+	// Los personajes ahora se gestionan desde la fila de iconos encima del grid
 
 	function addSettingsUI():Void
 	{
@@ -856,6 +918,29 @@ class ChartingState extends funkin.states.MusicBeatState
 		add(statusText);
 	}
 
+	function setupNewExtensions():Void
+	{
+		// 1. Meta popup (Stage y Speed)
+		metaPopup = new MetaPopup(this, _song, camHUD);
+		add(metaPopup);
+
+		// 2. Preview panel (izquierdo, colapsable) — con Character.hx real
+		previewPanel = new PreviewPanel(this, _song, camGame, camHUD);
+		add(previewPanel);
+
+		// 3. Events sidebar (izquierdo, encima del grid)
+		eventsSidebar = new EventsSidebar(this, _song, camGame, camHUD, gridBG.x, gridBG.y);
+		add(eventsSidebar);
+
+		// 4. Character icon row (encima del grid)
+		charIconRow = new CharacterIconRow(this, _song, camHUD, gridBG.x);
+		add(charIconRow);
+
+		// Asegurar que los eventos estén inicializados en la canción
+		if (_song.events == null)
+			_song.events = [];
+	}
+
 	function updateInfoPanel():Void
 	{
 		// Time
@@ -892,13 +977,17 @@ class ChartingState extends funkin.states.MusicBeatState
 		var minutes = Math.floor(time / 60);
 		var seconds = Math.floor(time % 60);
 		var ms = Math.floor((time % 1) * 1000);
-		timeText.text = '⏱ ${StringTools.lpad('$minutes', "0", 2)}:${StringTools.lpad('$seconds', "0", 2)}.${StringTools.lpad('$ms', "0", 3)}';
+		timeText.text = '${StringTools.lpad('$minutes', "0", 2)}:${StringTools.lpad('$seconds', "0", 2)}.${StringTools.lpad('$ms', "0", 3)}';
 
-		// BPM
-		bpmText.text = '🎵 ${Conductor.bpm} BPM';
+		// BPM - mostrar valor editable
+		bpmText.text = '${Conductor.bpm} BPM';
 
 		// Section
-		sectionText.text = '📊 Section ${curSection + 1}/${_song.notes.length}';
+		sectionText.text = 'Section ${curSection + 1}/${_song.notes.length}';
+
+		// Resaltar botón Meta si el popup está abierto
+		if (metaBtn != null && metaPopup != null)
+			metaBtn.color = metaPopup.isOpen ? 0xFF2A2A6A : 0xFF1A1A3A;
 	}
 
 	function updateStatusBar(elapsed:Float):Void
@@ -920,7 +1009,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		}
 	}
 
-	function showMessage(msg:String, ?color:FlxColor):Void
+	public function showMessage(msg:String, ?color:FlxColor):Void
 	{
 		tipTimer = 0;
 		statusText.text = msg;
@@ -934,67 +1023,6 @@ class ChartingState extends funkin.states.MusicBeatState
 		{
 			statusText.color = TEXT_GRAY;
 		});
-	}
-
-	function updateHeads():Void
-	{
-		if (leftIcon != null)
-		{
-			remove(leftIcon);
-			leftIcon.destroy();
-		}
-
-		if (rightIcon != null)
-		{
-			remove(rightIcon);
-			rightIcon.destroy();
-		}
-
-		if (middleIcon != null)
-		{
-			remove(middleIcon);
-			middleIcon.destroy();
-		}
-
-		var iconP1:String = _song.player1;
-		var iconP2:String = _song.player2;
-
-		// SIEMPRE en el mismo lugar - NO intercambiar
-		// Izquierda = Opponent (DAD), Derecha = Boyfriend (BF)
-		leftIcon = new HealthIcon(iconP2); // Opponent siempre a la izquierda
-		rightIcon = new HealthIcon(iconP1); // BF siempre a la derecha
-
-		middleIcon = new HealthIcon(_song.gfVersion);
-
-		// Posicionar - FIJAR EN PANTALLA
-		leftIcon.setPosition(gridBG.x - 70, 110);
-		rightIcon.setPosition(gridBG.x + gridBG.width + 10, 110);
-		middleIcon.setPosition(gridBG.x + (gridBG.width / 2) - 30, 40);
-
-		leftIcon.setGraphicSize(0, 45);
-		rightIcon.setGraphicSize(0, 45);
-		middleIcon.setGraphicSize(0, 45);
-
-		leftIcon.updateHitbox();
-		rightIcon.updateHitbox();
-		middleIcon.updateHitbox();
-
-		// IMPORTANTE: Fijar iconos en pantalla
-		leftIcon.scrollFactor.set();
-		rightIcon.scrollFactor.set();
-		middleIcon.scrollFactor.set();
-		leftIcon.cameras = [camHUD];
-		rightIcon.cameras = [camHUD];
-		middleIcon.cameras = [camHUD];
-
-		/*
-			leftIcon.color = ACCENT_CYAN;
-			rightIcon.color = ACCENT_PINK;
-			middleIcon.color = ACCENT_GREEN; */
-
-		add(leftIcon);
-		add(rightIcon);
-		add(middleIcon);
 	}
 
 	function loadSong(daSong:String):Void
@@ -1088,8 +1116,6 @@ class ChartingState extends funkin.states.MusicBeatState
 		updateToolbar();
 		updateInfoPanel();
 		updateStatusBar(elapsed);
-		if (multiCharExtension != null)
-			multiCharExtension.update(elapsed);
 
 		// ✨ SINCRONIZAR VOCALES - llamar en cada frame
 		syncVocals();
@@ -1107,6 +1133,10 @@ class ChartingState extends funkin.states.MusicBeatState
 		updateNotePositions(); // ✨ Actualizar posiciones cuando el grid se mueve
 		// updateSectionIndicators(); // ✨ Actualizar indicadores de sección
 		cullNotes();
+
+		// Preview character: detectar notas que pasa el playhead
+		if (previewPanel != null && FlxG.sound.music != null && FlxG.sound.music.playing)
+			checkNotesForPreview();
 
 		handleMouseInput();
 		handleKeyboardInput();
@@ -1171,6 +1201,53 @@ class ChartingState extends funkin.states.MusicBeatState
 		return (beats * 60 / bpm) * 1000;
 	}
 
+	/**
+	 * Detecta qué notas están siendo "tocadas" por el playhead en este momento
+	 * y dispara onNotePass en el PreviewPanel.
+	 * Se llama cada frame mientras la música esté reproduciendo.
+	 */
+	function checkNotesForPreview():Void
+	{
+		if (previewPanel == null)
+			return;
+
+		var currentTime = FlxG.sound.music.time;
+		var tolerance = Conductor.stepCrochet * 0.6;
+
+		// Reset del mapa cuando la música salta/reinicia
+		if (Math.abs(currentTime - _lastMusicTime) > 500)
+			_firedNotes = new Map();
+		_lastMusicTime = currentTime;
+
+		for (secNum in 0..._song.notes.length)
+		{
+			var section = _song.notes[secNum];
+			for (noteData in section.sectionNotes)
+			{
+				var noteTime:Float = noteData[0];
+				var rawData:Int = Std.int(noteData[1]);
+
+				if (Math.abs(noteTime - currentTime) > tolerance)
+					continue;
+
+				// Clave única por nota para no dispararla dos veces
+				var key = '${Std.int(noteTime)}_${rawData}';
+				if (_firedNotes.exists(key))
+					continue;
+				_firedNotes.set(key, true);
+
+				var groupIndex = Math.floor(rawData / 4);
+				var direction = rawData % 4;
+
+				previewPanel.onNotePass(direction, groupIndex);
+			}
+		}
+	}
+
+	// Timestamp de la última nota enviada al preview (evitar spam)
+	var _firedNotes:Map<String, Bool> = new Map();
+	var _lastMusicTime:Float = -999;
+
 	function updateSectionIndicators():Void
 	{
 		// Limpiar indicadores previos
@@ -1233,6 +1310,10 @@ class ChartingState extends funkin.states.MusicBeatState
 			gridBG.y = 100 - gridScrollY;
 			gridBlackWhite.y = gridBG.y;
 			strumLine.y = gridBG.y;
+
+			// Actualizar sidebar de eventos con nuevo scroll
+			if (eventsSidebar != null)
+				eventsSidebar.setScrollY(gridScrollY, gridBG.y);
 		}
 
 		// Scroll con rueda del mouse
@@ -1247,6 +1328,10 @@ class ChartingState extends funkin.states.MusicBeatState
 			gridBlackWhite.y = gridBG.y;
 			strumLine.y = gridBG.y;
 
+			// Actualizar sidebar de eventos con nuevo scroll
+			if (eventsSidebar != null)
+				eventsSidebar.setScrollY(gridScrollY, gridBG.y);
+
 			// ✨ SINCRONIZAR VOCALES cuando haces scroll con la rueda del mouse
 			syncVocals();
 		}
@@ -1254,6 +1339,8 @@ class ChartingState extends funkin.states.MusicBeatState
 
 	function handleMouseInput():Void
 	{
+		if (isAnyPopupOpen())
+			return;
 		// Click en grid
 		if (FlxG.mouse.justPressed && FlxG.mouse.overlaps(gridBG, camGame))
 		{
@@ -1264,7 +1351,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 			// ✨ Primero intentar seleccionar una nota existente
 			var noteSelected = selectNoteAtPosition(mouseGridY, noteData);
-			
+
 			// Si no hay nota, crear una nueva
 			if (!noteSelected && noteData >= 0 && noteData < 8)
 			{
@@ -1306,6 +1393,20 @@ class ChartingState extends funkin.states.MusicBeatState
 		}
 	}
 
+	function isAnyPopupOpen():Bool
+	{
+		if (metaPopup != null && metaPopup.isOpen)
+			return true;
+
+		if (charIconRow != null && charIconRow.isAnyModalOpen())
+			return true;
+
+		if (eventsSidebar != null && eventsSidebar.isAnyPopupOpen())
+			return true;
+
+		return false;
+	}
+
 	function addNoteAtWorldPosition(worldY:Float, noteData:Int):Void
 	{
 		// Convertir worldY a step global
@@ -1334,17 +1435,21 @@ class ChartingState extends funkin.states.MusicBeatState
 			accumulatedSteps += sectionSteps;
 		}
 
-		// ✨ CRITICAL FIX: Deshacer el mapeo visual antes de guardar
-		var actualNoteData = noteData;
-		if (_song.notes[targetSection].mustHitSection)
+		// CRITICAL FIX: Deshacer el mapeo visual antes de guardar
+		// Solo los primeros 2 grupos (col 0-7) hacen swap si mustHitSection
+		// Paso 1: deshacer reordenamiento visual → columna en espacio de datos
+		var reorderedData = visualColToDataCol(noteData);
+
+		// Paso 2: deshacer mustHitSection swap
+		var actualNoteData = reorderedData;
+		if (reorderedData < 8 && _song.notes[targetSection].mustHitSection)
 		{
-			// Invertir el swap: si clickeamos columna visual 0-3 (BF), guardar como 4-7 (datos reales)
-			// si clickeamos columna visual 4-7 (Dad), guardar como 0-3 (datos reales)
-			if (noteData < 4)
-				actualNoteData = noteData + 4;
+			if (reorderedData < 4)
+				actualNoteData = reorderedData + 4;
 			else
-				actualNoteData = noteData - 4;
+				actualNoteData = reorderedData - 4;
 		}
+		// Para noteData ≥ 8 (grupos extra): no hay swap, actualNoteData = noteData
 
 		// Calcular strumTime absoluto
 		var noteStrumTime = getSectionStartTime(targetSection) + noteTimeInSection;
@@ -1372,9 +1477,9 @@ class ChartingState extends funkin.states.MusicBeatState
 		{
 			// ✨ Obtener el sustain actual del stepper si hay uno
 			var currentSus:Float = (stepperSusLength != null) ? stepperSusLength.value : 0;
-			
+
 			var newNote = [noteStrumTime, actualNoteData, currentSus];
-			
+
 			saveUndoState("add", {
 				section: targetSection,
 				note: newNote
@@ -1415,14 +1520,19 @@ class ChartingState extends funkin.states.MusicBeatState
 			accumulatedSteps += sectionSteps;
 		}
 
-		// ✨ CRITICAL FIX: Deshacer el mapeo visual antes de buscar la nota
-		var actualNoteData = noteData;
-		if (_song.notes[targetSection].mustHitSection)
+		// CRITICAL FIX: Deshacer el mapeo visual antes de buscar la nota
+		// Solo los primeros 2 grupos hacen swap si mustHitSection
+		// Paso 1: deshacer reordenamiento visual → columna en espacio de datos
+		var reorderedData = visualColToDataCol(noteData);
+
+		// Paso 2: deshacer mustHitSection swap
+		var actualNoteData = reorderedData;
+		if (reorderedData < 8 && _song.notes[targetSection].mustHitSection)
 		{
-			if (noteData < 4)
-				actualNoteData = noteData + 4;
+			if (reorderedData < 4)
+				actualNoteData = reorderedData + 4;
 			else
-				actualNoteData = noteData - 4;
+				actualNoteData = reorderedData - 4;
 		}
 
 		var noteStrumTime = getSectionStartTime(targetSection) + noteTimeInSection;
@@ -1469,13 +1579,17 @@ class ChartingState extends funkin.states.MusicBeatState
 		}
 
 		// Deshacer el mapeo visual antes de buscar la nota
-		var actualNoteData = noteData;
-		if (_song.notes[targetSection].mustHitSection)
+		// Paso 1: deshacer reordenamiento visual → columna en espacio de datos
+		var reorderedData = visualColToDataCol(noteData);
+
+		// Paso 2: deshacer mustHitSection swap
+		var actualNoteData = reorderedData;
+		if (reorderedData < 8 && _song.notes[targetSection].mustHitSection)
 		{
-			if (noteData < 4)
-				actualNoteData = noteData + 4;
+			if (reorderedData < 4)
+				actualNoteData = reorderedData + 4;
 			else
-				actualNoteData = noteData - 4;
+				actualNoteData = reorderedData - 4;
 		}
 
 		var noteStrumTime = getSectionStartTime(targetSection) + noteTimeInSection;
@@ -1499,6 +1613,8 @@ class ChartingState extends funkin.states.MusicBeatState
 
 	function handleKeyboardInput():Void
 	{
+		if (isAnyPopupOpen())
+			return;
 		// ESC - Volver al PlayState (empezar desde el inicio)
 		if (FlxG.keys.justPressed.ESCAPE)
 		{
@@ -1572,24 +1688,24 @@ class ChartingState extends funkin.states.MusicBeatState
 		{
 			changeSection(1);
 		}
-
-		// QUICK NOTE PLACEMENT (1-8)
-		if (FlxG.keys.justPressed.ONE)
-			placeQuickNote(0);
-		if (FlxG.keys.justPressed.TWO)
-			placeQuickNote(1);
-		if (FlxG.keys.justPressed.THREE)
-			placeQuickNote(2);
-		if (FlxG.keys.justPressed.FOUR)
-			placeQuickNote(3);
-		if (FlxG.keys.justPressed.FIVE)
-			placeQuickNote(4);
-		if (FlxG.keys.justPressed.SIX)
-			placeQuickNote(5);
-		if (FlxG.keys.justPressed.SEVEN)
-			placeQuickNote(6);
-		if (FlxG.keys.justPressed.EIGHT)
-			placeQuickNote(7);
+		/*
+			// QUICK NOTE PLACEMENT (1-8)
+			if (FlxG.keys.justPressed.ONE)
+				placeQuickNote(0);
+			if (FlxG.keys.justPressed.TWO)
+				placeQuickNote(1);
+			if (FlxG.keys.justPressed.THREE)
+				placeQuickNote(2);
+			if (FlxG.keys.justPressed.FOUR)
+				placeQuickNote(3);
+			if (FlxG.keys.justPressed.FIVE)
+				placeQuickNote(4);
+			if (FlxG.keys.justPressed.SIX)
+				placeQuickNote(5);
+			if (FlxG.keys.justPressed.SEVEN)
+				placeQuickNote(6);
+			if (FlxG.keys.justPressed.EIGHT)
+				placeQuickNote(7); */
 
 		// COPY/PASTE/MIRROR
 		if (FlxG.keys.pressed.CONTROL)
@@ -1681,6 +1797,81 @@ class ChartingState extends funkin.states.MusicBeatState
 		{
 			testChartFromSection();
 		}
+
+		// ===== NUEVOS BOTONES CLICKEABLES EN TOOLBAR =====
+
+		// Click en BPM → abrir diálogo de input en el Song tab
+		if (bpmText != null && FlxG.mouse.justPressed && FlxG.mouse.overlaps(bpmText, camHUD))
+		{
+			// Cambiar al Song tab para editar el BPM
+			UI_box.selected_tab_id = 'Song';
+			showMessage('✏️ Edita el BPM en el tab Song', ACCENT_WARNING);
+		}
+
+		// Click en Section → abrir diálogo de navegación
+		if (sectionText != null && FlxG.mouse.justPressed && FlxG.mouse.overlaps(sectionText, camHUD))
+		{
+			openSectionNavigator();
+		}
+
+		// Click en botón Meta → toggle del popup
+		if (metaBtn != null && FlxG.mouse.justPressed && FlxG.mouse.overlaps(metaBtn, camHUD))
+		{
+			if (metaPopup != null)
+			{
+				if (metaPopup.isOpen)
+					metaPopup.close();
+				else
+					metaPopup.open();
+			}
+		}
+	}
+
+	// Abre un diálogo rápido para saltar a una sección específica
+	function openSectionNavigator():Void
+	{
+		// Crear overlay temporal de navegación
+		var overlay = new FlxSprite(0, 0).makeGraphic(FlxG.width, FlxG.height, 0x88000000);
+		overlay.scrollFactor.set();
+		overlay.cameras = [camHUD];
+
+		var panel = new FlxSprite(FlxG.width / 2 - 120, FlxG.height / 2 - 60).makeGraphic(240, 120, 0xFF1A1A33);
+		panel.scrollFactor.set();
+		panel.cameras = [camHUD];
+
+		var label = new FlxText(FlxG.width / 2 - 115, FlxG.height / 2 - 50, 230, 'Ir a sección (1-${_song.notes.length}):', 11);
+		label.setFormat(Paths.font("vcr.ttf"), 11, 0xFFAAAAAA, CENTER);
+		label.scrollFactor.set();
+		label.cameras = [camHUD];
+
+		var input = new FlxUIInputText(FlxG.width / 2 - 50, FlxG.height / 2 - 25, 100, '${curSection + 1}', 14);
+		input.scrollFactor.set();
+		input.cameras = [camHUD];
+
+		var confirmBtn:FlxButton = null;
+
+		confirmBtn = new FlxButton(FlxG.width / 2 - 40, FlxG.height / 2 + 15, "Go", function()
+		{
+			var target = Std.parseInt(input.text);
+			if (target != null && target >= 1 && target <= _song.notes.length)
+			{
+				changeSection(target - 1 - curSection);
+				showMessage('📍 Navegando a sección ${target}', ACCENT_CYAN);
+			}
+			remove(overlay);
+			remove(panel);
+			remove(label);
+			remove(input);
+			remove(confirmBtn);
+		});
+		confirmBtn.scrollFactor.set();
+		confirmBtn.cameras = [camHUD];
+
+		add(overlay);
+		add(panel);
+		add(label);
+		add(input);
+		add(confirmBtn);
 	}
 
 	function placeQuickNote(noteData:Int):Void
@@ -1717,17 +1908,22 @@ class ChartingState extends funkin.states.MusicBeatState
 
 				var noteStep = (daStrumTime - getSectionStartTime(secNum)) / Conductor.stepCrochet;
 
-				// ✨ REMAPEAR para mostrar correctamente Player 1 y Player 2
-				var visualColumn = daNoteData;
-
-				// Si debe hit BF, swap izq-der
-				if (section.mustHitSection)
+				// === REMAPEAR COLUMNA VISUAL ===
+				// Solo los primeros 2 grupos (col 0-7) hacen swap si mustHitSection
+				// Los grupos extra (col ≥8) nunca hacen swap
+				// Paso 1: mustHitSection swap (solo grupos 0 y 1 de datos)
+				var swappedCol = daNoteData;
+				if (daNoteData < 8 && section.mustHitSection)
 				{
 					if (daNoteData < 4)
-						visualColumn = daNoteData + 4;
+						swappedCol = daNoteData + 4;
 					else
-						visualColumn = daNoteData - 4;
+						swappedCol = daNoteData - 4;
 				}
+				// Paso 2: reordenamiento visual por personaje
+				var visualColumn = dataColToVisualCol(swappedCol);
+
+				// Para noteData ≥ 8 (grupos extra): visualColumn = daNoteData sin cambios
 
 				var note:Note = new Note(daStrumTime, visualColumn % 4);
 				note.setGraphicSize(GRID_SIZE, GRID_SIZE);
@@ -1737,18 +1933,18 @@ class ChartingState extends funkin.states.MusicBeatState
 
 				// Color base
 				var baseColor = NOTE_COLORS[visualColumn % 8];
-				
+
 				// ✨ Aplicar efecto pulsante si es la nota seleccionada
 				if (curSelectedNote != null && noteData == curSelectedNote)
 				{
 					// Crear efecto pulsante: oscila entre 0.4 y 1.0
 					var pulseAmount = 0.4 + (Math.sin(selectedNotePulse) * 0.5 + 0.5) * 0.6;
-					
+
 					// Oscurecer el color multiplicando cada componente
 					var r = Std.int((baseColor >> 16 & 0xFF) * pulseAmount);
 					var g = Std.int((baseColor >> 8 & 0xFF) * pulseAmount);
 					var b = Std.int((baseColor & 0xFF) * pulseAmount);
-					
+
 					note.color = (0xFF << 24) | (r << 16) | (g << 8) | b;
 				}
 				else
@@ -1765,11 +1961,11 @@ class ChartingState extends funkin.states.MusicBeatState
 				if (daSus > 0)
 				{
 					var susHeight = (daSus / Conductor.stepCrochet) * GRID_SIZE;
-					
+
 					// ✨ ASEGURAR QUE EL SUSTAIN SEA VISIBLE (mínimo 2 pixels)
 					if (susHeight < 2)
 						susHeight = 2;
-					
+
 					var sustainVis = new FlxSprite(note.x + (GRID_SIZE / 2) - 4, note.y + GRID_SIZE);
 					sustainVis.makeGraphic(8, Std.int(susHeight), NOTE_COLORS[visualColumn % 8]);
 					sustainVis.alpha = 0.6;
@@ -1839,14 +2035,17 @@ class ChartingState extends funkin.states.MusicBeatState
 				var noteStep = (daStrumTime - getSectionStartTime(secNum)) / Conductor.stepCrochet;
 
 				// ✨ REMAPEAR POSICIÓN VISUAL (igual que en updateGrid)
-				var visualColumn = daNoteData;
+				// Paso 1: mustHitSection swap
+				var swappedCol = daNoteData;
 				if (section.mustHitSection)
 				{
 					if (daNoteData < 4)
-						visualColumn = daNoteData + 4;
-					else
-						visualColumn = daNoteData - 4;
+						swappedCol = daNoteData + 4;
+					else if (daNoteData < 8)
+						swappedCol = daNoteData - 4;
 				}
+				// Paso 2: reordenamiento visual
+				var visualColumn = dataColToVisualCol(swappedCol);
 
 				// ACTUALIZAR posición X e Y
 				note.x = gridBG.x + (GRID_SIZE * visualColumn);
@@ -1854,17 +2053,17 @@ class ChartingState extends funkin.states.MusicBeatState
 
 				// ✨ Aplicar efecto pulsante si es la nota seleccionada
 				var baseColor = NOTE_COLORS[visualColumn % 8];
-				
+
 				if (curSelectedNote != null && noteData == curSelectedNote)
 				{
 					// Crear efecto pulsante: oscila entre 0.4 y 1.0
 					var pulseAmount = 0.4 + (Math.sin(selectedNotePulse) * 0.5 + 0.5) * 0.6;
-					
+
 					// Oscurecer el color multiplicando cada componente
 					var r = Std.int((baseColor >> 16 & 0xFF) * pulseAmount);
 					var g = Std.int((baseColor >> 8 & 0xFF) * pulseAmount);
 					var b = Std.int((baseColor & 0xFF) * pulseAmount);
-					
+
 					note.color = (0xFF << 24) | (r << 16) | (g << 8) | b;
 				}
 				else
@@ -1880,7 +2079,7 @@ class ChartingState extends funkin.states.MusicBeatState
 					if (sus != null)
 					{
 						var susHeight = (daSus / Conductor.stepCrochet) * GRID_SIZE;
-						
+
 						// ✨ ASEGURAR QUE EL SUSTAIN SEA VISIBLE (mínimo 5 pixels)
 						susHeight = Math.max(5, susHeight);
 
@@ -1959,7 +2158,6 @@ class ChartingState extends funkin.states.MusicBeatState
 			FlxG.sound.music.time = getSectionStartTime(curSection);
 
 		updateSectionUI();
-		updateHeads();
 
 		// ✨ SINCRONIZAR VOCALES cuando cambias de sección
 		syncVocals();
@@ -2025,7 +2223,6 @@ class ChartingState extends funkin.states.MusicBeatState
 			{
 				case 'Must Hit Section':
 					_song.notes[curSection].mustHitSection = check.checked;
-					updateHeads();
 
 				case 'Change BPM':
 					_song.notes[curSection].changeBPM = check.checked;
@@ -2114,11 +2311,15 @@ class ChartingState extends funkin.states.MusicBeatState
 		{
 			var noteData:Int = note[1];
 
-			// Swap player <-> opponent (0-3 <-> 4-7)
-			if (noteData < 4)
-				note[1] = noteData + 4;
-			else
-				note[1] = noteData - 4;
+			// Swap player <-> opponent solo en los primeros 2 grupos (0-7)
+			if (noteData < 8)
+			{
+				if (noteData < 4)
+					note[1] = noteData + 4;
+				else
+					note[1] = noteData - 4;
+			}
+			// Grupos extra (≥8): no se hace swap
 		}
 
 		updateGrid();
@@ -2131,9 +2332,10 @@ class ChartingState extends funkin.states.MusicBeatState
 		for (note in _song.notes[curSection].sectionNotes)
 		{
 			var noteData:Int = note[1];
+			var group = Math.floor(noteData / 4);
 			var column:Int = noteData % 4;
 
-			// Invertir columnas: 0<->3, 1<->2
+			// Invertir columnas dentro de su grupo: 0<->3, 1<->2
 			var newColumn:Int = switch (column)
 			{
 				case 0: 3;
@@ -2143,11 +2345,7 @@ class ChartingState extends funkin.states.MusicBeatState
 				default: column;
 			};
 
-			// Mantener si es player o opponent
-			if (noteData < 4)
-				note[1] = newColumn;
-			else
-				note[1] = newColumn + 4;
+			note[1] = (group * 4) + newColumn;
 		}
 
 		updateGrid();
@@ -2323,6 +2521,83 @@ class ChartingState extends funkin.states.MusicBeatState
 		showMessage('❌ Error saving chart!', ACCENT_ERROR);
 	}
 
+	/** Devuelve strumsGroups en el orden visual (igual que los iconos de personajes). */
+	function getOrderedStrumsGroups():Array<StrumsGroupData>
+	{
+		if (_song.strumsGroups == null || _song.strumsGroups.length == 0)
+			return _song.strumsGroups != null ? _song.strumsGroups : [];
+
+		var ordered:Array<StrumsGroupData> = [];
+		var usedIds:Array<String> = [];
+
+		if (_song.characters != null)
+		{
+			for (char in _song.characters)
+			{
+				if (char.strumsGroup == null || char.strumsGroup.length == 0)
+					continue;
+				if (usedIds.indexOf(char.strumsGroup) >= 0)
+					continue;
+				for (sg in _song.strumsGroups)
+				{
+					if (sg.id == char.strumsGroup)
+					{
+						ordered.push(sg);
+						usedIds.push(sg.id);
+						break;
+					}
+				}
+			}
+		}
+
+		// Grupos sin personaje asignado van al final
+		for (sg in _song.strumsGroups)
+			if (usedIds.indexOf(sg.id) < 0)
+				ordered.push(sg);
+
+		return ordered;
+	}
+
+	/** Columna de datos → columna visual (aplica reordenamiento por personaje). */
+	function dataColToVisualCol(dataCol:Int):Int
+	{
+		if (_song.strumsGroups == null || _song.strumsGroups.length == 0)
+			return dataCol;
+		var dataGroupIdx = Math.floor(dataCol / 4);
+		var direction = dataCol % 4;
+		if (dataGroupIdx >= _song.strumsGroups.length)
+			return dataCol;
+
+		var dataGroupId = _song.strumsGroups[dataGroupIdx].id;
+		var ordered = getOrderedStrumsGroups();
+
+		for (i in 0...ordered.length)
+			if (ordered[i].id == dataGroupId)
+				return i * 4 + direction;
+
+		return dataCol;
+	}
+
+	/** Columna visual → columna de datos (inverso del anterior). */
+	function visualColToDataCol(visualCol:Int):Int
+	{
+		var visualGroupIdx = Math.floor(visualCol / 4);
+		var direction = visualCol % 4;
+		var ordered = getOrderedStrumsGroups();
+
+		if (visualGroupIdx >= ordered.length)
+			return visualCol;
+		var visualGroupId = ordered[visualGroupIdx].id;
+
+		if (_song.strumsGroups == null)
+			return visualCol;
+		for (i in 0..._song.strumsGroups.length)
+			if (_song.strumsGroups[i].id == visualGroupId)
+				return i * 4 + direction;
+
+		return visualCol;
+	}
+
 	// ✨ NUEVA FUNCIÓN: Probar el chart en PlayState
 	function testChart():Void
 	{
@@ -2449,7 +2724,6 @@ class ChartingState extends funkin.states.MusicBeatState
 			loadSong(_song.song);
 			curSection = 0;
 			changeSection(0);
-			updateHeads();
 
 			// Update UI
 			songNameText.text = '• ${_song.song}';
@@ -2631,7 +2905,6 @@ typedef ChartAction =
 	var section:Int;
 	var data:Dynamic;
 }
-
 /*
  * 
  * SHORTCUTS:
@@ -2668,499 +2941,3 @@ typedef ChartAction =
  * 
  * DISFRUTA! 🎮✨
  */
-class ChartingState_MultiCharExtension
-{
-	// Referencias
-	var chartingState:ChartingState;
-	var UI_box:FlxUITabMenu;
-	var _song:funkin.data.Song.SwagSong;
-
-	// Tab
-	var tab_multichar:FlxUI;
-
-	// UI Elements - CHARACTERS
-	var charListText:FlxText;
-	var selectedCharIndex:Int = -1;
-	var charNameInput:FlxUIInputText;
-	var charXStepper:FlxUINumericStepper;
-	var charYStepper:FlxUINumericStepper;
-	var charScaleStepper:FlxUINumericStepper;
-	var charVisibleCheck:FlxUICheckBox;
-	var charFlipCheck:FlxUICheckBox;
-	var charDropDown:FlxUIDropDownMenu;
-
-	// UI Elements - STRUMS
-	var strumsListText:FlxText;
-	var selectedStrumsIndex:Int = -1;
-	var strumsIdInput:FlxUIInputText;
-	var strumsXStepper:FlxUINumericStepper;
-	var strumsYStepper:FlxUINumericStepper;
-	var strumsSpacingStepper:FlxUINumericStepper;
-	var strumsVisibleCheck:FlxUICheckBox;
-	var strumsCPUCheck:FlxUICheckBox;
-
-	// Colors
-	static inline var ACCENT_CYAN:Int = 0xFF00D9FF;
-	static inline var ACCENT_GREEN:Int = 0xFF00FF88;
-	static inline var ACCENT_ERROR:Int = 0xFFFF3366;
-	static inline var TEXT_WHITE:Int = 0xFFFFFFFF;
-	static inline var TEXT_GRAY:Int = 0xFFAAAAAA;
-
-	public function new(chartingState:ChartingState, UI_box:FlxUITabMenu, _song:funkin.data.Song.SwagSong)
-	{
-		this.chartingState = chartingState;
-		this.UI_box = UI_box;
-		this._song = _song;
-	}
-
-	public function setupTab():Void
-	{
-		tab_multichar = new FlxUI(null, UI_box);
-		tab_multichar.name = 'Multi-Char';
-
-		var yPos:Float = 10;
-
-		// === TÍTULO ===
-		var title = new FlxText(10, yPos, 0, "🎭 MULTI-CHARACTER SYSTEM", 14);
-		title.setFormat(Paths.font("vcr.ttf"), 14, ACCENT_CYAN, LEFT);
-		tab_multichar.add(title);
-		yPos += 25;
-
-		// === SECCIÓN PERSONAJES ===
-		setupCharactersSection(yPos);
-		yPos += 280;
-
-		// === SECCIÓN STRUMS ===
-		setupStrumsSection(yPos);
-
-		UI_box.addGroup(tab_multichar);
-
-		trace('[MultiChar Extension] Tab creada exitosamente');
-	}
-
-	function setupCharactersSection(yPos:Float):Void
-	{
-		// --- HEADER ---
-		var charHeader = new FlxText(10, yPos, 0, "PERSONAJES", 12);
-		charHeader.setFormat(Paths.font("vcr.ttf"), 12, ACCENT_GREEN, LEFT);
-		tab_multichar.add(charHeader);
-		yPos += 20;
-
-		// --- LISTA DE PERSONAJES ---
-		charListText = new FlxText(10, yPos, 250, getCharactersList(), 10);
-		charListText.setFormat(Paths.font("vcr.ttf"), 10, TEXT_GRAY, LEFT);
-		tab_multichar.add(charListText);
-		yPos += 60;
-
-		// --- BOTONES ---
-		var addCharBtn = new FlxButton(10, yPos, "Añadir", addCharacter);
-		var removeCharBtn = new FlxButton(80, yPos, "Eliminar", removeCharacter);
-		var upCharBtn = new FlxButton(150, yPos, "↑", moveCharacterUp);
-		var downCharBtn = new FlxButton(190, yPos, "↓", moveCharacterDown);
-		tab_multichar.add(addCharBtn);
-		tab_multichar.add(removeCharBtn);
-		tab_multichar.add(upCharBtn);
-		tab_multichar.add(downCharBtn);
-		yPos += 30;
-
-		// --- SELECTOR DE PERSONAJE ---
-		var charSelectLabel = new FlxText(10, yPos, 0, "Editar personaje #:", 10);
-		tab_multichar.add(charSelectLabel);
-		yPos += 15;
-
-		var charSelectStepper = new FlxUINumericStepper(10, yPos, 1, 0, 0, 10, 0);
-		charSelectStepper.name = 'char_select';
-		tab_multichar.add(charSelectStepper);
-		yPos += 25;
-
-		// --- DROPDOWN DE PERSONAJES DISPONIBLES ---
-		var charLabel = new FlxText(10, yPos, 0, "Personaje:", 10);
-		tab_multichar.add(charLabel);
-		yPos += 15;
-
-		// Combine all character types into one list
-		CharacterList.init(); // Ensure initialized
-		var charList:Array<String> = [];
-		charList = charList.concat(CharacterList.boyfriends);
-		charList = charList.concat(CharacterList.opponents);
-		charList = charList.concat(CharacterList.girlfriends);
-
-		charDropDown = new FlxUIDropDownMenu(10, yPos, FlxUIDropDownMenu.makeStrIdLabelArray(charList, true), function(charName:String)
-		{
-			if (selectedCharIndex >= 0 && selectedCharIndex < _song.characters.length)
-			{
-				_song.characters[selectedCharIndex].name = charList[Std.parseInt(charName)];
-				updateCharactersList();
-			}
-		});
-		tab_multichar.add(charDropDown);
-		yPos += 25;
-
-		// --- POSICIÓN X ---
-		var xLabel = new FlxText(10, yPos, 0, "X:", 10);
-		tab_multichar.add(xLabel);
-		charXStepper = new FlxUINumericStepper(30, yPos, 10, 0, -2000, 2000, 0);
-		charXStepper.name = 'char_x';
-		tab_multichar.add(charXStepper);
-		yPos += 20;
-
-		// --- POSICIÓN Y ---
-		var yLabel = new FlxText(10, yPos, 0, "Y:", 10);
-		tab_multichar.add(yLabel);
-		charYStepper = new FlxUINumericStepper(30, yPos, 10, 0, -2000, 2000, 0);
-		charYStepper.name = 'char_y';
-		tab_multichar.add(charYStepper);
-		yPos += 20;
-
-		// --- ESCALA ---
-		var scaleLabel = new FlxText(10, yPos, 0, "Escala:", 10);
-		tab_multichar.add(scaleLabel);
-		charScaleStepper = new FlxUINumericStepper(60, yPos, 0.1, 1.0, 0.1, 5.0, 1);
-		charScaleStepper.name = 'char_scale';
-		tab_multichar.add(charScaleStepper);
-		yPos += 20;
-
-		// --- CHECKBOXES ---
-		charVisibleCheck = new FlxUICheckBox(10, yPos, null, null, "Visible", 100);
-		charVisibleCheck.name = 'char_visible';
-		charVisibleCheck.checked = true;
-		tab_multichar.add(charVisibleCheck);
-
-		charFlipCheck = new FlxUICheckBox(120, yPos, null, null, "Flip X", 100);
-		charFlipCheck.name = 'char_flip';
-		charFlipCheck.checked = false;
-		tab_multichar.add(charFlipCheck);
-	}
-
-	function setupStrumsSection(yPos:Float):Void
-	{
-		// --- HEADER ---
-		var strumsHeader = new FlxText(10, yPos, 0, "GRUPOS DE STRUMS", 12);
-		strumsHeader.setFormat(Paths.font("vcr.ttf"), 12, ACCENT_GREEN, LEFT);
-		tab_multichar.add(strumsHeader);
-		yPos += 20;
-
-		// --- LISTA DE STRUMS ---
-		strumsListText = new FlxText(10, yPos, 250, getStrumsList(), 10);
-		strumsListText.setFormat(Paths.font("vcr.ttf"), 10, TEXT_GRAY, LEFT);
-		tab_multichar.add(strumsListText);
-		yPos += 60;
-
-		// --- BOTONES ---
-		var addStrumsBtn = new FlxButton(10, yPos, "Añadir", addStrumsGroup);
-		var removeStrumsBtn = new FlxButton(80, yPos, "Eliminar", removeStrumsGroup);
-		tab_multichar.add(addStrumsBtn);
-		tab_multichar.add(removeStrumsBtn);
-		yPos += 30;
-
-		// --- SELECTOR ---
-		var strumsSelectLabel = new FlxText(10, yPos, 0, "Editar grupo #:", 10);
-		tab_multichar.add(strumsSelectLabel);
-		yPos += 15;
-
-		var strumsSelectStepper = new FlxUINumericStepper(10, yPos, 1, 0, 0, 10, 0);
-		strumsSelectStepper.name = 'strums_select';
-		tab_multichar.add(strumsSelectStepper);
-		yPos += 25;
-
-		// --- ID ---
-		var idLabel = new FlxText(10, yPos, 0, "ID:", 10);
-		tab_multichar.add(idLabel);
-		yPos += 15;
-
-		strumsIdInput = new FlxUIInputText(10, yPos, 150, "strums_0", 10);
-		strumsIdInput.name = 'strums_id';
-		tab_multichar.add(strumsIdInput);
-		yPos += 25;
-
-		// --- POSICIÓN X ---
-		var xLabel = new FlxText(10, yPos, 0, "X:", 10);
-		tab_multichar.add(xLabel);
-		strumsXStepper = new FlxUINumericStepper(30, yPos, 10, 100, 0, 2000, 0);
-		strumsXStepper.name = 'strums_x';
-		tab_multichar.add(strumsXStepper);
-		yPos += 20;
-
-		// --- POSICIÓN Y ---
-		var yLabel2 = new FlxText(10, yPos, 0, "Y:", 10);
-		tab_multichar.add(yLabel2);
-		strumsYStepper = new FlxUINumericStepper(30, yPos, 10, 50, 0, 1000, 0);
-		strumsYStepper.name = 'strums_y';
-		tab_multichar.add(strumsYStepper);
-		yPos += 20;
-
-		// --- ESPACIADO ---
-		var spacingLabel = new FlxText(10, yPos, 0, "Espaciado:", 10);
-		tab_multichar.add(spacingLabel);
-		strumsSpacingStepper = new FlxUINumericStepper(80, yPos, 10, 160, 50, 300, 0);
-		strumsSpacingStepper.name = 'strums_spacing';
-		tab_multichar.add(strumsSpacingStepper);
-		yPos += 20;
-
-		// --- CHECKBOXES ---
-		strumsVisibleCheck = new FlxUICheckBox(10, yPos, null, null, "Visible", 100);
-		strumsVisibleCheck.name = 'strums_visible';
-		strumsVisibleCheck.checked = true;
-		tab_multichar.add(strumsVisibleCheck);
-
-		strumsCPUCheck = new FlxUICheckBox(120, yPos, null, null, "CPU", 100);
-		strumsCPUCheck.name = 'strums_cpu';
-		strumsCPUCheck.checked = true;
-		tab_multichar.add(strumsCPUCheck);
-	}
-
-	// ================================
-	// CHARACTERS FUNCTIONS
-	// ================================
-
-	function addCharacter():Void
-	{
-		if (_song.characters == null)
-			_song.characters = [];
-
-		var newChar:CharacterSlotData = {
-			name: "bf",
-			x: 400,
-			y: 300,
-			visible: true,
-			scale: 1.0
-		};
-
-		_song.characters.push(newChar);
-		updateCharactersList();
-		trace('[MultiChar] Personaje añadido. Total: ${_song.characters.length}');
-	}
-
-	function removeCharacter():Void
-	{
-		if (selectedCharIndex >= 0 && selectedCharIndex < _song.characters.length)
-		{
-			_song.characters.splice(selectedCharIndex, 1);
-			selectedCharIndex = -1;
-			updateCharactersList();
-			trace('[MultiChar] Personaje eliminado. Total: ${_song.characters.length}');
-		}
-	}
-
-	function moveCharacterUp():Void
-	{
-		if (selectedCharIndex > 0 && selectedCharIndex < _song.characters.length)
-		{
-			var temp = _song.characters[selectedCharIndex];
-			_song.characters[selectedCharIndex] = _song.characters[selectedCharIndex - 1];
-			_song.characters[selectedCharIndex - 1] = temp;
-			selectedCharIndex--;
-			updateCharactersList();
-		}
-	}
-
-	function moveCharacterDown():Void
-	{
-		if (selectedCharIndex >= 0 && selectedCharIndex < _song.characters.length - 1)
-		{
-			var temp = _song.characters[selectedCharIndex];
-			_song.characters[selectedCharIndex] = _song.characters[selectedCharIndex + 1];
-			_song.characters[selectedCharIndex + 1] = temp;
-			selectedCharIndex++;
-			updateCharactersList();
-		}
-	}
-
-	// ================================
-	// STRUMS FUNCTIONS
-	// ================================
-
-	function addStrumsGroup():Void
-	{
-		if (_song.strumsGroups == null)
-			_song.strumsGroups = [];
-
-		var newGroup:StrumsGroupData = {
-			id: "strums_" + _song.strumsGroups.length,
-			x: 100,
-			y: 50,
-			visible: true,
-			cpu: false,
-			spacing: 160
-		};
-
-		_song.strumsGroups.push(newGroup);
-		updateStrumsList();
-		trace('[MultiChar] Grupo de strums añadido. Total: ${_song.strumsGroups.length}');
-	}
-
-	function removeStrumsGroup():Void
-	{
-		if (selectedStrumsIndex >= 0 && selectedStrumsIndex < _song.strumsGroups.length)
-		{
-			_song.strumsGroups.splice(selectedStrumsIndex, 1);
-			selectedStrumsIndex = -1;
-			updateStrumsList();
-			trace('[MultiChar] Grupo de strums eliminado. Total: ${_song.strumsGroups.length}');
-		}
-	}
-
-	// ================================
-	// UPDATE LISTS
-	// ================================
-
-	function updateCharactersList():Void
-	{
-		charListText.text = getCharactersList();
-	}
-
-	function updateStrumsList():Void
-	{
-		strumsListText.text = getStrumsList();
-	}
-
-	function getCharactersList():String
-	{
-		if (_song.characters == null || _song.characters.length == 0)
-			return "Sin personajes";
-
-		var list = "";
-		for (i in 0..._song.characters.length)
-		{
-			var char = _song.characters[i];
-			list += '#$i: ${char.name}\n';
-		}
-		return list;
-	}
-
-	function getStrumsList():String
-	{
-		if (_song.strumsGroups == null || _song.strumsGroups.length == 0)
-			return "Sin grupos";
-
-		var list = "";
-		for (i in 0..._song.strumsGroups.length)
-		{
-			var group = _song.strumsGroups[i];
-			var type = group.cpu ? "CPU" : "PLAYER";
-			list += '#$i: ${group.id} ($type)\n';
-		}
-		return list;
-	}
-
-	// ================================
-	// UPDATE
-	// ================================
-
-	public function update(elapsed:Float):Void
-	{
-		// Leer valores de los steppers y aplicarlos
-		updateCharacterValues();
-		updateStrumsValues();
-	}
-
-	function updateCharacterValues():Void
-	{
-		// Detectar cambio de selección
-		var selectStepper:FlxUINumericStepper = cast tab_multichar.getAsset('char_select');
-		if (selectStepper != null)
-		{
-			var newIndex = Std.int(selectStepper.value);
-			if (newIndex != selectedCharIndex)
-			{
-				selectedCharIndex = newIndex;
-				loadCharacterToUI(selectedCharIndex);
-			}
-		}
-
-		// Aplicar valores si hay un personaje seleccionado
-		if (selectedCharIndex >= 0 && selectedCharIndex < _song.characters.length)
-		{
-			var char = _song.characters[selectedCharIndex];
-
-			if (charXStepper != null)
-				char.x = charXStepper.value;
-			if (charYStepper != null)
-				char.y = charYStepper.value;
-			if (charScaleStepper != null)
-				char.scale = charScaleStepper.value;
-			if (charVisibleCheck != null)
-				char.visible = charVisibleCheck.checked;
-			if (charFlipCheck != null)
-				char.flip = charFlipCheck.checked;
-		}
-	}
-
-	function updateStrumsValues():Void
-	{
-		// Detectar cambio de selección
-		var selectStepper:FlxUINumericStepper = cast tab_multichar.getAsset('strums_select');
-		if (selectStepper != null)
-		{
-			var newIndex = Std.int(selectStepper.value);
-			if (newIndex != selectedStrumsIndex)
-			{
-				selectedStrumsIndex = newIndex;
-				loadStrumsToUI(selectedStrumsIndex);
-			}
-		}
-
-		// Aplicar valores si hay un grupo seleccionado
-		if (selectedStrumsIndex >= 0 && selectedStrumsIndex < _song.strumsGroups.length)
-		{
-			var group = _song.strumsGroups[selectedStrumsIndex];
-
-			if (strumsIdInput != null)
-				group.id = strumsIdInput.text;
-			if (strumsXStepper != null)
-				group.x = strumsXStepper.value;
-			if (strumsYStepper != null)
-				group.y = strumsYStepper.value;
-			if (strumsSpacingStepper != null)
-				group.spacing = strumsSpacingStepper.value;
-			if (strumsVisibleCheck != null)
-				group.visible = strumsVisibleCheck.checked;
-			if (strumsCPUCheck != null)
-				group.cpu = strumsCPUCheck.checked;
-		}
-	}
-
-	function loadCharacterToUI(index:Int):Void
-	{
-		if (index < 0 || index >= _song.characters.length)
-			return;
-
-		var char = _song.characters[index];
-
-		if (charXStepper != null)
-			charXStepper.value = char.x;
-		if (charYStepper != null)
-			charYStepper.value = char.y;
-		if (charScaleStepper != null)
-			charScaleStepper.value = char.scale != null ? char.scale : 1.0;
-		if (charVisibleCheck != null)
-			charVisibleCheck.checked = char.visible != null ? char.visible : true;
-		if (charFlipCheck != null)
-			charFlipCheck.checked = char.flip != null ? char.flip : false;
-
-		trace('[MultiChar] Personaje #$index cargado en UI: ${char.name}');
-	}
-
-	function loadStrumsToUI(index:Int):Void
-	{
-		if (index < 0 || index >= _song.strumsGroups.length)
-			return;
-
-		var group = _song.strumsGroups[index];
-
-		if (strumsIdInput != null)
-			strumsIdInput.text = group.id;
-		if (strumsXStepper != null)
-			strumsXStepper.value = group.x;
-		if (strumsYStepper != null)
-			strumsYStepper.value = group.y;
-		if (strumsSpacingStepper != null)
-			strumsSpacingStepper.value = group.spacing != null ? group.spacing : 160;
-		if (strumsVisibleCheck != null)
-			strumsVisibleCheck.checked = group.visible;
-		if (strumsCPUCheck != null)
-			strumsCPUCheck.checked = group.cpu;
-
-		trace('[MultiChar] Grupo de strums #$index cargado en UI: ${group.id}');
-	}
-}

@@ -103,23 +103,29 @@ class CharacterSlot
 	{
 		if (!isActive)
 			return;
-		
-		holdTimer += elapsed;
-		
-		// Auto-idle después de cantar
-		// NOTA: BF maneja su propio timing en Character.update(), así que lo saltamos aquí
-		if (character.animation.curAnim != null && !character.curCharacter.startsWith('bf'))
+
+		if (character.animation.curAnim == null)
+			return;
+
+		var curAnim = character.animation.curAnim.name;
+
+		// Solo acumular holdTimer mientras está cantando, resetear si no
+		if (curAnim.startsWith('sing') && !curAnim.endsWith('miss'))
 		{
-			var curAnim = character.animation.curAnim.name;
-			
-			if (curAnim.startsWith('sing') && !curAnim.endsWith('miss'))
+			holdTimer += elapsed;
+
+			// BF maneja su propio idle desde Character.update() — no duplicar
+			if (!character.curCharacter.startsWith('bf') && holdTimer > 0.6 && character.canSing)
 			{
-				if (holdTimer > 0.6 && character.canSing)
-				{
-					animFinished = true;
-					character.dance();
-				}
+				holdTimer = 0;
+				animFinished = true;
+				character.dance();
 			}
+		}
+		else
+		{
+			// No está cantando → resetear para que el próximo sing empiece limpio
+			holdTimer = 0;
 		}
 	}
 	

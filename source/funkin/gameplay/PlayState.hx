@@ -51,7 +51,7 @@ import funkin.transitions.StickerTransition;
 // Menu Pause
 import funkin.menus.GitarooPause;
 import funkin.menus.PauseSubState;
-import funkin.debug.ChartingState;
+import funkin.debug.charting.ChartingState;
 import funkin.debug.DialogueEditor;
 #if desktop
 import data.Discord.DiscordClient;
@@ -93,7 +93,7 @@ class PlayState extends funkin.states.MusicBeatState
 	private var gameState:GameState;
 	private var noteManager:NoteManager;
 	private var inputHandler:InputHandler;
-	private var cameraController:CameraController;
+	public var cameraController:CameraController;
 	private var uiManager:UIManager;
 	private var characterController:CharacterController;
 
@@ -559,7 +559,7 @@ class PlayState extends funkin.states.MusicBeatState
 		}
 
 		// Camera controller
-		cameraController = new CameraController(camGame, camHUD, boyfriend, dad);
+		cameraController = new CameraController(camGame, camHUD, boyfriend, dad, gf);
 		if (currentStage.defaultCamZoom > 0)
 			cameraController.defaultZoom = currentStage.defaultCamZoom;
 
@@ -993,9 +993,8 @@ class PlayState extends funkin.states.MusicBeatState
 			// Update characters
 			characterController.update(elapsed);
 
-			// Update camera
-			var mustHitSection = getMustHitSection(curStep);
-			cameraController.update(elapsed, mustHitSection);
+			// Update camera — el target se controla por eventos (Camera Follow)
+			cameraController.update(elapsed);
 
 			// Update note manager
 			if (generatedMusic)
@@ -1080,6 +1079,7 @@ class PlayState extends funkin.states.MusicBeatState
 
 		if (FlxG.keys.justPressed.SEVEN)
 		{
+			FlxG.mouse.visible = true;
 			FlxG.switchState(new ChartingState());
 		}
 

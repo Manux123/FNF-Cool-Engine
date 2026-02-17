@@ -22,6 +22,9 @@ typedef CharacterSlotData =
 	var ?flip:Bool; // Voltear sprite
 	var ?scale:Float; // Escala del personaje
 	var ?visible:Bool; // Visibilidad del personaje
+	// === CAMPOS DEL CHART EDITOR ===
+	var ?type:String; // "Opponent", "Player", "Girlfriend", "Other"
+	var ?strumsGroup:String; // ID del StrumsGroup al que está vinculado
 }
 
 /**
@@ -36,6 +39,16 @@ typedef StrumsGroupData =
 	var cpu:Bool; // Si es CPU o jugador
 	var ?spacing:Float; // Espaciado entre flechas (default 160)
 	var ?scale:Float; // Escala de las flechas
+}
+
+/**
+ * Evento del chart editor (Camera, BPM Change, etc.)
+ */
+typedef ChartEvent =
+{
+	var stepTime:Float; // Step en el que ocurre
+	var type:String;    // "Camera", "BPM Change", "Alt Anim", "Play Anim", "Camera Zoom", etc.
+	var value:String;   // Valor del evento (ej: "dad", "1.2", etc.)
 }
 
 /**
@@ -57,6 +70,9 @@ typedef SwagSong =
 	// === NUEVO SISTEMA MULTI-CHARACTER ===
 	@:optional var characters:Array<CharacterSlotData>; // Array de personajes
 	@:optional var strumsGroups:Array<StrumsGroupData>; // Array de grupos de strums
+
+	// === EVENTOS DEL CHART EDITOR ===
+	@:optional var events:Array<ChartEvent>; // Eventos (camera, bpm change, etc.)
 	
 	var stage:String;
 	var validScore:Bool;

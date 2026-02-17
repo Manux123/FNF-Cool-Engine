@@ -249,8 +249,8 @@ class StickerTransition
 			var sticker = createSticker(stickerSet);
 			if (sticker != null)
 			{
-				sticker.x = FlxG.random.float(-sticker.width * 0.5 - 200, FlxG.width + sticker.width * 0.5 - 200);
-				sticker.y = FlxG.random.float(-sticker.height * 0.5 - 200, FlxG.height + sticker.height * 0.5 - 200);
+				sticker.x = FlxG.random.float(-sticker.width * 0.5 - 200, FlxG.width + sticker.width * 0.5 - 150);
+				sticker.y = FlxG.random.float(-sticker.height * 0.5 - 200, FlxG.height + sticker.height * 0.5 - 150);
 				
 				allStickers.push(sticker);
 				transitionSprite.addSticker(sticker);
@@ -724,8 +724,8 @@ class StickerTransitionContainer extends openfl.display.Sprite
 				if (sticker.scale != null)
 					FlxTween.cancelTweensOf(sticker.scale);
 
-				var disperseX = FlxG.random.float(-600, 600);
-				var disperseY = FlxG.random.float(-600, 600);
+				var disperseX = FlxG.random.float(-800, 800);
+				var disperseY = FlxG.random.float(-800, 800);
 
 				// ✅ REDUCIDO: Animación más rápida (antes: 0.4, ahora: 0.3)
 				FlxTween.tween(sticker.scale, {x: 0.05, y: 0.05}, 0.3, {

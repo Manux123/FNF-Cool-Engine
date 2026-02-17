@@ -233,17 +233,19 @@ class CharacterController
 		var animName:String = 'sing' + notesAnim[noteData] + altAnim;
 		
 		// Fallback si no existe la animación alterna
-		if (!char.animOffsets.exists(animName) && char.animation.getByName(animName) == null)
+		if ((char.animOffsets == null || !char.animOffsets.exists(animName)) && char.animation.getByName(animName) == null)
 		{
 			animName = 'sing' + notesAnim[noteData];
 		}
 		
-		// No reiniciar si ya está en esta animación
-		if (char.animation.curAnim != null && char.animation.curAnim.name == animName)
-			return;
-		
 		char.playAnim(animName, true);
 		char.holdTimer = 0;
+
+		// Resetear también el holdTimer del slot correspondiente
+		// (si no se hace, CharacterSlot.update() llama dance() en el siguiente frame)
+		for (slot in characterSlots)
+			if (slot != null && slot.character == char)
+			{ slot.holdTimer = 0; break; }
 	}
 	
 	/**

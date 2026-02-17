@@ -39,8 +39,23 @@ class ScriptHandler
 		parser.allowJSON = true;
 		parser.allowMetadata = true;
 		#end
-		
+
+		// Cargar scripts globales que siempre están activos
+		loadGlobalScripts();
+
 		trace('[ScriptHandler] Sistema de scripts inicializado');
+	}
+
+	/**
+	 * Carga scripts globales desde:
+	 *   assets/scripts/global/   → activos en todo el juego
+	 *   assets/scripts/events/   → registran handlers de eventos custom
+	 */
+	public static function loadGlobalScripts():Void
+	{
+		loadScriptsFromFolder('assets/scripts/global', 'global');
+		loadScriptsFromFolder('assets/scripts/events', 'global');
+		trace('[ScriptHandler] Scripts globales cargados');
 	}
 	
 	/**
@@ -126,16 +141,19 @@ class ScriptHandler
 	}
 	
 	/**
-	 * Cargar scripts de una canción específica
+	 * Cargar scripts de una canción específica.
+	 * Carpetas buscadas (en orden):
+	 *   assets/songs/{song}/scripts/  → lógica general
+	 *   assets/songs/{song}/events/   → handlers de eventos custom
 	 */
 	public static function loadSongScripts(songName:String):Void
 	{
 		clearSongScripts();
-		
-		// Buscar en data/songs/[songName]/scripts/
-		var scriptsPath = 'assets/songs/${songName.toLowerCase()}/scripts';
-		loadScriptsFromFolder(scriptsPath, "song");
-		
+
+		var base = 'assets/songs/${songName.toLowerCase()}';
+		loadScriptsFromFolder('$base/scripts', 'song');
+		loadScriptsFromFolder('$base/events',  'song');
+
 		trace('[ScriptHandler] Scripts de "${songName}" cargados');
 	}
 	
@@ -317,8 +335,30 @@ class ScriptHandler
 		});
 		interp.variables.set('FlxCamera', flixel.FlxCamera);
 		
-		// PlayState
+		// PlayState y EventManager
 		interp.variables.set('PlayState', funkin.gameplay.PlayState);
+		interp.variables.set('EventManager', funkin.scripting.EventManager);
+		interp.variables.set('game', funkin.gameplay.PlayState.instance);
+
+		// Conductor (para BPM Change y tiempo de canción)
+		interp.variables.set('Conductor', funkin.data.Conductor);
+
+		// API de eventos — disponible desde el momento en que cualquier script carga,
+		// incluyendo los scripts globales de assets/scripts/events/
+		interp.variables.set('registerEvent', function(name:String, handler:Dynamic)
+		{
+			funkin.scripting.EventManager.registerCustomEvent(name,
+				function(evts:Array<funkin.scripting.EventManager.EventData>):Bool
+				{
+					var result = handler(evts[0].value1, evts[0].value2, evts[0].time);
+					return result == true;
+				});
+			trace('[Script] Evento registrado: "$name"');
+		});
+
+		interp.variables.set('fireEvent',
+			function(name:String, ?v1:String = '', ?v2:String = '')
+				funkin.scripting.EventManager.fireEvent(name, v1, v2));
 		
 		// Utilidades
 		interp.variables.set('Math', Math);

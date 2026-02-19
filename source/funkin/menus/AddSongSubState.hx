@@ -19,6 +19,7 @@ import lime.utils.Assets;
 import sys.io.File;
 import sys.FileSystem;
 import funkin.menus.FreeplayState.SongMetadata;
+import funkin.data.MetaData;
 
 using StringTools;
 
@@ -38,6 +39,9 @@ class AddSongSubState extends FlxSubState
 	var iconNameInput:FlxInputText;
 	var bpmInput:FlxInputText;
 	var weekInput:FlxInputText;
+	// === META INPUT FIELDS ===
+	var uiInput:FlxInputText;
+	var noteSkinInput:FlxInputText;
 	
 	// === BUTTONS ===
 	var loadInstBtn:FlxButton;
@@ -125,7 +129,7 @@ class AddSongSubState extends FlxSubState
 		
 		// === WINDOW BACKGROUND ===
 		var windowWidth:Int = 900;
-		var windowHeight:Int = 700; // Aumentado para el nuevo toggle
+		var windowHeight:Int = 775; // Aumentado para campos de meta
 		var windowX:Float = (FlxG.width - windowWidth) / 2;
 		var windowY:Float = (FlxG.height - windowHeight) / 2;
 		
@@ -168,6 +172,7 @@ class AddSongSubState extends FlxSubState
 		
 		// === CREATE UI ===
 		createInputFields(windowX, windowY);
+		createMetaFields(windowX, windowY);   // NUEVO: campos UI y NoteSkin
 		createStoryModeToggle(windowX, windowY); // NUEVO
 		createFileButtons(windowX, windowY);
 		createColorPicker(windowX, windowY);
@@ -257,10 +262,74 @@ class AddSongSubState extends FlxSubState
 		FlxTween.tween(weekInput, {alpha: 1}, 0.3, {startDelay: 0.55});
 	}
 	
+	// === NUEVO: CAMPOS DE META (UI + NOTESKIN) ===
+	function createMetaFields(windowX:Float, windowY:Float):Void
+	{
+		var startY:Float = windowY + 305;
+		var inputWidth:Int = 180;
+
+		// UI Script
+		var labelUI = new FlxText(windowX + 30, startY, 0, "UI Script:", 18);
+		labelUI.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT);
+		labelUI.alpha = 0;
+		add(labelUI);
+		FlxTween.tween(labelUI, {alpha: 1}, 0.3, {startDelay: 0.55});
+
+		uiInput = new FlxInputText(windowX + 30, startY + 25, inputWidth, "default", 16);
+		uiInput.backgroundColor    = 0xFF0f3460;
+		uiInput.fieldBorderColor   = 0xFF53a8b6;
+		uiInput.fieldBorderThickness = 2;
+		uiInput.color              = FlxColor.WHITE;
+		uiInput.maxLength          = 40;
+		uiInput.alpha              = 0;
+		add(uiInput);
+		FlxTween.tween(uiInput, {alpha: 1}, 0.3, {startDelay: 0.57});
+
+		// NoteSkin
+		var labelNS = new FlxText(windowX + 240, startY, 0, "Note Skin:", 18);
+		labelNS.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT);
+		labelNS.alpha = 0;
+		add(labelNS);
+		FlxTween.tween(labelNS, {alpha: 1}, 0.3, {startDelay: 0.57});
+
+		noteSkinInput = new FlxInputText(windowX + 240, startY + 25, inputWidth, "default", 16);
+		noteSkinInput.backgroundColor    = 0xFF0f3460;
+		noteSkinInput.fieldBorderColor   = 0xFF53a8b6;
+		noteSkinInput.fieldBorderThickness = 2;
+		noteSkinInput.color              = FlxColor.WHITE;
+		noteSkinInput.maxLength          = 40;
+		noteSkinInput.alpha              = 0;
+		add(noteSkinInput);
+		FlxTween.tween(noteSkinInput, {alpha: 1}, 0.3, {startDelay: 0.59});
+
+		// Hint
+		var hint = new FlxText(windowX + 30, startY + 52, 430,
+			"Leave 'default' to use global config", 12);
+		hint.setFormat(Paths.font("vcr.ttf"), 12, 0xFF53a8b6, LEFT);
+		hint.alpha = 0;
+		add(hint);
+		FlxTween.tween(hint, {alpha: 0.7}, 0.3, {startDelay: 0.6});
+	}
+
+	// === NUEVO: GUARDAR META.JSON ===
+	function saveMetaJSON(songName:String):Void
+	{
+		var ui       = uiInput.text.trim();
+		var noteSkin = noteSkinInput.text.trim();
+
+		// Solo guardamos si alguno difiere de "default" — pero guardamos siempre
+		// para que el archivo exista y sea editable
+		MetaData.save(
+			songName,
+			ui       != '' ? ui       : 'default',
+			noteSkin != '' ? noteSkin : 'default'
+		);
+	}
+
 	// === NUEVO: CREAR TOGGLE PARA STORY MODE ===
 	function createStoryModeToggle(windowX:Float, windowY:Float):Void
 	{
-		var toggleY:Float = windowY + 305;
+		var toggleY:Float = windowY + 380; // desplazado 75px para los campos de meta
 		var toggleX:Float = windowX + 30;
 		
 		// Label
@@ -317,7 +386,7 @@ class AddSongSubState extends FlxSubState
 	
 	function createFileButtons(windowX:Float, windowY:Float):Void
 	{
-		var btnY:Float = windowY + 360;
+		var btnY:Float = windowY + 435; // desplazado 75px
 		var btnX:Float = windowX + 30;
 		
 		// Load Inst Button
@@ -412,7 +481,7 @@ class AddSongSubState extends FlxSubState
 	
 	function createColorPicker(windowX:Float, windowY:Float):Void
 	{
-		var colorY:Float = windowY + 360;
+		var colorY:Float = windowY + 435; // desplazado 75px
 		var colorX:Float = windowX + 500;
 		
 		// Title
@@ -546,6 +615,11 @@ class AddSongSubState extends FlxSubState
 		
 		updateColorButtons();
 		updateToggleButton(); // NUEVO
+
+		// NUEVO: cargar valores de meta.json si existe
+		var existingMeta = MetaData.load(editingSong.songName);
+		if (uiInput != null)       uiInput.text       = existingMeta.ui;
+		if (noteSkinInput != null) noteSkinInput.text  = existingMeta.noteSkin;
 	}
 	
 	function saveSong():Void
@@ -579,9 +653,10 @@ class AddSongSubState extends FlxSubState
 			addNewSong(songName, weekIndex, bpmVal);
 			updateStatus("Song added successfully!");
 		}
-		
+
 		saveJSON();
-		
+		saveMetaJSON(songName); // NUEVO: guarda meta.json de la canción
+
 		closeWindow();
 	}
 	
@@ -703,7 +778,7 @@ class AddSongSubState extends FlxSubState
 				FileSystem.createDirectory(targetDir);
 			}
 			
-			var targetPath = targetDir + "/" + fileType + ".ogg";
+			var targetPath = targetDir + "/song/" + fileType + ".ogg";
 			File.copy(sourcePath, targetPath);
 			
 			trace('File copied: ' + targetPath);

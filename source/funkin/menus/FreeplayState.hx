@@ -96,11 +96,12 @@ class FreeplayState extends funkin.states.MusicBeatState
 	override function create()
 	{
 		FlxG.mouse.visible = false;
-		
+
 		// ✅ FIX: Limpiar inputs al inicio para evitar inputs residuales del state anterior
 		FlxG.keys.reset();
-		
-		if (StickerTransition.enabled){
+
+		if (StickerTransition.enabled)
+		{
 			transIn = null;
 			transOut = null;
 		}
@@ -315,11 +316,11 @@ class FreeplayState extends funkin.states.MusicBeatState
 	override function closeSubState()
 	{
 		changeSelection();
-		
+
 		// ✅ FIX: Limpiar inputs residuales al volver de un substate
 		// Esto evita que un ENTER usado para salir del pause menu se procese en FreeplayState
 		FlxG.keys.reset();
-		
+
 		super.closeSubState();
 	}
 
@@ -380,19 +381,25 @@ class FreeplayState extends funkin.states.MusicBeatState
 		var accepted = FlxG.keys.justPressed.ENTER;
 		var space = FlxG.keys.justPressed.SPACE;
 
-		if (upP)
-		{
+		#if HSCRIPT_ALLOWED
+		if (upP && !StateScriptHandler.callOnScripts('interceptNav', [-1, 0]))
 			changeSelection(-1);
-		}
-		if (downP)
-		{
+		if (downP && !StateScriptHandler.callOnScripts('interceptNav', [1, 0]))
 			changeSelection(1);
-		}
-
+		if (leftP && !StateScriptHandler.callOnScripts('interceptNav', [0, -1]))
+			changeDiff(-1);
+		if (rightP && !StateScriptHandler.callOnScripts('interceptNav', [0, 1]))
+			changeDiff(1);
+		#else
+		if (upP)
+			changeSelection(-1);
+		if (downP)
+			changeSelection(1);
 		if (leftP)
 			changeDiff(-1);
 		if (rightP)
 			changeDiff(1);
+		#end
 
 		if (controls.BACK)
 		{
@@ -416,11 +423,11 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 				var songLowercase:String = songs[curSelected].songName.toLowerCase();
 				var poop:String = Highscore.formatSong(songLowercase, curDifficulty);
-				
+
 				// Verify if JSON exists before trying to preview
 				var jsonPath:String = 'assets/songs/$songLowercase/$poop.json';
 				var jsonExists:Bool = false;
-				
+
 				#if sys
 				jsonExists = FileSystem.exists(jsonPath);
 				#else
@@ -439,7 +446,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 				try
 				{
 					PlayState.SONG = Song.loadFromJson(poop, songLowercase);
-					
+
 					if (PlayState.SONG == null || PlayState.SONG.song == null)
 					{
 						showError('Cannot preview: Chart file is corrupted!');
@@ -462,14 +469,14 @@ class FreeplayState extends funkin.states.MusicBeatState
 					vocals = new FlxSound();
 
 				FlxG.sound.list.add(vocals);
-				
+
 				// Cargar instrumental usando el método seguro
 				FlxG.sound.music = Paths.loadInst(PlayState.SONG.song);
 				FlxG.sound.music.persist = true;
 				FlxG.sound.music.looped = true;
 				FlxG.sound.music.volume = 0.7;
 				FlxG.sound.music.play();
-				
+
 				vocals.persist = true;
 				vocals.looped = true;
 				vocals.volume = 0.7;
@@ -559,9 +566,9 @@ class FreeplayState extends funkin.states.MusicBeatState
 			// Verify if JSON exists
 			var jsonPath:String = 'assets/songs/$songLowercase/$poop.json';
 			trace('[FreeplayState] Looking for JSON at: $jsonPath');
-			
+
 			var jsonExists:Bool = false;
-			
+
 			#if sys
 			jsonExists = FileSystem.exists(jsonPath);
 			trace('[FreeplayState] FileSystem.exists() = $jsonExists');
@@ -586,7 +593,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 				trace('[FreeplayState] Attempting to load JSON...');
 				PlayState.SONG = Song.loadFromJson(poop, songLowercase);
 				trace('[FreeplayState] JSON loaded successfully');
-				
+
 				// Validate song data
 				if (PlayState.SONG == null || PlayState.SONG.song == null)
 				{
@@ -596,7 +603,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 					FlxG.camera.shake(0.01, 0.3);
 					return;
 				}
-				
+
 				trace('[FreeplayState] Song name in JSON: ${PlayState.SONG.song}');
 			}
 			catch (e:Dynamic)
@@ -624,7 +631,8 @@ class FreeplayState extends funkin.states.MusicBeatState
 			FlxG.camera.flash(FlxColor.WHITE, 1);
 			FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.7);
 
-			StickerTransition.start(function() {
+			StickerTransition.start(function()
+			{
 				LoadingState.loadAndSwitchState(new PlayState());
 			});
 
@@ -895,14 +903,14 @@ class FreeplayState extends funkin.states.MusicBeatState
 	override public function onFocusLost():Void
 	{
 		super.onFocusLost();
-		
+
 		// Pausar vocals cuando se pierde foco
 		if (vocals != null && vocals.playing)
 		{
 			vocals.pause();
 			trace('[FreeplayState] Focus lost - vocals paused');
 		}
-		
+
 		// FlxG.sound.music se pausa automáticamente
 		trace('[FreeplayState] Focus lost - music will be paused by FlxG');
 	}
@@ -914,7 +922,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 	override public function onFocus():Void
 	{
 		super.onFocus();
-		
+
 		// CRÍTICO: Con loadStream(), FlxG.sound.music NO se reanuda automáticamente
 		// Necesitamos reanudarlo manualmente si hay una preview sonando
 		if (FlxG.sound.music != null && instPlaying == curSelected)
@@ -922,7 +930,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 			// Reanudar el instrumental
 			FlxG.sound.music.play();
 			trace('[FreeplayState] Focus gained - music resumed');
-			
+
 			// Reanudar vocals sincronizadas con el instrumental
 			if (vocals != null)
 			{

@@ -2,6 +2,7 @@
 	"path": "weeb/bfPixel",
 	"isPlayer": true,
 	"antialiasing": false,
+	"charDeath":"bf-pixel-dead",
 	"scale": 6.0,
 	"flipX": true,
 	"cameraOffset":[-200,-200],

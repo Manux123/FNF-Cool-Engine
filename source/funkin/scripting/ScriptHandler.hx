@@ -22,7 +22,8 @@ class ScriptHandler
 {
 	public static var globalScripts:Map<String, ScriptInstance> = new Map();
 	public static var songScripts:Map<String, ScriptInstance> = new Map();
-	public static var stageScripts:Map<String, ScriptInstance> = new Map(); // NUEVO
+	public static var stageScripts:Map<String, ScriptInstance> = new Map();
+	public static var uiScripts:Map<String, ScriptInstance> = new Map();
 	
 	#if HSCRIPT_ALLOWED
 	private static var parser:Parser;
@@ -53,8 +54,8 @@ class ScriptHandler
 	 */
 	public static function loadGlobalScripts():Void
 	{
-		loadScriptsFromFolder('assets/scripts/global', 'global');
-		loadScriptsFromFolder('assets/scripts/events', 'global');
+		loadScriptsFromFolder('assets/data/scripts/global', 'global');
+		loadScriptsFromFolder('assets/data/scripts/events', 'global');
 		trace('[ScriptHandler] Scripts globales cargados');
 	}
 	
@@ -98,6 +99,8 @@ class ScriptHandler
 					globalScripts.set(scriptName, script);
 				case "stage":
 					stageScripts.set(scriptName, script);
+				case "ui":
+					uiScripts.set(scriptName, script);
 				default: // "song"
 					songScripts.set(scriptName, script);
 			}
@@ -115,6 +118,13 @@ class ScriptHandler
 		return null;
 		#end
 	}
+
+	public static function clearUIScripts():Void
+	{
+        for (script in uiScripts)
+	        script.destroy();
+        uiScripts.clear();
+    }
 	
 	/**
 	 * Cargar todos los scripts de una carpeta
@@ -306,6 +316,7 @@ class ScriptHandler
 	{
 		clearSongScripts();
 		clearStageScripts();
+		clearUIScripts();
 		
 		for (script in globalScripts)
 			script.destroy();
@@ -327,6 +338,10 @@ class ScriptHandler
 		interp.variables.set('FlxTween', flixel.tweens.FlxTween);
 		interp.variables.set('FlxEase', flixel.tweens.FlxEase);
 		interp.variables.set('FlxTimer', flixel.util.FlxTimer);
+		interp.variables.set('UIScriptedManager', funkin.gameplay.UIScriptedManager);
+    	interp.variables.set('MetaData',           funkin.data.MetaData);
+	    interp.variables.set('GlobalConfig',        funkin.data.GlobalConfig);
+		interp.variables.set('HealthIcon',        funkin.gameplay.objects.character.HealthIcon);
 		interp.variables.set('FlxColor', {
 			BLACK: 0xFF000000,
 			WHITE: 0xFFFFFFFF,
@@ -339,6 +354,7 @@ class ScriptHandler
 		interp.variables.set('PlayState', funkin.gameplay.PlayState);
 		interp.variables.set('EventManager', funkin.scripting.EventManager);
 		interp.variables.set('game', funkin.gameplay.PlayState.instance);
+		interp.variables.set('FlxTrail', flixel.addons.effects.FlxTrail);
 
 		// Conductor (para BPM Change y tiempo de canción)
 		interp.variables.set('Conductor', funkin.data.Conductor);

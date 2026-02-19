@@ -11,8 +11,9 @@ import funkin.menus.StoryMenuState;
 import funkin.menus.FreeplayState;
 import funkin.states.LoadingState;
 import funkin.data.Conductor;
-
 import funkin.gameplay.objects.character.Character;
+
+using StringTools;
 
 class GameOverSubstate extends MusicBeatSubstate
 {
@@ -21,27 +22,25 @@ class GameOverSubstate extends MusicBeatSubstate
 
 	var stageSuffix:String = "";
 
-	public function new(x:Float, y:Float)
+	public function new(x:Float, y:Float, boyfriend:Character)
 	{
-		if(PlayState.instance.vocals.playing)
+		if (PlayState.instance.vocals.playing)
 			PlayState.instance.vocals.stop();
 
 		var daStage = PlayState.curStage;
-		var daBf:String = '';
-		switch (daStage)
-		{
-			case 'school' | 'schoolEvil':
-				stageSuffix = '-pixel';
-				daBf = 'bf-pixel-dead'; //texture bf dead
-			default:
-				daBf = 'bf-dead';
-		}
 
 		super();
 
 		Conductor.songPosition = 0;
 
-		bf = new Character(x, y, daBf,true);
+		if (boyfriend.characterData.charDeath == null)
+		{
+			if (daStage.startsWith('school'))
+				stageSuffix = '-pixel';
+			boyfriend.characterData.charDeath = 'bf-dead';
+		}
+
+		bf = new Character(x, y, boyfriend.characterData.charDeath, true);
 		add(bf);
 
 		camFollow = new FlxObject(bf.getGraphicMidpoint().x, bf.getGraphicMidpoint().y, 1, 1);
@@ -84,7 +83,7 @@ class GameOverSubstate extends MusicBeatSubstate
 		{
 			if (bf.animation.curAnim.curFrame == 12)
 				FlxG.camera.follow(camFollow, LOCKON, 0.01);
-			
+
 			if (bf.animation.curAnim.finished)
 				FlxG.sound.playMusic(Paths.music('gameplay/gameOver' + stageSuffix));
 		}

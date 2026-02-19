@@ -484,6 +484,27 @@ class CharacterList
     }
     
     /**
+     * Devuelve TODOS los personajes (bf + opponents + gf) en una sola lista ordenada.
+     * Útil para dropdowns que no distinguen por tipo (ej. AnimationDebug).
+     */
+    public static function getAllCharacters():Array<String>
+    {
+        if (!initialized) init();
+
+        var all:Array<String> = [];
+
+        for (c in boyfriends)
+            if (!all.contains(c)) all.push(c);
+        for (c in opponents)
+            if (!all.contains(c)) all.push(c);
+        for (c in girlfriends)
+            if (!all.contains(c)) all.push(c);
+
+        all.sort((a, b) -> a.toLowerCase() < b.toLowerCase() ? -1 : 1);
+        return all;
+    }
+
+    /**
      * Recarga las listas (útil si se agregan personajes en runtime)
      */
     public static function reload():Void

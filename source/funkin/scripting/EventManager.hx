@@ -202,7 +202,7 @@ class EventManager
 		}
 		else
 		{
-			trace('[EventManager] Sin handler para "${event.name}" — añade uno en assets/scripts/events/');
+			trace('[EventManager] Sin handler para "${event.name}" — añade uno en assets/data/scripts/events/');
 		}
 	}
 

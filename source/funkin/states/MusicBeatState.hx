@@ -82,13 +82,6 @@ class MusicBeatState extends FlxUIState
 			trace('reg ' + transIn.region);
 
 		super.create();
-		
-		// Add global SoundTray
-		// El SoundTray se auto-remueve del estado anterior cuando se agrega aquí
-		if (Main.soundTray != null)
-		{
-			add(Main.soundTray);
-		}
 	}
 
 	override function update(elapsed:Float)

@@ -1,14 +1,12 @@
 package funkin.gameplay.objects.character;
 
-import flixel.FlxSprite;
+// FunkinSprite reemplaza a FlxSprite + FlxAnimate manual
+import animationdata.FunkinSprite;
 import flixel.util.FlxColor;
 import funkin.data.Conductor;
 import haxe.Json;
 import sys.io.File;
 import sys.FileSystem;
-
-// ── Librería oficial FlxAnimate (Dot-Stuff/flxanimate) ────────────────────────
-import flxanimate.FlxAnimate;
 
 using StringTools;
 
@@ -19,12 +17,15 @@ typedef CharacterData =
 	var isPlayer:Bool;
 	var antialiasing:Bool;
 	var scale:Float;
+	@:optional var charDeath:String;
 	@:optional var flipX:Bool;
 	@:optional var isTxt:Bool;
 	@:optional var isSpritemap:Bool;
-	/** Si es true, usa la librería FlxAnimate (Dot-Stuff/flxanimate) */
+	/**
+	 * Conservado por compatibilidad con JSONs existentes.
+	 * FunkinSprite auto-detecta el tipo de asset — ya no es obligatorio.
+	 */
 	@:optional var isFlxAnimate:Bool;
-	/** Solo informativo — flxanimate auto-detecta los spritemaps en la carpeta */
 	@:optional var spritemapName:String;
 	@:optional var healthIcon:String;
 	@:optional var healthBarColor:String;
@@ -48,21 +49,18 @@ typedef AnimData =
 }
 
 /**
- * Character — Personaje jugable/NPC.
+ * Character — Personaje jugable / NPC.
  *
- * Extiende FlxSprite (NO FlxAnimate). Para personajes con atlas Adobe Animate
- * se crea un sub-sprite FlxAnimate (_flxAnimate) cuyo ciclo de vida se maneja
- * completamente desde aquí. Esto evita que el pipeline de FlxAnimate interfiera
- * con los personajes de sprite normal.
+ * Ahora extiende FunkinSprite, que unifica:
+ *   - Texture Atlas de Adobe Animate (FlxAnimate internamente)
+ *   - Sparrow Atlas  (PNG + XML)
+ *   - Packer Atlas   (PNG + TXT)
  *
- *   Modo normal    → frames = Paths.characterSprite(...)
- *                    animation.addByPrefix / animation.play
- *
- *   Modo FlxAnimate → _flxAnimate = new FlxAnimate(x, y)
- *                     _flxAnimate.loadAtlas(folderPath)
- *                     _flxAnimate.anim.addBySymbol / _flxAnimate.anim.play
+ * Ya NO es necesario gestionar un sub-sprite _flxAnimate a mano:
+ * FunkinSprite expone playAnim / addAnim / animName / animFinished
+ * de forma transparente para cualquier tipo de asset.
  */
-class Character extends FlxSprite
+class Character extends FunkinSprite
 {
 	public var animOffsets:Map<String, Array<Dynamic>>;
 	public var debugMode:Bool = false;
@@ -78,34 +76,17 @@ class Character extends FlxSprite
 	public var healthBarColor:FlxColor = FlxColor.fromString("#31B0D1");
 	public var cameraOffset:Array<Float> = [0, 0];
 
-	var characterData:CharacterData;
+	public var characterData:CharacterData;
 	var danced:Bool = false;
-
-	/** true sólo cuando el JSON tiene isFlxAnimate:true */
-	public var _useFlxAnimate:Bool = false;
-	/** Sub-sprite FlxAnimate; null para personajes de sprite normal */
-	var _flxAnimate:FlxAnimate = null;
-	/** Nombre de la animación actual en modo FlxAnimate (FlxAnim no expone .name) */
-	var _curFlxAnimName:String = "";
 
 	var _singAnimPrefix:String = "sing";
 	var _idleAnim:String       = "idle";
-
-	// ── Acceso a la API de FlxAnimate para AnimationDebug ────────────────────
-
-	/**
-	 * Acceso al FlxAnim interno cuando el personaje usa FlxAnimate.
-	 * Devuelve null si el personaje es un sprite normal.
-	 */
-	public var anim(get, never):flxanimate.animate.FlxAnim;
-	inline function get_anim():flxanimate.animate.FlxAnim
-		return _flxAnimate != null ? _flxAnimate.anim : null;
 
 	// ── Constructor ───────────────────────────────────────────────────────────
 
 	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false)
 	{
-		super(x, y);
+		super(x, y); // FunkinSprite(x, y) → FlxAnimate(x, y)
 
 		animOffsets   = new Map<String, Array<Dynamic>>();
 		curCharacter  = character;
@@ -167,72 +148,38 @@ class Character extends FlxSprite
 
 	function characterLoad(character:String):Void
 	{
-		_useFlxAnimate = (characterData.isFlxAnimate != null && characterData.isFlxAnimate);
+		// ─────────────────────────────────────────────────────────────────────
+		// FunkinSprite.loadCharacterSparrow() auto-detecta en este orden:
+		//   1. Texture Atlas (carpeta con Animation.json)  → FlxAnimate interno
+		//   2. Sparrow  (PNG + XML)
+		//   3. Packer   (PNG + TXT)
+		// El campo JSON isFlxAnimate ya no es necesario.
+		// ─────────────────────────────────────────────────────────────────────
+		loadCharacterSparrow(characterData.path);
 
-		if (_useFlxAnimate)
-		{
-			// ── Modo FlxAnimate ──────────────────────────────────────────────
-			var folderPath = Paths.characterFolder(characterData.path);
-            // Aseguramos quitar la barra final para que FlxAnimate no se confunda
-			folderPath = haxe.io.Path.removeTrailingSlashes(folderPath);
-
-			trace('Ruta FlxAnimate: ' + folderPath);
-			
-			trace('[Character] Intentando cargar FlxAnimate en: ' + folderPath);
-
-            // IMPORTANTE: FlxAnimate a veces falla si no se le dan Settings.
-            // Creamos la instancia.
-			_flxAnimate = new FlxAnimate(x, y, folderPath);
-
-			if (_flxAnimate.anim.metadata == null)
-			{
-				trace('[Character] ERROR: Atlas FlxAnimate no cargado o metadata corrupta para "' + curCharacter + '"');
-				_flxAnimate = null;
-				_useFlxAnimate = false;
-                // Intentar cargar como sprite normal por seguridad o dejar como placeholder
-			}
-			else
-			{
-				for (animData in characterData.animations)
-				{
-                    // NOTA: addBySymbol requiere el nombre del SÍMBOLO en Adobe Animate, 
-                    // no el nombre de la animación en el XML. Asegúrate que animData.prefix
-                    // coincida con el nombre en la biblioteca de Animate.
-					_flxAnimate.anim.addBySymbol(animData.name, animData.prefix, Std.int(animData.framerate));
-					addOffset(animData.name, animData.offsetX, animData.offsetY);
-				}
-			}
-		}
+		if (isAnimateAtlas)
+			trace('[Character] Modo Texture Atlas para "$curCharacter"');
 		else
+			trace('[Character] Modo Sparrow/Packer para "$curCharacter"');
+
+		// Registrar animaciones con la API unificada de FunkinSprite
+		for (animData in characterData.animations)
 		{
-			// ── Modo sprite normal ───────────────────────────────────────────
-			if (characterData.isTxt != null && characterData.isTxt)
-				frames = Paths.characterSpriteTxt(characterData.path);
-			else
-				frames = Paths.characterSprite(characterData.path);
+			// addAnim() llama internamente a anim.addBySymbol (atlas)
+			// o animation.addByPrefix / addByIndices (sparrow/packer)
+			addAnim(
+				animData.name,
+				animData.prefix,
+				Std.int(animData.framerate),
+				animData.looped,
+				(animData.indices != null && animData.indices.length > 0) ? animData.indices : null
+			);
 
-			if (frames == null)
-			{
-				trace('[Character] ERROR CRITICO: frames null para "' + curCharacter + '" path="' + characterData.path + '"');
-			}
-			else
-			{
-				trace('[Character] frames OK: ' + frames.frames.length + ' frames para "' + curCharacter + '"');
+			var fa = isAnimateAtlas ? null : animation.getByName(animData.name);
+			if (!isAnimateAtlas && (fa == null || fa.numFrames == 0))
+				trace('[Character] WARN: "${animData.name}" 0 frames (prefix="${animData.prefix}")');
 
-				for (animData in characterData.animations)
-				{
-					if (animData.indices != null && animData.indices.length > 0)
-						animation.addByIndices(animData.name, animData.prefix, animData.indices, "", Std.int(animData.framerate), animData.looped);
-					else
-						animation.addByPrefix(animData.name, animData.prefix, Std.int(animData.framerate), animData.looped);
-
-					var flxAnim = animation.getByName(animData.name);
-					if (flxAnim == null || flxAnim.numFrames == 0)
-						trace('[Character] WARN: "' + animData.name + '" 0 frames (prefix="' + animData.prefix + '")');
-
-					addOffset(animData.name, animData.offsetX, animData.offsetY);
-				}
-			}
+			addOffset(animData.name, animData.offsetX, animData.offsetY);
 		}
 
 		antialiasing = characterData.antialiasing;
@@ -252,27 +199,18 @@ class Character extends FlxSprite
 
 	// ── playAnim ──────────────────────────────────────────────────────────────
 
-	public function playAnim(AnimName:String, Force:Bool = false, Reversed:Bool = false, Frame:Int = 0):Void
+	/**
+	 * Sobreescribe FunkinSprite.playAnim para añadir:
+	 *   - Guardia canSing / specialAnim
+	 *   - Aplicación de animOffsets
+	 */
+	override public function playAnim(AnimName:String, Force:Bool = false, Reversed:Bool = false, Frame:Int = 0):Void
 	{
 		if (!canSing && specialAnim)
 			return;
 
-		if (_useFlxAnimate && _flxAnimate != null)
-		{
-			// Nunca llamar play() si el atlas no se cargó correctamente:
-			// anim.metadata null → crash en FlxAnim.hx línea 284 (metadata.name).
-			if (_flxAnimate.anim.metadata == null) return;
-
-			// Force=true en la primera llamada: FlxAnim.play() comprueba finished
-			// antes de que exista un símbolo activo y petaría sin este flag.
-			var forcePlay = Force || (_curFlxAnimName == "");
-			_flxAnimate.anim.play(AnimName, forcePlay, Reversed, Frame);
-			_curFlxAnimName = AnimName;
-		}
-		else
-		{
-			animation.play(AnimName, Force, Reversed, Frame);
-		}
+		// FunkinSprite maneja atlas y sparrow de forma transparente
+		super.playAnim(AnimName, Force, Reversed, Frame);
 
 		var daOffset = animOffsets.get(AnimName);
 		if (daOffset != null)
@@ -281,37 +219,26 @@ class Character extends FlxSprite
 			offset.set(0, 0);
 	}
 
-	// ── Estado de animación ───────────────────────────────────────────────────
+	// ── Estado de animación — delegados a FunkinSprite ────────────────────────
 
+	/** Nombre de la animación activa (funciona en atlas y sparrow). */
 	public function getCurAnimName():String
-	{
-		if (_useFlxAnimate)
-			return _curFlxAnimName;
-		return animation.curAnim != null ? animation.curAnim.name : "";
-	}
+		return animName; // FunkinSprite.animName
 
+	/** ¿Ha terminado la animación actual? */
 	public function isCurAnimFinished():Bool
-	{
-		if (_useFlxAnimate && _flxAnimate != null)
-			return _flxAnimate.anim.finished;
-		return animation.curAnim != null ? animation.curAnim.finished : true;
-	}
+		return animFinished; // FunkinSprite.animFinished
 
+	/** ¿Hay alguna animación activa? */
 	public function hasCurAnim():Bool
-	{
-		if (_useFlxAnimate)
-			return _curFlxAnimName != "";
-		return animation.curAnim != null;
-	}
+		return animName != "";
 
 	// ── Update ────────────────────────────────────────────────────────────────
 
 	override function update(elapsed:Float)
 	{
-		// Actualizar el sub-sprite FlxAnimate (avanza su sistema anim interno)
-		if (_useFlxAnimate && _flxAnimate != null)
-			_flxAnimate.update(elapsed);
-
+		// FunkinSprite (que extiende FlxAnimate) ya actualiza el sistema de
+		// animaciones internamente — no hay que llamar a _flxAnimate.update().
 		super.update(elapsed);
 
 		if (!hasCurAnim())
@@ -368,34 +295,7 @@ class Character extends FlxSprite
 		handleSpecialAnimations();
 	}
 
-	// ── Draw ─────────────────────────────────────────────────────────────────
-
-	override function draw()
-	{
-        // Si usamos FlxAnimate, secuestramos el draw para pintar el sub-sprite
-		if (_useFlxAnimate && _flxAnimate != null)
-		{
-            // Sincronización completa antes de dibujar
-			_flxAnimate.setPosition(x, y); // Usar setPosition es más limpio
-			_flxAnimate.offset.copyFrom(offset); // Cuidado aquí (ver nota abajo)
-			_flxAnimate.scale.copyFrom(scale);
-			_flxAnimate.flipX = flipX;
-			_flxAnimate.flipY = flipY;
-			_flxAnimate.alpha = alpha;
-			_flxAnimate.antialiasing = antialiasing;
-			_flxAnimate.cameras = cameras; // ¡Muy importante!
-			_flxAnimate.scrollFactor.copyFrom(scrollFactor);
-            
-            // Forzar el color si es necesario (FlxAnimate a veces ignora color si no se aplica a los frames)
-            if (color != FlxColor.WHITE) _flxAnimate.color = color;
-
-			_flxAnimate.draw();
-		}
-		else
-		{
-			super.draw();
-		}
-	}
+	// ── Draw ──────────────────────────────────────────────────────────────────
 
 	// ── Animaciones especiales ────────────────────────────────────────────────
 
@@ -467,8 +367,8 @@ class Character extends FlxSprite
 
 	function flipAnimations():Void
 	{
-		// Solo aplica en modo sprite normal (FlxAnimationController)
-		if (_useFlxAnimate) return;
+		// Solo aplica en modo sparrow (no en atlas — FlxAnimate no expone los frames directamente)
+		if (isAnimateAtlas) return; // FunkinSprite.isAnimateAtlas
 
 		if (animation.getByName('singRIGHT') != null && animation.getByName('singLEFT') != null)
 		{
@@ -512,11 +412,7 @@ class Character extends FlxSprite
 
 	override function destroy():Void
 	{
-		if (_flxAnimate != null)
-		{
-			_flxAnimate.destroy();
-			_flxAnimate = null;
-		}
+		// FunkinSprite (FlxAnimate) limpia sus propios recursos internamente
 		if (animOffsets != null) { animOffsets.clear(); animOffsets = null; }
 		characterData = null;
 		super.destroy();

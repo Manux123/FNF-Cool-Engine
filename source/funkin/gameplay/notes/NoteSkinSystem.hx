@@ -509,6 +509,59 @@ class NoteSkinSystem
 		}
 	}
 
+	/**
+	 * Aplica una skin SOLO para esta sesión sin tocar FlxG.save.
+	 * Úsalo desde PlayState con el noteSkin del meta.json.
+	 * Al salir de la canción llama restoreGlobalSkin() para volver
+	 * a la preferencia global del jugador.
+	 */
+	public static function setTemporarySkin(skinName:String):Void
+	{
+		if (!initialized) init();
+
+		// "default" y "" se resuelven a la skin global guardada
+		if (skinName == null || skinName == '' || skinName == 'default')
+		{
+			currentSkin = FlxG.save.data.noteSkin != null ? FlxG.save.data.noteSkin : 'Default';
+			trace('[NoteSkinSystem] setTemporarySkin → usando global: $currentSkin');
+			return;
+		}
+
+		// Buscar la skin por nombre exacto o case-insensitive
+		if (availableSkins.exists(skinName))
+		{
+			currentSkin = skinName;
+			trace('[NoteSkinSystem] setTemporarySkin → "$skinName"');
+		}
+		else
+		{
+			// Intento case-insensitive
+			for (key in availableSkins.keys())
+			{
+				if (key.toLowerCase() == skinName.toLowerCase())
+				{
+					currentSkin = key;
+					trace('[NoteSkinSystem] setTemporarySkin → "$key" (matched "$skinName")');
+					return;
+				}
+			}
+			// No encontrada: usa la global
+			currentSkin = FlxG.save.data.noteSkin != null ? FlxG.save.data.noteSkin : 'Default';
+			trace('[NoteSkinSystem] setTemporarySkin → skin "$skinName" no encontrada, usando global: $currentSkin');
+		}
+	}
+
+	/**
+	 * Restaura la skin que el jugador tiene guardada globalmente.
+	 * Llámalo en PlayState.destroy() para que al volver al menú
+	 * todo siga con la preferencia del jugador.
+	 */
+	public static function restoreGlobalSkin():Void
+	{
+		currentSkin = FlxG.save.data.noteSkin != null ? FlxG.save.data.noteSkin : 'Default';
+		trace('[NoteSkinSystem] restoreGlobalSkin → $currentSkin');
+	}
+
 	public static function setSplash(splashName:String):Bool
 	{
 		if (availableSplashes.exists(splashName))

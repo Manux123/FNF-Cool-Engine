@@ -347,6 +347,11 @@ class StateScriptHandler
 		interp.variables.set('FlxTween', flixel.tweens.FlxTween);
 		interp.variables.set('FlxEase', flixel.tweens.FlxEase);
 		interp.variables.set('FlxTimer', flixel.util.FlxTimer);
+		interp.variables.set('FunkinSprite', animationdata.FunkinSprite);
+		interp.variables.set('FlxAnimate',        flxanimate.FlxAnimate);
+		interp.variables.set('FlxSpriteGroup', flixel.group.FlxSpriteGroup);
+		interp.variables.set('FlxTrail', flixel.addons.effects.FlxTrail);
+		interp.variables.set('Song', funkin.data.Song);
 		// FlxColor es un abstract, así que exponemos un objeto con los colores comunes
 		interp.variables.set('FlxColor', {
 			WHITE: 0xFFFFFFFF,

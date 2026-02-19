@@ -11,6 +11,8 @@ import flixel.sound.FlxSound;
 import flixel.util.FlxColor;
 import haxe.Json;
 import lime.utils.Assets;
+// FunkinSprite — reemplaza FlxSprite para sprites animados del stage
+import animationdata.FunkinSprite;
 // Scripting
 import funkin.scripting.ScriptHandler;
 
@@ -62,17 +64,17 @@ typedef StageElement =
 	@:optional var looped:Bool;
 
 	// For custom classes (BackgroundGirls, BackgroundDancer, etc.)
-	@:optional var className:String; // e.g., "BackgroundGirls", "BackgroundDancer"
-	@:optional var customProperties:Dynamic; // Properties específicas de la clase
+	@:optional var className:String;
+	@:optional var customProperties:Dynamic;
 
-	// For custom class groups (múltiples instancias)
+	// For custom class groups
 	@:optional var instances:Array<CustomClassInstance>;
 }
 
 typedef CustomClassInstance =
 {
 	var position:Array<Float>;
-	@:optional var name:String; // Nombre único para esta instancia
+	@:optional var name:String;
 	@:optional var scrollFactor:Array<Float>;
 	@:optional var scale:Array<Float>;
 	@:optional var alpha:Float;
@@ -104,12 +106,14 @@ class Stage extends FlxTypedGroup<FlxBasic>
 	public var stageData:StageData;
 	public var curStage:String;
 
+	// Los mapas siguen tipados como FlxSprite — FunkinSprite extiende FlxAnimate
+	// que a su vez extiende FlxSprite, así que la compatibilidad está garantizada.
 	public var elements:Map<String, FlxSprite> = new Map<String, FlxSprite>();
 	public var groups:Map<String, FlxTypedGroup<FlxSprite>> = new Map<String, FlxTypedGroup<FlxSprite>>();
-	public var customClasses:Map<String, FlxSprite> = new Map<String, FlxSprite>(); // Para instancias individuales
-	public var customClassGroups:Map<String, FlxTypedGroup<FlxSprite>> = new Map<String, FlxTypedGroup<FlxSprite>>(); // Para grupos
+	public var customClasses:Map<String, FlxSprite> = new Map<String, FlxSprite>();
+	public var customClassGroups:Map<String, FlxTypedGroup<FlxSprite>> = new Map<String, FlxTypedGroup<FlxSprite>>();
 	public var sounds:Map<String, FlxSound> = new Map<String, FlxSound>();
-	
+
 	public var defaultCamZoom:Float = 1.05;
 	public var isPixelStage:Bool = false;
 
@@ -210,7 +214,6 @@ class Stage extends FlxTypedGroup<FlxBasic>
 				return azIndex - bzIndex;
 			});
 
-			// Build elements
 			for (element in stageData.elements)
 			{
 				createElement(element);
@@ -225,7 +228,6 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		}
 		else
 		{
-			// Intentar cargar scripts desde la carpeta del stage
 			trace('[Stage] Intentando cargar scripts desde carpeta...');
 			var stagePath = 'assets/stages/${curStage}/scripts/';
 
@@ -246,7 +248,6 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 				if (scripts.length > 0)
 				{
-					// Cargar los scripts encontrados
 					loadStageScripts();
 					trace('[Stage] ${scripts.length} scripts cargados desde carpeta');
 				}
@@ -286,60 +287,71 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		}
 	}
 
+	// ── Sprite estático ───────────────────────────────────────────────────────
+	// Para imágenes sin animación se sigue usando FlxSprite (más ligero).
+
 	function createSprite(element:StageElement):Void
 	{
 		var sprite:FlxSprite = new FlxSprite(element.position[0], element.position[1]);
 		sprite.loadGraphic(Paths.imageStage(element.asset));
 
 		applyElementProperties(sprite, element);
-
 		add(sprite);
 
 		if (element.name != null)
 			elements.set(element.name, sprite);
 	}
 
+	// ── Sprite animado — ahora usa FunkinSprite ───────────────────────────────
+	/**
+	 * createAnimatedSprite — integración FunkinSprite
+	 *
+	 * FunkinSprite.loadStageSparrow() detecta automáticamente Sparrow vs Packer.
+	 * FunkinSprite.addAnim()  / playAnim() funcionan igual para ambos formatos.
+	 *
+	 * El JSON del stage no necesita cambios — los campos "animations" y
+	 * "firstAnimation" se siguen usando exactamente igual.
+	 */
 	function createAnimatedSprite(element:StageElement):Void
 	{
-		var sprite:FlxSprite = new FlxSprite(element.position[0], element.position[1]);
+		var sprite:FunkinSprite = new FunkinSprite(element.position[0], element.position[1]);
 
-		// Load frames
-		if (element.asset.endsWith('.txt'))
-			sprite.frames = Paths.stageSpriteTxt(element.asset.replace('.txt', ''));
-		else
-			sprite.frames = Paths.stageSprite(element.asset);
+		// Cargar frames: Sparrow (XML) o Packer (TXT) — auto-detectado
+		var assetKey:String = element.asset.endsWith('.txt')
+			? element.asset.replace('.txt', '')
+			: element.asset;
 
-		// Add animations
+		sprite.loadStageSparrow(assetKey);
+
+		// Añadir animaciones con la API unificada
 		if (element.animations != null)
 		{
 			for (anim in element.animations)
 			{
-				if (anim.indices != null && anim.indices.length > 0)
-				{
-					sprite.animation.addByIndices(anim.name, anim.prefix, anim.indices, "", anim.framerate != null ? anim.framerate : 24,
-						anim.looped != null ? anim.looped : false);
-				}
-				else
-				{
-					sprite.animation.addByPrefix(anim.name, anim.prefix, anim.framerate != null ? anim.framerate : 24,
-						anim.looped != null ? anim.looped : false);
-				}
+				sprite.addAnim(
+					anim.name,
+					anim.prefix,
+					anim.framerate != null ? anim.framerate : 24,
+					anim.looped != null ? anim.looped : false,
+					(anim.indices != null && anim.indices.length > 0) ? anim.indices : null
+				);
 			}
 
-			// Play first animation
+			// Reproducir la primera animación
 			if (element.firstAnimation != null)
-				sprite.animation.play(element.firstAnimation);
+				sprite.playAnim(element.firstAnimation);
 			else if (element.animations.length > 0)
-				sprite.animation.play(element.animations[0].name);
+				sprite.playAnim(element.animations[0].name);
 		}
 
 		applyElementProperties(sprite, element);
-
 		add(sprite);
 
 		if (element.name != null)
 			elements.set(element.name, sprite);
 	}
+
+	// ── Grupo de sprites — miembros animados usan FunkinSprite ───────────────
 
 	function createGroup(element:StageElement):Void
 	{
@@ -349,37 +361,59 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		{
 			for (member in element.members)
 			{
-				var sprite:FlxSprite = new FlxSprite(member.position[0], member.position[1]);
-				sprite.loadGraphic(Paths.imageStage(member.asset));
+				// Si el miembro tiene animaciones, usar FunkinSprite; si no, FlxSprite estático
+				var hasAnims = member.animations != null && member.animations.length > 0;
 
-				if (member.scrollFactor != null)
-					sprite.scrollFactor.set(member.scrollFactor[0], member.scrollFactor[1]);
-
-				if (member.scale != null)
+				if (hasAnims)
 				{
-					sprite.setGraphicSize(Std.int(sprite.width * member.scale[0]), Std.int(sprite.height * member.scale[1]));
-					sprite.updateHitbox();
-				}
+					var spr:FunkinSprite = new FunkinSprite(member.position[0], member.position[1]);
+					spr.loadStageSparrow(member.asset);
 
-				if (member.animations != null)
-				{
 					for (anim in member.animations)
 					{
-						if (anim.indices != null && anim.indices.length > 0)
-						{
-							sprite.animation.addByIndices(anim.name, anim.prefix, anim.indices, "", anim.framerate != null ? anim.framerate : 24,
-								anim.looped != null ? anim.looped : false);
-						}
-						else
-						{
-							sprite.animation.addByPrefix(anim.name, anim.prefix, anim.framerate != null ? anim.framerate : 24,
-								anim.looped != null ? anim.looped : false);
-						}
+						spr.addAnim(
+							anim.name,
+							anim.prefix,
+							anim.framerate != null ? anim.framerate : 24,
+							anim.looped != null ? anim.looped : false,
+							(anim.indices != null && anim.indices.length > 0) ? anim.indices : null
+						);
 					}
-				}
 
-				sprite.antialiasing = !isPixelStage;
-				group.add(sprite);
+					// Reproducir la primera animación
+					if (member.animations.length > 0)
+						spr.playAnim(member.animations[0].name);
+
+					if (member.scrollFactor != null)
+						spr.scrollFactor.set(member.scrollFactor[0], member.scrollFactor[1]);
+
+					if (member.scale != null)
+					{
+						spr.scale.set(member.scale[0], member.scale[1]);
+						spr.updateHitbox();
+					}
+
+					spr.antialiasing = !isPixelStage;
+					group.add(spr);
+				}
+				else
+				{
+					// Sin animaciones → FlxSprite estático (más ligero)
+					var spr:FlxSprite = new FlxSprite(member.position[0], member.position[1]);
+					spr.loadGraphic(Paths.imageStage(member.asset));
+
+					if (member.scrollFactor != null)
+						spr.scrollFactor.set(member.scrollFactor[0], member.scrollFactor[1]);
+
+					if (member.scale != null)
+					{
+						spr.setGraphicSize(Std.int(spr.width * member.scale[0]), Std.int(spr.height * member.scale[1]));
+						spr.updateHitbox();
+					}
+
+					spr.antialiasing = !isPixelStage;
+					group.add(spr);
+				}
 			}
 		}
 
@@ -388,6 +422,8 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		if (element.name != null)
 			groups.set(element.name, group);
 	}
+
+	// ── Custom classes ────────────────────────────────────────────────────────
 
 	function createCustomClass(element:StageElement):Void
 	{
@@ -401,9 +437,7 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 		if (sprite != null)
 		{
-			// IMPORTANTE: Aplicar propiedades DESPUÉS de crear la instancia
 			applyElementProperties(sprite, element);
-
 			add(sprite);
 
 			if (element.name != null)
@@ -441,7 +475,6 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 			if (sprite != null)
 			{
-				// Aplicar propiedades de la instancia individual
 				if (instance.scrollFactor != null)
 					sprite.scrollFactor.set(instance.scrollFactor[0], instance.scrollFactor[1]);
 
@@ -460,22 +493,17 @@ class Stage extends FlxTypedGroup<FlxBasic>
 				if (instance.flipY != null)
 					sprite.flipY = instance.flipY;
 
-				// Aplicar antialiasing
 				sprite.antialiasing = !isPixelStage;
 
 				group.add(sprite);
 
-				// Guardar instancia individual si tiene nombre
 				if (instance.name != null)
-				{
 					customClasses.set(instance.name, sprite);
-				}
 
 				trace("Created instance " + i + " of " + element.className);
 			}
 		}
 
-		// Aplicar propiedades del grupo
 		if (element.scrollFactor != null)
 		{
 			for (sprite in group.members)
@@ -500,10 +528,8 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 		for (scriptPath in scripts)
 		{
-			// El path puede ser relativo o absoluto
 			var fullPath = scriptPath;
 
-			// Si es relativo, agregamos el path base
 			if (!scriptPath.startsWith('assets/'))
 			{
 				fullPath = 'assets/stages/${curStage}/scripts/$scriptPath';
@@ -514,11 +540,9 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 		scriptsLoaded = true;
 
-		// Exponer el stage a los scripts
 		ScriptHandler.setOnStageScripts('stage', this);
 		ScriptHandler.setOnStageScripts('currentStage', this);
 
-		// Llamar onStageCreate en los scripts
 		ScriptHandler.callOnStageScripts('onStageCreate', []);
 
 		trace('[Stage] Scripts cargados: ${scripts.length}');
@@ -526,7 +550,6 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 	/**
 	 * Crea una instancia de una clase personalizada
-	 * FIX: Asegurarse de que las clases se crean correctamente con frames
 	 */
 	function createCustomClassInstance(className:String, x:Float, y:Float, ?customProps:Dynamic):FlxSprite
 	{
@@ -537,12 +560,10 @@ class Stage extends FlxTypedGroup<FlxBasic>
 			switch (className)
 			{
 				case "BackgroundGirls":
-					// Crear usando Type.createInstance para mejor compatibilidad
 					var bgClass = funkin.gameplay.objects.stages.BackgroundGirls;
 					if (bgClass != null)
 					{
 						sprite = Type.createInstance(bgClass, [x, y]);
-						// Aplicar propiedades personalizadas
 						if (customProps != null && customProps.scared == true)
 						{
 							Reflect.callMethod(sprite, Reflect.field(sprite, "getScared"), []);
@@ -564,7 +585,6 @@ class Stage extends FlxTypedGroup<FlxBasic>
 						trace("BackgroundDancer class not found!");
 					}
 
-				// Agrega más clases personalizadas aquí
 				default:
 					trace("Unknown custom class: " + className);
 					return null;
@@ -578,7 +598,7 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 		return sprite;
 	}
-	
+
 	function createSound(element:StageElement):Void
 	{
 		var sound:FlxSound = new FlxSound().loadEmbedded(Paths.soundStage('$curStage/sounds/'+element.asset));
@@ -647,7 +667,6 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 	function loadDefaultStage():Void
 	{
-		// Fallback to default stage
 		defaultCamZoom = 0.9;
 		isPixelStage = false;
 
@@ -656,7 +675,7 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		bg.scrollFactor.set(0.9, 0.9);
 		bg.active = false;
 		add(bg);
-		
+
 		var stageFront:FlxSprite = new FlxSprite(-650, 600).loadGraphic(Paths.imageStage('stagefront'));
 		stageFront.setGraphicSize(Std.int(stageFront.width * 1.1));
 		stageFront.updateHitbox();
@@ -674,37 +693,27 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		add(stageCurtains);
 	}
 
-	// Helper functions to get elements
-	public function getElement(name:String):FlxSprite
-	{
-		return elements.get(name);
-	}
+	// ── Helper getters ────────────────────────────────────────────────────────
 
-	public function getGroup(name:String):FlxTypedGroup<FlxSprite> {
-		// Primero buscamos en grupos normales
+	public function getElement(name:String):FlxSprite
+		return elements.get(name);
+
+	public function getGroup(name:String):FlxTypedGroup<FlxSprite>
+	{
 		if (groups.exists(name))
 			return groups.get(name);
-		
-		// Si no, buscamos en grupos de clases personalizadas
 		return customClassGroups.get(name);
 	}
 
 	public function getCustomClass(name:String):FlxSprite
-	{
 		return customClasses.get(name);
-	}
 
 	public function getCustomClassGroup(name:String):FlxTypedGroup<FlxSprite>
-	{
 		return customClassGroups.get(name);
-	}
 
 	public function getSound(name:String):FlxSound
-	{
 		return sounds.get(name);
-	}
 
-	// Método para llamar funciones en una instancia específica
 	public function callCustomMethod(elementName:String, methodName:String, ?args:Array<Dynamic>):Dynamic
 	{
 		var element = customClasses.get(elementName);
@@ -727,7 +736,6 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		return Reflect.callMethod(element, method, args);
 	}
 
-	// Método para llamar funciones en todas las instancias de un grupo
 	public function callCustomGroupMethod(groupName:String, methodName:String, ?args:Array<Dynamic>):Void
 	{
 		var group = customClassGroups.get(groupName);
@@ -746,14 +754,13 @@ class Stage extends FlxTypedGroup<FlxBasic>
 			{
 				var method = Reflect.field(sprite, methodName);
 				if (method != null)
-				{
 					Reflect.callMethod(sprite, method, args);
-				}
 			}
 		}
 	}
 
-	// Callbacks
+	// ── Callbacks ─────────────────────────────────────────────────────────────
+
 	public function beatHit(curBeat:Int):Void
 	{
 		if (scriptsLoaded)
@@ -762,24 +769,18 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		if (onBeatHit != null)
 			onBeatHit();
 
-		// Llamar dance() en instancias individuales
 		for (name => sprite in customClasses)
 		{
 			if (Reflect.hasField(sprite, "dance"))
-			{
 				Reflect.callMethod(sprite, Reflect.field(sprite, "dance"), []);
-			}
 		}
 
-		// Llamar dance() en grupos
 		for (name => group in customClassGroups)
 		{
 			for (sprite in group.members)
 			{
 				if (sprite != null && Reflect.hasField(sprite, "dance"))
-				{
 					Reflect.callMethod(sprite, Reflect.field(sprite, "dance"), []);
-				}
 			}
 		}
 	}

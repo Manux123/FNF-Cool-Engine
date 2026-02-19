@@ -3,12 +3,16 @@ package funkin.debug;
 import flixel.math.FlxMath;
 import funkin.gameplay.objects.character.Character.AnimData;
 import funkin.gameplay.objects.character.Character.CharacterData;
+import funkin.gameplay.objects.stages.Stage;
 import funkin.states.MusicBeatState;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
 import flixel.FlxState;
 import flixel.FlxCamera;
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
+import flixel.util.FlxTimer;
 import flixel.addons.display.FlxGridOverlay;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.addons.ui.FlxInputText;
@@ -35,6 +39,7 @@ import funkin.states.LoadingState;
 import haxe.Json;
 import funkin.menus.MainMenuState;
 import funkin.gameplay.objects.character.HealthIcon;
+import funkin.debug.ColorPickerWheel;
 
 #if sys
 import sys.FileSystem;
@@ -61,6 +66,7 @@ class AnimationDebug extends MusicBeatState
 	var camFollow:FlxObject;
 	var camHUD:FlxCamera;
 	var camGame:FlxCamera;
+	var camUI:FlxCamera; // cámara invisible cameras[0]: da coordenadas estables al mouse (zoom siempre 1)
 	var _file:FileReference;
 	var ghostChar:Character;
 
@@ -91,9 +97,23 @@ class AnimationDebug extends MusicBeatState
 	var gridBG:FlxSprite;
 	var showGrid:Bool = true;
 
+	// Mouse drag para offsets (click derecho)
+	var isDraggingOffset:Bool = false;
+	var dragLastX:Float = 0;
+	var dragLastY:Float = 0;
+
+	// Nombre original de la animación que se está editando.
+	// null = modo "Add" (nueva animación). String = modo "Edit" (modificar existente).
+	var editingAnimName:String = null;
+
+	// Botón "Add Animation" — necesitamos referencia para cambiar su label
+	var addAnimBtn:FlxButton;
+
 	// Character data para exportar
 	var characterData:CharacterData;
 	var currentAnimData:Array<AnimData> = [];
+
+	public var currentStage:Stage;
 
 	// Icon preview
 	var iconPreview:HealthIcon;
@@ -101,6 +121,29 @@ class AnimationDebug extends MusicBeatState
 
 	// Ruta de la carpeta FlxAnimate importada (assets/images/<char>/)
 	var flxAnimateFolderPath:String = "";
+
+	// ── Variables visuales ────────────────────────────────────────────────────
+	// Panel oscuro detrás de la lista de offsets / controles (lado izquierdo)
+	var leftPanel:FlxSprite;
+	// Barra de header con nombre del personaje actual
+	var charHeaderBg:FlxSprite;
+	var charHeaderText:FlxText;
+	// Barra de estado inferior (reemplaza textHelp flotante)
+	var statusBar:FlxSprite;
+	// Borde decorativo del panel UI derecho
+	var uiPanelBg:FlxSprite;
+	// Posición X de inicio fuera de pantalla para el slide-in del panel
+	static inline var PANEL_HIDDEN_X:Float = 1500;
+	// Fila de highlight para la animación seleccionada en la lista
+	var animRowHighlight:FlxSprite;
+	// Acento de color actual del estado (verde=ok, rojo=error, cyan=info)
+	var statusAccentBar:FlxSprite;
+	// Preview de healthBar en el HUD (esquina inferior, debajo del ícono)
+	var hudHealthBar:FlxSprite;
+	var hudHealthBarLabel:FlxText;
+	var charDeathInput:FlxText;
+	// Color actual seleccionado para la healthBar
+	var currentHealthBarColor:FlxColor = FlxColor.fromString("#31B0D1");
 
 	public function new(daAnim:String = 'bf')
 	{
@@ -121,75 +164,187 @@ class AnimationDebug extends MusicBeatState
 		camHUD  = new FlxCamera();
 		camHUD.bgColor.alpha = 0;
 
-		FlxG.cameras.reset(camGame);
-		FlxG.cameras.add(camHUD, false);
+		// camUI es una cámara completamente transparente y vacía que se pone
+		// en cameras[0] para que FlxG.mouse.x/y use siempre zoom=1.
+		// Sin esto, cuando camGame tiene zoom != 1, flixel-ui calcula mal
+		// las posiciones de click en FlxUIInputText y el HUD deja de responder.
+		camUI = new FlxCamera();
+		camUI.bgColor.alpha = 0;
 
-		gridBG = FlxGridOverlay.create(50, 50, -1, -1, true, 0x33FFFFFF, 0x33000000);
-		gridBG.scrollFactor.set(0.5, 0.5);
-		add(gridBG);
+		FlxG.cameras.reset(camUI);   // cameras[0] → FlxG.camera = camUI (zoom 1 fijo)
+		FlxG.cameras.add(camGame, false); // renders encima de camUI
+		FlxG.cameras.add(camHUD,  false); // renders encima de todo
+
+		currentStage = new Stage('stage_week1');
+		currentStage.cameras = [camGame];
+		add(currentStage);
 
 		layeringbullshit = new FlxTypedGroup<FlxSprite>();
+		layeringbullshit.cameras = [camGame];
 		add(layeringbullshit);
 
 		setupUI();
 
 		dumbTexts = new FlxTypedGroup<FlxText>();
 		dumbTexts.cameras = [camHUD];
+
+		// ── Panel oscuro izquierdo ────────────────────────────────────────────
+		// Cubre el área de controles + lista de offsets
+		leftPanel = new FlxSprite(0, 0);
+		leftPanel.makeGraphic(340, FlxG.height, 0xCC0A0A0F);
+		leftPanel.cameras = [camHUD];
+		leftPanel.scrollFactor.set();
+		add(leftPanel);
+
+		// Borde derecho del panel izquierdo (línea accent cyan)
+		var leftPanelBorder = new FlxSprite(340, 0);
+		leftPanelBorder.makeGraphic(2, FlxG.height, 0xFF00E5FF);
+		leftPanelBorder.cameras = [camHUD];
+		leftPanelBorder.scrollFactor.set();
+		add(leftPanelBorder);
+
+		// ── Header del personaje (arriba del panel izquierdo) ─────────────────
+		charHeaderBg = new FlxSprite(0, 0);
+		charHeaderBg.makeGraphic(340, 36, 0xFF00E5FF);
+		charHeaderBg.cameras = [camHUD];
+		charHeaderBg.scrollFactor.set();
+		add(charHeaderBg);
+
+		charHeaderText = new FlxText(8, 6, 330, '', 16);
+		charHeaderText.color = 0xFF0A0A0F;
+		charHeaderText.cameras = [camHUD];
+		charHeaderText.scrollFactor.set();
+		charHeaderText.font = "VCR OSD Mono";
+		add(charHeaderText);
+
+		// ── Fila de highlight de la animación seleccionada ────────────────────
+		animRowHighlight = new FlxSprite(4, 0);
+		animRowHighlight.makeGraphic(332, 20, 0x4400E5FF);
+		animRowHighlight.cameras = [camHUD];
+		animRowHighlight.scrollFactor.set();
+		animRowHighlight.visible = false;
+		add(animRowHighlight);
+
 		add(dumbTexts);
 
-		// Controles
-		textControls = new FlxText(10, 10, FlxG.width - 20, '', 12);
-		textControls.text = "CONTROLS:\n"
-			+ "W/S - Switch Animation | ARROWS - Adjust Offset (SHIFT = x10)\n"
-			+ "I/K - Camera Up/Down | J/L - Camera Left/Right\n"
-			+ "Q/E - Zoom Out/In | SPACE - Play Anim | ESC - Exit\n"
-			+ "G - Toggle Grid | R - Reset Camera | T - Toggle Ghost";
-		textControls.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 2);
-		textControls.color = FlxColor.WHITE;
+		// ── Textos de controles ───────────────────────────────────────────────
+		var controlsBg = new FlxSprite(4, 40);
+		controlsBg.makeGraphic(332, 85, 0x22FFFFFF);
+		controlsBg.cameras = [camHUD];
+		controlsBg.scrollFactor.set();
+		add(controlsBg);
+
+		textControls = new FlxText(8, 42, 328, '', 10);
+		textControls.text = "W/S · Switch Anim   ARROWS · Offset (SHIFT=x10)\n"
+			+ "I/K · Cam Up/Down   J/L · Cam Left/Right\n"
+			+ "SCROLL · Zoom   SPACE · Play   R · Reset   T · Ghost\n"
+			+ "RIGHT DRAG · Move Offset (SHIFT=x3)   ESC · Exit";
+		textControls.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
+		textControls.color = 0xFFB0E8FF;
 		textControls.cameras = [camHUD];
 		textControls.scrollFactor.set();
 		add(textControls);
 
-		textAnim = new FlxText(10, 120, 0, '', 20);
-		textAnim.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 2);
-		textAnim.color = FlxColor.CYAN;
+		// ── Texto de animación actual ─────────────────────────────────────────
+		textAnim = new FlxText(8, 132, 330, '', 18);
+		textAnim.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 2);
+		textAnim.color = 0xFF00E5FF;
 		textAnim.cameras = [camHUD];
 		textAnim.scrollFactor.set();
 		add(textAnim);
 
-		textInfo = new FlxText(10, 150, 0, '', 14);
-		textInfo.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 2);
-		textInfo.color = FlxColor.YELLOW;
+		// ── Texto de offset / zoom ────────────────────────────────────────────
+		textInfo = new FlxText(8, 154, 330, '', 12);
+		textInfo.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
+		textInfo.color = 0xFFFFE566;
 		textInfo.cameras = [camHUD];
 		textInfo.scrollFactor.set();
 		add(textInfo);
 
-		textHelp = new FlxText(10, FlxG.height - 60, FlxG.width - 20, '', 12);
-		textHelp.text = "TIP: Use the UI tabs to edit character properties and create new animations!";
-		textHelp.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 2);
-		textHelp.color = FlxColor.LIME;
+		// ── Barra de estado inferior ──────────────────────────────────────────
+		statusBar = new FlxSprite(0, FlxG.height - 30);
+		statusBar.makeGraphic(FlxG.width, 30, 0xDD0A0A0F);
+		statusBar.cameras = [camHUD];
+		statusBar.scrollFactor.set();
+		add(statusBar);
+
+		// Acento de color en la barra de estado (izquierda, 4px)
+		statusAccentBar = new FlxSprite(0, FlxG.height - 30);
+		statusAccentBar.makeGraphic(4, 30, 0xFF00E5FF);
+		statusAccentBar.cameras = [camHUD];
+		statusAccentBar.scrollFactor.set();
+		add(statusAccentBar);
+
+		textHelp = new FlxText(12, FlxG.height - 24, FlxG.width - 200, '', 12);
+		textHelp.text = "TIP · Use the UI tabs to edit properties and animations";
+		textHelp.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
+		textHelp.color = 0xFF00E5FF;
 		textHelp.cameras = [camHUD];
 		textHelp.scrollFactor.set();
-		textHelp.alignment = CENTER;
 		add(textHelp);
 
-		// Icon preview
-		iconBG = new FlxSprite(FlxG.width - 200, FlxG.height - 200);
-		iconBG.makeGraphic(170, 170, 0xFF000000);
+		// ── Icon preview ──────────────────────────────────────────────────────
+		var iconAreaX = FlxG.width - 340 + 5; // dentro del panel derecho no existe aún, lo ponemos en la barra inferior
+		// Lo dejamos en la esquina inferior izquierda del status bar a la derecha
+		var iconX = FlxG.width - 185;
+		var iconY = FlxG.height - 185;
+
+		iconBG = new FlxSprite(iconX - 10, iconY - 28);
+		iconBG.makeGraphic(170, 162, 0xEE0A0A0F);
 		iconBG.cameras = [camHUD];
 		add(iconBG);
 
+		// Borde superior del recuadro del ícono (línea cyan)
+		var iconTopBorder = new FlxSprite(iconX - 10, iconY - 28);
+		iconTopBorder.makeGraphic(170, 2, 0xFF00E5FF);
+		iconTopBorder.cameras = [camHUD];
+		add(iconTopBorder);
+
+		var iconLabel = new FlxText(iconX - 10, iconY - 22, 170, "ICON PREVIEW", 10);
+		iconLabel.alignment = CENTER;
+		iconLabel.color = 0xFF00E5FF;
+		iconLabel.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
+		iconLabel.cameras = [camHUD];
+		add(iconLabel);
+
 		iconPreview = new HealthIcon('bf', false);
-		iconPreview.setPosition(FlxG.width - 185, FlxG.height - 185);
+		iconPreview.setPosition(iconX, iconY - 8);
 		iconPreview.cameras = [camHUD];
 		iconPreview.scale.set(0.8, 0.8);
 		add(iconPreview);
 
-		var iconLabel = new FlxText(FlxG.width - 200, FlxG.height - 220, 170, "ICON PREVIEW", 12);
-		iconLabel.alignment = CENTER;
-		iconLabel.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 2);
-		iconLabel.cameras = [camHUD];
-		add(iconLabel);
+		// ── Preview de la healthBar en el HUD ─────────────────────────────────
+		// Se muestra debajo del ícono, siempre visible con el color del personaje
+		hudHealthBarLabel = new FlxText(iconX - 10, iconY + 150, 170, "HEALTH BAR", 10);
+		hudHealthBarLabel.alignment = CENTER;
+		hudHealthBarLabel.color = 0xFF00E5FF;
+		hudHealthBarLabel.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
+		hudHealthBarLabel.cameras = [camHUD];
+		add(hudHealthBarLabel);
+
+		hudHealthBar = new FlxSprite(iconX - 10, iconY + 164);
+		hudHealthBar.loadGraphic(Paths.image("UI/healthBar"));
+		hudHealthBar.setGraphicSize(168, 20);
+		hudHealthBar.updateHitbox();
+		hudHealthBar.cameras = [camHUD];
+		hudHealthBar.color = currentHealthBarColor;
+		add(hudHealthBar);
+
+		// ── Slide-in del panel derecho al abrir ───────────────────────────────
+		UI_box.x = PANEL_HIDDEN_X;
+		uiPanelBg.x = PANEL_HIDDEN_X - 4;
+		FlxTween.tween(UI_box,     {x: FlxG.width - UI_box.width - 10}, 0.45, {ease: FlxEase.quartOut});
+		FlxTween.tween(uiPanelBg,  {x: FlxG.width - UI_box.width - 14}, 0.45, {ease: FlxEase.quartOut});
+
+		// Fade-in del panel izquierdo
+		leftPanel.alpha = 0;
+		leftPanelBorder.alpha = 0;
+		charHeaderBg.alpha = 0;
+		charHeaderText.alpha = 0;
+		FlxTween.tween(leftPanel,       {alpha: 1}, 0.5, {ease: FlxEase.quartOut, startDelay: 0.1});
+		FlxTween.tween(leftPanelBorder, {alpha: 1}, 0.5, {ease: FlxEase.quartOut, startDelay: 0.15});
+		FlxTween.tween(charHeaderBg,    {alpha: 1}, 0.4, {ease: FlxEase.quartOut, startDelay: 0.2});
+		FlxTween.tween(charHeaderText,  {alpha: 1}, 0.4, {ease: FlxEase.quartOut, startDelay: 0.25});
 
 		camFollow = new FlxObject(0, 0, 2, 2);
 		camFollow.screenCenter();
@@ -219,6 +374,13 @@ class AnimationDebug extends MusicBeatState
 		UI_box.resize(320, 450);
 		UI_box.x = FlxG.width - UI_box.width - 10;
 		UI_box.y = 10;
+
+		// Panel oscuro detrás del tab menu (se crea aquí para poder referenciar el tamaño)
+		uiPanelBg = new FlxSprite(UI_box.x - 4, UI_box.y - 4);
+		uiPanelBg.makeGraphic(Std.int(UI_box.width) + 8, Std.int(UI_box.height) + 8, 0xDD060610);
+		uiPanelBg.cameras = [camHUD];
+		add(uiPanelBg);
+
 		add(UI_box);
 
 		addCharacterTab();
@@ -235,7 +397,7 @@ class AnimationDebug extends MusicBeatState
 		var tab = new FlxUI(null, UI_box);
 		tab.name = "Character";
 
-		var characters:Array<String> = CoolUtil.coolTextFile('assets/characters/characterList.txt');
+		var characters:Array<String> = funkin.gameplay.objects.character.CharacterList.getAllCharacters();
 
 		tab.add(new FlxText(10, 10, 0, "Select Character:", 12));
 
@@ -252,23 +414,24 @@ class AnimationDebug extends MusicBeatState
 		playerCheckbox.callback = function() { if (char != null) char.flipX = playerCheckbox.checked; };
 		tab.add(playerCheckbox);
 
-		var refreshBtn = new FlxButton(10, 110, "Refresh Character", function()
+		tab.add(new FlxText(10, 95, 0, "Death Character:", 10));
+		charDeathInput = new FlxUIInputText(10, 108, 200, '', 8);
+		tab.add(charDeathInput);
+		var charDeathHint = new FlxText(10, 122, 280, "Ej: bf-dead  (vacío = default)", 8);
+		charDeathHint.color = FlxColor.BLACK;
+		tab.add(charDeathHint);
+
+		var refreshBtn = new FlxButton(10, 140, "Refresh Character", function()
 		{
 			displayCharacter(daAnim);
 			loadCharacterData();
 		});
 		tab.add(refreshBtn);
 
-		tab.add(new FlxButton(10, 140, "Reset Camera", function()
+		tab.add(new FlxButton(10, 170, "Reset Camera", function()
 		{
 			camFollow.setPosition(FlxG.width / 2, FlxG.height / 2);
 			camGame.zoom = 1;
-		}));
-
-		tab.add(new FlxButton(10, 170, "Toggle Grid", function()
-		{
-			showGrid = !showGrid;
-			gridBG.visible = showGrid;
 		}));
 
 		tab.add(charDropdown);
@@ -335,8 +498,34 @@ class AnimationDebug extends MusicBeatState
 		tab.add(offsetYStepper);
 		yPos += 30;
 
-		tab.add(new FlxButton(10, yPos, "Add Animation",    function() { addNewAnimation(); }));
-		tab.add(new FlxButton(130, yPos, "Delete Current", function() { deleteCurrentAnimation(); }));
+		// Botón Add/Update — su label cambia según si estás editando o agregando
+		addAnimBtn = new FlxButton(10, yPos, "Add Animation", function() { addNewAnimation(); });
+		tab.add(addAnimBtn);
+
+		// Botón "New" — limpia los campos y vuelve a modo Add
+		tab.add(new FlxButton(130, yPos, "New / Clear", function()
+		{
+			editingAnimName = null;
+			animNameInput.text           = "";
+			animPrefixInput.text         = "";
+			animFramerateStepper.value   = 24;
+			animLoopedCheckbox.checked   = false;
+			animSpecialCheckbox.checked  = false;
+			offsetXStepper.value         = 0;
+			offsetYStepper.value         = 0;
+			if (addAnimBtn != null) addAnimBtn.text = "Add Animation";
+			setHelp("Campos limpiados — modo Add", FlxColor.CYAN);
+		}));
+		yPos += 30;
+
+		tab.add(new FlxButton(10, yPos, "Delete Current", function() { deleteCurrentAnimation(); }));
+		yPos += 30;
+
+		tab.add(new FlxButton(10, yPos, "← Load Selected", function() { loadAnimIntoUI(); }));
+
+		var loadHint = new FlxText(10, yPos + 22, 280, "Carga la anim seleccionada (W/S) para editarla", 8);
+		loadHint.color = FlxColor.BLACK;
+		tab.add(loadHint);
 
 		UI_box.addGroup(tab);
 	}
@@ -385,12 +574,81 @@ class AnimationDebug extends MusicBeatState
 		tab.add(healthIconInput);
 		yPos += 25;
 
-		// Health Bar Color
+		// Health Bar Color — campo de texto + swatch clickeable que abre el picker
 		tab.add(new FlxText(10, yPos, 0, "Health Bar Color:", 10));
 		yPos += 15;
-		healthBarColorInput = new FlxUIInputText(10, yPos, 200, '#31B0D1', 8);
+		healthBarColorInput = new FlxUIInputText(10, yPos, 155, '#31B0D1', 8);
+		healthBarColorInput.callback = function(text:String, action:String)
+		{
+			try
+			{
+				var parsed = FlxColor.fromString(text);
+				currentHealthBarColor = parsed;
+				if (hudHealthBar != null) hudHealthBar.color = parsed;
+			}
+			catch (_) {}
+		};
 		tab.add(healthBarColorInput);
-		yPos += 25;
+
+		// Swatch de color (cuadrado que muestra el color actual)
+		// Es un FlxButton sin texto que abre el ColorPickerWheel
+		var colorSwatchBtn = new FlxButton(170, yPos - 1, "", function()
+		{
+			// Parsear el color actual del input para pasárselo al picker
+			var startColor = currentHealthBarColor;
+			try { startColor = FlxColor.fromString(healthBarColorInput.text); }
+			catch (_) {}
+
+			var picker = new ColorPickerWheel(startColor);
+			picker.onColorSelected = function(selectedColor:FlxColor)
+			{
+				currentHealthBarColor = selectedColor;
+				var hex = "#" + selectedColor.toHexString(false, false).toUpperCase();
+				healthBarColorInput.text = hex;
+				if (hudHealthBar != null)
+				{
+					hudHealthBar.color = selectedColor;
+					// Pequeño bounce en la healthBar del HUD como feedback
+					FlxTween.cancelTweensOf(hudHealthBar.scale);
+					hudHealthBar.scale.set(1, 1.3);
+					FlxTween.tween(hudHealthBar.scale, {x: 1, y: 1}, 0.25, {ease: FlxEase.backOut});
+				}
+			};
+			picker.cameras = [camHUD];
+			openSubState(picker);
+		});
+
+		// Pintar el botón con el color actual y darle tamaño de swatch
+		colorSwatchBtn.makeGraphic(28, 20, currentHealthBarColor);
+		tab.add(colorSwatchBtn);
+
+		var pickBtn = new FlxButton(202, yPos - 1, "Pick", function()
+		{
+			var startColor = currentHealthBarColor;
+			try { startColor = FlxColor.fromString(healthBarColorInput.text); }
+			catch (_) {}
+
+			var picker = new ColorPickerWheel(startColor);
+			picker.onColorSelected = function(selectedColor:FlxColor)
+			{
+				currentHealthBarColor = selectedColor;
+				var hex = "#" + selectedColor.toHexString(false, false).toUpperCase();
+				healthBarColorInput.text = hex;
+				if (hudHealthBar != null)
+				{
+					hudHealthBar.color = selectedColor;
+					FlxTween.cancelTweensOf(hudHealthBar.scale);
+					hudHealthBar.scale.set(1, 1.3);
+					FlxTween.tween(hudHealthBar.scale, {x: 1, y: 1}, 0.25, {ease: FlxEase.backOut});
+				}
+				// Actualizar el swatch del botón
+				colorSwatchBtn.makeGraphic(28, 20, selectedColor);
+			};
+			picker.cameras = [camHUD];
+			openSubState(picker);
+		});
+		tab.add(pickBtn);
+		yPos += 30;
 
 		// Scale
 		tab.add(new FlxText(10, yPos, 0, "Scale:", 10));
@@ -542,15 +800,18 @@ class AnimationDebug extends MusicBeatState
 
 	function addNewAnimation():Void
 	{
-		if (animNameInput.text == "" || animPrefixInput.text == "")
+		var newName = animNameInput.text.trim();
+		var newPrefix = animPrefixInput.text.trim();
+
+		if (newName == "" || newPrefix == "")
 		{
 			setHelp("✗ Nombre y prefix son obligatorios!", FlxColor.RED);
 			return;
 		}
 
 		var newAnim:AnimData = {
-			name:      animNameInput.text,
-			prefix:    animPrefixInput.text,
+			name:      newName,
+			prefix:    newPrefix,
 			framerate: animFramerateStepper.value,
 			looped:    animLoopedCheckbox.checked,
 			offsetX:   offsetXStepper.value,
@@ -560,25 +821,107 @@ class AnimationDebug extends MusicBeatState
 		if (animSpecialCheckbox.checked)
 			newAnim.specialAnim = true;
 
-		var exists = false;
-		for (i in 0...currentAnimData.length)
+		if (editingAnimName != null)
 		{
-			if (currentAnimData[i].name == newAnim.name)
+			// ── Modo EDIT: actualizar la animación cuyo nombre original es editingAnimName ──
+			var found = false;
+			for (i in 0...currentAnimData.length)
 			{
-				currentAnimData[i] = newAnim;
-				exists = true;
-				break;
+				if (currentAnimData[i].name == editingAnimName)
+				{
+					currentAnimData[i] = newAnim;
+					found = true;
+					break;
+				}
+			}
+
+			if (!found)
+			{
+				// Por si acaso no existía, agregarla
+				currentAnimData.push(newAnim);
+			}
+
+			reloadCharacterWithNewAnims();
+			setHelp("✓ Animación actualizada: " + newName, FlxColor.LIME);
+
+			// Mantener la selección apuntando a la anim recién editada
+			var newIdx = animList.indexOf(newName);
+			if (newIdx >= 0) curAnim = newIdx;
+
+			// Volver a modo Add
+			editingAnimName = null;
+			if (addAnimBtn != null) addAnimBtn.text = "Add Animation";
+		}
+		else
+		{
+			// ── Modo ADD: nunca sobreescribir, error si el nombre ya existe ──
+			var alreadyExists = false;
+			for (anim in currentAnimData)
+			{
+				if (anim.name == newName)
+				{
+					alreadyExists = true;
+					break;
+				}
+			}
+
+			if (alreadyExists)
+			{
+				setHelp('✗ "' + newName + '" ya existe — usa "← Load Selected" para editarla', FlxColor.RED);
+				return;
+			}
+
+			currentAnimData.push(newAnim);
+			reloadCharacterWithNewAnims();
+			setHelp("✓ Animación añadida: " + newName, FlxColor.LIME);
+		}
+
+		// Limpiar campos tras Add (no tras Edit, para comodidad)
+		if (editingAnimName == null)
+		{
+			animNameInput.text   = "";
+			animPrefixInput.text = "";
+		}
+	}
+
+	/**
+	 * Rellena los campos del tab Animation con los datos de la animación
+	 * seleccionada actualmente (curAnim). Así puedes editar cualquier anim
+	 * sin tener que escribir todo desde cero.
+	 */
+	function loadAnimIntoUI():Void
+	{
+		if (animList.length == 0 || curAnim < 0 || curAnim >= animList.length)
+		{
+			setHelp("⚠ No hay animación seleccionada", FlxColor.BLACK);
+			return;
+		}
+
+		var animName = animList[curAnim];
+
+		for (anim in currentAnimData)
+		{
+			if (anim.name == animName)
+			{
+				animNameInput.text             = anim.name;
+				animPrefixInput.text           = anim.prefix != null ? anim.prefix : "";
+				animFramerateStepper.value     = anim.framerate != 0 ? anim.framerate : 24;
+				animLoopedCheckbox.checked     = anim.looped;
+				animSpecialCheckbox.checked    = anim.specialAnim != null ? anim.specialAnim : false;
+				offsetXStepper.value           = anim.offsetX;
+				offsetYStepper.value           = anim.offsetY;
+
+				// Entrar en modo EDIT — guardar qué anim estamos modificando
+				editingAnimName = animName;
+				if (addAnimBtn != null) addAnimBtn.text = "Update Anim";
+
+				setHelp('← Editando: $animName  |  "New / Clear" para cancelar', FlxColor.CYAN);
+				UI_box.selected_tab_id = "Animation";
+				return;
 			}
 		}
 
-		if (!exists)
-			currentAnimData.push(newAnim);
-
-		reloadCharacterWithNewAnims();
-		setHelp(exists ? "✓ Animación actualizada!" : "✓ Animación añadida!", FlxColor.LIME);
-
-		animNameInput.text   = "";
-		animPrefixInput.text = "";
+		setHelp("⚠ Animación no encontrada en datos", FlxColor.BLACK);
 	}
 
 	function deleteCurrentAnimation():Void
@@ -846,25 +1189,6 @@ class AnimationDebug extends MusicBeatState
 	 */
 	function listAvailableSymbols():Void
 	{
-		// Primero intentar usar la API de la librería real flxanimate:
-		// char.anim.symbolDictionary tiene todos los símbolos ya parseados.
-		if (char != null && char._useFlxAnimate)
-		{
-			var symbols = char.anim.symbolDictionary;
-			if (symbols != null)
-			{
-				trace("═══════════════════════════════════════════");
-				trace("  SÍMBOLOS DISPONIBLES (flxanimate API)");
-				trace("  (usa el SN como 'prefix' en tus anims)");
-				trace("═══════════════════════════════════════════");
-				for (key in symbols.keys())
-					trace("    - " + key);
-				trace("═══════════════════════════════════════════");
-				setHelp("✓ Símbolos listados en consola", FlxColor.LIME);
-				return;
-			}
-		}
-
 		// Fallback: parsear Animation.json directamente
 		#if sys
 		var animJsonPath = flxAnimateFolderPath != ""
@@ -914,6 +1238,9 @@ class AnimationDebug extends MusicBeatState
 
 	function displayCharacter(character:String):Void
 	{
+		// Al cambiar de personaje, cancelar cualquier edición pendiente
+		editingAnimName = null;
+		if (addAnimBtn != null) addAnimBtn.text = "Add Animation";
 		dumbTexts.forEach(function(text:FlxText)
 		{
 			dumbTexts.remove(text, true);
@@ -934,29 +1261,73 @@ class AnimationDebug extends MusicBeatState
 		char.screenCenter();
 		char.debugMode = true;
 		layeringbullshit.add(char);
+		// NO sobreescribir flipX aquí — Character.hx ya lo aplica desde el JSON.
+		// loadCharacterData() actualizará el checkbox y sincronizará tras esto.
 
-		char.flipX = playerCheckbox.checked;
+		// Actualizar header con el nombre del personaje
+		if (charHeaderText != null)
+		{
+			charHeaderText.text = "  ▶  " + daAnim.toUpperCase();
+			// Pequeño bounce en el header
+			FlxTween.cancelTweensOf(charHeaderText);
+			charHeaderText.alpha = 0;
+			FlxTween.tween(charHeaderText, {alpha: 1}, 0.3, {ease: FlxEase.quartOut});
+		}
 
 		generateOffsetTexts();
 	}
 
 	function generateOffsetTexts(pushList:Bool = true):Void
 	{
-		var daLoop = 0;
-		var startY = 180;
+		var daLoop  = 0;
+		var startY  = 174;
+		var rowH    = 20;
 
 		for (anim => offsets in char.animOffsets)
 		{
-			var text = new FlxText(10, startY + (18 * daLoop), 0, anim + ": [" + offsets[0] + ", " + offsets[1] + "]", 14);
+			var rowY  = startY + (rowH * daLoop);
+			var isCur = (daLoop == curAnim);
+
+			// Fondo da fila alternado
+			var rowBg = new FlxSprite(4, rowY);
+			rowBg.makeGraphic(332, rowH - 1, isCur ? 0x5500E5FF : (daLoop % 2 == 0 ? 0x22FFFFFF : 0x11FFFFFF));
+			rowBg.scrollFactor.set();
+			rowBg.cameras = [camHUD];
+			rowBg.alpha   = 0;
+			dumbTexts.add(cast rowBg);
+			FlxTween.tween(rowBg, {alpha: 1}, 0.2, {startDelay: daLoop * 0.03, ease: FlxEase.quartOut});
+
+			// Punto de color a la izquierda para la fila activa
+			if (isCur)
+			{
+				var dot = new FlxSprite(4, rowY);
+				dot.makeGraphic(4, rowH - 1, 0xFF00E5FF);
+				dot.scrollFactor.set();
+				dot.cameras = [camHUD];
+				dumbTexts.add(cast dot);
+			}
+
+			var label = anim + "  [" + offsets[0] + ", " + offsets[1] + "]";
+			var text  = new FlxText(10, rowY + 3, 328, label, 11);
 			text.scrollFactor.set();
-			text.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 2);
-			text.color = (daLoop == curAnim) ? FlxColor.CYAN : FlxColor.WHITE;
+			text.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
+			text.color = isCur ? 0xFF00E5FF : 0xFFCCCCCC;
+			text.cameras = [camHUD];
+			text.alpha   = 0;
 			dumbTexts.add(text);
+			FlxTween.tween(text, {alpha: 1}, 0.2, {startDelay: daLoop * 0.03 + 0.05, ease: FlxEase.quartOut});
 
 			if (pushList)
 				animList.push(anim);
 
 			daLoop++;
+		}
+
+		// Mover el highlight a la posición correcta
+		if (animRowHighlight != null)
+		{
+			animRowHighlight.y    = startY + (rowH * curAnim);
+			animRowHighlight.visible = animList.length > 0;
 		}
 	}
 
@@ -997,7 +1368,15 @@ class AnimationDebug extends MusicBeatState
 				antialiasingCheckbox.checked = characterData.antialiasing;
 
 			if (playerCheckbox != null)
+			{
 				playerCheckbox.checked = characterData.isPlayer;
+				// Sincronizar flipX con el valor real del JSON
+				if (char != null)      char.flipX = characterData.isPlayer;
+				if (ghostChar != null) ghostChar.flipX = characterData.isPlayer;
+			}
+
+			if (charDeathInput != null)
+				charDeathInput.text = characterData.charDeath != null ? characterData.charDeath : "";
 
 			if (isTxtCheckbox != null)
 				isTxtCheckbox.checked = characterData.isTxt != null ? characterData.isTxt : false;
@@ -1024,7 +1403,16 @@ class AnimationDebug extends MusicBeatState
 			}
 
 			if (healthBarColorInput != null)
-				healthBarColorInput.text = characterData.healthBarColor != null ? characterData.healthBarColor : "#31B0D1";
+			{
+				var colorStr = characterData.healthBarColor != null ? characterData.healthBarColor : "#31B0D1";
+				healthBarColorInput.text = colorStr;
+				try
+				{
+					currentHealthBarColor = FlxColor.fromString(colorStr);
+					if (hudHealthBar != null) hudHealthBar.color = currentHealthBarColor;
+				}
+				catch (_) {}
+			}
 
 			currentAnimData = characterData.animations;
 
@@ -1063,6 +1451,9 @@ class AnimationDebug extends MusicBeatState
 			if (sm != "" && sm != "spritemap1")
 				tempData.spritemapName = sm;
 		}
+
+		if (charDeathInput != null && charDeathInput.text.trim() != "")
+			tempData.charDeath = charDeathInput.text.trim();
 
 		var jsonString = Json.stringify(tempData, null, '\t');
 
@@ -1114,6 +1505,9 @@ class AnimationDebug extends MusicBeatState
 
 		if (healthBarColorInput.text != "" && healthBarColorInput.text != "#31B0D1")
 			exportData.healthBarColor = healthBarColorInput.text;
+
+		if (charDeathInput != null && charDeathInput.text.trim() != "")
+			exportData.charDeath = charDeathInput.text.trim();
 
 		return exportData;
 	}
@@ -1211,43 +1605,47 @@ class AnimationDebug extends MusicBeatState
 		var curAnimName = char.getCurAnimName();
 
 		// Display
-		textAnim.text = "Current: " + curAnimName + " [" + (curAnim + 1) + "/" + animList.length + "]";
+		textAnim.text = "▶  " + curAnimName + "  [" + (curAnim + 1) + "/" + animList.length + "]";
 
 		if (animList.length > 0 && curAnim >= 0 && curAnim < animList.length)
 		{
 			var offsets = char.animOffsets.get(animList[curAnim]);
 			if (offsets != null)
-				textInfo.text = "Offset: [" + offsets[0] + ", " + offsets[1] + "] | Zoom: " + FlxMath.roundDecimal(camGame.zoom, 2);
+				textInfo.text = "Offset: [" + offsets[0] + ", " + offsets[1] + "]   Zoom: " + FlxMath.roundDecimal(camGame.zoom, 2);
+		}
+
+		// Mover el highlight a la fila activa (lerp suave)
+		if (animRowHighlight != null && animList.length > 0)
+		{
+			var targetY = 174.0 + (20.0 * curAnim);
+			animRowHighlight.y += (targetY - animRowHighlight.y) * 0.25;
+			animRowHighlight.visible = true;
 		}
 
 		if (ghostChar != null)
 			ghostChar.flipX = char.flipX;
 
-		// Exit
+		// Exit — ESC siempre funciona aunque estés escribiendo
 		if (FlxG.keys.justPressed.ESCAPE)
 		{
 			FlxG.mouse.visible = false;
 			LoadingState.loadAndSwitchState(new MainMenuState());
 		}
 
-		// Zoom
-		if (FlxG.keys.justPressed.E)
-			camGame.zoom += 0.25;
-		if (FlxG.keys.justPressed.Q)
-			camGame.zoom = Math.max(0.25, camGame.zoom - 0.25);
+		// ── Zoom con rueda del mouse (siempre activo, no requiere teclado) ────
+		if (FlxG.mouse.wheel != 0 && !isMouseOverHUD())
+		{
+			camGame.zoom = Math.max(0.1, camGame.zoom + FlxG.mouse.wheel * 0.1);
+		}
+
+		// ── Todo lo demás se bloquea si el usuario está escribiendo en un campo ─
+		if (isTyping()) return;
 
 		// Reset camera
 		if (FlxG.keys.justPressed.R)
 		{
 			camFollow.setPosition(FlxG.width / 2, FlxG.height / 2);
 			camGame.zoom = 1;
-		}
-
-		// Grid
-		if (FlxG.keys.justPressed.G)
-		{
-			showGrid = !showGrid;
-			gridBG.visible = showGrid;
 		}
 
 		// Ghost
@@ -1279,10 +1677,20 @@ class AnimationDebug extends MusicBeatState
 				char.playAnim(animList[curAnim]);
 				if (ghostChar != null) ghostChar.playAnim(animList[0]);
 				updateOffsetTexts();
+
+				// Bounce visual en el texto de animación
+				FlxTween.cancelTweensOf(textAnim);
+				textAnim.scale.set(1.15, 1.15);
+				FlxTween.tween(textAnim.scale, {x: 1, y: 1}, 0.25, {ease: FlxEase.backOut});
+
+				// Solo auto-cargar en la UI si YA estábamos en modo Edit,
+				// para no pisar lo que el usuario estaba escribiendo
+				if (editingAnimName != null)
+					loadAnimIntoUI();
 			}
 		}
 
-		// Offset adjustment
+		// ── Offset adjustment por teclado ─────────────────────────────────────
 		var upP    = FlxG.keys.anyJustPressed([UP]);
 		var rightP = FlxG.keys.anyJustPressed([RIGHT]);
 		var downP  = FlxG.keys.anyJustPressed([DOWN]);
@@ -1314,11 +1722,93 @@ class AnimationDebug extends MusicBeatState
 				char.playAnim(selAnim);
 				if (ghostChar != null) ghostChar.playAnim(animList[0]);
 				updateOffsetTexts();
+
+				// Flash amarillo → normal en textInfo como feedback
+				// NOTA: no se usa FlxTween.tween con {} vacío porque VarTween
+				// explota al intentar leer propiedades nulas (crash en update).
+				FlxTween.cancelTweensOf(textInfo);
+				textInfo.color = 0xFFFFFFFF;
+				new FlxTimer().start(0.3, function(_) { if (textInfo != null) textInfo.color = 0xFFFFE566; });
 			}
 		}
-	}
+
+		// ── Offset adjustment por mouse (click derecho + arrastrar) ───────────
+		// Click derecho: arrastrar para mover el offset de la animación actual.
+		// La sensibilidad es 1px de mouse = 1px de offset (SHIFT = x3).
+		if (!isMouseOverHUD())
+		{
+			var mouseMult = FlxG.keys.pressed.SHIFT ? 3 : 1;
+
+			if (FlxG.mouse.justPressed)
+			{
+				isDraggingOffset = true;
+				dragLastX = FlxG.mouse.screenX;
+				dragLastY = FlxG.mouse.screenY;
+			}
+
+			if (isDraggingOffset && FlxG.mouse.pressed)
+			{
+				var dx = (FlxG.mouse.screenX - dragLastX) * mouseMult;
+				var dy = (FlxG.mouse.screenY - dragLastY) * mouseMult;
+				dragLastX = FlxG.mouse.screenX;
+				dragLastY = FlxG.mouse.screenY;
+
+				if ((Math.abs(dx) > 0 || Math.abs(dy) > 0)
+					&& animList.length > 0 && curAnim >= 0 && curAnim < animList.length)
+				{
+					var selAnim = animList[curAnim];
+					var offsets = char.animOffsets.get(selAnim);
+
+					if (offsets != null)
+					{
+						// Arrastrar derecha = offset X decrece (igual que flecha derecha)
+						offsets[0] -= dx;
+						offsets[1] -= dy;
+
+						for (anim in currentAnimData)
+						{
+							if (anim.name == selAnim)
+							{
+								anim.offsetX = offsets[0];
+								anim.offsetY = offsets[1];
+								break;
+							}
+						}
+
+						char.playAnim(selAnim);
+						if (ghostChar != null) ghostChar.playAnim(animList[0]);
+						updateOffsetTexts();
+					}
+				}
+			}
+
+			if (FlxG.mouse.justReleased)
+				isDraggingOffset = false;
+		}
+		else
+		{
+			// Si el mouse está sobre la UI, cancelar drag para no interferir
+			if (FlxG.mouse.justReleased)
+				isDraggingOffset = false;
+		}
+	} // end update
 
 	// ── Helpers ───────────────────────────────────────────────────────────────
+
+	/**
+	 * Devuelve true si el cursor está sobre cualquier elemento del HUD
+	 * (panel izquierdo, panel UI derecho, barra inferior, área de ícono).
+	 * Se usa para bloquear el drag de offsets cuando el usuario hace click
+	 * sobre la interfaz en lugar del área de juego.
+	 */
+	function isMouseOverHUD():Bool
+	{
+		if (FlxG.mouse.overlaps(UI_box,    camHUD)) return true;
+		if (FlxG.mouse.overlaps(leftPanel, camHUD)) return true;
+		if (FlxG.mouse.overlaps(statusBar, camHUD)) return true;
+		if (FlxG.mouse.overlaps(iconBG,    camHUD)) return true;
+		return false;
+	}
 
 	function setHelp(msg:String, color:FlxColor):Void
 	{
@@ -1327,5 +1817,31 @@ class AnimationDebug extends MusicBeatState
 			textHelp.text  = msg;
 			textHelp.color = color;
 		}
+
+		// Pulsar el acento de la barra de estado con el color del mensaje
+		if (statusAccentBar != null)
+		{
+			statusAccentBar.color = color;
+			FlxTween.cancelTweensOf(statusAccentBar);
+			statusAccentBar.alpha = 1;
+			FlxTween.tween(statusAccentBar, {alpha: 0.4}, 1.2,
+				{ease: FlxEase.quartOut, onComplete: function(_) { statusAccentBar.alpha = 0.4; }});
+		}
+	}
+
+	/**
+	 * Devuelve true si cualquier campo de texto tiene el foco actualmente.
+	 * Se usa para bloquear los atajos de teclado mientras el usuario escribe.
+	 */
+	function isTyping():Bool
+	{
+		// FlxUIInputText tiene hasFocus cuando está activo
+		if (animNameInput      != null && animNameInput.hasFocus)      return true;
+		if (animPrefixInput    != null && animPrefixInput.hasFocus)    return true;
+		if (pathInput          != null && pathInput.hasFocus)          return true;
+		if (spritemapNameInput != null && spritemapNameInput.hasFocus) return true;
+		if (healthIconInput    != null && healthIconInput.hasFocus)    return true;
+		if (healthBarColorInput!= null && healthBarColorInput.hasFocus)return true;
+		return false;
 	}
 }

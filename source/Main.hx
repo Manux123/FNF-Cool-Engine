@@ -76,9 +76,6 @@ class Main extends Sprite
 	/** Data/FPS overlay */
 	public final data:DataInfoUI = new DataInfoUI(10, 3);
 	
-	/** Global Sound Tray (volume control) - managed by FlxGame */
-	public static var soundTray:SoundTray;
-	
 	// ==================== STATIC ENTRY POINT ====================
 	
 	/**
@@ -170,7 +167,7 @@ class Main extends Sprite
 		addChild(data);
 		
 		// Initialize global SoundTray (will be added to each state automatically)
-		soundTray = new SoundTray();
+		FlxG.plugins.add(new SoundTray());
 		
 		// Disable default FlxG sound tray (using custom SoundTray)
 		disableDefaultSoundTray();

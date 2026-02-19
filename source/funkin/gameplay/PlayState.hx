@@ -59,6 +59,8 @@ import data.Discord.DiscordClient;
 // Cutscenes
 import funkin.cutscenes.dialogue.DialogueBoxImproved;
 import funkin.cutscenes.dialogue.DialogueData;
+import funkin.data.MetaData;
+import funkin.gameplay.UIScriptedManager;
 
 using StringTools;
 
@@ -94,8 +96,10 @@ class PlayState extends funkin.states.MusicBeatState
 	private var noteManager:NoteManager;
 	private var inputHandler:InputHandler;
 	public var cameraController:CameraController;
-	private var uiManager:UIManager;
+	private var uiManager:UIScriptedManager;
 	private var characterController:CharacterController;
+
+	private var metaData:MetaData;
 
 	public var scriptsEnabled:Bool = true;
 
@@ -236,6 +240,10 @@ class PlayState extends funkin.states.MusicBeatState
 
 		// Crear stage y personajes
 		loadStageAndCharacters();
+
+		metaData = MetaData.load(SONG.song);
+		NoteSkinSystem.init();
+		NoteSkinSystem.setTemporarySkin(metaData.noteSkin);
 
 		StickerTransition.clearStickers();
 
@@ -636,7 +644,7 @@ class PlayState extends funkin.states.MusicBeatState
 				icons = [boyfriend.healthIcon, dad.healthIcon];
 		}
 
-		uiManager = new UIManager(camHUD, gameState);
+		uiManager = new UIScriptedManager(camHUD, gameState, metaData);
 		uiManager.setIcons(icons[0], icons[1]);
 		uiManager.setStage(curStage);
 		add(uiManager);
@@ -705,7 +713,18 @@ class PlayState extends funkin.states.MusicBeatState
 		FlxG.sound.music = Paths.loadInst(SONG.song);
 		FlxG.sound.music.volume = 0;
 		FlxG.sound.music.pause();
-		FlxG.sound.list.add(FlxG.sound.music);
+		// NO añadir FlxG.sound.music a sound.list manualmente:
+		// Flixel ya lo gestiona internamente — añadirlo duplica la entrada
+		// y provoca doble-destroy del buffer de audio al cambiar de estado.
+
+		// Limpiar vocals anterior si existía (por si se llama generateSong más de una vez)
+		if (vocals != null)
+		{
+			FlxG.sound.list.remove(vocals, true);
+			vocals.stop();
+			vocals.destroy();
+			vocals = null;
+		}
 
 		// Cargar voces usando el método seguro
 		if (SONG.needsVoices)
@@ -762,9 +781,17 @@ class PlayState extends funkin.states.MusicBeatState
 				FlxG.sound.music = Paths.loadInst(SONG.song);
 				FlxG.sound.music.volume = 0;
 				FlxG.sound.music.pause();
-				FlxG.sound.list.add(FlxG.sound.music);
+				// No añadir a sound.list — Flixel gestiona FlxG.sound.music internamente
 
 				// CRÍTICO: Recargar las vocales también
+				if (vocals != null)
+				{
+					FlxG.sound.list.remove(vocals, true);
+					vocals.stop();
+					vocals.destroy();
+					vocals = null;
+				}
+
 				if (SONG.needsVoices)
 				{
 					vocals = Paths.loadVoices(SONG.song);
@@ -1939,7 +1966,7 @@ class PlayState extends funkin.states.MusicBeatState
 			cameraController.bumpZoom();
 
 		// UI bump
-		uiManager.bumpIcons();
+		uiManager.onBeatHit(curBeat);
 	}
 
 	/**
@@ -2052,7 +2079,7 @@ class PlayState extends funkin.states.MusicBeatState
 
 		FlxG.sound.music.stop();
 
-		openSubState(new GameOverSubstate(boyfriend.getScreenPosition().x, boyfriend.getScreenPosition().y));
+		openSubState(new GameOverSubstate(boyfriend.getScreenPosition().x, boyfriend.getScreenPosition().y, boyfriend));
 
 		#if desktop
 		DiscordClient.changePresence("GAME OVER", SONG.song + " (" + storyDifficultyText + ")", iconRPC);
@@ -2175,12 +2202,32 @@ class PlayState extends funkin.states.MusicBeatState
 	 */
 	override function destroy()
 	{
-		// ⚠️ CRÍTICO: Limpiar singleton y variables estáticas
+		// ── 1. Resetear estáticas ────────────────────────────────────────────────
 		instance = null;
 		isPlaying = false;
 		cpuStrums = null;
+		startingSong = false; // Era estático y podía quedar true si se salía mid-countdown
 
-		currentStage.destroy();
+		// ── 2. Cancelar el timer del countdown ANTES de destruir characterController
+		//       Si no se cancela, el callback dispara sobre objetos ya destruidos
+		if (startTimer != null)
+		{
+			startTimer.cancel();
+			startTimer.destroy();
+			startTimer = null;
+		}
+
+		// ── 3. Limpiar vocals del sound list y destruirla
+		//       vocals se añadió manualmente a FlxG.sound.list así que hay que quitarla
+		if (vocals != null)
+		{
+			FlxG.sound.list.remove(vocals, true);
+			vocals.stop();
+			vocals.destroy();
+			vocals = null;
+		}
+
+		// ── 4. Scripts (antes de destruir objetos del stage que usen scripts)
 		if (scriptsEnabled)
 		{
 			ScriptHandler.callOnScripts('onDestroy', []);
@@ -2188,21 +2235,32 @@ class PlayState extends funkin.states.MusicBeatState
 			EventManager.clear();
 		}
 
+		// ── 5. OMITIR currentStage.destroy() manual ─────────────────────────────
+		//       currentStage fue add()-eado al FlxState, así que super.destroy()
+		//       ya lo destruye al recorrer sus miembros.
+		//       Llamarlo aquí causaba DOBLE DESTROY → corrupción de texturas → crash.
+
+		// ── 6. Optimization manager
 		if (optimizationManager != null)
 		{
-			trace('[PlayState] Destruyendo optimizaciones...');
 			optimizationManager.destroy();
 			optimizationManager = null;
 		}
 
-		// Destroy controllers
+		// ── 7. Controllers
 		if (cameraController != null)
+		{
 			cameraController.destroy();
+			cameraController = null;
+		}
 
 		if (noteManager != null)
+		{
 			noteManager.destroy();
+			noteManager = null;
+		}
 
-		// NUEVO: Destroy batcher
+		// ── 8. Note batcher
 		if (noteBatcher != null)
 		{
 			remove(noteBatcher, true);
@@ -2210,13 +2268,18 @@ class PlayState extends funkin.states.MusicBeatState
 			noteBatcher = null;
 		}
 
-		// NUEVO: Limpiar hold splashes
+		// ── 9. Limpiar estructuras internas
+		NoteSkinSystem.restoreGlobalSkin();
 		heldNotes.clear();
 		holdSplashes.clear();
+		characterSlots = [];
+		strumsGroups = [];
+		strumsGroupMap.clear();
+		activeCharIndices = [];
 
 		GameState.destroy();
 
-		// Clear hooks
+		// ── 10. Hooks
 		onBeatHitHooks.clear();
 		onStepHitHooks.clear();
 		onUpdateHooks.clear();

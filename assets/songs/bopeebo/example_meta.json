@@ -1,0 +1,10 @@
+{
+    "ui": "default",
+    "noteSkin": "arrows",
+
+    "overrideGlobal": true,
+
+    "hideCombo": false,
+    "hideRatings": false,
+    "hudVisible": true
+}

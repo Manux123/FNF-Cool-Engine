@@ -126,9 +126,9 @@ class CacheState extends funkin.states.MusicBeatState
         
         #if sys
         // Sistema de archivos disponible - escanear carpetas
-        scanSoundsFolder("assets/sounds", "Sounds");
-        scanImagesFolder("assets/images", "Images");
-        scanStagesFolder("assets/stages");
+        scanSoundsFolder(Paths.resolve("sounds"), "Sounds");
+        scanImagesFolder(Paths.resolve("images"), "Images");
+        scanStagesFolder(Paths.resolve("stages"));
         #else
         // Web/HTML5 - usar lista mínima fallback
         trace("File system not available - using minimal fallback");

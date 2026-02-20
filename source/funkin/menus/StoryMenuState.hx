@@ -11,6 +11,7 @@ import flixel.addons.transition.FlxTransitionableState;
 import funkin.transitions.StickerTransition;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.group.FlxGroup.FlxTypedGroup;
+import funkin.transitions.StateTransition;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.group.FlxGroup;
@@ -693,7 +694,7 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		{
 			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 			movedBack = true;
-			FlxG.switchState(new MainMenuState());
+			StateTransition.switchState(new MainMenuState());
 			return; // IMPORTANTE: Detener la ejecución aquí
 		}
 

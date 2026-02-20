@@ -1,71 +1,88 @@
 package funkin.data;
 
-import flixel.FlxG;
 import funkin.data.Song.SwagSong;
 
 /**
- * ...
- * @author
+ * Conductor — gestión de BPM, tiempo y sincronía musical.
  */
+class Conductor
+{
+	public static var bpm         : Float = 100;
+	/** Duración de un beat en ms  (60 000 / bpm). */
+	public static var crochet     : Float = 600;
+	/** Duración de un step en ms  (crochet / 4). */
+	public static var stepCrochet : Float = 150;
+
+	public static var songPosition : Float = 0;
+	public static var lastSongPos  : Float = 0;
+	public static var offset       : Float = 0;
+
+	public static var safeFrames : Int = 10;
+
+	/** Margen en ms — propiedad calculada, sin inicializador estático problemático. */
+	public static var safeZoneOffset(get, never) : Float;
+	static inline function get_safeZoneOffset():Float return (safeFrames / 60.0) * 1000.0;
+
+	/** Factor de escala del safe zone. */
+	public static var timeScale(get, never) : Float;
+	static inline function get_timeScale():Float return safeZoneOffset / 166.0;
+
+	public static var bpmChangeMap : Array<BPMChangeEvent> = [];
+
+	// ─── API ──────────────────────────────────────────────────────────────────
+
+	/** Cambia BPM y recalcula crochet/stepCrochet en un solo lugar. */
+	public static function changeBPM(newBpm:Float):Void
+	{
+		bpm          = newBpm;
+		crochet      = 60000.0 / bpm;
+		stepCrochet  = crochet * 0.25;
+	}
+
+	/** Construye el mapa de cambios de BPM desde los datos de la canción. */
+	public static function mapBPMChanges(song:SwagSong):Void
+	{
+		bpmChangeMap = [];
+		var curBPM    : Float = song.bpm;
+		var totalSteps: Int   = 0;
+		var totalPos  : Float = 0;
+
+		for (section in song.notes)
+		{
+			if (section.changeBPM && section.bpm != curBPM)
+			{
+				curBPM = section.bpm;
+				bpmChangeMap.push({ stepTime: totalSteps, songTime: totalPos, bpm: curBPM });
+			}
+			final delta = section.lengthInSteps;
+			totalSteps += delta;
+			totalPos   += (60000.0 / curBPM / 4.0) * delta;
+		}
+		trace('[Conductor] ${bpmChangeMap.length} cambios de BPM.');
+	}
+
+	/** Convierte ms a steps, respetando cambios de BPM. */
+	public static function getStepAtTime(time:Float):Float
+	{
+		var step    : Float = 0;
+		var lastBpm : Float = bpm;
+		var lastTime: Float = 0;
+
+		for (change in bpmChangeMap)
+		{
+			if (time < change.songTime) break;
+			step    += (change.songTime - lastTime) / (60000.0 / lastBpm / 4.0);
+			lastBpm  = change.bpm;
+			lastTime = change.songTime;
+		}
+		step += (time - lastTime) / (60000.0 / lastBpm / 4.0);
+		return step;
+	}
+}
 
 typedef BPMChangeEvent =
 {
-	var stepTime:Int;
-	var songTime:Float;
-	var bpm:Float;
-}
-
-class Conductor
-{
-	public static var bpm:Float = 100;
-	public static var crochet:Float = ((60 / bpm) * 1000); // beats in milliseconds
-	public static var stepCrochet:Float = crochet / 4; // steps in milliseconds
-	public static var songPosition:Float;
-	public static var lastSongPos:Float;
-	public static var offset:Float = 0;
-
-	public static var safeFrames:Int = 10;
-	public static var safeZoneOffset:Float = (safeFrames / 60) * 1000; // is calculated in create(), is safeFrames in milliseconds
-	public static var timeScale:Float = Conductor.safeZoneOffset / 166;
-
-	public static var bpmChangeMap:Array<BPMChangeEvent> = [];
-
-	public function new()
-	{
-	}
-
-	public static function mapBPMChanges(song:SwagSong)
-	{
-		bpmChangeMap = [];
-
-		var curBPM:Float = song.bpm;
-		var totalSteps:Int = 0;
-		var totalPos:Float = 0;
-		for (i in 0...song.notes.length)
-		{
-			if(song.notes[i].changeBPM && song.notes[i].bpm != curBPM)
-			{
-				curBPM = song.notes[i].bpm;
-				var event:BPMChangeEvent = {
-					stepTime: totalSteps,
-					songTime: totalPos,
-					bpm: curBPM
-				};
-				bpmChangeMap.push(event);
-			}
-
-			var deltaSteps:Int = song.notes[i].lengthInSteps;
-			totalSteps += deltaSteps;
-			totalPos += ((60 / curBPM) * 1000 / 4) * deltaSteps;
-		}
-		trace("new BPM map BUDDY " + bpmChangeMap);
-	}
-
-	public static function changeBPM(newBpm:Float)
-	{
-		bpm = newBpm;
-
-		crochet = ((60 / bpm) * 1000);
-		stepCrochet = crochet / 4;
-	}
+	var stepTime : Int;
+	var songTime : Float;
+	var bpm      : Float;
 }

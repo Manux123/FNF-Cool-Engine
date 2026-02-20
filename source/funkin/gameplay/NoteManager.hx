@@ -31,6 +31,9 @@ class NoteManager
 	private var playerStrumsGroup:StrumsGroup;
 	private var cpuStrumsGroup:StrumsGroup;
 
+	// ✅ Lista COMPLETA de todos los grupos de strums (incluye grupos extra)
+	private var allStrumsGroups:Array<StrumsGroup>;
+
 	// === RENDERER ===
 	private var renderer:NoteRenderer;
 
@@ -58,7 +61,8 @@ class NoteManager
 	private var holdStartTimes:Map<Int, Float> = new Map(); // dirección -> tiempo de inicio
 
 	public function new(notes:FlxTypedGroup<Note>, playerStrums:FlxTypedGroup<FlxSprite>, cpuStrums:FlxTypedGroup<FlxSprite>,
-			splashes:FlxTypedGroup<NoteSplash>, ?playerStrumsGroup:StrumsGroup, ?cpuStrumsGroup:StrumsGroup)
+			splashes:FlxTypedGroup<NoteSplash>, ?playerStrumsGroup:StrumsGroup, ?cpuStrumsGroup:StrumsGroup,
+			?allStrumsGroups:Array<StrumsGroup>)
 	{
 		this.notes = notes;
 		this.playerStrums = playerStrums;
@@ -66,6 +70,7 @@ class NoteManager
 		this.splashes = splashes; // NUEVO
 		this.playerStrumsGroup = playerStrumsGroup; // ✅ Guardar referencia
 		this.cpuStrumsGroup = cpuStrumsGroup; // ✅ Guardar referencia
+		this.allStrumsGroups = allStrumsGroups; // ✅ Lista completa de grupos
 
 		// Crear renderer con pooling y batching
 		renderer = new NoteRenderer(notes, playerStrums, cpuStrums);
@@ -94,17 +99,34 @@ class NoteManager
 			for (songNotes in section.sectionNotes)
 			{
 				var daStrumTime:Float = songNotes[0];
-				var daNoteData:Int = Std.int(songNotes[1] % 4);
-				var gottaHitNote:Bool = section.mustHitSection;
+				var rawNoteData:Int = Std.int(songNotes[1]);
+				var daNoteData:Int = rawNoteData % 4;
+				var groupIdx:Int = Math.floor(rawNoteData / 4);
 
-				if (songNotes[1] > 3)
-					gottaHitNote = !section.mustHitSection;
+				// ✅ FIXED: Determinar gottaHitNote según el grupo de strums
+				// Grupos 0 y 1: lógica legacy con mustHitSection (swap entre BF y DAD)
+				// Grupos 2+: seguir el flag CPU del StrumsGroup correspondiente
+				var gottaHitNote:Bool;
+				if (allStrumsGroups != null && groupIdx < allStrumsGroups.length && groupIdx >= 2)
+				{
+					// Grupo extra: no participa en el swap mustHitSection
+					gottaHitNote = !allStrumsGroups[groupIdx].isCPU;
+				}
+				else
+				{
+					// Lógica original para grupos 0 y 1
+					gottaHitNote = section.mustHitSection;
+					if (groupIdx == 1)
+						gottaHitNote = !section.mustHitSection;
+				}
 
 				var oldNote:Note = null;
 				if (unspawnNotes.length > 0)
 					oldNote = unspawnNotes[unspawnNotes.length - 1];
 
 				var swagNote:Note = renderer.getNote(daStrumTime, daNoteData, oldNote, false, gottaHitNote);
+				// ✅ FIXED: Asignar el índice de grupo correcto
+				swagNote.strumsGroupIndex = groupIdx;
 
 				notesCount++;
 
@@ -121,6 +143,8 @@ class NoteManager
 
 						var sustainNote:Note = renderer.getNote(daStrumTime + (Conductor.stepCrochet * susNote) + Conductor.stepCrochet, daNoteData, oldNote,
 							true, gottaHitNote);
+						// ✅ FIXED: Las notas sustain también necesitan el índice de grupo
+						sustainNote.strumsGroupIndex = groupIdx;
 						unspawnNotes.push(sustainNote);
 						notesCount++;
 					}
@@ -233,7 +257,7 @@ class NoteManager
 		if (onCPUNoteHit != null)
 			onCPUNoteHit(note);
 
-		handleStrumAnimation(note.noteData, false);
+		handleStrumAnimation(note.noteData, note.strumsGroupIndex, false);
 
 		// NUEVO: No crear splash para CPU notes si son sustain notes intermedias
 		if (!note.isSustainNote && !FlxG.save.data.middlescroll && FlxG.save.data.notesplashes)
@@ -277,11 +301,31 @@ class NoteManager
 		playerStrums.forEach(resetStrum);
 	}
 
-	private function handleStrumAnimation(data:Int, isPlayer:Bool):Void
+	private function handleStrumAnimation(data:Int, strumsGroupIndex:Int, isPlayer:Bool):Void
 	{
 		var noteID = Std.int(Math.abs(data));
 
-		// ✅ Intentar usar StrumsGroup primero
+		if (allStrumsGroups != null && allStrumsGroups.length > 0)
+		{
+			if (strumsGroupIndex <= 1)
+			{
+				// Igual que getStrumForDirection: grupos 0/1 se resuelven con isPlayer,
+				// no con el índice, porque el swap de mustHitSection los puede invertir.
+				var group = isPlayer ? playerStrumsGroup : cpuStrumsGroup;
+				if (group != null)
+				{
+					group.playConfirm(noteID);
+					return;
+				}
+			}
+			else if (strumsGroupIndex < allStrumsGroups.length)
+			{
+				allStrumsGroups[strumsGroupIndex].playConfirm(noteID);
+				return;
+			}
+		}
+
+		// Fallback: StrumsGroup legacy
 		var strumsGroup = isPlayer ? playerStrumsGroup : cpuStrumsGroup;
 		if (strumsGroup != null)
 		{
@@ -289,14 +333,13 @@ class NoteManager
 			return;
 		}
 
-		// Fallback: usar FlxTypedGroup directamente
+		// Fallback final: FlxTypedGroup directamente
 		var targetGroup = isPlayer ? playerStrums : cpuStrums;
 
 		targetGroup.forEach(function(spr:FlxSprite)
 		{
 			if (spr.ID == noteID)
 			{
-				// Verificar si es StrumNote y usar playAnim()
 				if (Std.isOfType(spr, StrumNote))
 				{
 					var strumNote:StrumNote = cast(spr, StrumNote);
@@ -304,7 +347,6 @@ class NoteManager
 				}
 				else
 				{
-					// Fallback para FlxSprite genérico
 					spr.animation.play('confirm', true);
 					spr.centerOffsets();
 
@@ -349,14 +391,23 @@ class NoteManager
 
 		note.y = noteY;
 
-		// NUEVO: Sincronizar X con strum cada frame
-		// Esto asegura que las notas siempre sigan a los strums (middlescroll, animaciones, etc)
-		var strum = getStrumForDirection(note.noteData, note.mustPress);
+		// Sincronizar posición y transformadas del strum → nota cada frame.
+		// Así los modcharts que mueven/rotan/escalan/ocultan strums afectan
+		// visualmente a todas las notas que caen sobre ellos, tanto en
+		// PlayState como en el editor, sin necesitar código extra en ninguno.
+		var strum = getStrumForDirection(note.noteData, note.strumsGroupIndex, note.mustPress);
 		if (strum != null)
 		{
-			note.x = strum.x;
-			// Centrar la nota en el strum
-			note.x += (strum.width - note.width) / 2;
+			// Heredar transformadas del strum
+			note.angle = strum.angle;
+			note.scale.x = strum.scale.x;
+			if (!note.isSustainNote)
+				note.scale.y = strum.scale.y;
+			note.updateHitbox();
+			note.alpha = FlxMath.bound(strum.alpha, 0.05, 1.0);
+
+			// Centrar X con hitbox ya actualizado
+			note.x = strum.x + (strum.width - note.width) / 2;
 		}
 
 		if (note.isSustainNote && downscroll && !note.mustPress)
@@ -416,7 +467,7 @@ class NoteManager
 			return;
 
 		note.wasGoodHit = true;
-		handleStrumAnimation(note.noteData, true);
+		handleStrumAnimation(note.noteData, note.strumsGroupIndex, true);
 
 		if (rating == "sick")
 		{
@@ -454,7 +505,7 @@ class NoteManager
 			holdStartTimes.set(direction, Conductor.songPosition);
 
 			// Crear splash de inicio
-			var strum = getStrumForDirection(direction, true);
+			var strum = getStrumForDirection(direction, note.strumsGroupIndex, true);
 			if (strum != null && renderer != null)
 			{
 				var splash = renderer.createHoldStartSplash(note, strum.x, strum.y);
@@ -481,7 +532,7 @@ class NoteManager
 			return;
 
 		var note = heldNotes.get(direction);
-		var strum = getStrumForDirection(direction, true);
+		var strum = getStrumForDirection(direction, note.strumsGroupIndex, true);
 
 		if (strum != null && renderer != null)
 		{
@@ -501,7 +552,7 @@ class NoteManager
 		if (renderer == null)
 			return;
 
-		var strum = getStrumForDirection(note.noteData, isPlayer);
+		var strum = getStrumForDirection(note.noteData, note.strumsGroupIndex, isPlayer);
 		if (strum != null)
 		{
 			var splash = renderer.getSplash(strum.x, strum.y, note.noteData);
@@ -511,10 +562,36 @@ class NoteManager
 	}
 
 	/**
-	 * NUEVO: Obtener strum para una dirección
+	 * Obtener el StrumNote correcto para posicionar/animar una nota.
+	 *
+	 * Por qué NO usamos strumsGroupIndex directamente para grupos 0 y 1:
+	 *   En el formato clásico de FNF todos los noteData son 0-3, por lo que
+	 *   groupIdx = floor(noteData / 4) es siempre 0 para cualquier nota.
+	 *   Eso hace que tanto notas del jugador como del CPU tengan strumsGroupIndex=0.
+	 *   El campo mustPress (isPlayer) es el único dato fiable para los dos grupos
+	 *   estandar — fue calculado correctamente con mustHitSection en generateNotes().
+	 *   Solo para grupos extra (>= 2) el índice es unívoco y seguro de usar directo.
 	 */
-	private function getStrumForDirection(direction:Int, isPlayer:Bool):FlxSprite
+	private function getStrumForDirection(direction:Int, strumsGroupIndex:Int, isPlayer:Bool):FlxSprite
 	{
+		if (allStrumsGroups != null && allStrumsGroups.length > 0)
+		{
+			if (strumsGroupIndex <= 1)
+			{
+				// Grupos 0 y 1: usar isPlayer para elegir el grupo correcto,
+				// ya que mustHitSection puede haberlos intercambiado en los datos.
+				var group = isPlayer ? playerStrumsGroup : cpuStrumsGroup;
+				if (group != null)
+					return group.getStrum(direction);
+			}
+			else if (strumsGroupIndex < allStrumsGroups.length)
+			{
+				// Grupos extra (>= 2): el índice es directo, sin swap.
+				return allStrumsGroups[strumsGroupIndex].getStrum(direction);
+			}
+		}
+
+		// Fallback legacy (sin allStrumsGroups)
 		var targetGroup = isPlayer ? playerStrums : cpuStrums;
 		var strum:FlxSprite = null;
 

@@ -1,6 +1,7 @@
 package ui;
 
 import flixel.FlxBasic;
+import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.tweens.FlxTween;
@@ -29,6 +30,10 @@ class SoundTray extends FlxBasic
     private var isShowing:Bool  = false;
     private var isMuted:Bool    = false;
     private var volumeBeforeMute:Float = 1.0;
+
+    // Cámara dedicada y transparente — siempre encima de todo.
+    // Se re-crea automáticamente si un state transition la destruye.
+    private var trayCam:FlxCamera;
 
     public function new()
     {
@@ -60,6 +65,27 @@ class SoundTray extends FlxBasic
         hideTimer = new FlxTimer();
 
         updateVolumeBar();
+        ensureCamera();
+    }
+
+    // -------------------------------------------------------------------------
+    // Cámara dedicada
+    // -------------------------------------------------------------------------
+
+    /**
+     * Crea (o re-crea) la cámara transparente del SoundTray.
+     * FlxG.cameras.reset() la destruye en cada state switch, así que
+     * la revisamos en draw() y la regeneramos si hace falta.
+     */
+    private function ensureCamera():Void
+    {
+        if (trayCam != null && FlxG.cameras.list.contains(trayCam))
+            return;
+
+        trayCam = new FlxCamera();
+        trayCam.bgColor = 0x00000000; // totalmente transparente
+        // false = no establecer como cámara por defecto
+        FlxG.cameras.add(trayCam, false);
     }
 
     // -------------------------------------------------------------------------
@@ -87,9 +113,11 @@ class SoundTray extends FlxBasic
 
     override public function draw():Void
     {
-        // Dibujar por encima de todo, usando la cámara por defecto de FlxG
-        volumeBox.cameras = [FlxG.camera];
-        volumeBar.cameras  = [FlxG.camera];
+        // Re-crear la cámara si fue destruida por un state switch
+        ensureCamera();
+
+        volumeBox.cameras = [trayCam];
+        volumeBar.cameras = [trayCam];
 
         volumeBox.draw();
         volumeBar.draw();
@@ -212,7 +240,7 @@ class SoundTray extends FlxBasic
         volumeBar.updateHitbox();
 
         // Centrar barras respecto al volumeBox
-        volumeBar.x = volumeBox.x + (volumeBox.width - volumeBar.width) / 2 + 35;
+        volumeBar.x = volumeBox.x + (volumeBox.width - volumeBar.width) / 2;
         volumeBar.y = volumeBox.y + 50;
     }
 

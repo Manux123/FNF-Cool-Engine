@@ -1,281 +1,129 @@
 package funkin.scripting;
 
-import flixel.FlxG;
 import flixel.FlxState;
 import flixel.FlxSprite;
 import flixel.text.FlxText;
-import funkin.menus.OptionsMenuState;
 
 /**
- * Clase base para scripts de States
- * Similar a ModuleScript pero para cualquier FlxState
+ * Plantilla base para scripts de FlxStates (menús, opciones, freeplay…).
+ *
+ * Extiende esta clase en tus scripts HScript para obtener autocompletado
+ * y documentación de todos los callbacks disponibles.
+ *
+ * ─── Ejemplo de uso ──────────────────────────────────────────────────────────
+ *
+ *   class MiScript extends StateScript {
+ *     override function onCreate() {
+ *       name = 'MiScript';
+ *       var txt = createText(10, 10, 'Hola mundo!');
+ *       addSprite(txt);
+ *     }
+ *     override function onBack():Bool {
+ *       trace('Volviendo…');
+ *       return false; // no cancelar
+ *     }
+ *   }
+ *
+ * ─── Callbacks disponibles ───────────────────────────────────────────────────
+ *   Lifecycle    onCreate, postCreate, onUpdate, onUpdatePost, onDestroy
+ *   Input        onBack (true=cancelar), onAccept (true=cancelar)
+ *   Menú         getCustomMenuItems, onMenuItemSelected
+ *   Opciones     getCustomOptions, getCustomCategories,
+ *                onOptionSelected, onOptionChanged, onSelectionChanged
+ *   Freeplay     onSongSelected, onDifficultyChanged, getCustomSongs
+ *   Story        onWeekSelected, getCustomWeeks
+ *   Title        onIntroComplete, onIntroBeat, getIntroText
  */
 class StateScript
 {
-	public var name:String = 'StateScript';
-	public var description:String = '';
-	public var author:String = '';
-	public var version:String = '1.0.0';
-	
-	public var state:FlxState;
-	public var active:Bool = true;
-	
-	public function new()
-	{
-		// Se asignará cuando se cargue
-	}
-	
-	// ===========================
-	// LIFECYCLE CALLBACKS
-	// ===========================
-	
-	/**
-	 * Llamado cuando el script es cargado
-	 */
-	public function onCreate():Void
-	{
-		trace('[StateScript $name] Created');
-	}
-	
-	/**
-	 * Llamado después de create del state
-	 */
-	public function postCreate():Void
-	{
-	}
-	
-	/**
-	 * Llamado cada frame
-	 */
-	public function onUpdate(elapsed:Float):Void
-	{
-	}
-	
-	/**
-	 * Llamado después de update
-	 */
-	public function onUpdatePost(elapsed:Float):Void
-	{
-	}
-	
-	/**
-	 * Llamado al destruir el state
-	 */
-	public function onDestroy():Void
-	{
-		trace('[StateScript $name] Destroyed');
-	}
-	
-	// ===========================
-	// OPTIONS-SPECIFIC CALLBACKS
-	// ===========================
-	
-	/**
-	 * Retorna opciones personalizadas para añadir al menú
-	 * @return Array de opciones custom
-	 */
-	public function getCustomOptions():Array<Dynamic>
-	{
-		return [];
-	}
-	
-	/**
-	 * Retorna categorías personalizadas
-	 * @return Array de nombres de categorías
-	 */
-	public function getCustomCategories():Array<String>
-	{
-		return [];
-	}
-	
-	/**
-	 * Llamado cuando se selecciona una opción
-	 */
-	public function onOptionSelected(optionName:String):Void
-	{
-	}
-	
-	/**
-	 * Llamado cuando cambia el valor de una opción
-	 */
-	public function onOptionChanged(optionName:String, newValue:Dynamic):Void
-	{
-	}
-	
-	/**
-	 * Llamado cuando se navega entre opciones/items
-	 */
-	public function onSelectionChanged(curSelected:Int):Void
-	{
-	}
-	
-	// ===========================
-	// STATE CALLBACKS
-	// ===========================
-	
-	/**
-	 * Llamado cuando se presiona BACK
-	 * @return true para cancelar el comportamiento por defecto
-	 */
-	public function onBack():Bool
-	{
-		return false;
-	}
-	
-	/**
-	 * Llamado cuando se presiona ACCEPT
-	 * @return true para cancelar el comportamiento por defecto
-	 */
-	public function onAccept():Bool
-	{
-		return false;
-	}
-	
-	// ===========================
-	// MENU-SPECIFIC CALLBACKS
-	// ===========================
-	
-	/**
-	 * Retorna items de menú personalizados
-	 * @return Array de strings con nombres de items
-	 */
-	public function getCustomMenuItems():Array<String>
-	{
-		return [];
-	}
-	
-	/**
-	 * Llamado cuando se selecciona un item del menú
-	 */
-	public function onMenuItemSelected(itemName:String, itemIndex:Int):Void
-	{
-	}
-	
-	// ===========================
-	// FREEPLAY-SPECIFIC CALLBACKS
-	// ===========================
-	
-	/**
-	 * Llamado cuando se selecciona una canción
-	 */
-	public function onSongSelected(songName:String):Void
-	{
-	}
-	
-	/**
-	 * Llamado cuando cambia la dificultad
-	 */
-	public function onDifficultyChanged(difficulty:Int):Void
-	{
-	}
-	
-	/**
-	 * Retorna canciones personalizadas para freeplay
-	 * @return Array de objetos con datos de canciones
-	 */
-	public function getCustomSongs():Array<Dynamic>
-	{
-		return [];
-	}
-	
-	// ===========================
-	// STORY-SPECIFIC CALLBACKS
-	// ===========================
-	
-	/**
-	 * Llamado cuando se selecciona una semana
-	 */
-	public function onWeekSelected(weekIndex:Int):Void
-	{
-	}
-	
-	/**
-	 * Retorna semanas personalizadas
-	 * @return Array de objetos con datos de semanas
-	 */
-	public function getCustomWeeks():Array<Dynamic>
-	{
-		return [];
-	}
-	
-	// ===========================
-	// TITLE-SPECIFIC CALLBACKS
-	// ===========================
-	
-	/**
-	 * Llamado cuando se completa la intro
-	 */
-	public function onIntroComplete():Void
-	{
-	}
-	
-	/**
-	 * Llamado en cada beat durante la intro
-	 */
-	public function onIntroBeat(beat:Int):Void
-	{
-	}
-	
-	/**
-	 * Permite modificar el texto de intro
-	 */
-	public function getIntroText():Array<String>
-	{
-		return [];
-	}
-	
-	// ===========================
-	// UTILITIES
-	// ===========================
-	
-	/**
-	 * Helper para acceso rápido a variables del State
-	 */
-	public function getVar(name:String):Dynamic
-	{
+	// ─── Metadata ─────────────────────────────────────────────────────────────
+	public var name        : String   = 'StateScript';
+	public var description : String   = '';
+	public var author      : String   = '';
+	public var version     : String   = '1.0.0';
+	public var active      : Bool     = true;
+
+	/** El FlxState al que pertenece este script. Asignado automáticamente. */
+	public var state       : FlxState;
+
+	public function new() {}
+
+	// ─── Lifecycle ────────────────────────────────────────────────────────────
+
+	public function onCreate():Void {}
+	public function postCreate():Void {}
+	public function onUpdate(elapsed:Float):Void {}
+	public function onUpdatePost(elapsed:Float):Void {}
+	public function onDestroy():Void {}
+
+	// ─── Input ────────────────────────────────────────────────────────────────
+
+	/** @return true para cancelar el comportamiento por defecto. */
+	public function onBack():Bool   return false;
+
+	/** @return true para cancelar el comportamiento por defecto. */
+	public function onAccept():Bool return false;
+
+	// ─── Menú ─────────────────────────────────────────────────────────────────
+
+	/** Añade items extra al menú principal. */
+	public function getCustomMenuItems():Array<String>     return [];
+	public function onMenuItemSelected(item:String, index:Int):Void {}
+
+	// ─── Opciones ─────────────────────────────────────────────────────────────
+
+	public function getCustomOptions():Array<Dynamic>      return [];
+	public function getCustomCategories():Array<String>    return [];
+	public function onOptionSelected(name:String):Void {}
+	public function onOptionChanged(name:String, value:Dynamic):Void {}
+	public function onSelectionChanged(index:Int):Void {}
+
+	// ─── Freeplay ─────────────────────────────────────────────────────────────
+
+	public function onSongSelected(song:String):Void {}
+	public function onDifficultyChanged(diff:Int):Void {}
+
+	/** Devuelve canciones extra para el freeplay. */
+	public function getCustomSongs():Array<Dynamic>        return [];
+
+	// ─── Story ────────────────────────────────────────────────────────────────
+
+	public function onWeekSelected(weekIndex:Int):Void {}
+
+	/** Devuelve semanas extra para el story mode. */
+	public function getCustomWeeks():Array<Dynamic>        return [];
+
+	// ─── Title ────────────────────────────────────────────────────────────────
+
+	public function onIntroComplete():Void {}
+	public function onIntroBeat(beat:Int):Void {}
+
+	/** Sobreescribe el texto de intro. Array vacío = usar el por defecto. */
+	public function getIntroText():Array<String>           return [];
+
+	// ─── Utilidades ───────────────────────────────────────────────────────────
+
+	public inline function getVar(name:String):Dynamic
 		return Reflect.getProperty(state, name);
-	}
-	
-	/**
-	 * Helper para establecer variables del State
-	 */
-	public function setVar(name:String, value:Dynamic):Void
-	{
+
+	public inline function setVar(name:String, value:Dynamic):Void
 		Reflect.setProperty(state, name, value);
-	}
-	
-	/**
-	 * Log con prefijo del script
-	 */
-	public function log(message:Dynamic):Void
-	{
-		trace('[StateScript: $name] $message');
-	}
-	
-	/**
-	 * Añadir un sprite al state
-	 */
-	public function addSprite(sprite:FlxSprite):FlxSprite
+
+	public inline function log(msg:Dynamic):Void
+		trace('[StateScript: $name] $msg');
+
+	public inline function addSprite(sprite:FlxSprite):FlxSprite
 	{
 		state.add(sprite);
 		return sprite;
 	}
-	
-	/**
-	 * Remover un sprite del state
-	 */
-	public function removeSprite(sprite:FlxSprite):FlxSprite
+
+	public inline function removeSprite(sprite:FlxSprite):FlxSprite
 	{
 		state.remove(sprite);
 		return sprite;
 	}
-	
-	/**
-	 * Crear un FlxText fácilmente
-	 */
+
 	public function createText(x:Float, y:Float, text:String, size:Int = 16):FlxText
-	{
-		var txt = new FlxText(x, y, 0, text, size);
-		return txt;
-	}
+		return new FlxText(x, y, 0, text, size);
 }

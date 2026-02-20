@@ -36,6 +36,7 @@ jobs:
           haxelib install hscript
           haxelib install hxcpp-debug-server
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
+          haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate
           haxelib run lime setup windows
           haxelib run lime setup flixel
           haxelib list
@@ -77,6 +78,7 @@ jobs:
           haxelib install hscript
           haxelib install hxcpp-debug-server
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
+          haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate
           haxelib run lime setup
           haxelib run lime setup flixel
           haxelib list

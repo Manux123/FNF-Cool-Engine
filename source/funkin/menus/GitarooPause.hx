@@ -3,6 +3,7 @@ package funkin.menus;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
+import funkin.transitions.StateTransition;
 import funkin.gameplay.PlayState;
 import funkin.menus.MainMenuState;
 
@@ -61,11 +62,11 @@ class GitarooPause extends funkin.states.MusicBeatState
 		{
 			if (replaySelect)
 			{
-				FlxG.switchState(new PlayState());
+				StateTransition.switchState(new PlayState());
 			}
 			else
 			{
-				FlxG.switchState(new MainMenuState());
+				StateTransition.switchState(new MainMenuState());
 			}
 		}
 

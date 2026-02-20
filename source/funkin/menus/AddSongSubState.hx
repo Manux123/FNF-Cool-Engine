@@ -129,7 +129,7 @@ class AddSongSubState extends FlxSubState
 		
 		// === WINDOW BACKGROUND ===
 		var windowWidth:Int = 900;
-		var windowHeight:Int = 775; // Aumentado para campos de meta
+		var windowHeight:Int = 680; // Ajustado para caber en 720px
 		var windowX:Float = (FlxG.width - windowWidth) / 2;
 		var windowY:Float = (FlxG.height - windowHeight) / 2;
 		
@@ -146,7 +146,7 @@ class AddSongSubState extends FlxSubState
 		
 		// === TOP BAR ===
 		topBar = new FlxSprite(windowX, windowY);
-		topBar.makeGraphic(windowWidth, 60, 0xFF0f3460);
+		topBar.makeGraphic(windowWidth, 50, 0xFF0f3460);
 		topBar.alpha = 0;
 		add(topBar);
 		
@@ -154,8 +154,8 @@ class AddSongSubState extends FlxSubState
 		
 		// === TITLE ===
 		var titleStr = editMode ? "EDIT SONG" : "ADD NEW SONG";
-		titleText = new FlxText(windowX + 20, windowY + 15, 0, titleStr, 28);
-		titleText.setFormat(Paths.font("vcr.ttf"), 28, FlxColor.WHITE, LEFT);
+		titleText = new FlxText(windowX + 20, windowY + 11, 0, titleStr, 24);
+		titleText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE, LEFT);
 		titleText.setBorderStyle(OUTLINE, FlxColor.BLACK, 2);
 		titleText.alpha = 0;
 		add(titleText);
@@ -189,17 +189,17 @@ class AddSongSubState extends FlxSubState
 	
 	function createInputFields(windowX:Float, windowY:Float):Void
 	{
-		var startY:Float = windowY + 80;
+		var startY:Float = windowY + 65; // era +80
 		var inputWidth:Int = 400;
 		
 		// Song Name
-		var label1 = new FlxText(windowX + 30, startY, 0, "Song Name:", 18);
-		label1.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT);
+		var label1 = new FlxText(windowX + 30, startY, 0, "Song Name:", 16);
+		label1.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
 		label1.alpha = 0;
 		add(label1);
 		FlxTween.tween(label1, {alpha: 1}, 0.3, {startDelay: 0.35});
 		
-		songNameInput = new FlxInputText(windowX + 30, startY + 25, inputWidth, "", 16);
+		songNameInput = new FlxInputText(windowX + 30, startY + 20, inputWidth, "", 15);
 		songNameInput.backgroundColor = 0xFF0f3460;
 		songNameInput.fieldBorderColor = 0xFF53a8b6;
 		songNameInput.fieldBorderThickness = 2;
@@ -210,14 +210,14 @@ class AddSongSubState extends FlxSubState
 		FlxTween.tween(songNameInput, {alpha: 1}, 0.3, {startDelay: 0.4});
 		
 		// Icon Name
-		startY += 75;
-		var label2 = new FlxText(windowX + 30, startY, 0, "Icon Name (use ← → arrows):", 18);
-		label2.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT);
+		startY += 62; // era 75
+		var label2 = new FlxText(windowX + 30, startY, 0, "Icon Name (use \u2190 \u2192 arrows):", 16);
+		label2.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
 		label2.alpha = 0;
 		add(label2);
 		FlxTween.tween(label2, {alpha: 1}, 0.3, {startDelay: 0.4});
 		
-		iconNameInput = new FlxInputText(windowX + 30, startY + 25, inputWidth, iconPresets[0], 16);
+		iconNameInput = new FlxInputText(windowX + 30, startY + 20, inputWidth, iconPresets[0], 15);
 		iconNameInput.backgroundColor = 0xFF0f3460;
 		iconNameInput.fieldBorderColor = 0xFF53a8b6;
 		iconNameInput.fieldBorderThickness = 2;
@@ -228,14 +228,14 @@ class AddSongSubState extends FlxSubState
 		FlxTween.tween(iconNameInput, {alpha: 1}, 0.3, {startDelay: 0.45});
 		
 		// BPM and Week on same row
-		startY += 75;
-		var label3 = new FlxText(windowX + 30, startY, 0, "BPM:", 18);
-		label3.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT);
+		startY += 62; // era 75
+		var label3 = new FlxText(windowX + 30, startY, 0, "BPM:", 16);
+		label3.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
 		label3.alpha = 0;
 		add(label3);
 		FlxTween.tween(label3, {alpha: 1}, 0.3, {startDelay: 0.45});
 		
-		bpmInput = new FlxInputText(windowX + 30, startY + 25, 180, "120", 16);
+		bpmInput = new FlxInputText(windowX + 30, startY + 20, 180, "120", 15);
 		bpmInput.backgroundColor = 0xFF0f3460;
 		bpmInput.fieldBorderColor = 0xFF53a8b6;
 		bpmInput.fieldBorderThickness = 2;
@@ -245,13 +245,13 @@ class AddSongSubState extends FlxSubState
 		add(bpmInput);
 		FlxTween.tween(bpmInput, {alpha: 1}, 0.3, {startDelay: 0.5});
 		
-		var label4 = new FlxText(windowX + 250, startY, 0, "Week Index:", 18);
-		label4.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT);
+		var label4 = new FlxText(windowX + 250, startY, 0, "Week Index:", 16);
+		label4.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
 		label4.alpha = 0;
 		add(label4);
 		FlxTween.tween(label4, {alpha: 1}, 0.3, {startDelay: 0.5});
 		
-		weekInput = new FlxInputText(windowX + 250, startY + 25, 180, "0", 16);
+		weekInput = new FlxInputText(windowX + 250, startY + 20, 180, "0", 15);
 		weekInput.backgroundColor = 0xFF0f3460;
 		weekInput.fieldBorderColor = 0xFF53a8b6;
 		weekInput.fieldBorderThickness = 2;
@@ -265,17 +265,17 @@ class AddSongSubState extends FlxSubState
 	// === NUEVO: CAMPOS DE META (UI + NOTESKIN) ===
 	function createMetaFields(windowX:Float, windowY:Float):Void
 	{
-		var startY:Float = windowY + 305;
+		var startY:Float = windowY + 255; // era +305
 		var inputWidth:Int = 180;
 
 		// UI Script
-		var labelUI = new FlxText(windowX + 30, startY, 0, "UI Script:", 18);
-		labelUI.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT);
+		var labelUI = new FlxText(windowX + 30, startY, 0, "UI Script:", 16);
+		labelUI.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
 		labelUI.alpha = 0;
 		add(labelUI);
 		FlxTween.tween(labelUI, {alpha: 1}, 0.3, {startDelay: 0.55});
 
-		uiInput = new FlxInputText(windowX + 30, startY + 25, inputWidth, "default", 16);
+		uiInput = new FlxInputText(windowX + 30, startY + 20, inputWidth, "default", 15);
 		uiInput.backgroundColor    = 0xFF0f3460;
 		uiInput.fieldBorderColor   = 0xFF53a8b6;
 		uiInput.fieldBorderThickness = 2;
@@ -286,13 +286,13 @@ class AddSongSubState extends FlxSubState
 		FlxTween.tween(uiInput, {alpha: 1}, 0.3, {startDelay: 0.57});
 
 		// NoteSkin
-		var labelNS = new FlxText(windowX + 240, startY, 0, "Note Skin:", 18);
-		labelNS.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT);
+		var labelNS = new FlxText(windowX + 240, startY, 0, "Note Skin:", 16);
+		labelNS.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
 		labelNS.alpha = 0;
 		add(labelNS);
 		FlxTween.tween(labelNS, {alpha: 1}, 0.3, {startDelay: 0.57});
 
-		noteSkinInput = new FlxInputText(windowX + 240, startY + 25, inputWidth, "default", 16);
+		noteSkinInput = new FlxInputText(windowX + 240, startY + 20, inputWidth, "default", 15);
 		noteSkinInput.backgroundColor    = 0xFF0f3460;
 		noteSkinInput.fieldBorderColor   = 0xFF53a8b6;
 		noteSkinInput.fieldBorderThickness = 2;
@@ -303,9 +303,9 @@ class AddSongSubState extends FlxSubState
 		FlxTween.tween(noteSkinInput, {alpha: 1}, 0.3, {startDelay: 0.59});
 
 		// Hint
-		var hint = new FlxText(windowX + 30, startY + 52, 430,
-			"Leave 'default' to use global config", 12);
-		hint.setFormat(Paths.font("vcr.ttf"), 12, 0xFF53a8b6, LEFT);
+		var hint = new FlxText(windowX + 30, startY + 44, 430,
+			"Leave 'default' to use global config", 11);
+		hint.setFormat(Paths.font("vcr.ttf"), 11, 0xFF53a8b6, LEFT);
 		hint.alpha = 0;
 		add(hint);
 		FlxTween.tween(hint, {alpha: 0.7}, 0.3, {startDelay: 0.6});
@@ -329,18 +329,18 @@ class AddSongSubState extends FlxSubState
 	// === NUEVO: CREAR TOGGLE PARA STORY MODE ===
 	function createStoryModeToggle(windowX:Float, windowY:Float):Void
 	{
-		var toggleY:Float = windowY + 380; // desplazado 75px para los campos de meta
+		var toggleY:Float = windowY + 320; // era +380
 		var toggleX:Float = windowX + 30;
 		
 		// Label
-		var label = new FlxText(toggleX, toggleY, 0, "Show in Story Mode:", 18);
-		label.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT);
+		var label = new FlxText(toggleX, toggleY, 0, "Show in Story Mode:", 16);
+		label.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
 		label.alpha = 0;
 		add(label);
 		FlxTween.tween(label, {alpha: 1}, 0.3, {startDelay: 0.55});
 		
 		// Toggle button
-		storyModeToggleBtn = new FlxButton(toggleX + 200, toggleY - 5, "", function()
+		storyModeToggleBtn = new FlxButton(toggleX + 195, toggleY - 4, "", function()
 		{
 			showInStoryMode = !showInStoryMode;
 			updateToggleButton();
@@ -352,8 +352,8 @@ class AddSongSubState extends FlxSubState
 		FlxTween.tween(storyModeToggleBtn, {alpha: 1}, 0.3, {startDelay: 0.6});
 		
 		// Toggle text
-		storyModeToggleText = new FlxText(toggleX + 210, toggleY, 0, "ON", 18);
-		storyModeToggleText.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, CENTER);
+		storyModeToggleText = new FlxText(toggleX + 205, toggleY, 0, "ON", 16);
+		storyModeToggleText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, CENTER);
 		storyModeToggleText.alpha = 0;
 		add(storyModeToggleText);
 		FlxTween.tween(storyModeToggleText, {alpha: 1}, 0.3, {startDelay: 0.65});
@@ -386,7 +386,7 @@ class AddSongSubState extends FlxSubState
 	
 	function createFileButtons(windowX:Float, windowY:Float):Void
 	{
-		var btnY:Float = windowY + 435; // desplazado 75px
+		var btnY:Float = windowY + 365; // era +435
 		var btnX:Float = windowX + 30;
 		
 		// Load Inst Button
@@ -419,7 +419,7 @@ class AddSongSubState extends FlxSubState
 		FlxTween.tween(instStatusText, {alpha: 1}, 0.3, {startDelay: 0.65});
 		
 		// Load Vocals Button
-		btnY += 50;
+		btnY += 42; // era 50
 		loadVocalsBtn = new FlxButton(btnX, btnY, "Load Vocals.ogg", function()
 		{
 			#if desktop
@@ -449,7 +449,7 @@ class AddSongSubState extends FlxSubState
 		FlxTween.tween(vocalsStatusText, {alpha: 1}, 0.3, {startDelay: 0.7});
 		
 		// Load Icon Button
-		btnY += 50;
+		btnY += 42; // era 50
 		loadIconBtn = new FlxButton(btnX, btnY, "Load Icon.png", function()
 		{
 			#if desktop
@@ -481,22 +481,22 @@ class AddSongSubState extends FlxSubState
 	
 	function createColorPicker(windowX:Float, windowY:Float):Void
 	{
-		var colorY:Float = windowY + 435; // desplazado 75px
-		var colorX:Float = windowX + 500;
+		var colorY:Float = windowY + 365; // era +435
+		var colorX:Float = windowX + 480;
 		
 		// Title
-		var colorTitle = new FlxText(colorX, colorY, 0, "Select Color:", 18);
-		colorTitle.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT);
+		var colorTitle = new FlxText(colorX, colorY, 0, "Select Color:", 16);
+		colorTitle.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
 		colorTitle.alpha = 0;
 		add(colorTitle);
 		FlxTween.tween(colorTitle, {alpha: 1}, 0.3, {startDelay: 0.7});
 		
-		colorY += 30;
+		colorY += 24;
 		
 		// Color grid
 		var colorsPerRow:Int = 4;
-		var btnSize:Int = 35;
-		var spacing:Int = 10;
+		var btnSize:Int = 30;  // era 35
+		var spacing:Int = 8;   // era 10
 		
 		for (i in 0...colorPresets.length)
 		{
@@ -504,7 +504,7 @@ class AddSongSubState extends FlxSubState
 			var col:Int = i % colorsPerRow;
 			
 			var btnX:Float = colorX + (col * (btnSize + spacing));
-			var btnY:Float = colorY + (row * (btnSize + spacing + 20));
+			var btnY:Float = colorY + (row * (btnSize + spacing + 16)); // era +20
 			
 			var colorBtn = new FlxButton(btnX, btnY, "", function()
 			{
@@ -519,8 +519,8 @@ class AddSongSubState extends FlxSubState
 			FlxTween.tween(colorBtn, {alpha: 0.7}, 0.3, {startDelay: 0.75 + (i * 0.02)});
 			
 			// Label
-			var label = new FlxText(btnX, btnY + btnSize + 2, btnSize, colorPresets[i].name, 10);
-			label.setFormat(Paths.font("vcr.ttf"), 10, FlxColor.WHITE, CENTER);
+			var label = new FlxText(btnX, btnY + btnSize + 1, btnSize, colorPresets[i].name, 9);
+			label.setFormat(Paths.font("vcr.ttf"), 9, FlxColor.WHITE, CENTER);
 			label.alpha = 0;
 			add(label);
 			colorLabels.push(label);
@@ -772,7 +772,7 @@ class AddSongSubState extends FlxSubState
 		#if desktop
 		try
 		{
-			var targetDir = "assets/songs/" + songName.toLowerCase();
+			var targetDir = Paths.resolve("songs/" + songName.toLowerCase());
 			if (!FileSystem.exists(targetDir))
 			{
 				FileSystem.createDirectory(targetDir);
@@ -799,7 +799,7 @@ class AddSongSubState extends FlxSubState
 		#if desktop
 		try
 		{
-			var targetDir = "assets/songs/" + songName;
+			var targetDir = Paths.resolve("songs/" + songName);
 			
 			// Create JSON manually to ensure correct field order
 			var sb = new StringBuf();
@@ -868,7 +868,7 @@ class AddSongSubState extends FlxSubState
 		#if desktop
 		try
 		{
-			var targetDir = "assets/images/icons";
+			var targetDir = Paths.resolve("images/icons");
 			if (!FileSystem.exists(targetDir))
 			{
 				FileSystem.createDirectory(targetDir);
@@ -892,7 +892,7 @@ class AddSongSubState extends FlxSubState
 		try
 		{
 			var jsonString = Json.stringify(songListData, null, "\t");
-			File.saveContent("assets/songs/songList.json", jsonString);
+			File.saveContent(Paths.resolve("songs/songList.json"), jsonString);
 			trace("songList.json saved!");
 		}
 		catch (e:Dynamic)

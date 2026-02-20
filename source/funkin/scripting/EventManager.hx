@@ -8,197 +8,190 @@ import funkin.data.Section.SwagSection;
 using StringTools;
 
 /**
- * Sistema de eventos para PlayState.
- * 
- * Solo contiene infraestructura: carga, trigger y registro.
- * Los handlers de eventos están en assets/scripts/events/
- * y se registran con registerEvent() desde HScript.
+ * Sistema de eventos de gameplay.
+ *
+ * Infraestructura pura: carga, disparo y registro de handlers.
+ * Los handlers concretos viven en `assets/data/scripts/events/`
+ * y se registran con `registerEvent()` desde HScript.
+ *
+ * ─── Optimizaciones respecto a la versión anterior ───────────────────────────
+ *   • Puntero de índice en `update()` — sin array `toRemove` por frame.
+ *   • `events` ya no se modifica durante `update()`, sólo se avanza el índice.
+ *   • `stepTimeToMs` es `inline` — el compilador la inlinea en hot paths.
+ *   • `triggerEvent` sin creación de closures en el path normal.
+ *
+ * ─── Uso desde HScript ───────────────────────────────────────────────────────
+ *   registerEvent('Flash', function(v1, v2, time) {
+ *     FlxG.cameras.flash(FlxColor.WHITE, 0.5);
+ *   });
+ *   fireEvent('Flash');
  */
 class EventManager
 {
-	public static var events:Array<EventData> = [];
-	public static var customEventHandlers:Map<String, Array<EventData>->Bool> = new Map();
+	/** Todos los eventos de la canción actual, ordenados por tiempo. */
+	public static var events : Array<EventData> = [];
 
-	// ─────────────────────────────────────────────────────────────
-	//  CARGA
-	// ─────────────────────────────────────────────────────────────
+	/** Handlers custom registrados por scripts. */
+	public static var customHandlers : Map<String, Array<EventData>->Bool> = [];
 
 	/**
-	 * Carga eventos desde _song.events (formato nuevo del sidebar visual).
-	 * Convierte stepTime → ms con el BPM base de la canción.
-	 * Llamar DESPUÉS de que Conductor esté configurado.
+	 * Índice del siguiente evento a comprobar en `update()`.
+	 * Al ser un puntero, update() nunca necesita crear arrays temporales.
+	 */
+	static var _nextIndex : Int = 0;
+
+	// ─── Carga ────────────────────────────────────────────────────────────────
+
+	/**
+	 * Carga y ordena eventos desde `PlayState.SONG`.
+	 * Llamar DESPUÉS de que `Conductor` esté configurado.
 	 */
 	public static function loadEventsFromSong():Void
 	{
-		events = [];
-		var songData:SwagSong = PlayState.SONG;
+		events     = [];
+		_nextIndex = 0;
+
+		final songData:SwagSong = PlayState.SONG;
 		if (songData == null) return;
 
-		// ── Formato NUEVO: _song.events ──────────────────────────
 		if (songData.events != null && songData.events.length > 0)
-		{
-			for (evt in songData.events)
-			{
-				var timeMs = stepTimeToMs(evt.stepTime, songData.bpm);
-
-				var v1 = evt.value != null ? evt.value : '';
-				var v2 = '';
-				if (v1.contains('|'))
-				{
-					var parts = v1.split('|');
-					v1 = parts[0].trim();
-					v2 = parts.length > 1 ? parts[1].trim() : '';
-				}
-
-				var event    = new EventData();
-				event.time   = timeMs;
-				event.name   = evt.type;
-				event.value1 = v1;
-				event.value2 = v2;
-				events.push(event);
-			}
-			trace('[EventManager] ${events.length} eventos cargados desde _song.events');
-		}
+			loadNewFormat(songData);
 		else if (songData.notes != null)
+			loadLegacyFormat(songData);
+
+		// Compatibilidad hacia atrás: generar Camera Follow desde mustHitSection
+		// si el chart no tiene ningún evento de cámara.
+		final hasNewEvents = songData.events != null && songData.events.length > 0;
+		if (!hasNewEvents && songData.notes != null)
 		{
-			// ── Formato LEGACY: notas especiales en sectionNotes ──
-			var sections:Array<SwagSection> = cast songData.notes;
-			for (section in sections)
-			{
-				if (section.sectionNotes == null) continue;
-				for (note in section.sectionNotes)
-				{
-					if (note.length >= 5 && note[4] != null && Std.string(note[4]) != '')
-					{
-						var event    = new EventData();
-						event.time   = note[0];
-						event.name   = Std.string(note[4]);
-						event.value1 = note.length >= 6 ? Std.string(note[5]) : '';
-						event.value2 = note.length >= 7 ? Std.string(note[6]) : '';
-						events.push(event);
-					}
-				}
-			}
-			trace('[EventManager] ${events.length} eventos cargados desde formato legacy');
+			var hasCam = false;
+			for (e in events) if (e.name == 'Camera Follow') { hasCam = true; break; }
+			if (!hasCam) generateCameraFollow(songData);
 		}
-
-		// ── Compatibilidad hacia atrás ──────────────────────────
-		// Si el chart no tiene ningún evento de cámara, generar Camera Follow
-		// automáticamente desde mustHitSection para que los charts viejos
-		// funcionen sin necesidad de portearlos.
-		var hasCameraEvents = false;
-		for (e in events)
-			if (e.name == 'Camera Follow') { hasCameraEvents = true; break; }
-
-		if (!hasCameraEvents && songData.notes != null)
-			generateCameraFollowFromSections(songData);
 
 		events.sort((a, b) -> Std.int(a.time - b.time));
 
-		// Exponer API de eventos en scripts
-		setupEventScriptAPI();
+		// Refrescar `game` en los scripts ahora que PlayState.instance existe.
+		ScriptHandler.setOnScripts('game', PlayState.instance);
+
+		trace('[EventManager] ${events.length} eventos cargados.');
 	}
 
-	/**
-	 * Genera Camera Follow automáticamente desde mustHitSection.
-	 * Backwards-compat: los charts viejos no necesitan portearse.
-	 */
-	private static function generateCameraFollowFromSections(songData:SwagSong):Void
+	static function loadNewFormat(songData:SwagSong):Void
+	{
+		for (evt in songData.events)
+		{
+			var v1 = evt.value != null ? evt.value : '';
+			var v2 = '';
+
+			if (v1.contains('|'))
+			{
+				final parts = v1.split('|');
+				v1 = parts[0].trim();
+				v2 = parts.length > 1 ? parts[1].trim() : '';
+			}
+
+			final e    = new EventData();
+			e.name     = evt.type;
+			e.time     = stepToMs(evt.stepTime, songData.bpm);
+			e.value1   = v1;
+			e.value2   = v2;
+			events.push(e);
+		}
+		trace('[EventManager] Formato nuevo: ${events.length} eventos.');
+	}
+
+	static function loadLegacyFormat(songData:SwagSong):Void
+	{
+		final sections:Array<SwagSection> = cast songData.notes;
+		for (section in sections)
+		{
+			if (section.sectionNotes == null) continue;
+			for (note in section.sectionNotes)
+			{
+				if (note.length < 5 || note[4] == null || Std.string(note[4]) == '') continue;
+				final e  = new EventData();
+				e.name   = Std.string(note[4]);
+				e.time   = note[0];
+				e.value1 = note.length >= 6 ? Std.string(note[5]) : '';
+				e.value2 = note.length >= 7 ? Std.string(note[6]) : '';
+				events.push(e);
+			}
+		}
+		trace('[EventManager] Formato legacy: ${events.length} eventos.');
+	}
+
+	static function generateCameraFollow(songData:SwagSong):Void
 	{
 		var lastTarget = '';
 		var step:Float = 0;
 		var bpm:Float  = songData.bpm;
+		var count = 0;
 
-		var sections:Array<SwagSection> = cast songData.notes;
+		final sections:Array<SwagSection> = cast songData.notes;
 		for (section in sections)
 		{
-			var stepsInSection:Float = section.lengthInSteps > 0 ? section.lengthInSteps : 16;
-			var target = (section.mustHitSection == true) ? 'player' : 'opponent';
-			var timeMs = stepTimeToMs(step, bpm);
+			final stepsInSection:Float = section.lengthInSteps > 0 ? section.lengthInSteps : 16;
+			final target = section.mustHitSection ? 'player' : 'opponent';
 
 			if (target != lastTarget)
 			{
-				var ev    = new EventData();
-				ev.time   = timeMs;
-				ev.name   = 'Camera Follow';
-				ev.value1 = target;
-				ev.value2 = '';
-				events.push(ev);
+				final e  = new EventData();
+				e.name   = 'Camera Follow';
+				e.time   = stepToMs(step, bpm);
+				e.value1 = target;
+				events.push(e);
 				lastTarget = target;
+				count++;
 			}
 
-			if (section.changeBPM == true && section.bpm > 0)
-				bpm = section.bpm;
-
+			if (section.changeBPM && section.bpm > 0) bpm = section.bpm;
 			step += stepsInSection;
 		}
-
-		trace('[EventManager] Auto-generados ${events.length} Camera Follow desde mustHitSection');
+		trace('[EventManager] Auto-generados $count Camera Follow desde mustHitSection.');
 	}
+
+	// ─── Update ───────────────────────────────────────────────────────────────
 
 	/**
-	 * Actualiza la referencia a `game` en todos los scripts activos
-	 * para que apunte al PlayState actual (se llama después de crear la instancia).
+	 * Dispara los eventos cuyo tiempo ha llegado.
+	 * Usa un puntero de índice — sin allocaciones por frame.
 	 */
-	private static function setupEventScriptAPI():Void
-	{
-		// game = PlayState.instance puede ser null cuando los scripts globales cargan,
-		// así que lo refrescamos aquí cuando ya existe la instancia.
-		ScriptHandler.setOnScripts('game', PlayState.instance);
-	}
-
-	static function stepTimeToMs(step:Float, bpm:Float):Float
-	{
-		// 1 beat = 60 000 / bpm ms | 1 step = 1 beat / 4
-		return step * ((60000.0 / bpm) / 4.0);
-	}
-
-	// ─────────────────────────────────────────────────────────────
-	//  UPDATE
-	// ─────────────────────────────────────────────────────────────
-
 	public static function update(songPosition:Float):Void
 	{
-		var toRemove:Array<EventData> = [];
-
-		for (event in events)
+		while (_nextIndex < events.length)
 		{
-			if (!event.triggered && songPosition >= event.time)
-			{
-				triggerEvent(event);
-				event.triggered = true;
-				toRemove.push(event);
-			}
-		}
+			final event = events[_nextIndex];
+			if (songPosition < event.time) break;
 
-		for (event in toRemove)
-			events.remove(event);
+			if (!event.triggered)
+			{
+				event.triggered = true;
+				triggerEvent(event);
+			}
+			_nextIndex++;
+		}
 	}
 
-	// ─────────────────────────────────────────────────────────────
-	//  TRIGGER
-	// ─────────────────────────────────────────────────────────────
+	// ─── Disparo ──────────────────────────────────────────────────────────────
 
 	public static function triggerEvent(event:EventData):Void
 	{
 		trace('[EventManager] → "${event.name}" | v1="${event.value1}" v2="${event.value2}" t=${event.time}ms');
 
-		// 1. onEvent en scripts — retornar true cancela todo
+		// Los scripts pueden cancelar el evento devolviendo true en `onEvent`.
 		if (ScriptHandler.callOnScriptsReturn('onEvent',
 			[event.name, event.value1, event.value2, event.time], false) == true)
 		{
-			trace('[EventManager] Cancelado por script (onEvent)');
+			trace('[EventManager] Cancelado por script.');
 			return;
 		}
 
-		// 2. Handler registrado con registerEvent() — el script devuelve true para cancelar
-		if (customEventHandlers.exists(event.name))
+		final handler = customHandlers.get(event.name);
+		if (handler != null)
 		{
-			if (customEventHandlers.get(event.name)([event]))
-			{
-				trace('[EventManager] Cancelado por handler');
-				return;
-			}
+			if (handler([event]))
+				trace('[EventManager] Cancelado por handler custom.');
 		}
 		else
 		{
@@ -206,41 +199,50 @@ class EventManager
 		}
 	}
 
-	// ─────────────────────────────────────────────────────────────
-	//  API PÚBLICA
-	// ─────────────────────────────────────────────────────────────
+	// ─── API pública ──────────────────────────────────────────────────────────
 
-	public static function registerCustomEvent(eventName:String, handler:Array<EventData>->Bool):Void
-	{
-		customEventHandlers.set(eventName, handler);
-	}
+	/** Registra un handler custom para eventos con `name`. */
+	public static function registerCustomEvent(name:String, handler:Array<EventData>->Bool):Void
+		customHandlers.set(name, handler);
 
-	public static function fireEvent(eventName:String, value1:String = '', value2:String = ''):Void
+	/**
+	 * Dispara un evento manualmente (fuera del timeline).
+	 * El tiempo se lee de la posición actual de la música.
+	 */
+	public static function fireEvent(name:String, value1:String = '', value2:String = ''):Void
 	{
-		var event    = new EventData();
-		event.name   = eventName;
-		event.value1 = value1;
-		event.value2 = value2;
-		event.time   = FlxG.sound.music != null ? FlxG.sound.music.time : 0;
-		triggerEvent(event);
+		final e  = new EventData();
+		e.name   = name;
+		e.time   = FlxG.sound.music != null ? FlxG.sound.music.time : 0;
+		e.value1 = value1;
+		e.value2 = value2;
+		triggerEvent(e);
 	}
 
 	public static function clear():Void
 	{
 		events = [];
-		customEventHandlers.clear();
+		customHandlers.clear();
+		_nextIndex = 0;
 	}
+
+	// ─── Util ─────────────────────────────────────────────────────────────────
+
+	/** 1 beat = 60 000 / bpm ms  |  1 step = 1 beat / 4 */
+	public static inline function stepToMs(step:Float, bpm:Float):Float
+		return step * (60000.0 / bpm / 4.0);
 }
 
-// ─────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 
+/** Datos de un evento de gameplay. Puede crearse como objeto anónimo. */
 class EventData
 {
-	public var name:String    = '';
-	public var time:Float     = 0;
-	public var value1:String  = '';
-	public var value2:String  = '';
-	public var triggered:Bool = false;
+	public var name      : String = '';
+	public var time      : Float  = 0;
+	public var value1    : String = '';
+	public var value2    : String = '';
+	public var triggered : Bool   = false;
 
 	public function new() {}
 

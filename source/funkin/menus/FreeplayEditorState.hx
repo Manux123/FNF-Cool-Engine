@@ -9,6 +9,7 @@ import lime.app.Application;
 import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
 import flixel.addons.transition.FlxTransitionableState;
+import funkin.transitions.StateTransition;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
 import flixel.tweens.FlxEase;
@@ -32,6 +33,7 @@ import extensions.CoolUtil;
 import funkin.menus.StoryMenuState.Songs;
 import funkin.menus.FreeplayState.SongMetadata;
 import ui.Alphabet;
+import funkin.debug.DebugMenuSubState;
 
 using StringTools;
 
@@ -49,6 +51,13 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 
 	private static var curSelected:Int = 0;
 	private static var curDifficulty:Int = 1;
+
+	// Expuesto para que DebugMenuSubState pueda leerlo
+	public static var curDifficultyPublic(get, never):Int;
+	static function get_curDifficultyPublic():Int return curDifficulty;
+
+	/** Acción pendiente tras cerrar DebugMenuSubState. 0 = nada, 1 = editar datos canción */
+	public static var pendingAction:Int = 0;
 
 	var scoreBG:FlxSprite;
 	var scoreText:FlxText;
@@ -323,6 +332,21 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 
 	override function closeSubState()
 	{
+		// Si el DebugMenuSubState pidió editar datos de la canción, abrir AddSongSubState
+		if (pendingAction == 1 && curSelected > 0)
+		{
+			pendingAction = 0;
+			var songIndex = curSelected - 1;
+			// Recargar la lista primero para tener datos frescos
+			reloadSongList();
+			changeSelection();
+			super.closeSubState();
+			openSubState(new AddSongSubState(songs[songIndex]));
+			return;
+		}
+
+		pendingAction = 0;
+
 		// Reload songs after closing substate (in case new song was added)
 		reloadSongList();
 		changeSelection();
@@ -466,7 +490,7 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 			#end
 
 			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
-			FlxG.switchState(new FreeplayState());
+			StateTransition.switchState(new FreeplayState());
 		}
 
 		if (accepted)
@@ -479,16 +503,15 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 
 			if (curSelected == 0)
 			{
-				// Open add song substate
+				// Abrir substate para agregar canción nueva
 				FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.7);
 				openSubState(new AddSongSubState());
 			}
 			else
 			{
-				// Open edit song substate
-				var songIndex = curSelected - 1;
+				// Abrir menú de selección de editor de debug
 				FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.7);
-				openSubState(new AddSongSubState(songs[songIndex]));
+				openSubState(new DebugMenuSubState(songs[curSelected - 1]));
 			}
 		}
 
@@ -536,7 +559,7 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 		try
 		{
 			var jsonString = Json.stringify(songInfo, null, "\t");
-			sys.io.File.saveContent("assets/songs/songList.json", jsonString);
+			sys.io.File.saveContent(Paths.resolve("songs/songList.json"), jsonString);
 			trace("songList.json saved!");
 		}
 		catch (e:Dynamic)

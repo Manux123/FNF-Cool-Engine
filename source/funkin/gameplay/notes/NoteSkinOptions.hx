@@ -6,6 +6,7 @@ import flash.text.TextField;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
+import funkin.transitions.StateTransition;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.input.keyboard.FlxKey;
@@ -633,7 +634,7 @@ class NoteSkinOptions extends funkin.states.MusicBeatState
 		if (controls.BACK)
 		{
 			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
-			FlxG.switchState(new OptionsMenuState());
+			StateTransition.switchState(new OptionsMenuState());
 		}
 
 		if (controls.UP_P)

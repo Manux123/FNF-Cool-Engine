@@ -150,8 +150,9 @@ class Stage extends FlxTypedGroup<FlxBasic>
 	{
 		try
 		{
-			var file:String = Assets.getText(Paths.stageJSON(stageName));
+			var file:String = Paths.getText(Paths.stageJSON(stageName));
 			stageData = cast Json.parse(file);
+			trace('stagefile: $file');
 
 			for (script in ScriptHandler.stageScripts)
 			{
@@ -229,7 +230,8 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		else
 		{
 			trace('[Stage] Intentando cargar scripts desde carpeta...');
-			var stagePath = 'assets/stages/${curStage}/scripts/';
+			// Busca en mod primero, luego en assets
+			var stagePath = Paths.stageScripts(curStage);
 
 			#if sys
 			if (sys.FileSystem.exists(stagePath))
@@ -530,9 +532,11 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		{
 			var fullPath = scriptPath;
 
-			if (!scriptPath.startsWith('assets/'))
+			// Busca el script en mod activo, luego en assets
+			if (!scriptPath.startsWith('assets/') && !scriptPath.startsWith('mods/'))
 			{
-				fullPath = 'assets/stages/${curStage}/scripts/$scriptPath';
+				final modScriptPath = mods.ModManager.resolveInMod('stages/${curStage}/scripts/$scriptPath');
+				fullPath = modScriptPath ?? 'assets/stages/${curStage}/scripts/$scriptPath';
 			}
 
 			ScriptHandler.loadScript(fullPath, "stage");

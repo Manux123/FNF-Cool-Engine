@@ -2,7 +2,7 @@
 <project>
 	<!-- _________________________ Application Settings _________________________ -->
 
-	<app title="Friday Night Funkin': Cool Engine" file="CoolEngine" packageName="com.coolTeam.coolEngine" package="com.coolTeam.coolEngine" main="Main" version="0.4.0B" company="Cool Engine Team" />
+	<app title="Friday Night Funkin': Cool Engine" file="CoolEngine" packageName="com.coolTeam.coolEngine" package="com.coolTeam.coolEngine" main="Main" version="0.4.1B" company="Cool Engine Team" />
 
 	<!--Switch Export with Unique ApplicationID and Icon-->
 	<set name="APP_ID" value="0x0100f6c013bbc000" />
@@ -18,13 +18,13 @@
 	<!-- ____________________________ Window Settings ___________________________ -->
 
 	<!--These window settings apply to all targets-->
-	<window width="1280" height="720" fps="60" background="#000000" hardware="true" vsync="false" />
+	<window width="1280" height="720" fps="120" background="#000000" hardware="true" vsync="false" />
 
 	<!--HTML5-specific-->
 	<window if="html5" resizable="true" />
 
 	<!--Desktop-specific-->
-	<window if="desktop" orientation="landscape" fullscreen="false" resizable="true" />
+	<window if="desktop" orientation="landscape" fullscreen="false" resizable="true" vsync="false"/>
 
 	<!--Mobile-specific-->
 	<window if="mobile" orientation="landscape" fullscreen="true" width="1280" height="720" resizable="false" />

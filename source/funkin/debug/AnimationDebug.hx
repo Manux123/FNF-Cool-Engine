@@ -89,7 +89,6 @@ class AnimationDebug extends MusicBeatState
 	var animPrefixInput:FlxUIInputText;
 	var animFramerateStepper:FlxUINumericStepper;
 	var animLoopedCheckbox:FlxUICheckBox;
-	var animSpecialCheckbox:FlxUICheckBox;
 	var offsetXStepper:FlxUINumericStepper;
 	var offsetYStepper:FlxUINumericStepper;
 
@@ -481,11 +480,6 @@ class AnimationDebug extends MusicBeatState
 		tab.add(animLoopedCheckbox);
 		yPos += 20;
 
-		animSpecialCheckbox = new FlxUICheckBox(10, yPos, null, null, "Special Anim", 100);
-		animSpecialCheckbox.checked = false;
-		tab.add(animSpecialCheckbox);
-		yPos += 25;
-
 		tab.add(new FlxText(10, yPos, 0, "Offset X:", 10));
 		yPos += 15;
 		offsetXStepper = new FlxUINumericStepper(10, yPos, 1, 0, -500, 500, 0);
@@ -510,7 +504,6 @@ class AnimationDebug extends MusicBeatState
 			animPrefixInput.text         = "";
 			animFramerateStepper.value   = 24;
 			animLoopedCheckbox.checked   = false;
-			animSpecialCheckbox.checked  = false;
 			offsetXStepper.value         = 0;
 			offsetYStepper.value         = 0;
 			if (addAnimBtn != null) addAnimBtn.text = "Add Animation";
@@ -818,9 +811,6 @@ class AnimationDebug extends MusicBeatState
 			offsetY:   offsetYStepper.value
 		};
 
-		if (animSpecialCheckbox.checked)
-			newAnim.specialAnim = true;
-
 		if (editingAnimName != null)
 		{
 			// ── Modo EDIT: actualizar la animación cuyo nombre original es editingAnimName ──
@@ -907,7 +897,6 @@ class AnimationDebug extends MusicBeatState
 				animPrefixInput.text           = anim.prefix != null ? anim.prefix : "";
 				animFramerateStepper.value     = anim.framerate != 0 ? anim.framerate : 24;
 				animLoopedCheckbox.checked     = anim.looped;
-				animSpecialCheckbox.checked    = anim.specialAnim != null ? anim.specialAnim : false;
 				offsetXStepper.value           = anim.offsetX;
 				offsetYStepper.value           = anim.offsetY;
 
@@ -978,7 +967,7 @@ class AnimationDebug extends MusicBeatState
 			var sourceDir = haxe.io.Path.directory(sourcePath) + "/";
 			var baseName  = haxe.io.Path.withoutExtension(fileName);
 
-			var destDir = "assets/characters/images/";
+			var destDir = Paths.resolve("characters/images/");
 			if (!FileSystem.exists(destDir))
 				FileSystem.createDirectory(destDir);
 
@@ -1018,7 +1007,7 @@ class AnimationDebug extends MusicBeatState
 		try
 		{
 			var fileName = haxe.io.Path.withoutDirectory(sourcePath);
-			var destDir  = (fileType == "icon") ? "assets/icons/" : "assets/characters/images/";
+			var destDir  = (fileType == "icon") ? Paths.resolve("icons/") : Paths.resolve("characters/images/");
 			var newFileName = fileName;
 
 			if (!FileSystem.exists(destDir))

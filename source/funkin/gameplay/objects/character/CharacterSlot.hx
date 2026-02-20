@@ -55,24 +55,28 @@ class CharacterSlot
 	 */
 	public function sing(noteData:Int, ?altAnim:String = ""):Void
 	{
-		if (!isActive || !character.canSing)
+		if (!isActive || !character.canSing || character.isPlayingSpecialAnim())
 			return;
 		
 		var notesAnim:Array<String> = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
 		var animName:String = 'sing' + notesAnim[noteData] + altAnim;
 		
-		// Fallback si no existe la animación alterna
-		if (!character.animOffsets.exists(animName) && character.animation.getByName(animName) == null)
+		// Fallback si no existe la animación alterna.
+		// NOTA: Para FunkinSprite/FlxAnimate usamos animOffsets como fuente de verdad
+		// porque animation.getByName() solo conoce las anims del FlxSprite legacy,
+		// no las del sistema FlxAnimate interno.
+		if (!character.animOffsets.exists(animName))
 		{
 			animName = 'sing' + notesAnim[noteData];
 		}
 		
-		// No reiniciar si ya está en esta animación
-		if (character.animation.curAnim != null && character.animation.curAnim.name == animName)
-			return;
-		
 		character.playAnim(animName, true);
-		holdTimer = 0;
+
+		// CRÍTICO: Resetear el holdTimer DEL PERSONAJE, no el del slot.
+		// Character.update() acumula character.holdTimer para saber cuándo volver al idle.
+		// Si no lo reseteamos aquí, puede que ya haya superado el umbral y dance() se
+		// dispare en el siguiente frame, haciendo que parezca que el personaje no canta.
+		character.holdTimer = 0;
 		animFinished = false;
 	}
 	
@@ -87,87 +91,42 @@ class CharacterSlot
 		var notesAnim:Array<String> = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
 		var animName:String = 'sing' + notesAnim[noteData] + 'miss';
 		
-		// Solo reproducir si existe la animación
-		if (character.animOffsets.exists(animName) || character.animation.getByName(animName) != null)
+		// Solo reproducir si existe la animación (usando animOffsets como fuente de verdad)
+		if (character.animOffsets.exists(animName))
 		{
 			character.playAnim(animName, true);
-			holdTimer = 0;
+			character.holdTimer = 0;
 			animFinished = false;
 		}
 	}
 	
 	/**
-	 * Update del personaje
+	 * Update del personaje.
+	 *
+	 * IMPORTANTE: NO duplicar lógica de animación aquí.
+	 * Character extiende FlxSprite y Flixel llama Character.update() automáticamente
+	 * cada frame porque el personaje está add()-eado al FlxState.
+	 * Character.update() ya gestiona: holdTimer, sing→idle, special anim→idle, dance.
+	 * Ejecutar esa lógica una segunda vez desde aquí causaría el flickering
+	 * entre animaciones de canto e idle.
 	 */
 	public function update(elapsed:Float):Void
 	{
-		if (!isActive)
-			return;
-
-		if (character.animation.curAnim == null)
-			return;
-
-		var curAnim = character.animation.curAnim.name;
-
-		// Solo acumular holdTimer mientras está cantando, resetear si no
-		if (curAnim.startsWith('sing') && !curAnim.endsWith('miss'))
-		{
-			holdTimer += elapsed;
-
-			// BF maneja su propio idle desde Character.update() — no duplicar
-			if (!character.curCharacter.startsWith('bf') && holdTimer > 0.6 && character.canSing)
-			{
-				holdTimer = 0;
-				animFinished = true;
-				character.dance();
-			}
-		}
-		else
-		{
-			// No está cantando → resetear para que el próximo sing empiece limpio
-			holdTimer = 0;
-		}
+		// Reservado para lógica futura específica del slot (no de animación).
 	}
 	
 	/**
-	 * Dance en beat
+	 * Dance en beat.
+	 * Delega a character.dance(), que ya guarda internamente:
+	 *   - No interrumpe animaciones de canto (sing*)
+	 *   - No interrumpe animaciones especiales en curso (isPlayingSpecialAnim)
 	 */
 	public function dance():Void
 	{
 		if (!isActive || !character.canSing)
 			return;
 		
-		// Permitir dance si no está cantando o en animación especial
-		if (character.animation.curAnim != null)
-		{
-			var curAnimName = character.animation.curAnim.name;
-			// Bloqueamos solo si está cantando (sing) o en animación especial (hair, etc)
-			// Para personajes con danceLeft/danceRight (GF, Spooky), SIEMPRE permitir dance en beat
-			if (!curAnimName.startsWith('sing'))
-			{
-				// Si está en animación especial (hair), solo dance si terminó
-				if (curAnimName.startsWith('hair'))
-				{
-					if (character.animation.curAnim.finished)
-					{
-						character.dance();
-						holdTimer = 0;
-					}
-				}
-				else
-				{
-					// Para danceLeft/danceRight o idle, siempre permitir dance en beat
-					character.dance();
-					holdTimer = 0;
-				}
-			}
-		}
-		else
-		{
-			// No hay animación actual, forzar dance
-			character.dance();
-			holdTimer = 0;
-		}
+		character.dance();
 	}
 	
 	/**

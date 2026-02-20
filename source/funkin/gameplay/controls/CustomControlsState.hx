@@ -17,6 +17,7 @@ import flixel.util.FlxColor;
 import ui.FlxVirtualPad;
 import flixel.util.FlxSave;
 import flixel.math.FlxPoint;
+import funkin.transitions.StateTransition;
 import haxe.Json;
 import ui.Hitbox;
 #if lime
@@ -124,7 +125,7 @@ class CustomControlsState extends funkin.states.MusicBeatSubstate
 
 		var savebutton = new FlxUIButton((exitbutton.x + exitbutton.width + 25),25,"exit and save",() -> {
 			save();
-			FlxG.switchState(new funkin.menus.OptionsMenuState());
+			StateTransition.switchState(new funkin.menus.OptionsMenuState());
 		});
 		savebutton.resize(250,50);
 		savebutton.setLabelFormat("VCR OSD Mono",24,FlxColor.BLACK,"center");
@@ -178,7 +179,7 @@ class CustomControlsState extends funkin.states.MusicBeatSubstate
 		var androidback:Bool = false;
 		#end
 		if (exitbutton.justReleased || androidback){
-			FlxG.switchState(new funkin.menus.OptionsMenuState());
+			StateTransition.switchState(new funkin.menus.OptionsMenuState());
 		}
 		
 		for (touch in FlxG.touches.list){

@@ -109,7 +109,7 @@ class DialogueData {
      * Obtener ruta base de las skins
      */
     public static function getSkinsBasePath():String {
-        return 'assets/cutscenes/dialogue/';
+        return 'cutscenes/dialogue/';
     }
     
     /**

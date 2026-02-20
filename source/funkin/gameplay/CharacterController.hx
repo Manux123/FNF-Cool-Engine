@@ -13,17 +13,17 @@ using StringTools;
  */
 class CharacterController
 {
-	// === CHARACTERS (nuevo sistema) ===
+	// === CHARACTERS (new system) ===
 	public var characterSlots:Array<CharacterSlot> = [];
 	
-	// === LEGACY SUPPORT (para compatibilidad) ===
+	// === LEGACY SUPPORT (for compatibility) ===
 	public var boyfriend:Character;
 	public var dad:Character;
 	public var gf:Character;
 	
 	// === FLAGS ===
-	public var specialAnim:Bool = false;
-	
+	// (specialAnim flag removed — Character.isPlayingSpecialAnim() handles this intrinsically)
+
 	// === CONSTANTS ===
 	private static inline var SING_DURATION:Float = 0.6;
 	private static inline var IDLE_THRESHOLD:Float = 0.001;
@@ -145,7 +145,7 @@ class CharacterController
 			var curAnim = dad.animation.curAnim.name;
 			if (curAnim.startsWith('sing') && !curAnim.endsWith('miss'))
 			{
-				if (dad.holdTimer > SING_DURATION && dad.canSing && !specialAnim)
+				if (dad.holdTimer > SING_DURATION && dad.canSing)
 					dad.dance();
 			}
 		}
@@ -157,7 +157,7 @@ class CharacterController
 			if (curAnim.startsWith('sing') && !curAnim.endsWith('miss'))
 			{
 				var threshold = Conductor.stepCrochet * 4 * IDLE_THRESHOLD;
-				if (boyfriend.holdTimer > threshold && boyfriend.canSing && !specialAnim)
+				if (boyfriend.holdTimer > threshold && boyfriend.canSing)
 				{
 					boyfriend.playAnim('idle', true);
 					boyfriend.holdTimer = 0;
@@ -222,7 +222,7 @@ class CharacterController
 	 */
 	public function sing(char:Character, noteData:Int, ?altAnim:String = ""):Void
 	{
-		if (char == null || !char.canSing)
+		if (char == null || !char.canSing || char.isPlayingSpecialAnim())
 			return;
 		
 		// BF no usa animaciones alternas por defecto
@@ -242,7 +242,6 @@ class CharacterController
 		char.holdTimer = 0;
 
 		// Resetear también el holdTimer del slot correspondiente
-		// (si no se hace, CharacterSlot.update() llama dance() en el siguiente frame)
 		for (slot in characterSlots)
 			if (slot != null && slot.character == char)
 			{ slot.holdTimer = 0; break; }
@@ -261,27 +260,15 @@ class CharacterController
 				// GF dance cada gfSpeed beats
 				if (slot.index == 0 && curBeat % gfSpeed == 0)
 					slot.dance();
-				// Boyfriend (índice 2) requiere verificación especial para no interrumpir misses
-				else if (slot.index == 2)
-				{
-					// Solo hacer dance si NO está en ninguna animación de sing (incluye miss, que empieza con "sing")
-					if (slot.character != null && slot.character.animation != null && slot.character.animation.curAnim != null)
-					{
-						var curAnimName = slot.character.animation.curAnim.name;
-						if (!curAnimName.startsWith("sing") && slot.character.canSing && !specialAnim)
-							slot.dance();
-					}
-				}
 				// Dad y otros personajes dance normalmente cada beat
+				// (slot.dance() ya guarda la guardia: no interrumpe si está cantando
+				//  y character.dance() no interrumpe si hay una special anim en curso)
 				else if (slot.index != 0)
-				{
 					slot.dance();
-				}
 			}
 		}
 		
-		// Legacy dance - SOLO si no hay slots (para compatibilidad con código antiguo)
-		// Si hay slots, ya se manejó arriba, no duplicar las llamadas
+		// Legacy dance - SOLO si no hay slots
 		if (characterSlots.length == 0)
 		{
 			if (gf != null && curBeat % gfSpeed == 0)
@@ -289,13 +276,13 @@ class CharacterController
 			
 			if (boyfriend != null && boyfriend.animation != null && boyfriend.animation.curAnim != null)
 			{
-				if (!boyfriend.animation.curAnim.name.startsWith("sing") && boyfriend.canSing && !specialAnim)
+				if (!boyfriend.animation.curAnim.name.startsWith("sing") && boyfriend.canSing)
 					boyfriend.dance();
 			}
 			
 			if (dad != null && dad.animation != null && dad.animation.curAnim != null)
 			{
-				if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing && !specialAnim)
+				if (!dad.animation.curAnim.name.startsWith("sing") && dad.canSing)
 					dad.dance();
 			}
 		}
@@ -303,6 +290,7 @@ class CharacterController
 	
 	/**
 	 * Special animations (hey, cheer, etc.)
+	 * No flag needed — Character.isPlayingSpecialAnim() detects this intrinsically.
 	 */
 	public function playSpecialAnim(char:Character, animName:String):Void
 	{
@@ -310,7 +298,7 @@ class CharacterController
 			return;
 		
 		char.playAnim(animName, true);
-		specialAnim = true;
+		char.holdTimer = 0;
 	}
 	
 	/**
@@ -325,7 +313,7 @@ class CharacterController
 		if (slot != null && slot.character != null)
 		{
 			slot.character.playAnim(animName, true);
-			specialAnim = true;
+			slot.character.holdTimer = 0;
 		}
 	}
 	
@@ -338,13 +326,18 @@ class CharacterController
 	}
 	
 	/**
-	 * Reset special anim flag
+	 * Verificar si BF está en idle
+	/**
+	 * Verificar si BF está en idle
 	 */
-	public function resetSpecialAnim():Void
+	public function isBFIdle():Bool
 	{
-		specialAnim = false;
+		if (boyfriend == null || boyfriend.animation == null || boyfriend.animation.curAnim == null)
+			return true;
+		
+		return !boyfriend.animation.curAnim.name.startsWith("sing");
 	}
-	
+
 	/**
 	 * NUEVO: Obtener personaje por índice
 	 */
@@ -382,17 +375,6 @@ class CharacterController
 	}
 	
 	/**
-	 * Verificar si BF está en idle
-	 */
-	public function isBFIdle():Bool
-	{
-		if (boyfriend == null || boyfriend.animation == null || boyfriend.animation.curAnim == null)
-			return true;
-		
-		return !boyfriend.animation.curAnim.name.startsWith("sing");
-	}
-	
-	/**
 	 * Forzar idle a todos
 	 */
 	public function forceIdleAll():Void
@@ -410,8 +392,6 @@ class CharacterController
 			dad.dance();
 		if (gf != null)
 			gf.dance();
-		
-		specialAnim = false;
 	}
 	
 	/**

@@ -3,6 +3,7 @@ package;
 import flixel.FlxG;
 import flixel.FlxGame;
 import flixel.FlxState;
+import flixel.FlxSprite;
 import openfl.Assets;
 import openfl.Lib;
 import openfl.display.Sprite;
@@ -23,6 +24,8 @@ import funkin.debug.DebugConsole;
 #end
 
 import funkin.transitions.StickerTransition;
+
+import openfl.system.System;
 
 #if desktop
 import data.Discord.DiscordClient;
@@ -46,7 +49,7 @@ using StringTools;
  * Handles game initialization, configuration, and core setup
  * 
  * @author Cool Engine Team
- * @version 0.4.0B
+ * @version 0.4.1B
  */
 class Main extends Sprite
 {
@@ -127,8 +130,14 @@ class Main extends Sprite
 	private function setupStage():Void
 	{
 		stage.scaleMode = StageScaleMode.NO_SCALE;
-		stage.align = StageAlign.TOP_LEFT;
-		stage.quality = openfl.display.StageQuality.LOW; // Better performance
+		stage.align     = StageAlign.TOP_LEFT;
+		stage.quality   = openfl.display.StageQuality.LOW; // mejor rendimiento
+
+		// ── Configuración del GC (Haxe C++) ──────────────────────────────────
+		// Reducir la presión del GC durante el gameplay.
+		#if cpp
+		cpp.vm.Gc.setMinimumFreeSpace(4 * 1024 * 1024); // 4 MB antes de GC mayor
+		#end
 	}
 	
 	/**
@@ -171,6 +180,19 @@ class Main extends Sprite
 		
 		// Disable default FlxG sound tray (using custom SoundTray)
 		disableDefaultSoundTray();
+
+		mods.ModManager.init();
+		
+		// ── Callback de cambio de mod: limpiar caches ─────────────────────────
+		// Cuando el usuario activa otro mod, liberamos los assets del anterior
+		// para que no ocupen memoria innecesariamente.
+		mods.ModManager.onModChanged = function(newMod:Null<String>)
+		{
+			Paths.forceClearCache();
+			#if cpp cpp.vm.Gc.run(true); #end
+			#if hl  hl.Gc.major();       #end
+			trace('[Main] Cache limpiado por cambio de mod → ${newMod ?? "base"}');
+		};
 		
 		// Initialize Discord Rich Presence
 		#if desktop
@@ -274,6 +296,17 @@ class Main extends Sprite
 			skipSplash, 
 			startFullscreen
 		));
+
+		// ── Draw frame rate separado del update ────────────────────────────────
+		// Permite actualizar lógica a 120hz pero renderizar a 60hz si el hardware
+		// no puede sostener 120 FPS — evita stuttering en máquinas lentas.
+		// Se ajusta automáticamente en initializeFramerate().
+		FlxG.drawFramerate = framerate;
+		FlxG.updateFramerate = framerate;
+
+		// ── Desactivar el antialiasing global por defecto ──────────────────────
+		// Cada sprite puede activarlo individualmente. A nivel global consume GPU.
+		FlxSprite.defaultAntialiasing = false;
 	}
 	
 	/**

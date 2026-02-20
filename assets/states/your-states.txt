@@ -144,7 +144,7 @@ function onMenuItemSelected(itemName, itemIndex) {
 
 function openModsMenu() {
     trace("Opening mods menu...");
-    // FlxG.switchState(new ModsMenuState());
+    // StateTransition.switchState(new ModsMenuState());
 }
 
 function openCredits() {

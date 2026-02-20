@@ -102,52 +102,60 @@ class Song
 		this.bpm = bpm;
 	}
 
+	/**
+	 * Carga un chart desde JSON.
+	 *
+	 * Orden de búsqueda:
+	 *   1. mods/{activeMod}/songs/{folder}/{jsonInput}.json
+	 *   2. assets/songs/{folder}/{jsonInput}.json
+	 */
 	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong
 	{
-		var rawJson = null;
-		var loadingJSON:Bool = true;
+		final songFolder = folder != null ? folder.toLowerCase() : '';
+		final diffName   = jsonInput.toLowerCase();
+		final relPath    = 'songs/$songFolder/$diffName.json';
 
-		var jsonPath = folder.toLowerCase() + '/' + jsonInput.toLowerCase();
-		
-		trace('[Song] loadFromJson called with: folder=$folder, jsonInput=$jsonInput');
-		trace('[Song] Constructed jsonPath: $jsonPath');
-		
-		// Check if file exists using appropriate method for platform
-		var fileExists:Bool = false;
-		
+		trace('[Song] loadFromJson: folder=$folder, diff=$jsonInput');
+
+		var rawJson:String = null;
+
 		#if sys
-		// Desktop: use FileSystem
-		var fullPath = 'assets/songs/$jsonPath.json';
-		fileExists = FileSystem.exists(fullPath);
-		trace('[Song] Checking FileSystem.exists($fullPath) = $fileExists');
-		
-		if (fileExists)
+		// 1. Mod activo
+		final modPath = mods.ModManager.resolveInMod(relPath);
+		if (modPath != null && FileSystem.exists(modPath))
 		{
-			rawJson = File.getContent(fullPath).trim();
-			trace('[Song] Loaded file with FileSystem');
+			rawJson = File.getContent(modPath).trim();
+			trace('[Song] Cargado desde mod: $modPath');
+		}
+
+		// 2. Assets base
+		if (rawJson == null)
+		{
+			final assetPath = 'assets/$relPath';
+			if (FileSystem.exists(assetPath))
+			{
+				rawJson = File.getContent(assetPath).trim();
+				trace('[Song] Cargado desde assets: $assetPath');
+			}
 		}
 		#else
-		// Web/Mobile: use Assets
-		fileExists = Assets.exists(Paths.jsonSong(jsonPath));
-		trace('[Song] Checking Assets.exists(${Paths.jsonSong(jsonPath)}) = $fileExists');
-		
-		if (fileExists)
+		final assetPath = Paths.jsonSong('$songFolder/$diffName');
+		if (Assets.exists(assetPath))
 		{
-			rawJson = Assets.getText(Paths.jsonSong(jsonPath)).trim();
-			trace('[Song] Loaded file with Assets');
+			rawJson = Assets.getText(assetPath).trim();
+			trace('[Song] Cargado desde Assets: $assetPath');
 		}
 		#end
-		
-		if (!fileExists)
+
+		if (rawJson == null)
 		{
-			trace('[Song] ERROR: Chart file not found at: $jsonPath');
-			throw 'Chart file not found: $jsonPath.json';
+			trace('[Song] ERROR: Chart no encontrado: $relPath');
+			throw 'Chart no encontrado: $relPath';
 		}
 
-		while (!rawJson.endsWith("}")){
-			// LOL GOING THROUGH THE BULLSHIT TO CLEAN IDK WHATS STRANGE
+		// Limpiar JSON malformado (trailing garbage)
+		while (rawJson.length > 0 && rawJson.charAt(rawJson.length - 1) != '}')
 			rawJson = rawJson.substr(0, rawJson.length - 1);
-		}
 
 		return parseJSONshit(rawJson);
 	}

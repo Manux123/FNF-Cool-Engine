@@ -12,6 +12,7 @@ import flixel.math.FlxRect;
 import flixel.tweens.FlxTween;
 import flixel.tweens.FlxEase;
 import funkin.gameplay.PlayState;
+import funkin.transitions.StateTransition;
 
 import openfl.utils.Assets;
 import lime.utils.Assets as LimeAssets;
@@ -427,7 +428,7 @@ class LoadingState extends funkin.states.MusicBeatState
 			barFill.clipRect = new FlxRect(0, 0, barFullWidth, barFill.clipRect.height);
 		barFill.color = COLOR_END;
 
-		new FlxTimer().start(0.15, function(_) FlxG.switchState(target));
+		new FlxTimer().start(0.15, function(_) StateTransition.switchState(target));
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -439,12 +440,11 @@ class LoadingState extends funkin.states.MusicBeatState
 
 	inline static public function loadAndSwitchState(target:FlxState, stopMusic = false)
 	{
-		FlxG.switchState(getNextState(target, stopMusic));
+		StateTransition.switchState(getNextState(target, stopMusic));
 	}
 
 	static function getNextState(target:FlxState, stopMusic = false):FlxState
 	{
-		Paths.setCurrentLevel("week" + PlayState.storyWeek);
 		#if NO_PRELOAD_ALL
 		var loaded = isSoundLoaded(getSongPath())
 			&& (!PlayState.SONG.needsVoices || isSoundLoaded(getVocalPath()))
@@ -526,7 +526,7 @@ class LoadingState extends funkin.states.MusicBeatState
 			// @:privateAccess porque no reemplazamos la referencia.
 			var songsDir = (rootPath != null && rootPath != "")
 				? (StringTools.endsWith(rootPath, "/") ? rootPath : rootPath + "/")
-				: "assets/songs/";
+				: Paths.resolve("songs/");
 
 			// Índice de IDs ya conocidos para evitar duplicados
 			var knownIds = new Map<String, Bool>();

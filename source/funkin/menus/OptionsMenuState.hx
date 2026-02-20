@@ -9,6 +9,7 @@ import funkin.gameplay.notes.NoteSkinOptions;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.FlxG;
+import funkin.transitions.StateTransition;
 import flixel.FlxSprite;
 import flixel.FlxSubState;
 import flixel.text.FlxText;
@@ -463,7 +464,7 @@ class OptionsMenuState extends MusicBeatSubstate
 				name: "Note Skin Settings",
 				get: function() return "PRESS ENTER",
 				toggle: function() { 
-					FlxG.switchState(new NoteSkinOptions());
+					StateTransition.switchState(new NoteSkinOptions());
 				}
 			}
 		];
@@ -689,7 +690,7 @@ class OptionsMenuState extends MusicBeatSubstate
 			}
 			else
 			{
-				FlxG.switchState(new MainMenuState());
+				StateTransition.switchState(new MainMenuState());
 			}
 		}
 

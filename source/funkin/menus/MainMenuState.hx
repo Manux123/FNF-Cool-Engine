@@ -7,6 +7,7 @@ import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
 import flixel.addons.transition.FlxTransitionableState;
+import funkin.transitions.StateTransition;
 import flixel.effects.FlxFlicker;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.group.FlxGroup.FlxTypedGroup;
@@ -123,6 +124,12 @@ class MainMenuState extends funkin.states.MusicBeatState
 			menuItem.updateHitbox();
 		}
 
+		var modShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Shift+Alt Menu Mods", 12);
+		modShit.scrollFactor.set();
+		modShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		modShit.y -= 40;
+		add(modShit);
+
 		var versionShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Friday Night Funkin v0.2.7.1", 12);
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -165,10 +172,13 @@ class MainMenuState extends funkin.states.MusicBeatState
 		#end
 
 		if (FlxG.keys.justPressed.ONE)
-			FlxG.switchState(new AnimationDebug('bf'));
+			StateTransition.switchState(new AnimationDebug('bf'));
 		/*
 			if (FlxG.keys.justPressed.TWO)
-				FlxG.switchState(new StageEditor()); */
+				StateTransition.switchState(new StageEditor()); */
+
+		if (FlxG.keys.justPressed.SHIFT && FlxG.keys.justPressed.ALT)
+			StateTransition.switchState(new ModSelectorState());
 
 		if (!selectedSomethin)
 		{
@@ -186,7 +196,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 
 			if (controls.BACK)
 			{
-				FlxG.switchState(new TitleState());
+				StateTransition.switchState(new TitleState());
 			}
 
 			if (controls.ACCEPT)
@@ -255,9 +265,9 @@ class MainMenuState extends funkin.states.MusicBeatState
 										switch (daChoice)
 										{
 											case 'story-mode':
-												FlxG.switchState(new StoryMenuState());
+												StateTransition.switchState(new StoryMenuState());
 											case 'freeplay':
-												FlxG.switchState(new FreeplayState());
+												StateTransition.switchState(new FreeplayState());
 											case 'options':
 												FlxG.switchState(new OptionsMenuState());
 										}

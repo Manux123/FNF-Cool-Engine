@@ -44,7 +44,6 @@ typedef AnimData =
 	 * FlxAnimate       : nombre exacto del símbolo (campo SN en Animation.json).
 	 */
 	var prefix:String;
-	@:optional var specialAnim:Bool;
 	@:optional var indices:Array<Int>;
 }
 
@@ -68,7 +67,6 @@ class Character extends FunkinSprite
 	public var canSing:Bool     = true;
 	public var stunned:Bool     = false;
 	public var isPlayer:Bool    = false;
-	public var specialAnim:Bool = false;
 	public var curCharacter:String = 'bf';
 	public var holdTimer:Float  = 0;
 
@@ -206,9 +204,6 @@ class Character extends FunkinSprite
 	 */
 	override public function playAnim(AnimName:String, Force:Bool = false, Reversed:Bool = false, Frame:Int = 0):Void
 	{
-		if (!canSing && specialAnim)
-			return;
-
 		// FunkinSprite maneja atlas y sparrow de forma transparente
 		super.playAnim(AnimName, Force, Reversed, Frame);
 
@@ -233,6 +228,27 @@ class Character extends FunkinSprite
 	public function hasCurAnim():Bool
 		return animName != "";
 
+	/**
+	 * Returns true if a non-standard animation (not sing/idle/dance/miss/death)
+	 * is currently playing and has NOT finished yet.
+	 * Used to block sing and dance calls from interrupting special animations
+	 * like "hey", "cheer", "scared", etc.
+	 */
+	public function isPlayingSpecialAnim():Bool
+	{
+		var name = getCurAnimName();
+		if (name == '' || isCurAnimFinished())
+			return false;
+		if (name.startsWith(_singAnimPrefix)) return false;
+		if (name == _idleAnim)               return false;
+		if (name.startsWith('dance'))        return false;
+		if (name.endsWith('miss'))           return false;
+		if (name == 'firstDeath')            return false;
+		if (name == 'deathLoop')             return false;
+		// Anything else (hey, cheer, scared, hairFall, sad…) is special
+		return true;
+	}
+
 	// ── Update ────────────────────────────────────────────────────────────────
 
 	override function update(elapsed:Float)
@@ -255,15 +271,18 @@ class Character extends FunkinSprite
 				var dadVar:Float = (curCharacter == 'dad') ? 6.1 : 4.0;
 				if (holdTimer >= Conductor.stepCrochet * dadVar * 0.001)
 				{
-					dance();
 					holdTimer = 0;
+					// No llamamos dance() aqui porque su guard bloquea la transicion mientras
+					// la animacion actual sigue siendo sing*. Forzamos la transicion directo.
+					returnToIdle();
 				}
 			}
 			else
 			{
 				holdTimer = 0;
-				var hasDanceAnims = animOffsets.exists('danceLeft') && animOffsets.exists('danceRight');
-				if (!hasDanceAnims && curAnimDone)
+				// Return to idle/dance after any non-sing animation finishes
+				// (covers special anims like cheer, sad, hairFall, etc.)
+				if (curAnimDone)
 					dance();
 			}
 		}
@@ -281,39 +300,43 @@ class Character extends FunkinSprite
 			else
 			{
 				holdTimer = 0;
-				if (curAnimName == _idleAnim && curAnimDone)
-					playAnim(_idleAnim, true);
+				// Return to idle after any non-sing animation finishes.
+				// This covers: idle loop, hey, miss, scared, and any custom special anim.
+				if (curAnimDone)
+				{
+					if (curAnimName == 'firstDeath')
+						playAnim('deathLoop');
+					else
+						playAnim(_idleAnim, true);
+				}
 			}
-
-			if (curAnimName.endsWith('miss') && curAnimDone)
-				playAnim(_idleAnim, true, false, 10);
-
-			if (curAnimName == 'firstDeath' && curAnimDone)
-				playAnim('deathLoop');
-		}
-
-		handleSpecialAnimations();
-	}
-
-	// ── Draw ──────────────────────────────────────────────────────────────────
-
-	// ── Animaciones especiales ────────────────────────────────────────────────
-
-	function handleSpecialAnimations():Void
-	{
-		switch (curCharacter)
-		{
-			case 'gf' | 'gf-christmas' | 'gf-pixel' | 'gf-car':
-				if (hasCurAnim() && getCurAnimName() == 'hairFall' && isCurAnimFinished())
-					playAnim('danceRight');
 		}
 	}
 
 	// ── Dance ─────────────────────────────────────────────────────────────────
 
+	/**
+	 * Vuelve al idle/dance forzadamente, sin pasar por los guards de dance().
+	 * Usado cuando update() decide que es hora de salir del sing (holdTimer expirado)
+	 * pero dance() lo bloquea porque getCurAnimName() todavia es sing*.
+	 */
+	function returnToIdle():Void
+	{
+		var hasDanceAnims = animOffsets.exists('danceLeft') && animOffsets.exists('danceRight');
+		if (hasDanceAnims)
+		{
+			danced = !danced;
+			playAnim(danced ? 'danceRight' : 'danceLeft');
+		}
+		else
+		{
+			playAnim(_idleAnim);
+		}
+	}
+
 	public function dance():Void
 	{
-		if (!debugMode && !specialAnim)
+		if (!debugMode && !isPlayingSpecialAnim())
 		{
 			var hasDanceAnims = animOffsets.exists('danceLeft') && animOffsets.exists('danceRight');
 
@@ -347,7 +370,8 @@ class Character extends FunkinSprite
 					}
 					else
 					{
-						playAnim(_idleAnim);
+						if (!hasCurAnim() || !getCurAnimName().startsWith(_singAnimPrefix))
+							playAnim(_idleAnim);
 					}
 			}
 		}

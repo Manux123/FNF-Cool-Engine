@@ -9,6 +9,7 @@ import lime.app.Application;
 import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
 import flixel.addons.transition.FlxTransitionableState;
+import funkin.transitions.StateTransition;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
 import flixel.tweens.FlxEase;
@@ -404,13 +405,13 @@ class FreeplayState extends funkin.states.MusicBeatState
 		if (controls.BACK)
 		{
 			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
-			FlxG.switchState(new MainMenuState());
+			StateTransition.switchState(new MainMenuState());
 		}
 
 		// Abrir el editor con la tecla E
 		if (FlxG.keys.justPressed.E)
 		{
-			FlxG.switchState(new FreeplayEditorState());
+			StateTransition.switchState(new FreeplayEditorState());
 		}
 
 		#if cpp

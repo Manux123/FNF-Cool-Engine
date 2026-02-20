@@ -60,7 +60,7 @@ class CharacterList
      */
     private static function discoverCharacters():Void
     {
-        var charactersPath:String = "assets/characters";
+        var charactersPath:String = Paths.resolve("characters");
         
         #if sys
         // En desktop, leer directamente del filesystem
@@ -134,7 +134,7 @@ class CharacterList
      */
     private static function discoverStages():Void
     {
-        var stagesPath:String = "assets/stages";
+        var stagesPath:String = Paths.resolve("stages");
         
         #if sys
         // En desktop, leer directamente del filesystem

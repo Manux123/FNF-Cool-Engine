@@ -5,7 +5,7 @@ import flixel.FlxCamera;
 import flixel.group.FlxGroup;
 import funkin.data.MetaData;
 import funkin.scripting.ScriptHandler;
-import funkin.scripting.ScriptHandler.ScriptInstance;
+import funkin.scripting.HScriptInstance;
 import funkin.gameplay.GameState;
 import sys.FileSystem;
 
@@ -65,7 +65,7 @@ import sys.FileSystem;
 class UIScriptedManager extends FlxGroup
 {
 	// ─── Script ─────────────────────────────────────────────────────────────
-	private var uiScript:ScriptInstance;
+	private var uiScript:HScriptInstance;
 
 	// ─── Referencias ────────────────────────────────────────────────────────
 	private var camHUD:FlxCamera;
@@ -89,7 +89,7 @@ class UIScriptedManager extends FlxGroup
 
 	private function loadUIScript(name:String):Void
 	{
-		var path = 'assets/ui/${name}/script.hx';
+		var path = 'assets/data/ui/${name}/script.hx';
 
 		if (!FileSystem.exists(path))
 		{
@@ -100,7 +100,7 @@ class UIScriptedManager extends FlxGroup
 			}
 			else
 			{
-				trace('[UIScriptedManager] ERROR: assets/ui/default/script.hx no existe. HUD vacío.');
+				trace('[UIScriptedManager] ERROR: assets/data/ui/default/script.hx no existe. HUD vacío.');
 			}
 			return;
 		}

@@ -8,6 +8,7 @@ import flixel.text.FlxText;
 import flixel.ui.FlxButton;
 import flixel.util.FlxColor;
 import funkin.cutscenes.dialogue.DialogueData;
+import funkin.transitions.StateTransition;
 import funkin.cutscenes.dialogue.DialogueData.*;
 import funkin.cutscenes.dialogue.DialogueBoxImproved;
 import flixel.group.FlxSpriteGroup;
@@ -1768,10 +1769,7 @@ class DialogueEditor extends FlxState
 		// Atajos de teclado
 		if (FlxG.keys.justPressed.ESCAPE)
 		{
-			if (PlayState.SONG.song == null)
-				PlayState.SONG.song = song;
-			FlxG.switchState(new funkin.gameplay.PlayState());
-			PlayState.instance.paused = false;
+			StateTransition.switchState(new funkin.menus.FreeplayState());
 			FlxG.mouse.visible = false;
 		}
 

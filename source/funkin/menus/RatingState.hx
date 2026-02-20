@@ -12,10 +12,12 @@ import flixel.FlxSubState;
 import flixel.util.FlxTimer;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.effects.particles.FlxEmitter;
+import funkin.transitions.StateTransition;
 import flixel.group.FlxSpriteGroup;
 import flixel.effects.particles.FlxParticle;
 import funkin.scripting.StateScriptHandler;
 import funkin.transitions.StickerTransition;
+import funkin.states.LoadingState;
 import flixel.math.FlxMath;
 import flixel.util.FlxGradient;
 
@@ -153,7 +155,7 @@ class RatingState extends FlxSubState
 		if (currentRank == 'S' || currentRank == 'SS')
 		{
 			confetti = new FlxEmitter(FlxG.width / 2, -50, 150);
-			confetti.makeParticles(6, 6,FlxColor.WHITE, 150);
+			confetti.makeParticles(6, 6, FlxColor.WHITE, 150);
 
 			var colors:Array<FlxColor> = [
 				FlxColor.fromRGB(255, 215, 0),
@@ -162,7 +164,8 @@ class RatingState extends FlxSubState
 				FlxColor.fromRGB(100, 255, 100)
 			];
 
-			confetti.forEachAlive(function(p) {
+			confetti.forEachAlive(function(p)
+			{
 				p.color = colors[FlxG.random.int(0, colors.length - 1)];
 			});
 			confetti.launchMode = FlxEmitterMode.SQUARE;
@@ -182,7 +185,7 @@ class RatingState extends FlxSubState
 		bf.frames = bfTex;
 		bf.animation.addByPrefix('idle', 'BF idle dance', 24, false);
 		bf.animation.addByPrefix('hey', 'BF HEY!!', 24, false);
-		bf.animation.play('idle',true);
+		bf.animation.play('idle', true);
 		bf.antialiasing = true;
 		bf.scale.set(1.2, 1.2);
 		add(bf);
@@ -607,22 +610,30 @@ class RatingState extends FlxSubState
 		{
 			FlxG.sound.music.stop();
 
-			if (retry)
+			if (retry && PlayState.SONG.song != null)
 			{
-				// Reintentar la canción
-				FlxG.switchState(new PlayState());
+				FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.6);
+				PlayState.startFromTime = null; // ✨ Empezar desde el inicio
+
+				// Pequeño delay para que el usuario vea el mensaje
+				new FlxTimer().start(0.3, function(tmr:FlxTimer)
+				{
+					FlxG.mouse.visible = false;
+					LoadingState.loadAndSwitchState(new PlayState());
+				});
 			}
 			else
 			{
 				// Volver al menú correspondiente
 				if (PlayState.isStoryMode)
 				{
-					FlxG.switchState(new funkin.menus.StoryMenuState());
+					StateTransition.switchState(new funkin.menus.StoryMenuState());
 				}
 				else
 				{
-					StickerTransition.start(function() {
-						FlxG.switchState(new funkin.menus.FreeplayState());
+					StickerTransition.start(function()
+					{
+						StateTransition.switchState(new funkin.menus.FreeplayState());
 					});
 				}
 			}

@@ -29,6 +29,7 @@ import funkin.states.OutdatedSubState;
 import data.PlayerSettings;
 import ui.Alphabet;
 import funkin.scripting.StateScriptHandler;
+import funkin.transitions.StateTransition;
 
 using StringTools;
 
@@ -72,11 +73,11 @@ class TitleState extends funkin.states.MusicBeatState
 		}
 
 		#if FREEPLAY
-		FlxG.switchState(new FreeplayState());
+		StateTransition.switchState(new FreeplayState());
 		#elseif CHARTING
-		FlxG.switchState(new ChartingState());
+		StateTransition.switchState(new ChartingState());
 		#elseif MAINMENU
-		FlxG.switchState(new MainMenuState());
+		StateTransition.switchState(new MainMenuState());
 		#else
 		startIntro();
 		#end
@@ -245,19 +246,19 @@ class TitleState extends funkin.states.MusicBeatState
 						trace('Poor guy, he is outdated');
 						OutdatedSubState.daVersionNeeded = returnedData[0];
 						OutdatedSubState.daChangelogNeeded = returnedData[1];
-						FlxG.switchState(new OutdatedSubState());
+						StateTransition.switchState(new OutdatedSubState());
 					}
 					else
 					{
-						// FlxG.switchState(new states.VideoState('test/sus',new states.PlayState()));
-						FlxG.switchState(new MainMenuState());
+						// StateTransition.switchState(new states.VideoState('test/sus',new states.PlayState()));
+						StateTransition.switchState(new MainMenuState());
 					}
 				}
 
 				http.onError = function(error)
 				{
 					trace('error: $error');
-					FlxG.switchState(new MainMenuState()); // fail but we go anyway
+					StateTransition.switchState(new MainMenuState()); // fail but we go anyway
 				}
 
 				http.request();

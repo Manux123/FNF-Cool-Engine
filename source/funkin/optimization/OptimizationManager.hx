@@ -3,320 +3,228 @@ package funkin.optimization;
 import flixel.FlxG;
 import flixel.FlxCamera;
 import funkin.gameplay.notes.NotePool;
-import funkin.optimization.GPURenderer;
 import funkin.gameplay.notes.Note;
 
+/**
+ * OptimizationManager — coordina NotePool, GPURenderer y calidad adaptativa.
+ *
+ * ─── Optimizaciones ──────────────────────────────────────────────────────────
+ * • FPS medido con un acumulador de elapsed en vez de `1.0/FlxG.elapsed`
+ *   (más estable y sin división flotante por frame).
+ * • `haxe.Timer.stamp()` solo se llama cuando `trackTiming` está activo.
+ * • Wrappers `spawnNote/recycleNote` eliminados — callers acceden a NotePool directamente.
+ * • Adaptive quality usa histéresis real (no resetea contadores al estabilizarse).
+ */
 class OptimizationManager
 {
-    // === SYSTEMS ===
-    public var gpuRenderer:GPURenderer;
-    private var initialized:Bool = false;
-    
-    // === QUALITY SETTINGS ===
-    public var qualityLevel:QualityLevel = QualityLevel.HIGH;
-    
-    // === ADAPTIVE QUALITY ===
-    public var enableAdaptiveQuality:Bool = true;
-    private var targetFPS:Int = 60;
-    private var lowFPSFrames:Int = 0;
-    private var highFPSFrames:Int = 0;
-    private static inline var FPS_CHECK_THRESHOLD:Int = 120; // Frames antes de ajustar
-    
-    // === STATS ===
-    private var totalNotesSpawned:Int = 0;
-    private var totalNotesPooled:Int = 0;
-    
-    // === PERFORMANCE TRACKING ===
-    private var updateTime:Float = 0;
-    private var renderTime:Float = 0;
-    private var frameTime:Float = 0;
-    
-    public function new()
-    {
-        trace('[OptimizationManager] Creado');
-    }
-    
-    /**
-     * Inicializar todos los sistemas
-     */
-    public function init(?camera:FlxCamera):Void
-    {
-        if (initialized) return;
-        
-        trace('[OptimizationManager] Iniciating systems...');
-        
-        // Inicializar NotePool
-        NotePool.init();
-        
-        // Crear GPU Renderer con la cámara correcta
-        // ⚠️ IMPORTANTE: Usar la cámara del PlayState, NO FlxG.camera
-        gpuRenderer = new GPURenderer(camera != null ? camera : FlxG.camera);
-        
-        // Aplicar calidad inicial
-        applyQualitySettings();
-        
-        initialized = true;
-        
-        trace('[OptimizationManager] Systems inicialized');
-        trace('[OptimizationManager] Quality: $qualityLevel');
-        trace('[OptimizationManager] Adaptive Quality: $enableAdaptiveQuality');
-    }
-    
-    /**
-     * Update - Monitoreo adaptativo de FPS
-     */
-    public function update(elapsed:Float):Void
-    {
-        if (!initialized) return;
-        
-        var startTime = haxe.Timer.stamp();
-        
-        // Adaptive Quality basado en FPS
-        if (enableAdaptiveQuality)
-        {
-            checkAndAdaptQuality();
-        }
-        
-        updateTime = haxe.Timer.stamp() - startTime;
-    }
-    
-    /**
-     * Renderizar con GPU Renderer
-     */
-    public function render():Void
-    {
-        if (!initialized || gpuRenderer == null) return;
-        
-        var startTime = haxe.Timer.stamp();
-        
-        gpuRenderer.render();
-        
-        renderTime = haxe.Timer.stamp() - startTime;
-        frameTime = updateTime + renderTime;
-    }
-    
-    /**
-     * Spawnear nota con pooling automático
-     */
-    public function spawnNote(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?mustHitNote:Bool = false):Note
-    {
-        totalNotesSpawned++;
-        
-        // Usar pooling
-        var note = NotePool.get(strumTime, noteData, prevNote, sustainNote, mustHitNote);
-        totalNotesPooled++;
-        
-        return note;
-    }
-    
-    /**
-     * Reciclar nota al pool
-     */
-    public function recycleNote(note:Note):Void
-    {
-        if (note == null) return;
-        NotePool.put(note);
-    }
-    
-    /**
-     * Agregar sprite al GPU renderer
-     */
-    public function addSpriteToRenderer(sprite:flixel.FlxSprite):Void
-    {
-        if (gpuRenderer != null && gpuRenderer.enabled)
-        {
-            gpuRenderer.addSprite(sprite);
-        }
-    }
-    
-    /**
-     * Verificar FPS y adaptar calidad automáticamente
-     */
-    private function checkAndAdaptQuality():Void
-    {
-        var currentFPS = Std.int(1.0 / FlxG.elapsed);
-        
-        if (currentFPS < targetFPS - 10) // FPS bajo
-        {
-            lowFPSFrames++;
-            highFPSFrames = 0;
-            
-            // Si sostenidamente bajo, reducir calidad
-            if (lowFPSFrames > FPS_CHECK_THRESHOLD)
-            {
-                lowerQuality();
-                lowFPSFrames = 0;
-            }
-        }
-        else if (currentFPS > targetFPS + 10) // FPS alto
-        {
-            highFPSFrames++;
-            lowFPSFrames = 0;
-            
-            // Si sostenidamente alto, aumentar calidad
-            if (highFPSFrames > FPS_CHECK_THRESHOLD * 2) // Más conservador
-            {
-                raiseQuality();
-                highFPSFrames = 0;
-            }
-        }
-        else
-        {
-            // FPS estable, resetear contadores
-            lowFPSFrames = 0;
-            highFPSFrames = 0;
-        }
-    }
-    
-    /**
-     * Reducir calidad
-     */
-    private function lowerQuality():Void
-    {
-        switch (qualityLevel)
-        {
-            case QualityLevel.ULTRA:
-                setQuality(QualityLevel.HIGH);
-            case QualityLevel.HIGH:
-                setQuality(QualityLevel.MEDIUM);
-            case QualityLevel.MEDIUM:
-                setQuality(QualityLevel.LOW);
-            case QualityLevel.LOW:
-                trace('[OptimizationManager] Now in quality minimun');
-        }
-    }
-    
-    /**
-     * Aumentar calidad
-     */
-    private function raiseQuality():Void
-    {
-        switch (qualityLevel)
-        {
-            case QualityLevel.LOW:
-                setQuality(QualityLevel.MEDIUM);
-            case QualityLevel.MEDIUM:
-                setQuality(QualityLevel.HIGH);
-            case QualityLevel.HIGH:
-                setQuality(QualityLevel.ULTRA);
-            case QualityLevel.ULTRA:
-                trace('[OptimizationManager] Now in quality max');
-        }
-    }
-    
-    /**
-     * Establecer nivel de calidad
-     */
-    public function setQuality(level:QualityLevel):Void
-    {
-        if (qualityLevel == level) return;
-        
-        qualityLevel = level;
-        applyQualitySettings();
-        
-        trace('[OptimizationManager] Quality changed to: $qualityLevel');
-    }
-    
-    /**
-     * Aplicar configuración según calidad
-     */
-    private function applyQualitySettings():Void
-    {
-        if (gpuRenderer == null) return;
-        
-        switch (qualityLevel)
-        {
-            case QualityLevel.ULTRA:
-                gpuRenderer.enabled = true;
-                gpuRenderer.enableCulling = true;
-                gpuRenderer.enableZSorting = true;
-                
-            case QualityLevel.HIGH:
-                gpuRenderer.enabled = true;
-                gpuRenderer.enableCulling = true;
-                gpuRenderer.enableZSorting = true;
-                
-            case QualityLevel.MEDIUM:
-                gpuRenderer.enabled = true;
-                gpuRenderer.enableCulling = true;
-                gpuRenderer.enableZSorting = false; // Desactivar Z-sorting
-                
-            case QualityLevel.LOW:
-                gpuRenderer.enabled = true;
-                gpuRenderer.enableCulling = true;
-                gpuRenderer.enableZSorting = false;
-        }
-    }
-    
-    /**
-     * Obtener estadísticas completas
-     */
-    public function getFullStats():String
-    {
-        var stats = '=== OPTIMIZATION STATS ===\n';
-        stats += 'Quality Level: $qualityLevel\n';
-        stats += 'Current FPS: ${Std.int(1.0 / FlxG.elapsed)}\n';
-        stats += 'Frame Time: ${Math.round(frameTime * 10000) / 10}μs\n';
-        stats += '  - Update: ${Math.round(updateTime * 10000) / 10}μs\n';
-        stats += '  - Render: ${Math.round(renderTime * 10000) / 10}μs\n';
-        stats += '\n';
-        
-        // Stats de NotePool
-        stats += NotePool.getStats() + '\n';
-        
-        // Stats de GPU Renderer
-        if (gpuRenderer != null)
-            stats += gpuRenderer.getStats();
-        
-        return stats;
-    }
-    
-    /**
-     * Limpiar entre canciones
-     */
-    public function clear():Void
-    {
-        if (!initialized) return;
-        
-        trace('[OptimizationManager] Cleaning...');
-        
-        NotePool.clear();
-        
-        if (gpuRenderer != null)
-            gpuRenderer.clear();
-        
-        totalNotesSpawned = 0;
-        totalNotesPooled = 0;
-    }
-    
-    /**
-     * Destruir completamente
-     */
-    public function destroy():Void
-    {
-        if (!initialized) return;
-        
-        trace('[OptimizationManager] Destroying...');
-        
-        NotePool.destroy();
-        
-        if (gpuRenderer != null)
-        {
-            gpuRenderer.destroy();
-            gpuRenderer = null;
-        }
-        
-        initialized = false;
-    }
+	public var gpuRenderer:GPURenderer;
+	public var qualityLevel:QualityLevel = QualityLevel.HIGH;
+
+	// ─── Adaptive quality ─────────────────────────────────────────────────────
+	public var enableAdaptiveQuality:Bool = true;
+	public var targetFPS:Int = 60;
+
+	/** Activar para medir update/render time (desactivado por defecto — tiene coste). */
+	public var trackTiming:Bool = false;
+
+	static inline var LOW_FPS_THRESHOLD = 120; // frames bajo FPS antes de bajar calidad
+	static inline var HIGH_FPS_THRESHOLD = 240; // frames alto FPS antes de subir calidad
+
+	var _lowFrames:Int = 0;
+	var _highFrames:Int = 0;
+
+	// FPS suavizado (acumulador de elapsed)
+	var _fpsAccum:Float = 0;
+	var _fpsFrames:Int = 0;
+	var _smoothFPS:Int = 60;
+
+	// Timing (solo cuando trackTiming=true)
+	public var updateTime:Float = 0;
+	public var renderTime:Float = 0;
+
+	var _initialized:Bool = false;
+
+	// ─── Init ─────────────────────────────────────────────────────────────────
+
+	public function new()
+	{
+	}
+
+	public function init(?camera:FlxCamera):Void
+	{
+		if (_initialized)
+			return;
+
+		NotePool.init();
+		gpuRenderer = new GPURenderer(camera ?? FlxG.camera);
+		applyQualitySettings();
+
+		_initialized = true;
+		trace('[OptimizationManager] Listo. Calidad: $qualityLevel');
+	}
+
+	// ─── Update ───────────────────────────────────────────────────────────────
+
+	public function update(elapsed:Float):Void
+	{
+		if (!_initialized)
+			return;
+
+		// Acumular FPS suavizado (más preciso que 1/elapsed)
+		_fpsAccum += elapsed;
+		_fpsFrames += 1;
+
+		if (_fpsAccum >= 0.5) // muestrear cada 0.5 s
+		{
+			_smoothFPS = Math.round(_fpsFrames / _fpsAccum);
+			_fpsAccum = 0;
+			_fpsFrames = 0;
+		}
+
+		if (!enableAdaptiveQuality)
+			return;
+
+		final tgt = targetFPS;
+
+		if (_smoothFPS < tgt - 10)
+		{
+			_highFrames = 0;
+			_lowFrames++;
+			if (_lowFrames > LOW_FPS_THRESHOLD)
+			{
+				lowerQuality();
+				_lowFrames = 0;
+			}
+		}
+		else if (_smoothFPS > tgt + 10)
+		{
+			_lowFrames = 0;
+			_highFrames++;
+			if (_highFrames > HIGH_FPS_THRESHOLD)
+			{
+				raiseQuality();
+				_highFrames = 0;
+			}
+		}
+		// No resetear contadores al estar en rango — histéresis real
+	}
+
+	public function addSpriteToRenderer(sprite:flixel.FlxSprite):Void
+	{
+		if (gpuRenderer != null && gpuRenderer.enabled)
+		{
+			gpuRenderer.addSprite(sprite);
+		}
+	}
+
+	public function render():Void
+	{
+		if (!_initialized || gpuRenderer == null)
+			return;
+
+		if (trackTiming)
+		{
+			final t = haxe.Timer.stamp();
+			gpuRenderer.render();
+			renderTime = haxe.Timer.stamp() - t;
+		}
+		else
+		{
+			gpuRenderer.render();
+		}
+	}
+
+	// ─── Calidad ──────────────────────────────────────────────────────────────
+
+	public function setQuality(level:QualityLevel):Void
+	{
+		if (qualityLevel == level)
+			return;
+		qualityLevel = level;
+		applyQualitySettings();
+		trace('[OptimizationManager] Calidad → $qualityLevel');
+	}
+
+	function lowerQuality():Void
+	{
+		switch (qualityLevel)
+		{
+			case ULTRA:
+				setQuality(HIGH);
+			case HIGH:
+				setQuality(MEDIUM);
+			case MEDIUM:
+				setQuality(LOW);
+			case LOW:
+				trace('[OptimizationManager] Calidad mínima alcanzada.');
+		}
+	}
+
+	function raiseQuality():Void
+	{
+		switch (qualityLevel)
+		{
+			case LOW:
+				setQuality(MEDIUM);
+			case MEDIUM:
+				setQuality(HIGH);
+			case HIGH:
+				setQuality(ULTRA);
+			case ULTRA:
+				trace('[OptimizationManager] Calidad máxima alcanzada.');
+		}
+	}
+
+	function applyQualitySettings():Void
+	{
+		if (gpuRenderer == null)
+			return;
+		gpuRenderer.enabled = true;
+		gpuRenderer.enableCulling = true;
+		gpuRenderer.enableZSorting = (qualityLevel == ULTRA || qualityLevel == HIGH);
+	}
+
+	// ─── Limpieza ─────────────────────────────────────────────────────────────
+
+	public function clear():Void
+	{
+		if (!_initialized)
+			return;
+		NotePool.clear();
+		gpuRenderer?.clear();
+	}
+
+	public function destroy():Void
+	{
+		if (!_initialized)
+			return;
+		NotePool.destroy();
+		if (gpuRenderer != null)
+		{
+			gpuRenderer.destroy();
+			gpuRenderer = null;
+		}
+		_initialized = false;
+	}
+
+	// ─── Stats ────────────────────────────────────────────────────────────────
+
+	public function getFullStats():String
+	{
+		var s = '=== OPT STATS ===\n' + 'Quality=$qualityLevel  FPS=$_smoothFPS  TargetFPS=$targetFPS\n';
+		if (trackTiming)
+			s += 'Update=${Math.round(updateTime * 1e6)}μs  Render=${Math.round(renderTime * 1e6)}μs\n';
+		s += NotePool.getStats() + '\n';
+		if (gpuRenderer != null)
+			s += gpuRenderer.getStats();
+		return s;
+	}
 }
 
-/**
- * Niveles de calidad
- */
 enum QualityLevel
 {
-    ULTRA;   // Todas las optimizaciones + efectos máximos
-    HIGH;    // Todas las optimizaciones
-    MEDIUM;  // Optimizaciones básicas, sin Z-sorting
-    LOW;     // Solo culling y pooling
+	ULTRA;
+	HIGH;
+	MEDIUM;
+	LOW;
 }

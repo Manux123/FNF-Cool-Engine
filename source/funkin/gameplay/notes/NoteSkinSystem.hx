@@ -119,8 +119,8 @@ class NoteSkinSystem
 	public static var offsetDefault:Bool = true;
 
 	// Rutas
-	private static inline var SKINS_PATH:String = "assets/skins";
-	private static inline var SPLASHES_PATH:String = "assets/splashes";
+	private static var SKINS_PATH:String = Paths.resolve("skins");
+	private static var SPLASHES_PATH:String = Paths.resolve("splashes");
 	private static inline var DEFAULT_NORMAL:String = "Default/NOTE_assets";
 	private static inline var DEFAULT_PIXEL:String = "Default/arrows-pixels";
 	private static inline var DEFAULT_PIXEL_ENDS:String = "Default/arrowEnds";

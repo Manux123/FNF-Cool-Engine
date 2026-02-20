@@ -8,6 +8,7 @@ import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
 import flixel.group.FlxGroup.FlxTypedGroup;
+import funkin.transitions.StateTransition;
 import flixel.math.FlxMath;
 import flixel.text.FlxText;
 import lime.utils.Assets;
@@ -124,7 +125,7 @@ class CreditsState extends funkin.statesMusicBeatState
 		if (controls.BACK)
 		{
 			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
-			FlxG.switchState(new MainMenuState());
+			StateTransition.switchState(new MainMenuState());
 		}
 		if(controls.ACCEPT) {
 			#if linux

@@ -346,11 +346,6 @@ class NoteRenderer
         stats += 'Splashes: ${splashPool.length}/$maxSplashPoolSize (pooled: $pooledSplashes, created: $createdSplashes)\n';
         stats += 'Active Hold Splashes: ${Lambda.count(activeHoldSplashes)}\n';
         
-        if (useBatching && noteBatcher != null)
-        {
-            stats += '\n' + noteBatcher.getBatchStats();
-        }
-        
         return stats;
     }
     

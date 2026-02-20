@@ -27,6 +27,9 @@ class MusicBeatSubstate extends FlxSubState
 	private var curBeat:Int = 0;
 	private var controls(get, never):Controls;
 
+	// Cache para búsqueda incremental en bpmChangeMap (misma optimización que MusicBeatState)
+	private var _bpmIdx:Int = 0;
+
 	inline function get_controls():Controls
 		return PlayerSettings.player1.controls;
 
@@ -35,7 +38,6 @@ class MusicBeatSubstate extends FlxSubState
 
 	var trackedinputs:Array<FlxActionInput> = [];
 
-	// adding virtualpad to state
 	public function addVirtualPad(?DPad:FlxDPadMode, ?Action:FlxActionMode) {
 		_virtualpad = new FlxVirtualPad(DPad, Action);
 		_virtualpad.alpha = 0.75;
@@ -45,9 +47,9 @@ class MusicBeatSubstate extends FlxSubState
 		controls.trackedinputs = [];
 
 		var padscam = new FlxCamera();
- 		FlxG.cameras.add(padscam);
- 		padscam.bgColor.alpha = 0;
-  		_virtualpad.cameras = [padscam];
+		FlxG.cameras.add(padscam);
+		padscam.bgColor.alpha = 0;
+		_virtualpad.cameras = [padscam];
 
 		#if android
 		controls.addAndroidBack();
@@ -56,16 +58,20 @@ class MusicBeatSubstate extends FlxSubState
 	
 	override function destroy() {
 		controls.removeFlxInput(trackedinputs);
-
 		super.destroy();
 	}
 	#else
 	public function addVirtualPad(?DPad, ?Action){};
 	#end
 
+	override function create()
+	{
+		_bpmIdx = 0;
+		super.create();
+	}
+
 	override function update(elapsed:Float)
 	{
-		//everyStep();
 		var oldStep:Int = curStep;
 
 		updateCurStep();
@@ -74,24 +80,32 @@ class MusicBeatSubstate extends FlxSubState
 		if (oldStep != curStep && curStep > 0)
 			stepHit();
 
-
 		super.update(elapsed);
 	}
 
+	/**
+	 * Búsqueda incremental O(1) amortizado — igual que MusicBeatState.
+	 */
 	private function updateCurStep():Void
 	{
-		var lastChange:BPMChangeEvent = {
-			stepTime: 0,
-			songTime: 0,
-			bpm: 0
-		}
-		for (i in 0...Conductor.bpmChangeMap.length)
+		final map = Conductor.bpmChangeMap;
+		final pos = Conductor.songPosition;
+		final len = map.length;
+
+		if (len == 0)
 		{
-			if (Conductor.songPosition > Conductor.bpmChangeMap[i].songTime)
-				lastChange = Conductor.bpmChangeMap[i];
+			curStep = Math.floor(pos / Conductor.stepCrochet);
+			return;
 		}
 
-		curStep = lastChange.stepTime + Math.floor((Conductor.songPosition - lastChange.songTime) / Conductor.stepCrochet);
+		if (_bpmIdx > 0 && pos < map[_bpmIdx].songTime)
+			_bpmIdx = 0;
+
+		while (_bpmIdx + 1 < len && pos >= map[_bpmIdx + 1].songTime)
+			_bpmIdx++;
+
+		final ev = map[_bpmIdx];
+		curStep = ev.stepTime + Math.floor((pos - ev.songTime) / Conductor.stepCrochet);
 	}
 
 	public function stepHit():Void
@@ -102,6 +116,6 @@ class MusicBeatSubstate extends FlxSubState
 
 	public function beatHit():Void
 	{
-		//do literally nothing dumbass
+		// override in subclasses
 	}
 }

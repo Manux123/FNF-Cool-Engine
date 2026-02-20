@@ -1355,7 +1355,8 @@ class ChartingState extends funkin.states.MusicBeatState
 			var noteSelected = selectNoteAtPosition(mouseGridY, noteData);
 
 			// Si no hay nota, crear una nueva
-			if (!noteSelected && noteData >= 0 && noteData < 8)
+			// overlaps(gridBG) ya garantiza que noteData es válido — sin límite superior hardcodeado
+			if (!noteSelected && noteData >= 0)
 			{
 				addNoteAtWorldPosition(mouseGridY, noteData);
 			}
@@ -1388,7 +1389,8 @@ class ChartingState extends funkin.states.MusicBeatState
 
 			var noteData = Math.floor(mouseGridX / GRID_SIZE);
 
-			if (noteData >= 0 && noteData < 8)
+			// overlaps(gridBG) ya garantiza que noteData es válido
+			if (noteData >= 0)
 			{
 				deleteNoteAtPosition(mouseGridY, noteData);
 			}

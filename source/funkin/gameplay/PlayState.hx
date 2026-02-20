@@ -6,6 +6,7 @@ import flixel.FlxCamera;
 import flixel.FlxObject;
 import flixel.FlxSprite;
 import flixel.group.FlxGroup.FlxTypedGroup;
+import funkin.transitions.StateTransition;
 import flixel.sound.FlxSound;
 import flixel.text.FlxText;
 import flixel.tweens.FlxTween;
@@ -61,6 +62,10 @@ import funkin.cutscenes.dialogue.DialogueBoxImproved;
 import funkin.cutscenes.dialogue.DialogueData;
 import funkin.data.MetaData;
 import funkin.gameplay.UIScriptedManager;
+// ModChart
+import funkin.gameplay.modchart.ModChartEvent;
+import funkin.gameplay.modchart.ModChartManager;
+import funkin.gameplay.modchart.ModChartEditorState;
 
 using StringTools;
 
@@ -95,7 +100,9 @@ class PlayState extends funkin.states.MusicBeatState
 	private var gameState:GameState;
 	private var noteManager:NoteManager;
 	private var inputHandler:InputHandler;
+
 	public var cameraController:CameraController;
+
 	private var uiManager:UIScriptedManager;
 	private var characterController:CharacterController;
 
@@ -119,6 +126,9 @@ class PlayState extends funkin.states.MusicBeatState
 
 	// === STAGE ===
 	public var currentStage:Stage;
+
+	// ── MODCHART ──
+	public var modChartManager:ModChartManager;
 
 	private var gfSpeed:Int = 1;
 
@@ -225,6 +235,7 @@ class PlayState extends funkin.states.MusicBeatState
 			SONG.stage = 'stage_week1';
 
 		curStage = SONG.stage;
+		Paths.currentStage = curStage; // sync Paths para resolución de assets de stage
 
 		// Discord RPC
 		#if desktop
@@ -264,6 +275,10 @@ class PlayState extends funkin.states.MusicBeatState
 		// Crear controllers
 		setupControllers();
 
+		modChartManager = new ModChartManager(strumsGroups);
+		modChartManager.data.song = SONG.song;
+		modChartManager.loadFromFile(SONG.song); // carga assets/modcharts/<song>.json si existe
+
 		// Generar música
 		generateSong();
 
@@ -285,9 +300,9 @@ class PlayState extends funkin.states.MusicBeatState
 		optimizationManager = new OptimizationManager();
 		optimizationManager.init();
 
-		//StickerTransition.clearStickers(function() {
-			startCountdown();
-		//});
+		// StickerTransition.clearStickers(function() {
+		startCountdown();
+		// });
 
 		super.create();
 	}
@@ -528,7 +543,8 @@ class PlayState extends funkin.states.MusicBeatState
 					if (FlxG.save.data.downscroll)
 						playerStrums.members[i].y = FlxG.height - 150;
 
-					if(FlxG.save.data.middlescroll){
+					if (FlxG.save.data.middlescroll)
+					{
 						playerStrums.members[i].x -= (FlxG.width / 4);
 					}
 
@@ -572,7 +588,7 @@ class PlayState extends funkin.states.MusicBeatState
 			}
 			#else
 			// En producción, volver al menú
-			FlxG.switchState(new funkin.menus.MainMenuState());
+			StateTransition.switchState(new funkin.menus.MainMenuState());
 			return;
 			#end
 		}
@@ -609,8 +625,8 @@ class PlayState extends funkin.states.MusicBeatState
 
 		// Note manager - MEJORADO con splashes
 		// ✅ Pasar referencias a StrumsGroup para animaciones de confirm
-		// ✅ Pasar todos los grupos para soporte de personajes extra
-		noteManager = new NoteManager(notes, playerStrums, cpuStrums, grpNoteSplashes, playerStrumsGroup, cpuStrumsGroup);
+		// ✅ Pasar lista completa de grupos para soporte de personajes extra
+		noteManager = new NoteManager(notes, playerStrums, cpuStrums, grpNoteSplashes, playerStrumsGroup, cpuStrumsGroup, strumsGroups);
 		noteManager.strumLineY = strumLiney;
 		noteManager.downscroll = FlxG.save.data.downscroll;
 		noteManager.middlescroll = FlxG.save.data.middlescroll;
@@ -968,7 +984,7 @@ class PlayState extends funkin.states.MusicBeatState
 
 			FlxG.sound.play(Paths.sound(introSndPaths[swagCounter]), 0.6);
 			swagCounter += 1;
-		},4);
+		}, 4);
 	}
 
 	function getCountdown(path:String)
@@ -1001,6 +1017,10 @@ class PlayState extends funkin.states.MusicBeatState
 
 		if (currentStage != null)
 			currentStage.update(elapsed);
+
+		// Update ModChart
+		if (modChartManager != null && !paused && generatedMusic)
+			modChartManager.update(Conductor.songPosition);
 
 		super.update(elapsed);
 
@@ -1098,19 +1118,6 @@ class PlayState extends funkin.states.MusicBeatState
 			}
 		}
 
-		// NUEVO: Debug controls
-		updateDebugControls();
-
-		// NUEVO: Update debug text
-		if (showDebugStats && debugText != null)
-		{
-			var stats = 'FPS: ${FlxG.drawFramerate}\n';
-			stats += noteManager.getPoolStats() + '\n';
-			if (noteBatcher != null)
-				stats += noteBatcher.getBatchStats();
-			debugText.text = stats;
-		}
-
 		if (FlxG.keys.justPressed.ENTER && startedCountdown && canPause)
 		{
 			pauseMenu();
@@ -1119,21 +1126,35 @@ class PlayState extends funkin.states.MusicBeatState
 		if (FlxG.keys.justPressed.SEVEN)
 		{
 			FlxG.mouse.visible = true;
-			FlxG.switchState(new ChartingState());
+			StateTransition.switchState(new ChartingState());
 		}
 
-		if (FlxG.keys.justPressed.EIGHT)
+		if (FlxG.keys.justPressed.F8 && startedCountdown && canPause)
 		{
-			FlxG.switchState(new StageEditor());
+			// Transferir datos al editor vía statics ANTES de hacer el switch
+			// (PlayState.destroy() se llamará después del switch)
+			ModChartEditorState.pendingManager    = modChartManager;
+			ModChartEditorState.pendingStrumsData = strumsGroups.map(function(g) return g.data);
+			// Nullear para que PlayState.destroy() no destruya el manager que el editor necesita
+			modChartManager = null;
+
+			FlxG.mouse.visible = true;
+			StateTransition.switchState(new ModChartEditorState());
 		}
 
-		if (FlxG.keys.justPressed.NINE)
-		{
-			persistentUpdate = false;
-			persistentDraw = true;
-			paused = true;
-			FlxG.switchState(new DialogueEditor());
-		}
+		/*
+			if (FlxG.keys.justPressed.EIGHT)
+			{
+				StateTransition.switchState(new StageEditor());
+			}
+
+			if (FlxG.keys.justPressed.NINE)
+			{
+				persistentUpdate = false;
+				persistentDraw = true;
+				paused = true;
+				StateTransition.switchState(new DialogueEditor());
+		}*/
 
 		// Song time - SINCRONIZACIÓN MEJORADA
 		if (startingSong && startedCountdown && !inCutscene)
@@ -1165,15 +1186,6 @@ class PlayState extends funkin.states.MusicBeatState
 				debugText.visible = showDebugStats;
 			trace('[PlayState] Debug stats: $showDebugStats');
 		}
-
-		// F7: Print pool stats
-		if (FlxG.keys.justPressed.F7)
-		{
-			trace('=== POOL STATS ===');
-			trace(noteManager.getPoolStats());
-			if (noteBatcher != null)
-				trace(noteBatcher.getBatchStats());
-		}
 	}
 
 	function pauseMenu()
@@ -1186,7 +1198,7 @@ class PlayState extends funkin.states.MusicBeatState
 		// 1 / 1000 chance for Gitaroo Man easter egg
 		if (FlxG.random.bool(0.1))
 		{
-			FlxG.switchState(new GitarooPause());
+			StateTransition.switchState(new GitarooPause());
 		}
 		else
 		{
@@ -1955,6 +1967,9 @@ class PlayState extends funkin.states.MusicBeatState
 		if (currentStage != null)
 			currentStage.beatHit(curBeat);
 
+		if (modChartManager != null)
+	        modChartManager.onBeatHit(curBeat);
+
 		if (scriptsEnabled)
 			ScriptHandler.callOnScripts('onBeatHit', [curBeat]);
 
@@ -1979,6 +1994,9 @@ class PlayState extends funkin.states.MusicBeatState
 		// Hooks
 		for (hook in onStepHitHooks)
 			hook(curStep);
+
+		if (modChartManager != null)
+	        modChartManager.onStepHit(curStep);
 
 		if (currentStage != null)
 			currentStage.stepHit(curStep);
@@ -2066,7 +2084,7 @@ class PlayState extends funkin.states.MusicBeatState
 		{
 			trace('[PlayState] ERROR: boyfriend es null en gameOver()');
 			// Forzar game over de emergencia
-			FlxG.switchState(new funkin.menus.MainMenuState());
+			StateTransition.switchState(new funkin.menus.MainMenuState());
 			return;
 		}
 
@@ -2259,6 +2277,12 @@ class PlayState extends funkin.states.MusicBeatState
 			noteManager.destroy();
 			noteManager = null;
 		}
+
+		if (modChartManager != null)
+	  	{
+	      	modChartManager.destroy();
+      		modChartManager = null;
+  		}
 
 		// ── 8. Note batcher
 		if (noteBatcher != null)

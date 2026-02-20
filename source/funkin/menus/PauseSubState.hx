@@ -12,6 +12,7 @@ import flixel.input.keyboard.FlxKey;
 import flixel.sound.FlxSound;
 import flixel.text.FlxText;
 import funkin.scripting.StateScriptHandler;
+import funkin.transitions.StateTransition;
 import flixel.tweens.FlxEase;
 import funkin.gameplay.PlayState;
 import extensions.CoolUtil;
@@ -200,12 +201,12 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 					PlayState.isPlaying = false;
 					if (PlayState.isStoryMode){
 						StickerTransition.start(function() {
-							FlxG.switchState(new StoryMenuState());
+							StateTransition.switchState(new StoryMenuState());
 						});
 					}
 					else{
 						StickerTransition.start(function() {
-							FlxG.switchState(new FreeplayState());
+							StateTransition.switchState(new FreeplayState());
 						});
 					}
 			}

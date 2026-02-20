@@ -12,6 +12,7 @@ import funkin.menus.FreeplayState;
 import funkin.states.LoadingState;
 import funkin.data.Conductor;
 import funkin.gameplay.objects.character.Character;
+import funkin.transitions.StateTransition;
 
 using StringTools;
 
@@ -74,9 +75,9 @@ class GameOverSubstate extends MusicBeatSubstate
 			FlxG.sound.music.stop();
 
 			if (PlayState.isStoryMode)
-				FlxG.switchState(new StoryMenuState());
+				StateTransition.switchState(new StoryMenuState());
 			else
-				FlxG.switchState(new FreeplayState());
+				StateTransition.switchState(new FreeplayState());
 		}
 
 		if (bf.animation.curAnim.name == 'firstDeath')

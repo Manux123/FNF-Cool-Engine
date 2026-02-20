@@ -40,7 +40,6 @@ import haxe.Json;
 import funkin.menus.MainMenuState;
 import funkin.gameplay.objects.character.HealthIcon;
 import funkin.debug.ColorPickerWheel;
-
 #if sys
 import sys.FileSystem;
 import sys.io.File;
@@ -131,8 +130,10 @@ class AnimationDebug extends MusicBeatState
 	var statusBar:FlxSprite;
 	// Borde decorativo del panel UI derecho
 	var uiPanelBg:FlxSprite;
+
 	// Posición X de inicio fuera de pantalla para el slide-in del panel
 	static inline var PANEL_HIDDEN_X:Float = 1500;
+
 	// Fila de highlight para la animación seleccionada en la lista
 	var animRowHighlight:FlxSprite;
 	// Acento de color actual del estado (verde=ok, rojo=error, cyan=info)
@@ -160,7 +161,7 @@ class AnimationDebug extends MusicBeatState
 		MainMenuState.musicFreakyisPlaying = false;
 
 		camGame = new FlxCamera();
-		camHUD  = new FlxCamera();
+		camHUD = new FlxCamera();
 		camHUD.bgColor.alpha = 0;
 
 		// camUI es una cámara completamente transparente y vacía que se pone
@@ -170,9 +171,9 @@ class AnimationDebug extends MusicBeatState
 		camUI = new FlxCamera();
 		camUI.bgColor.alpha = 0;
 
-		FlxG.cameras.reset(camUI);   // cameras[0] → FlxG.camera = camUI (zoom 1 fijo)
+		FlxG.cameras.reset(camUI); // cameras[0] → FlxG.camera = camUI (zoom 1 fijo)
 		FlxG.cameras.add(camGame, false); // renders encima de camUI
-		FlxG.cameras.add(camHUD,  false); // renders encima de todo
+		FlxG.cameras.add(camHUD, false); // renders encima de todo
 
 		currentStage = new Stage('stage_week1');
 		currentStage.cameras = [camGame];
@@ -234,10 +235,8 @@ class AnimationDebug extends MusicBeatState
 		add(controlsBg);
 
 		textControls = new FlxText(8, 42, 328, '', 10);
-		textControls.text = "W/S · Switch Anim   ARROWS · Offset (SHIFT=x10)\n"
-			+ "I/K · Cam Up/Down   J/L · Cam Left/Right\n"
-			+ "SCROLL · Zoom   SPACE · Play   R · Reset   T · Ghost\n"
-			+ "RIGHT DRAG · Move Offset (SHIFT=x3)   ESC · Exit";
+		textControls.text = "W/S · Switch Anim   ARROWS · Offset (SHIFT=x10)\n" + "I/K · Cam Up/Down   J/L · Cam Left/Right\n"
+			+ "SCROLL · Zoom   SPACE · Play   R · Reset   T · Ghost\n" + "RIGHT DRAG · Move Offset (SHIFT=x3)   ESC · Exit";
 		textControls.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
 		textControls.color = 0xFFB0E8FF;
 		textControls.cameras = [camHUD];
@@ -332,18 +331,18 @@ class AnimationDebug extends MusicBeatState
 		// ── Slide-in del panel derecho al abrir ───────────────────────────────
 		UI_box.x = PANEL_HIDDEN_X;
 		uiPanelBg.x = PANEL_HIDDEN_X - 4;
-		FlxTween.tween(UI_box,     {x: FlxG.width - UI_box.width - 10}, 0.45, {ease: FlxEase.quartOut});
-		FlxTween.tween(uiPanelBg,  {x: FlxG.width - UI_box.width - 14}, 0.45, {ease: FlxEase.quartOut});
+		FlxTween.tween(UI_box, {x: FlxG.width - UI_box.width - 10}, 0.45, {ease: FlxEase.quartOut});
+		FlxTween.tween(uiPanelBg, {x: FlxG.width - UI_box.width - 14}, 0.45, {ease: FlxEase.quartOut});
 
 		// Fade-in del panel izquierdo
 		leftPanel.alpha = 0;
 		leftPanelBorder.alpha = 0;
 		charHeaderBg.alpha = 0;
 		charHeaderText.alpha = 0;
-		FlxTween.tween(leftPanel,       {alpha: 1}, 0.5, {ease: FlxEase.quartOut, startDelay: 0.1});
+		FlxTween.tween(leftPanel, {alpha: 1}, 0.5, {ease: FlxEase.quartOut, startDelay: 0.1});
 		FlxTween.tween(leftPanelBorder, {alpha: 1}, 0.5, {ease: FlxEase.quartOut, startDelay: 0.15});
-		FlxTween.tween(charHeaderBg,    {alpha: 1}, 0.4, {ease: FlxEase.quartOut, startDelay: 0.2});
-		FlxTween.tween(charHeaderText,  {alpha: 1}, 0.4, {ease: FlxEase.quartOut, startDelay: 0.25});
+		FlxTween.tween(charHeaderBg, {alpha: 1}, 0.4, {ease: FlxEase.quartOut, startDelay: 0.2});
+		FlxTween.tween(charHeaderText, {alpha: 1}, 0.4, {ease: FlxEase.quartOut, startDelay: 0.25});
 
 		camFollow = new FlxObject(0, 0, 2, 2);
 		camFollow.screenCenter();
@@ -361,11 +360,11 @@ class AnimationDebug extends MusicBeatState
 	function setupUI():Void
 	{
 		var tabs = [
-			{name: "Character",  label: "Character"},
-			{name: "Animation",  label: "Animation"},
+			{name: "Character", label: "Character"},
+			{name: "Animation", label: "Animation"},
 			{name: "Properties", label: "Properties"},
-			{name: "Import",     label: "Import Assets"},
-			{name: "Export",     label: "Export"}
+			{name: "Import", label: "Import Assets"},
+			{name: "Export", label: "Export"}
 		];
 
 		UI_box = new FlxUITabMenu(null, tabs, true);
@@ -410,13 +409,17 @@ class AnimationDebug extends MusicBeatState
 
 		playerCheckbox = new FlxUICheckBox(10, 70, null, null, "Player Character (FlipX)", 180);
 		playerCheckbox.checked = false;
-		playerCheckbox.callback = function() { if (char != null) char.flipX = playerCheckbox.checked; };
+		playerCheckbox.callback = function()
+		{
+			if (char != null)
+				char.flipX = playerCheckbox.checked;
+		};
 		tab.add(playerCheckbox);
 
 		tab.add(new FlxText(10, 95, 0, "Death Character:", 10));
 		charDeathInput = new FlxUIInputText(10, 108, 200, '', 8);
 		tab.add(charDeathInput);
-		var charDeathHint = new FlxText(10, 122, 280, "Ej: bf-dead  (vacío = default)", 8);
+		var charDeathHint = new FlxText(10, 122, 280, "Ej: bf-dead  (empty = default)", 8);
 		charDeathHint.color = FlxColor.BLACK;
 		tab.add(charDeathHint);
 
@@ -464,7 +467,7 @@ class AnimationDebug extends MusicBeatState
 		animPrefixInput = new FlxUIInputText(10, yPos, 200, '', 8);
 		tab.add(animPrefixInput);
 
-		var prefixHint = new FlxText(10, yPos + 14, 280, "FlxAnimate: nombre exacto del símbolo (SN)", 8);
+		var prefixHint = new FlxText(10, yPos + 14, 280, "FlxAnimate: name exact of símbol (SN)", 8);
 		prefixHint.color = FlxColor.BLACK;
 		tab.add(prefixHint);
 		yPos += 35;
@@ -493,30 +496,40 @@ class AnimationDebug extends MusicBeatState
 		yPos += 30;
 
 		// Botón Add/Update — su label cambia según si estás editando o agregando
-		addAnimBtn = new FlxButton(10, yPos, "Add Animation", function() { addNewAnimation(); });
+		addAnimBtn = new FlxButton(10, yPos, "Add Animation", function()
+		{
+			addNewAnimation();
+		});
 		tab.add(addAnimBtn);
 
 		// Botón "New" — limpia los campos y vuelve a modo Add
 		tab.add(new FlxButton(130, yPos, "New / Clear", function()
 		{
 			editingAnimName = null;
-			animNameInput.text           = "";
-			animPrefixInput.text         = "";
-			animFramerateStepper.value   = 24;
-			animLoopedCheckbox.checked   = false;
-			offsetXStepper.value         = 0;
-			offsetYStepper.value         = 0;
-			if (addAnimBtn != null) addAnimBtn.text = "Add Animation";
+			animNameInput.text = "";
+			animPrefixInput.text = "";
+			animFramerateStepper.value = 24;
+			animLoopedCheckbox.checked = false;
+			offsetXStepper.value = 0;
+			offsetYStepper.value = 0;
+			if (addAnimBtn != null)
+				addAnimBtn.text = "Add Animation";
 			setHelp("Cleared fields — Add mode", FlxColor.CYAN);
 		}));
 		yPos += 30;
 
-		tab.add(new FlxButton(10, yPos, "Delete Current", function() { deleteCurrentAnimation(); }));
+		tab.add(new FlxButton(10, yPos, "Delete Current", function()
+		{
+			deleteCurrentAnimation();
+		}));
 		yPos += 30;
 
-		tab.add(new FlxButton(10, yPos, "← Load Selected", function() { loadAnimIntoUI(); }));
+		tab.add(new FlxButton(10, yPos, "← Load Selected", function()
+		{
+			loadAnimIntoUI();
+		}));
 
-		var loadHint = new FlxText(10, yPos + 22, 280, "Carga la anim seleccionada (W/S) para editarla", 8);
+		var loadHint = new FlxText(10, yPos + 22, 280, "Load the selected animation (W/S) for editing", 8);
 		loadHint.color = FlxColor.BLACK;
 		tab.add(loadHint);
 
@@ -543,7 +556,7 @@ class AnimationDebug extends MusicBeatState
 		pathInput = new FlxUIInputText(10, yPos, 200, 'BOYFRIEND', 8);
 		tab.add(pathInput);
 
-		var pathHint = new FlxText(10, yPos + 14, 280, "FlxAnimate: ruta a la carpeta del personaje", 8);
+		var pathHint = new FlxText(10, yPos + 14, 280, "FlxAnimate: path to the character's folder", 8);
 		pathHint.color = FlxColor.BLACK;
 		tab.add(pathHint);
 		yPos += 35;
@@ -554,7 +567,7 @@ class AnimationDebug extends MusicBeatState
 		spritemapNameInput = new FlxUIInputText(10, yPos, 200, 'spritemap1', 8);
 		tab.add(spritemapNameInput);
 
-		var smHint = new FlxText(10, yPos + 14, 280, "FlxAnimate only · Por defecto: spritemap1", 8);
+		var smHint = new FlxText(10, yPos + 14, 280, "FlxAnimate only · Default: spritemap1", 8);
 		smHint.color = FlxColor.BLACK;
 		tab.add(smHint);
 		yPos += 35;
@@ -563,7 +576,10 @@ class AnimationDebug extends MusicBeatState
 		tab.add(new FlxText(10, yPos, 0, "Health Icon:", 10));
 		yPos += 15;
 		healthIconInput = new FlxUIInputText(10, yPos, 200, 'bf', 8);
-		healthIconInput.callback = function(text:String, action:String) { updateIconPreview(text); };
+		healthIconInput.callback = function(text:String, action:String)
+		{
+			updateIconPreview(text);
+		};
 		tab.add(healthIconInput);
 		yPos += 25;
 
@@ -577,9 +593,12 @@ class AnimationDebug extends MusicBeatState
 			{
 				var parsed = FlxColor.fromString(text);
 				currentHealthBarColor = parsed;
-				if (hudHealthBar != null) hudHealthBar.color = parsed;
+				if (hudHealthBar != null)
+					hudHealthBar.color = parsed;
 			}
-			catch (_) {}
+			catch (_)
+			{
+			}
 		};
 		tab.add(healthBarColorInput);
 
@@ -589,8 +608,13 @@ class AnimationDebug extends MusicBeatState
 		{
 			// Parsear el color actual del input para pasárselo al picker
 			var startColor = currentHealthBarColor;
-			try { startColor = FlxColor.fromString(healthBarColorInput.text); }
-			catch (_) {}
+			try
+			{
+				startColor = FlxColor.fromString(healthBarColorInput.text);
+			}
+			catch (_)
+			{
+			}
 
 			var picker = new ColorPickerWheel(startColor);
 			picker.onColorSelected = function(selectedColor:FlxColor)
@@ -618,8 +642,13 @@ class AnimationDebug extends MusicBeatState
 		var pickBtn = new FlxButton(202, yPos - 1, "Pick", function()
 		{
 			var startColor = currentHealthBarColor;
-			try { startColor = FlxColor.fromString(healthBarColorInput.text); }
-			catch (_) {}
+			try
+			{
+				startColor = FlxColor.fromString(healthBarColorInput.text);
+			}
+			catch (_)
+			{
+			}
 
 			var picker = new ColorPickerWheel(startColor);
 			picker.onColorSelected = function(selectedColor:FlxColor)
@@ -661,7 +690,11 @@ class AnimationDebug extends MusicBeatState
 		isTxtCheckbox.checked = false;
 		isTxtCheckbox.callback = function()
 		{
-			if (isTxtCheckbox.checked) { isSpritesheetCheckbox.checked = false; isFlxAnimateCheckbox.checked = false; }
+			if (isTxtCheckbox.checked)
+			{
+				isSpritesheetCheckbox.checked = false;
+				isFlxAnimateCheckbox.checked = false;
+			}
 		};
 		tab.add(isTxtCheckbox);
 		yPos += 20;
@@ -670,7 +703,11 @@ class AnimationDebug extends MusicBeatState
 		isSpritesheetCheckbox.checked = false;
 		isSpritesheetCheckbox.callback = function()
 		{
-			if (isSpritesheetCheckbox.checked) { isTxtCheckbox.checked = false; isFlxAnimateCheckbox.checked = false; }
+			if (isSpritesheetCheckbox.checked)
+			{
+				isTxtCheckbox.checked = false;
+				isFlxAnimateCheckbox.checked = false;
+			}
 		};
 		tab.add(isSpritesheetCheckbox);
 		yPos += 20;
@@ -679,7 +716,11 @@ class AnimationDebug extends MusicBeatState
 		isFlxAnimateCheckbox.checked = false;
 		isFlxAnimateCheckbox.callback = function()
 		{
-			if (isFlxAnimateCheckbox.checked) { isTxtCheckbox.checked = false; isSpritesheetCheckbox.checked = false; }
+			if (isFlxAnimateCheckbox.checked)
+			{
+				isTxtCheckbox.checked = false;
+				isSpritesheetCheckbox.checked = false;
+			}
 			// Recordatorio visual
 			spritemapNameInput.color = isFlxAnimateCheckbox.checked ? FlxColor.ORANGE : FlxColor.WHITE;
 		};
@@ -721,9 +762,12 @@ class AnimationDebug extends MusicBeatState
 		tab.add(stdLabel);
 		yPos += 20;
 
-		tab.add(new FlxButton(10, yPos, "Import Sprite PNG", function() { browseForFile("sprite"); }));
+		tab.add(new FlxButton(10, yPos, "Import Sprite PNG", function()
+		{
+			browseForFile("sprite");
+		}));
 
-		tab.add(new FlxText(10, yPos + 22, 280, "Detecta XML/TXT automáticamente", 8));
+		tab.add(new FlxText(10, yPos + 22, 280, "Automatically detects XML/TXT", 8));
 		yPos += 50;
 
 		// ── FlxAnimate ──
@@ -733,16 +777,22 @@ class AnimationDebug extends MusicBeatState
 		tab.add(flxLabel);
 		yPos += 20;
 
-		tab.add(new FlxText(10, yPos, 0, "Selecciona el spritemap PNG.\nDetecta spritemap.json y Animation.json\nautomáticamente de la misma carpeta.", 9));
+		tab.add(new FlxText(10, yPos, 0, "Select the PNG spritemap.\nAutomatically detects spritemap.json and Animation.json\nfrom the same folder.", 9));
 		yPos += 40;
 
-		tab.add(new FlxButton(10, yPos, "Import FlxAnimate", function() { browseForFlxAnimate(); }));
+		tab.add(new FlxButton(10, yPos, "Import FlxAnimate", function()
+		{
+			browseForFlxAnimate();
+		}));
 		yPos += 30;
 
 		// Listar símbolos disponibles en Animation.json
-		tab.add(new FlxButton(10, yPos, "List Symbols (Console)", function() { listAvailableSymbols(); }));
+		tab.add(new FlxButton(10, yPos, "List Symbols (Console)", function()
+		{
+			listAvailableSymbols();
+		}));
 
-		var symHint = new FlxText(10, yPos + 22, 280, "Muestra los SN disponibles para usar como 'prefix'", 8);
+		var symHint = new FlxText(10, yPos + 22, 280, "Shows the available SNs to use as a 'prefix''", 8);
 		symHint.color = FlxColor.BLACK;
 		tab.add(symHint);
 		yPos += 50;
@@ -754,7 +804,10 @@ class AnimationDebug extends MusicBeatState
 		tab.add(iconTitle);
 		yPos += 20;
 
-		tab.add(new FlxButton(10, yPos, "Import Icon PNG", function() { browseForFile("icon"); }));
+		tab.add(new FlxButton(10, yPos, "Import Icon PNG", function()
+		{
+			browseForFile("icon");
+		}));
 		tab.add(new FlxText(10, yPos + 22, 280, "300x150px (2 frames de 150x150)", 9));
 
 		UI_box.addGroup(tab);
@@ -774,17 +827,24 @@ class AnimationDebug extends MusicBeatState
 		tab.add(titleLabel);
 		yPos += 30;
 
-		tab.add(new FlxButton(10, yPos, "Export JSON",        function() { exportCharacterJSON(); }));
+		tab.add(new FlxButton(10, yPos, "Export JSON", function()
+		{
+			exportCharacterJSON();
+		}));
 		yPos += 35;
-		tab.add(new FlxButton(10, yPos, "Export Offsets TXT", function() { exportOffsetsTXT(); }));
+		tab.add(new FlxButton(10, yPos, "Export Offsets TXT", function()
+		{
+			exportOffsetsTXT();
+		}));
 		yPos += 35;
-		tab.add(new FlxButton(10, yPos, "Copy JSON",          function() { copyJSONToClipboard(); }));
+		tab.add(new FlxButton(10, yPos, "Copy JSON", function()
+		{
+			copyJSONToClipboard();
+		}));
 		yPos += 40;
 
 		tab.add(new FlxText(10, yPos, 280,
-			"Export JSON: Guarda todos los datos del personaje\n"
-			+ "Offsets TXT: Solo los offsets de animaciones\n"
-			+ "Copy JSON: Copiar al portapapeles", 10));
+			"Export JSON: Saves all character data\n" + "Offsets TXT: Only animation offsets\n" + "Copy JSON: Copies to clipboard", 10));
 
 		UI_box.addGroup(tab);
 	}
@@ -803,12 +863,12 @@ class AnimationDebug extends MusicBeatState
 		}
 
 		var newAnim:AnimData = {
-			name:      newName,
-			prefix:    newPrefix,
+			name: newName,
+			prefix: newPrefix,
 			framerate: animFramerateStepper.value,
-			looped:    animLoopedCheckbox.checked,
-			offsetX:   offsetXStepper.value,
-			offsetY:   offsetYStepper.value
+			looped: animLoopedCheckbox.checked,
+			offsetX: offsetXStepper.value,
+			offsetY: offsetYStepper.value
 		};
 
 		if (editingAnimName != null)
@@ -836,11 +896,13 @@ class AnimationDebug extends MusicBeatState
 
 			// Mantener la selección apuntando a la anim recién editada
 			var newIdx = animList.indexOf(newName);
-			if (newIdx >= 0) curAnim = newIdx;
+			if (newIdx >= 0)
+				curAnim = newIdx;
 
 			// Volver a modo Add
 			editingAnimName = null;
-			if (addAnimBtn != null) addAnimBtn.text = "Add Animation";
+			if (addAnimBtn != null)
+				addAnimBtn.text = "Add Animation";
 		}
 		else
 		{
@@ -869,7 +931,7 @@ class AnimationDebug extends MusicBeatState
 		// Limpiar campos tras Add (no tras Edit, para comodidad)
 		if (editingAnimName == null)
 		{
-			animNameInput.text   = "";
+			animNameInput.text = "";
 			animPrefixInput.text = "";
 		}
 	}
@@ -893,16 +955,17 @@ class AnimationDebug extends MusicBeatState
 		{
 			if (anim.name == animName)
 			{
-				animNameInput.text             = anim.name;
-				animPrefixInput.text           = anim.prefix != null ? anim.prefix : "";
-				animFramerateStepper.value     = anim.framerate != 0 ? anim.framerate : 24;
-				animLoopedCheckbox.checked     = anim.looped;
-				offsetXStepper.value           = anim.offsetX;
-				offsetYStepper.value           = anim.offsetY;
+				animNameInput.text = anim.name;
+				animPrefixInput.text = anim.prefix != null ? anim.prefix : "";
+				animFramerateStepper.value = anim.framerate != 0 ? anim.framerate : 24;
+				animLoopedCheckbox.checked = anim.looped;
+				offsetXStepper.value = anim.offsetX;
+				offsetYStepper.value = anim.offsetY;
 
 				// Entrar en modo EDIT — guardar qué anim estamos modificando
 				editingAnimName = animName;
-				if (addAnimBtn != null) addAnimBtn.text = "Update Anim";
+				if (addAnimBtn != null)
+					addAnimBtn.text = "Update Anim";
 
 				setHelp('← Editing: $animName  |  "New / Clear" for cancel', FlxColor.CYAN);
 				UI_box.selected_tab_id = "Animation";
@@ -947,10 +1010,16 @@ class AnimationDebug extends MusicBeatState
 		switch (fileType)
 		{
 			case "sprite":
-				fileDialog.onSelect.add(function(path) { onSpriteSelected(path); });
+				fileDialog.onSelect.add(function(path)
+				{
+					onSpriteSelected(path);
+				});
 				fileDialog.browse(OPEN, "png", null, "Select Sprite PNG");
 			case "icon":
-				fileDialog.onSelect.add(function(path) { onFileSelected(path, "icon"); });
+				fileDialog.onSelect.add(function(path)
+				{
+					onFileSelected(path, "icon");
+				});
 				fileDialog.browse(OPEN, "png", null, "Select Icon PNG");
 		}
 		#else
@@ -965,7 +1034,7 @@ class AnimationDebug extends MusicBeatState
 		{
 			var fileName = haxe.io.Path.withoutDirectory(sourcePath);
 			var sourceDir = haxe.io.Path.directory(sourcePath) + "/";
-			var baseName  = haxe.io.Path.withoutExtension(fileName);
+			var baseName = haxe.io.Path.withoutExtension(fileName);
 
 			var destDir = Paths.resolve("characters/images/");
 			if (!FileSystem.exists(destDir))
@@ -1007,7 +1076,7 @@ class AnimationDebug extends MusicBeatState
 		try
 		{
 			var fileName = haxe.io.Path.withoutDirectory(sourcePath);
-			var destDir  = (fileType == "icon") ? Paths.resolve("icons/") : Paths.resolve("characters/images/");
+			var destDir = (fileType == "icon") ? Paths.resolve("icons/") : Paths.resolve("characters/images/");
 			var newFileName = fileName;
 
 			if (!FileSystem.exists(destDir))
@@ -1044,10 +1113,13 @@ class AnimationDebug extends MusicBeatState
 	{
 		#if sys
 		var fileDialog = new FileDialog();
-		fileDialog.onSelect.add(function(path:String) { onFlxAnimateSelected(path); });
+		fileDialog.onSelect.add(function(path:String)
+		{
+			onFlxAnimateSelected(path);
+		});
 		fileDialog.browse(OPEN, "png", null, "Select Spritemap PNG (FlxAnimate)");
 		#else
-		FlxG.log.warn("File import solo disponible en desktop");
+		FlxG.log.warn("File import only available on desktop");
 		#end
 	}
 
@@ -1056,13 +1128,13 @@ class AnimationDebug extends MusicBeatState
 		#if sys
 		try
 		{
-			var fileName  = haxe.io.Path.withoutDirectory(sourcePngPath);
+			var fileName = haxe.io.Path.withoutDirectory(sourcePngPath);
 			var sourceDir = haxe.io.Path.directory(sourcePngPath) + "/";
-			var baseName  = haxe.io.Path.withoutExtension(fileName); // ej: "spritemap1"
+			var baseName = haxe.io.Path.withoutExtension(fileName); // ej: "spritemap1"
 
 			// Rutas que esperamos encontrar junto al PNG
-			var atlasJsonSrc = sourceDir + baseName + ".json";    // spritemap1.json
-			var animJsonSrc  = sourceDir + "Animation.json";
+			var atlasJsonSrc = sourceDir + baseName + ".json"; // spritemap1.json
+			var animJsonSrc = sourceDir + "Animation.json";
 
 			if (!FileSystem.exists(atlasJsonSrc))
 			{
@@ -1078,27 +1150,27 @@ class AnimationDebug extends MusicBeatState
 
 			// Copiar los tres archivos
 			File.copy(sourcePngPath, destFolder + fileName);
-			FlxG.log.notice("Copiado: " + destFolder + fileName);
+			FlxG.log.notice("Copied: " + destFolder + fileName);
 
 			File.copy(atlasJsonSrc, destFolder + baseName + ".json");
-			FlxG.log.notice("Copiado: " + destFolder + baseName + ".json");
+			FlxG.log.notice("Copied: " + destFolder + baseName + ".json");
 
 			var hasAnimJson = FileSystem.exists(animJsonSrc);
 			if (hasAnimJson)
 			{
 				File.copy(animJsonSrc, destFolder + "Animation.json");
-				FlxG.log.notice("Copiado: " + destFolder + "Animation.json");
+				FlxG.log.notice("Copied: " + destFolder + "Animation.json");
 			}
 
 			// Actualizar UI:
 			// - path = nombre del personaje (ej: "myChar"), NO la ruta completa
 			//   Character.hx lo convierte con Paths.characterFolder(path)
 			// - spritemapName = nombre del PNG sin extensión (ej: "spritemap1")
-			flxAnimateFolderPath          = destFolder;
-			pathInput.text                = daAnim;       // ← solo el nombre del personaje
-			spritemapNameInput.text       = baseName;
-			isFlxAnimateCheckbox.checked  = true;
-			isTxtCheckbox.checked         = false;
+			flxAnimateFolderPath = destFolder;
+			pathInput.text = daAnim; // ← solo el nombre del personaje
+			spritemapNameInput.text = baseName;
+			isFlxAnimateCheckbox.checked = true;
+			isTxtCheckbox.checked = false;
 			isSpritesheetCheckbox.checked = false;
 
 			// Auto-cargar animaciones desde Animation.json si existe
@@ -1136,12 +1208,12 @@ class AnimationDebug extends MusicBeatState
 			if (parsed.AN != null)
 			{
 				currentAnimData.push({
-					name:      parsed.AN.SN,
-					prefix:    parsed.AN.SN,
+					name: parsed.AN.SN,
+					prefix: parsed.AN.SN,
 					framerate: parsed.MD != null ? Std.int(parsed.MD.FRT) : 24,
-					looped:    true,
-					offsetX:   0,
-					offsetY:   0
+					looped: true,
+					offsetX: 0,
+					offsetY: 0
 				});
 			}
 
@@ -1151,12 +1223,12 @@ class AnimationDebug extends MusicBeatState
 				for (sym in (cast parsed.SD.S : Array<Dynamic>))
 				{
 					currentAnimData.push({
-						name:      sym.SN,
-						prefix:    sym.SN,
+						name: sym.SN,
+						prefix: sym.SN,
 						framerate: parsed.MD != null ? Std.int(parsed.MD.FRT) : 24,
-						looped:    false,
-						offsetX:   0,
-						offsetY:   0
+						looped: false,
+						offsetX: 0,
+						offsetY: 0
 					});
 				}
 			}
@@ -1180,9 +1252,7 @@ class AnimationDebug extends MusicBeatState
 	{
 		// Fallback: parsear Animation.json directamente
 		#if sys
-		var animJsonPath = flxAnimateFolderPath != ""
-			? flxAnimateFolderPath + "Animation.json"
-			: Paths.characterFolder(pathInput.text) + "Animation.json";
+		var animJsonPath = flxAnimateFolderPath != "" ? flxAnimateFolderPath + "Animation.json" : Paths.characterFolder(pathInput.text) + "Animation.json";
 
 		if (!FileSystem.exists(animJsonPath))
 		{
@@ -1229,7 +1299,8 @@ class AnimationDebug extends MusicBeatState
 	{
 		// Al cambiar de personaje, cancelar cualquier edición pendiente
 		editingAnimName = null;
-		if (addAnimBtn != null) addAnimBtn.text = "Add Animation";
+		if (addAnimBtn != null)
+			addAnimBtn.text = "Add Animation";
 		dumbTexts.forEach(function(text:FlxText)
 		{
 			dumbTexts.remove(text, true);
@@ -1237,8 +1308,10 @@ class AnimationDebug extends MusicBeatState
 		dumbTexts.clear();
 		animList = [];
 
-		if (char != null)      layeringbullshit.remove(char);
-		if (ghostChar != null) layeringbullshit.remove(ghostChar);
+		if (char != null)
+			layeringbullshit.remove(char);
+		if (ghostChar != null)
+			layeringbullshit.remove(ghostChar);
 
 		ghostChar = new Character(0, 0, character);
 		ghostChar.alpha = 0.5;
@@ -1268,13 +1341,13 @@ class AnimationDebug extends MusicBeatState
 
 	function generateOffsetTexts(pushList:Bool = true):Void
 	{
-		var daLoop  = 0;
-		var startY  = 174;
-		var rowH    = 20;
+		var daLoop = 0;
+		var startY = 174;
+		var rowH = 20;
 
 		for (anim => offsets in char.animOffsets)
 		{
-			var rowY  = startY + (rowH * daLoop);
+			var rowY = startY + (rowH * daLoop);
 			var isCur = (daLoop == curAnim);
 
 			// Fondo da fila alternado
@@ -1282,7 +1355,7 @@ class AnimationDebug extends MusicBeatState
 			rowBg.makeGraphic(332, rowH - 1, isCur ? 0x5500E5FF : (daLoop % 2 == 0 ? 0x22FFFFFF : 0x11FFFFFF));
 			rowBg.scrollFactor.set();
 			rowBg.cameras = [camHUD];
-			rowBg.alpha   = 0;
+			rowBg.alpha = 0;
 			dumbTexts.add(cast rowBg);
 			FlxTween.tween(rowBg, {alpha: 1}, 0.2, {startDelay: daLoop * 0.03, ease: FlxEase.quartOut});
 
@@ -1297,12 +1370,12 @@ class AnimationDebug extends MusicBeatState
 			}
 
 			var label = anim + "  [" + offsets[0] + ", " + offsets[1] + "]";
-			var text  = new FlxText(10, rowY + 3, 328, label, 11);
+			var text = new FlxText(10, rowY + 3, 328, label, 11);
 			text.scrollFactor.set();
 			text.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
 			text.color = isCur ? 0xFF00E5FF : 0xFFCCCCCC;
 			text.cameras = [camHUD];
-			text.alpha   = 0;
+			text.alpha = 0;
 			dumbTexts.add(text);
 			FlxTween.tween(text, {alpha: 1}, 0.2, {startDelay: daLoop * 0.03 + 0.05, ease: FlxEase.quartOut});
 
@@ -1315,14 +1388,18 @@ class AnimationDebug extends MusicBeatState
 		// Mover el highlight a la posición correcta
 		if (animRowHighlight != null)
 		{
-			animRowHighlight.y    = startY + (rowH * curAnim);
+			animRowHighlight.y = startY + (rowH * curAnim);
 			animRowHighlight.visible = animList.length > 0;
 		}
 	}
 
 	function updateOffsetTexts():Void
 	{
-		dumbTexts.forEach(function(text:FlxText) { text.kill(); dumbTexts.remove(text, true); });
+		dumbTexts.forEach(function(text:FlxText)
+		{
+			text.kill();
+			dumbTexts.remove(text, true);
+		});
 		dumbTexts.clear();
 		generateOffsetTexts(false);
 	}
@@ -1360,8 +1437,10 @@ class AnimationDebug extends MusicBeatState
 			{
 				playerCheckbox.checked = characterData.isPlayer;
 				// Sincronizar flipX con el valor real del JSON
-				if (char != null)      char.flipX = characterData.isPlayer;
-				if (ghostChar != null) ghostChar.flipX = characterData.isPlayer;
+				if (char != null)
+					char.flipX = characterData.isPlayer;
+				if (ghostChar != null)
+					ghostChar.flipX = characterData.isPlayer;
 			}
 
 			if (charDeathInput != null)
@@ -1379,9 +1458,7 @@ class AnimationDebug extends MusicBeatState
 
 			if (spritemapNameInput != null)
 			{
-				spritemapNameInput.text = (characterData.spritemapName != null && characterData.spritemapName != "")
-					? characterData.spritemapName
-					: "spritemap1";
+				spritemapNameInput.text = (characterData.spritemapName != null && characterData.spritemapName != "") ? characterData.spritemapName : "spritemap1";
 				spritemapNameInput.color = usingFlxAnimate ? FlxColor.BLACK : FlxColor.WHITE;
 			}
 
@@ -1398,9 +1475,12 @@ class AnimationDebug extends MusicBeatState
 				try
 				{
 					currentHealthBarColor = FlxColor.fromString(colorStr);
-					if (hudHealthBar != null) hudHealthBar.color = currentHealthBarColor;
+					if (hudHealthBar != null)
+						hudHealthBar.color = currentHealthBarColor;
 				}
-				catch (_) {}
+				catch (_)
+				{
+				}
 			}
 
 			currentAnimData = characterData.animations;
@@ -1420,11 +1500,11 @@ class AnimationDebug extends MusicBeatState
 	function reloadCharacterWithNewAnims():Void
 	{
 		var tempData:CharacterData = {
-			path:        pathInput.text,
-			animations:  currentAnimData,
-			isPlayer:    playerCheckbox.checked,
+			path: pathInput.text,
+			animations: currentAnimData,
+			isPlayer: playerCheckbox.checked,
 			antialiasing: antialiasingCheckbox.checked,
-			scale:       scaleStepper.value
+			scale: scaleStepper.value
 		};
 
 		if (isTxtCheckbox.checked)
@@ -1468,11 +1548,11 @@ class AnimationDebug extends MusicBeatState
 	function buildExportData():CharacterData
 	{
 		var exportData:CharacterData = {
-			path:        pathInput.text,
-			animations:  currentAnimData,
-			isPlayer:    playerCheckbox.checked,
+			path: pathInput.text,
+			animations: currentAnimData,
+			isPlayer: playerCheckbox.checked,
 			antialiasing: antialiasingCheckbox.checked,
-			scale:       scaleStepper.value
+			scale: scaleStepper.value
 		};
 
 		if (isTxtCheckbox.checked)
@@ -1507,7 +1587,7 @@ class AnimationDebug extends MusicBeatState
 
 		_file = new FileReference();
 		_file.addEventListener(Event.COMPLETE, onSaveComplete);
-		_file.addEventListener(Event.CANCEL,   onSaveCancel);
+		_file.addEventListener(Event.CANCEL, onSaveCancel);
 		_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 		_file.save(jsonString, daAnim + ".json");
 	}
@@ -1528,7 +1608,7 @@ class AnimationDebug extends MusicBeatState
 		{
 			_file = new FileReference();
 			_file.addEventListener(Event.COMPLETE, onSaveComplete);
-			_file.addEventListener(Event.CANCEL,   onSaveCancel);
+			_file.addEventListener(Event.CANCEL, onSaveCancel);
 			_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 			_file.save(data.trim(), daAnim + "Offsets.txt");
 		}
@@ -1550,7 +1630,7 @@ class AnimationDebug extends MusicBeatState
 	function onSaveComplete(_):Void
 	{
 		_file.removeEventListener(Event.COMPLETE, onSaveComplete);
-		_file.removeEventListener(Event.CANCEL,   onSaveCancel);
+		_file.removeEventListener(Event.CANCEL, onSaveCancel);
 		_file.removeEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 		_file = null;
 		setHelp("✓ File saved!", FlxColor.LIME);
@@ -1559,7 +1639,7 @@ class AnimationDebug extends MusicBeatState
 	function onSaveCancel(_):Void
 	{
 		_file.removeEventListener(Event.COMPLETE, onSaveComplete);
-		_file.removeEventListener(Event.CANCEL,   onSaveCancel);
+		_file.removeEventListener(Event.CANCEL, onSaveCancel);
 		_file.removeEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 		_file = null;
 	}
@@ -1567,7 +1647,7 @@ class AnimationDebug extends MusicBeatState
 	function onSaveError(_):Void
 	{
 		_file.removeEventListener(Event.COMPLETE, onSaveComplete);
-		_file.removeEventListener(Event.CANCEL,   onSaveCancel);
+		_file.removeEventListener(Event.CANCEL, onSaveCancel);
 		_file.removeEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 		_file = null;
 		setHelp("✗ Error saving file!", FlxColor.RED);
@@ -1628,7 +1708,8 @@ class AnimationDebug extends MusicBeatState
 		}
 
 		// ── Todo lo demás se bloquea si el usuario está escribiendo en un campo ─
-		if (isTyping()) return;
+		if (isTyping())
+			return;
 
 		// Reset camera
 		if (FlxG.keys.justPressed.R)
@@ -1651,12 +1732,14 @@ class AnimationDebug extends MusicBeatState
 		if (FlxG.keys.justPressed.W)
 		{
 			curAnim--;
-			if (curAnim < 0) curAnim = animList.length - 1;
+			if (curAnim < 0)
+				curAnim = animList.length - 1;
 		}
 		if (FlxG.keys.justPressed.S)
 		{
 			curAnim++;
-			if (curAnim >= animList.length) curAnim = 0;
+			if (curAnim >= animList.length)
+				curAnim = 0;
 		}
 
 		if (FlxG.keys.justPressed.S || FlxG.keys.justPressed.W || FlxG.keys.justPressed.SPACE)
@@ -1664,7 +1747,8 @@ class AnimationDebug extends MusicBeatState
 			if (animList.length > 0 && curAnim >= 0 && curAnim < animList.length)
 			{
 				char.playAnim(animList[curAnim]);
-				if (ghostChar != null) ghostChar.playAnim(animList[0]);
+				if (ghostChar != null)
+					ghostChar.playAnim(animList[0]);
 				updateOffsetTexts();
 
 				// Bounce visual en el texto de animación
@@ -1680,23 +1764,27 @@ class AnimationDebug extends MusicBeatState
 		}
 
 		// ── Offset adjustment por teclado ─────────────────────────────────────
-		var upP    = FlxG.keys.anyJustPressed([UP]);
+		var upP = FlxG.keys.anyJustPressed([UP]);
 		var rightP = FlxG.keys.anyJustPressed([RIGHT]);
-		var downP  = FlxG.keys.anyJustPressed([DOWN]);
-		var leftP  = FlxG.keys.anyJustPressed([LEFT]);
-		var mult   = FlxG.keys.pressed.SHIFT ? 10 : 1;
+		var downP = FlxG.keys.anyJustPressed([DOWN]);
+		var leftP = FlxG.keys.anyJustPressed([LEFT]);
+		var mult = FlxG.keys.pressed.SHIFT ? 10 : 1;
 
 		if ((upP || rightP || downP || leftP) && animList.length > 0 && curAnim >= 0 && curAnim < animList.length)
 		{
-			var selAnim  = animList[curAnim];
-			var offsets  = char.animOffsets.get(selAnim);
+			var selAnim = animList[curAnim];
+			var offsets = char.animOffsets.get(selAnim);
 
 			if (offsets != null)
 			{
-				if (upP)    offsets[1] += 1 * mult;
-				if (downP)  offsets[1] -= 1 * mult;
-				if (leftP)  offsets[0] += 1 * mult;
-				if (rightP) offsets[0] -= 1 * mult;
+				if (upP)
+					offsets[1] += 1 * mult;
+				if (downP)
+					offsets[1] -= 1 * mult;
+				if (leftP)
+					offsets[0] += 1 * mult;
+				if (rightP)
+					offsets[0] -= 1 * mult;
 
 				for (anim in currentAnimData)
 				{
@@ -1709,7 +1797,8 @@ class AnimationDebug extends MusicBeatState
 				}
 
 				char.playAnim(selAnim);
-				if (ghostChar != null) ghostChar.playAnim(animList[0]);
+				if (ghostChar != null)
+					ghostChar.playAnim(animList[0]);
 				updateOffsetTexts();
 
 				// Flash amarillo → normal en textInfo como feedback
@@ -1717,7 +1806,11 @@ class AnimationDebug extends MusicBeatState
 				// explota al intentar leer propiedades nulas (crash en update).
 				FlxTween.cancelTweensOf(textInfo);
 				textInfo.color = 0xFFFFFFFF;
-				new FlxTimer().start(0.3, function(_) { if (textInfo != null) textInfo.color = 0xFFFFE566; });
+				new FlxTimer().start(0.3, function(_)
+				{
+					if (textInfo != null)
+						textInfo.color = 0xFFFFE566;
+				});
 			}
 		}
 
@@ -1742,8 +1835,7 @@ class AnimationDebug extends MusicBeatState
 				dragLastX = FlxG.mouse.screenX;
 				dragLastY = FlxG.mouse.screenY;
 
-				if ((Math.abs(dx) > 0 || Math.abs(dy) > 0)
-					&& animList.length > 0 && curAnim >= 0 && curAnim < animList.length)
+				if ((Math.abs(dx) > 0 || Math.abs(dy) > 0) && animList.length > 0 && curAnim >= 0 && curAnim < animList.length)
 				{
 					var selAnim = animList[curAnim];
 					var offsets = char.animOffsets.get(selAnim);
@@ -1765,7 +1857,8 @@ class AnimationDebug extends MusicBeatState
 						}
 
 						char.playAnim(selAnim);
-						if (ghostChar != null) ghostChar.playAnim(animList[0]);
+						if (ghostChar != null)
+							ghostChar.playAnim(animList[0]);
 						updateOffsetTexts();
 					}
 				}
@@ -1792,10 +1885,14 @@ class AnimationDebug extends MusicBeatState
 	 */
 	function isMouseOverHUD():Bool
 	{
-		if (FlxG.mouse.overlaps(UI_box,    camHUD)) return true;
-		if (FlxG.mouse.overlaps(leftPanel, camHUD)) return true;
-		if (FlxG.mouse.overlaps(statusBar, camHUD)) return true;
-		if (FlxG.mouse.overlaps(iconBG,    camHUD)) return true;
+		if (FlxG.mouse.overlaps(UI_box, camHUD))
+			return true;
+		if (FlxG.mouse.overlaps(leftPanel, camHUD))
+			return true;
+		if (FlxG.mouse.overlaps(statusBar, camHUD))
+			return true;
+		if (FlxG.mouse.overlaps(iconBG, camHUD))
+			return true;
 		return false;
 	}
 
@@ -1803,7 +1900,7 @@ class AnimationDebug extends MusicBeatState
 	{
 		if (textHelp != null)
 		{
-			textHelp.text  = msg;
+			textHelp.text = msg;
 			textHelp.color = color;
 		}
 
@@ -1813,8 +1910,10 @@ class AnimationDebug extends MusicBeatState
 			statusAccentBar.color = color;
 			FlxTween.cancelTweensOf(statusAccentBar);
 			statusAccentBar.alpha = 1;
-			FlxTween.tween(statusAccentBar, {alpha: 0.4}, 1.2,
-				{ease: FlxEase.quartOut, onComplete: function(_) { statusAccentBar.alpha = 0.4; }});
+			FlxTween.tween(statusAccentBar, {alpha: 0.4}, 1.2, {ease: FlxEase.quartOut, onComplete: function(_)
+			{
+				statusAccentBar.alpha = 0.4;
+			}});
 		}
 	}
 
@@ -1825,12 +1924,18 @@ class AnimationDebug extends MusicBeatState
 	function isTyping():Bool
 	{
 		// FlxUIInputText tiene hasFocus cuando está activo
-		if (animNameInput      != null && animNameInput.hasFocus)      return true;
-		if (animPrefixInput    != null && animPrefixInput.hasFocus)    return true;
-		if (pathInput          != null && pathInput.hasFocus)          return true;
-		if (spritemapNameInput != null && spritemapNameInput.hasFocus) return true;
-		if (healthIconInput    != null && healthIconInput.hasFocus)    return true;
-		if (healthBarColorInput!= null && healthBarColorInput.hasFocus)return true;
+		if (animNameInput != null && animNameInput.hasFocus)
+			return true;
+		if (animPrefixInput != null && animPrefixInput.hasFocus)
+			return true;
+		if (pathInput != null && pathInput.hasFocus)
+			return true;
+		if (spritemapNameInput != null && spritemapNameInput.hasFocus)
+			return true;
+		if (healthIconInput != null && healthIconInput.hasFocus)
+			return true;
+		if (healthBarColorInput != null && healthBarColorInput.hasFocus)
+			return true;
 		return false;
 	}
 }

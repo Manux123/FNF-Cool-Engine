@@ -13,19 +13,6 @@ import funkin.states.LoadingState;
 
 using StringTools;
 
-/**
- * CacheState OPTIMIZADO
- *
- * CAMBIOS vs original:
- *  - Solo cachea la lista ESENCIAL (sonidos de UI + imágenes críticas).
- *    La versión anterior escaneaba TODA la carpeta assets/ en disco y
- *    cargaba cada imagen como FlxGraphic persistente → 200-300 MB fijos.
- *  - Los assets de stages, personajes y canciones se cargan bajo demanda
- *    en sus estados correspondientes y se liberan al salir.
- *  - Se eliminan los trace() de carga (generaban miles de strings).
- *  - loadingBar ya no llama a makeGraphic() cada frame (recrea BitmapData
- *    cada actualización → presión de GC innecesaria); ahora usa scaleX.
- */
 class CacheState extends funkin.states.MusicBeatState
 {
     var loadingBar:FlxSprite;
@@ -63,7 +50,7 @@ class CacheState extends funkin.states.MusicBeatState
         loadingBar = new FlxSprite(barBG.x + 5, barBG.y + 5).makeGraphic(10, 30, FlxColor.LIME);
         add(loadingBar);
 
-        loadingText = new FlxText(0, 450, FlxG.width, "Cargando...");
+        loadingText = new FlxText(0, 450, FlxG.width, "Loading...");
         loadingText.setFormat(Paths.font("Funkin.otf"), 28, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
         add(loadingText);
 

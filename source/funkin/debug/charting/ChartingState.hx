@@ -665,8 +665,8 @@ class ChartingState extends funkin.states.MusicBeatState
 		if (charIconRow != null)
 			charIconRow.refreshIcons();
 
-		showMessage('🔧 Grid actualizado: ${getGridColumns() / 4} grupos de strums', ACCENT_CYAN);
-		trace('[ChartingState] Grid reconstruido con ${getGridColumns()} columnas');
+		showMessage('🔧 Grid updated: ${getGridColumns() / 4} groups of strums', ACCENT_CYAN);
+		trace('[ChartingState] Grid rebuilt with ${getGridColumns()} columns');
 	}
 
 	function setupNotes():Void
@@ -1823,7 +1823,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		{
 			// Cambiar al Song tab para editar el BPM
 			UI_box.selected_tab_id = 'Song';
-			showMessage('✏️ Edita el BPM en el tab Song', ACCENT_WARNING);
+			showMessage('✏️ Edit the BPM in the tab Song', ACCENT_WARNING);
 		}
 
 		// Click en Section → abrir diálogo de navegación
@@ -1875,7 +1875,7 @@ class ChartingState extends funkin.states.MusicBeatState
 			if (target != null && target >= 1 && target <= _song.notes.length)
 			{
 				changeSection(target - 1 - curSection);
-				showMessage('📍 Navegando a sección ${target}', ACCENT_CYAN);
+				showMessage('📍 Navigating to section ${target}', ACCENT_CYAN);
 			}
 			remove(overlay);
 			remove(panel);

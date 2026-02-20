@@ -507,7 +507,7 @@ class AnimationDebug extends MusicBeatState
 			offsetXStepper.value         = 0;
 			offsetYStepper.value         = 0;
 			if (addAnimBtn != null) addAnimBtn.text = "Add Animation";
-			setHelp("Campos limpiados — modo Add", FlxColor.CYAN);
+			setHelp("Cleared fields — Add mode", FlxColor.CYAN);
 		}));
 		yPos += 30;
 
@@ -798,7 +798,7 @@ class AnimationDebug extends MusicBeatState
 
 		if (newName == "" || newPrefix == "")
 		{
-			setHelp("✗ Nombre y prefix son obligatorios!", FlxColor.RED);
+			setHelp("✗ Name and prefix are required!", FlxColor.RED);
 			return;
 		}
 
@@ -832,7 +832,7 @@ class AnimationDebug extends MusicBeatState
 			}
 
 			reloadCharacterWithNewAnims();
-			setHelp("✓ Animación actualizada: " + newName, FlxColor.LIME);
+			setHelp("✓ Animation updated: " + newName, FlxColor.LIME);
 
 			// Mantener la selección apuntando a la anim recién editada
 			var newIdx = animList.indexOf(newName);
@@ -857,13 +857,13 @@ class AnimationDebug extends MusicBeatState
 
 			if (alreadyExists)
 			{
-				setHelp('✗ "' + newName + '" ya existe — usa "← Load Selected" para editarla', FlxColor.RED);
+				setHelp('✗ "' + newName + '" it already exists — use "← Load Selected" to edit it', FlxColor.RED);
 				return;
 			}
 
 			currentAnimData.push(newAnim);
 			reloadCharacterWithNewAnims();
-			setHelp("✓ Animación añadida: " + newName, FlxColor.LIME);
+			setHelp("✓ Animation add: " + newName, FlxColor.LIME);
 		}
 
 		// Limpiar campos tras Add (no tras Edit, para comodidad)
@@ -883,7 +883,7 @@ class AnimationDebug extends MusicBeatState
 	{
 		if (animList.length == 0 || curAnim < 0 || curAnim >= animList.length)
 		{
-			setHelp("⚠ No hay animación seleccionada", FlxColor.BLACK);
+			setHelp("⚠ No animation selected", FlxColor.BLACK);
 			return;
 		}
 
@@ -904,13 +904,13 @@ class AnimationDebug extends MusicBeatState
 				editingAnimName = animName;
 				if (addAnimBtn != null) addAnimBtn.text = "Update Anim";
 
-				setHelp('← Editando: $animName  |  "New / Clear" para cancelar', FlxColor.CYAN);
+				setHelp('← Editing: $animName  |  "New / Clear" for cancel', FlxColor.CYAN);
 				UI_box.selected_tab_id = "Animation";
 				return;
 			}
 		}
 
-		setHelp("⚠ Animación no encontrada en datos", FlxColor.BLACK);
+		setHelp("⚠ Animation not found in dates", FlxColor.BLACK);
 	}
 
 	function deleteCurrentAnimation():Void
@@ -930,7 +930,7 @@ class AnimationDebug extends MusicBeatState
 		}
 
 		reloadCharacterWithNewAnims();
-		setHelp("✓ Animación eliminada: " + animName, FlxColor.LIME);
+		setHelp("✓ Animation erased: " + animName, FlxColor.LIME);
 
 		if (curAnim >= animList.length)
 			curAnim = animList.length - 1;
@@ -979,17 +979,17 @@ class AnimationDebug extends MusicBeatState
 			if (FileSystem.exists(xmlPath))
 			{
 				File.copy(xmlPath, destDir + baseName + ".xml");
-				setHelp("✓ PNG + XML importados", FlxColor.LIME);
+				setHelp("✓ PNG + XML importeds", FlxColor.LIME);
 			}
 			else if (FileSystem.exists(txtPath))
 			{
 				File.copy(txtPath, destDir + baseName + ".txt");
 				isTxtCheckbox.checked = true;
-				setHelp("✓ PNG + TXT importados", FlxColor.LIME);
+				setHelp("✓ PNG + TXT importeds", FlxColor.LIME);
 			}
 			else
 			{
-				setHelp("⚠ PNG importado (no se encontró XML/TXT)", FlxColor.BLACK);
+				setHelp("⚠ PNG imported (not found XML/TXT)", FlxColor.BLACK);
 			}
 
 			pathInput.text = baseName;
@@ -1024,11 +1024,11 @@ class AnimationDebug extends MusicBeatState
 			if (fileType == "icon" && healthIconInput != null)
 				updateIconPreview(healthIconInput.text);
 
-			setHelp("✓ " + newFileName + " importado!", FlxColor.LIME);
+			setHelp("✓ " + newFileName + " imported!", FlxColor.LIME);
 		}
 		catch (err:Dynamic)
 		{
-			setHelp("✗ Error importando: " + err, FlxColor.RED);
+			setHelp("✗ Error importing: " + err, FlxColor.RED);
 		}
 		#end
 	}
@@ -1066,7 +1066,7 @@ class AnimationDebug extends MusicBeatState
 
 			if (!FileSystem.exists(atlasJsonSrc))
 			{
-				setHelp("✗ No se encontró " + baseName + ".json junto al PNG", FlxColor.RED);
+				setHelp("✗ Not found " + baseName + ".json next to PNG", FlxColor.RED);
 				return;
 			}
 
@@ -1105,9 +1105,9 @@ class AnimationDebug extends MusicBeatState
 			if (hasAnimJson)
 				loadAnimationsFromAnimationJson(destFolder + "Animation.json");
 
-			var msg = "✓ FlxAnimate importado en " + destFolder;
+			var msg = "✓ FlxAnimate imported in " + destFolder;
 			if (!hasAnimJson)
-				msg += "\n⚠ Sin Animation.json — añade animaciones manualmente";
+				msg += "\n⚠ No Animation.json — add animations manually";
 			setHelp(msg, hasAnimJson ? FlxColor.LIME : FlxColor.BLACK);
 		}
 		catch (err:Dynamic)
@@ -1161,13 +1161,13 @@ class AnimationDebug extends MusicBeatState
 				}
 			}
 
-			FlxG.log.notice('[AnimDebug] Cargados ' + currentAnimData.length + ' símbolos de Animation.json');
+			FlxG.log.notice('[AnimDebug] Loaded ' + currentAnimData.length + ' simbols of Animation.json');
 			reloadCharacterWithNewAnims();
 		}
 		catch (e:Dynamic)
 		{
-			FlxG.log.error('[AnimDebug] Error leyendo Animation.json: ' + e);
-			setHelp("✗ Error leyendo Animation.json: " + e, FlxColor.RED);
+			FlxG.log.error('[AnimDebug] Error reading Animation.json: ' + e);
+			setHelp("✗ Error reading Animation.json: " + e, FlxColor.RED);
 		}
 		#end
 	}
@@ -1186,7 +1186,7 @@ class AnimationDebug extends MusicBeatState
 
 		if (!FileSystem.exists(animJsonPath))
 		{
-			setHelp("⚠ No se encontró Animation.json en: " + animJsonPath, FlxColor.BLACK);
+			setHelp("⚠ Not found Animation.json in: " + animJsonPath, FlxColor.BLACK);
 			return;
 		}
 
@@ -1204,22 +1204,22 @@ class AnimationDebug extends MusicBeatState
 
 			if (parsed.SD != null && parsed.SD.S != null)
 			{
-				trace("  [SD] Símbolos del diccionario:");
+				trace("  [SD] Símbols of diccionary:");
 				for (sym in (cast parsed.SD.S : Array<Dynamic>))
 					trace("    - " + sym.SN);
 			}
 			else
-				trace("  (Sin Symbol Dictionary)");
+				trace("  (No Symbol Dictionary)");
 
 			trace("═══════════════════════════════════════════");
-			setHelp("✓ Símbolos listados en consola", FlxColor.LIME);
+			setHelp("✓ Símbols listed in console", FlxColor.LIME);
 		}
 		catch (e:Dynamic)
 		{
-			setHelp("✗ Error leyendo Animation.json: " + e, FlxColor.RED);
+			setHelp("✗ Error reading Animation.json: " + e, FlxColor.RED);
 		}
 		#else
-		setHelp("⚠ Solo disponible en desktop", FlxColor.RED);
+		setHelp("⚠ Only available in desktop", FlxColor.RED);
 		#end
 	}
 
@@ -1539,9 +1539,9 @@ class AnimationDebug extends MusicBeatState
 		var jsonString = Json.stringify(buildExportData(), null, '\t');
 		#if desktop
 		lime.system.Clipboard.text = jsonString;
-		setHelp("✓ JSON copiado al portapapeles!", FlxColor.LIME);
+		setHelp("✓ JSON copied to clipboard!", FlxColor.LIME);
 		#else
-		FlxG.log.warn("Clipboard no soportado en esta plataforma");
+		FlxG.log.warn("Clipboard not supported on this platform");
 		#end
 	}
 
@@ -1553,7 +1553,7 @@ class AnimationDebug extends MusicBeatState
 		_file.removeEventListener(Event.CANCEL,   onSaveCancel);
 		_file.removeEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 		_file = null;
-		setHelp("✓ Archivo guardado!", FlxColor.LIME);
+		setHelp("✓ File saved!", FlxColor.LIME);
 	}
 
 	function onSaveCancel(_):Void
@@ -1570,7 +1570,7 @@ class AnimationDebug extends MusicBeatState
 		_file.removeEventListener(Event.CANCEL,   onSaveCancel);
 		_file.removeEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 		_file = null;
-		setHelp("✗ Error guardando archivo!", FlxColor.RED);
+		setHelp("✗ Error saving file!", FlxColor.RED);
 	}
 
 	// ── Icon preview ──────────────────────────────────────────────────────────

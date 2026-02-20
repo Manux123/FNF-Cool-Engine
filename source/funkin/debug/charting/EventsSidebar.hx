@@ -283,7 +283,7 @@ class EventsSidebar extends FlxGroup
 			{
 				existing.value = value;
 				refreshEvents();
-				parent.showMessage('✅ Evento "${type}" actualizado en step ${stepTime}', 0xFF00FF88);
+				parent.showMessage('✅ Event "${type}" updated in step ${stepTime}', 0xFF00FF88);
 				return;
 			}
 		}
@@ -298,7 +298,7 @@ class EventsSidebar extends FlxGroup
 		_song.events.sort(function(a, b) return Std.int(a.stepTime - b.stepTime));
 
 		refreshEvents();
-		parent.showMessage('✅ Evento "${type}" añadido en step ${stepTime}', 0xFF00FF88);
+		parent.showMessage('✅ Event "${type}" add in step ${stepTime}', 0xFF00FF88);
 	}
 }
 

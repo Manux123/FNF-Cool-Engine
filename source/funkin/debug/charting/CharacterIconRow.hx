@@ -644,7 +644,7 @@ class CharacterDataPopup extends FlxGroup
 		if (flipCheck != null)
 			char.flip = flipCheck.checked;
 
-		parent.showMessage('✅ Personaje #${editingIndex + 1} actualizado: ${char.name}', ACCENT_CYAN);
+		parent.showMessage('✅ Character #${editingIndex + 1} updated: ${char.name}', ACCENT_CYAN);
 
 		if (iconRow != null)
 			iconRow.refreshIcons();
@@ -688,7 +688,7 @@ class CharacterDataPopup extends FlxGroup
 				}
 			}
 			parent.rebuildGrid(); // ← reconstruye con las columnas correctas
-			parent.showMessage('🗑 "${name}" + StrumsGroup "${sgId}" eliminados', ACCENT_ERROR);
+			parent.showMessage('🗑 "${name}" + StrumsGroup "${sgId}" deleted', ACCENT_ERROR);
 			if (iconRow != null)
 				iconRow.refreshIcons();
 			return;
@@ -696,7 +696,7 @@ class CharacterDataPopup extends FlxGroup
 
 		if (iconRow != null)
 			iconRow.refreshIcons();
-		parent.showMessage('🗑 Personaje "${name}" eliminado', ACCENT_ERROR);
+		parent.showMessage('🗑 Character "${name}" deleted', ACCENT_ERROR);
 	}
 
 	public function close():Void

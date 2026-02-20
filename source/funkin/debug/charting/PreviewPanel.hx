@@ -322,7 +322,7 @@ class PreviewPanel extends FlxGroup
 		camPreview.visible = false;
 		camBorder.visible  = false;
 		destroyPreviewChar();
-		parent.showMessage('👁 Preview desactivado', 0xFF555555);
+		parent.showMessage('👁 Preview desactivated', 0xFF555555);
 	}
 
 	// ─────────────────────────────────────────────────────
@@ -405,7 +405,7 @@ class PreviewPanel extends FlxGroup
 				previewChar.destroy();
 				previewChar = null;
 			}
-			parent.showMessage('❌ No se pudo cargar: $charName', 0xFFFF3366);
+			parent.showMessage('❌ Could not load: $charName', 0xFFFF3366);
 		}
 	}
 

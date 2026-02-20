@@ -336,12 +336,12 @@ class ModSelectorState extends MusicBeatState
 	function _updateInfo(mod:mods.ModInfo):Void
 	{
 		_infoName.text    = mod.name;
-		_infoAuthor.text  = mod.author.length > 0 ? 'por ' + mod.author : '';
+		_infoAuthor.text  = mod.author.length > 0 ? 'by ' + mod.author : '';
 		_infoVersion.text = 'v' + mod.version;
 		_infoDesc.text    = mod.description;
 
 		final isActive = ModManager.activeMod == mod.id;
-		_infoActive.text = isActive ? '✓ MOD ACTIVO' : (!mod.enabled ? '✗ DESACTIVADO' : '');
+		_infoActive.text = isActive ? '✓ ACTIVE MOD' : (!mod.enabled ? '✗ DESACTIVATED' : '');
 		_infoActive.color = isActive ? 0xFF44FF88 : 0xFFFF4455;
 	}
 
@@ -593,7 +593,7 @@ class ModListItem extends FlxSprite
 		_nameText.scrollFactor.set();
 
 		// Autor
-		_authorText = new FlxText(10, 32, W - 20, mod.author.length > 0 ? 'por ' + mod.author : '');
+		_authorText = new FlxText(10, 32, W - 20, mod.author.length > 0 ? 'By ' + mod.author : '');
 		_authorText.setFormat(null, 11, 0xFF888899, LEFT);
 		_authorText.scrollFactor.set();
 

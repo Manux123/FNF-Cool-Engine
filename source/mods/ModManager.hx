@@ -7,16 +7,16 @@ import sys.io.File;
 import haxe.Json;
 
 /**
- * ModManager — gestiona mods instalados, activación y previews.
+ * ModManager — Manages installed mods, activation, and previews.
  *
- * ─── Estructura esperada de un mod ───────────────────────────────────────────
+ * ─── Expected structure of a mod ───────────────────────────────────────────
  *
  *   mods/
- *   └── mi-mod/
- *       ├── mod.json          ← metadatos (nombre, autor, versión, priority…)
- *       ├── preview.mp4       ← vídeo de preview en el selector  (opcional)
- *       ├── preview.png       ← imagen de preview si no hay vídeo (opcional)
- *       ├── icon.png          ← icono cuadrado del mod            (opcional)
+ *   └── my-mod/
+ *       ├── mod.json          ← metadatos (name, author, version, priority…)
+ *       ├── preview.mp4       ← preview video in the selector  (opcional)
+ *       ├── preview.png       ← preview image if there is no video (opcional)
+ *       ├── icon.png          ← icon square of mod            (opcional)
  *       ├── songs/
  *       ├── characters/
  *       ├── stages/
@@ -27,16 +27,16 @@ import haxe.Json;
  *       ├── scripts/
  *       └── videos/
  *
- * ─── mod.json campos extras ──────────────────────────────────────────────────
+ * ─── mod.json fields extras ──────────────────────────────────────────────────
  *   {
- *     "name":        "Mi Mod",
- *     "description": "Descripción del mod",
- *     "author":      "NombreAutor",
+ *     "name":        "My Mod",
+ *     "description": "Description of mod",
+ *     "author":      "NameAuthor",
  *     "version":     "1.0.0",
- *     "priority":    0,          ← orden en la lista (mayor = primero)
- *     "color":       "FF5599",   ← color de acento RRGGBB (sin #)
+ *     "priority":    0,          ← order in the list (largest = first)
+ *     "color":       "FF5599",   ← accent color RRGGBB (without #)
  *     "website":     "https://…",
- *     "enabled":     true        ← se puede poner a false para desactivar sin borrar
+ *     "enabled":     true        ← You can set it to false to disable it without deleting it
  *   }
  */
 class ModManager

@@ -3,7 +3,6 @@ package funkin.scripting;
 import haxe.Exception;
 import sys.FileSystem;
 import sys.io.File;
-
 #if HSCRIPT_ALLOWED
 import hscript.Parser;
 import hscript.Interp;
@@ -36,23 +35,24 @@ using StringTools;
  */
 class ScriptHandler
 {
-	public static var globalScripts : Map<String, HScriptInstance> = [];
-	public static var stageScripts  : Map<String, HScriptInstance> = [];
-	public static var songScripts   : Map<String, HScriptInstance> = [];
-	public static var uiScripts     : Map<String, HScriptInstance> = [];
+	public static var globalScripts:Map<String, HScriptInstance> = [];
+	public static var stageScripts:Map<String, HScriptInstance> = [];
+	public static var songScripts:Map<String, HScriptInstance> = [];
+	public static var uiScripts:Map<String, HScriptInstance> = [];
 
 	#if HSCRIPT_ALLOWED
 	/** Parser compartido — se inicializa una sola vez. */
-	static var _parser : Parser = null;
+	static var _parser:Parser = null;
 
-	public static var parser(get, null) : Parser;
+	public static var parser(get, null):Parser;
+
 	static function get_parser():Parser
 	{
 		if (_parser == null)
 		{
 			_parser = new Parser();
-			_parser.allowTypes    = true;
-			_parser.allowJSON     = true;
+			_parser.allowTypes = true;
+			_parser.allowJSON = true;
 			_parser.allowMetadata = true;
 		}
 		return _parser;
@@ -91,13 +91,13 @@ class ScriptHandler
 		}
 
 		final scriptName = extractName(scriptPath);
-		final content    = File.getContent(scriptPath);
-		final script     = new HScriptInstance(scriptName, scriptPath);
+		final content = File.getContent(scriptPath);
+		final script = new HScriptInstance(scriptName, scriptPath);
 
 		try
 		{
 			script.program = parser.parseString(content, scriptPath);
-			script.interp  = new Interp();
+			script.interp = new Interp();
 
 			ScriptAPI.expose(script.interp);
 
@@ -110,9 +110,9 @@ class ScriptHandler
 			trace('[ScriptHandler] Cargado [$scriptType]: $scriptName');
 			return script;
 		}
-		catch (e:Exception)
+		catch (e:Dynamic)
 		{
-			trace('[ScriptHandler] Error parseando "$scriptName": ${e.message}');
+			trace('[ScriptHandler] Error parseando "$scriptName": ' + Std.string(e));
 			return null;
 		}
 		#else
@@ -131,9 +131,11 @@ class ScriptHandler
 
 		for (file in FileSystem.readDirectory(folderPath))
 		{
-			if (!file.endsWith('.hx') && !file.endsWith('.hscript')) continue;
+			if (!file.endsWith('.hx') && !file.endsWith('.hscript'))
+				continue;
 			final script = loadScript('$folderPath/$file', scriptType);
-			if (script != null) scripts.push(script);
+			if (script != null)
+				scripts.push(script);
 		}
 
 		return scripts;
@@ -146,7 +148,8 @@ class ScriptHandler
 		for (path in paths)
 		{
 			final s = loadScript(path, scriptType);
-			if (s != null) scripts.push(s);
+			if (s != null)
+				scripts.push(s);
 		}
 		return scripts;
 	}
@@ -157,7 +160,7 @@ class ScriptHandler
 		clearSongScripts();
 		final base = 'assets/songs/${songName.toLowerCase()}';
 		loadScriptsFromFolder('$base/scripts', 'song');
-		loadScriptsFromFolder('$base/events',  'song');
+		loadScriptsFromFolder('$base/events', 'song');
 		trace('[ScriptHandler] Scripts de "$songName" cargados.');
 	}
 
@@ -176,10 +179,11 @@ class ScriptHandler
 	 */
 	public static function callOnScripts(funcName:String, args:Array<Dynamic> = null):Void
 	{
-		if (args == null) args = [];
+		if (args == null)
+			args = [];
 		callMap(globalScripts, funcName, args);
-		callMap(stageScripts,  funcName, args);
-		callMap(songScripts,   funcName, args);
+		callMap(stageScripts, funcName, args);
+		callMap(songScripts, funcName, args);
 	}
 
 	/** Llama sólo en los scripts de stage. */
@@ -192,10 +196,17 @@ class ScriptHandler
 	 */
 	public static function callOnScriptsReturn(funcName:String, args:Array<Dynamic> = null, defaultValue:Dynamic = null):Dynamic
 	{
-		if (args == null) args = [];
-		var r = firstReturn(songScripts,   funcName, args); if (r != null) return r;
-		    r = firstReturn(stageScripts,  funcName, args); if (r != null) return r;
-		    r = firstReturn(globalScripts, funcName, args); if (r != null) return r;
+		if (args == null)
+			args = [];
+		var r = firstReturn(songScripts, funcName, args);
+		if (r != null)
+			return r;
+		r = firstReturn(stageScripts, funcName, args);
+		if (r != null)
+			return r;
+		r = firstReturn(globalScripts, funcName, args);
+		if (r != null)
+			return r;
 		return defaultValue;
 	}
 
@@ -204,22 +215,31 @@ class ScriptHandler
 	/** Establece `varName = value` en TODOS los scripts. */
 	public static function setOnScripts(varName:String, value:Dynamic):Void
 	{
-		for (s in globalScripts) s.set(varName, value);
-		for (s in stageScripts)  s.set(varName, value);
-		for (s in songScripts)   s.set(varName, value);
+		for (s in globalScripts)
+			s.set(varName, value);
+		for (s in stageScripts)
+			s.set(varName, value);
+		for (s in songScripts)
+			s.set(varName, value);
 	}
 
 	/** Establece una variable sólo en scripts de stage. */
 	public static function setOnStageScripts(varName:String, value:Dynamic):Void
 	{
-		for (s in stageScripts) s.set(varName, value);
+		for (s in stageScripts)
+			s.set(varName, value);
 	}
 
 	// ─── Limpiar ──────────────────────────────────────────────────────────────
 
-	public static function clearSongScripts():Void   destroyMap(songScripts);
-	public static function clearStageScripts():Void  destroyMap(stageScripts);
-	public static function clearUIScripts():Void     destroyMap(uiScripts);
+	public static function clearSongScripts():Void
+		destroyMap(songScripts);
+
+	public static function clearStageScripts():Void
+		destroyMap(stageScripts);
+
+	public static function clearUIScripts():Void
+		destroyMap(uiScripts);
 
 	public static function clearAllScripts():Void
 	{
@@ -236,16 +256,17 @@ class ScriptHandler
 		final map = switch (type.toLowerCase())
 		{
 			case 'global': globalScripts;
-			case 'stage':  stageScripts;
-			case 'ui':     uiScripts;
-			default:       songScripts;
+			case 'stage': stageScripts;
+			case 'ui': uiScripts;
+			default: songScripts;
 		};
 		map.set(script.name, script);
 	}
 
 	static inline function callMap(map:Map<String, HScriptInstance>, fn:String, args:Array<Dynamic>):Void
 	{
-		for (s in map) s.call(fn, args);
+		for (s in map)
+			s.call(fn, args);
 	}
 
 	static function firstReturn(map:Map<String, HScriptInstance>, fn:String, args:Array<Dynamic>):Dynamic
@@ -253,14 +274,16 @@ class ScriptHandler
 		for (s in map)
 		{
 			final r = s.call(fn, args);
-			if (r != null) return r;
+			if (r != null)
+				return r;
 		}
 		return null;
 	}
 
 	static function destroyMap(map:Map<String, HScriptInstance>):Void
 	{
-		for (s in map) s.destroy();
+		for (s in map)
+			s.destroy();
 		map.clear();
 	}
 
@@ -268,8 +291,10 @@ class ScriptHandler
 	public static function extractName(path:String):String
 	{
 		var name = path.split('/').pop();
-		if (name.endsWith('.hscript')) return name.substr(0, name.length - 8);
-		if (name.endsWith('.hx'))      return name.substr(0, name.length - 3);
+		if (name.endsWith('.hscript'))
+			return name.substr(0, name.length - 8);
+		if (name.endsWith('.hx'))
+			return name.substr(0, name.length - 3);
 		return name;
 	}
 }

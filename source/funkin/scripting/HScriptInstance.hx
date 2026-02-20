@@ -1,7 +1,6 @@
 package funkin.scripting;
 
 import haxe.Exception;
-
 #if HSCRIPT_ALLOWED
 import hscript.Interp;
 import hscript.Expr;
@@ -15,20 +14,20 @@ import hscript.Expr;
  */
 class HScriptInstance
 {
-	public var name     : String;
-	public var path     : String;
-	public var active   : Bool = true;
-	public var priority : Int  = 0; // Mayor número = ejecuta primero (usado por StateScriptHandler)
+	public var name:String;
+	public var path:String;
+	public var active:Bool = true;
+	public var priority:Int = 0; // Mayor número = ejecuta primero (usado por StateScriptHandler)
 
 	#if HSCRIPT_ALLOWED
-	public var interp   : Interp;
-	public var program  : Expr;
+	public var interp:Interp;
+	public var program:Expr;
 	#end
 
 	public function new(name:String, path:String, priority:Int = 0)
 	{
-		this.name     = name;
-		this.path     = path;
+		this.name = name;
+		this.path = path;
 		this.priority = priority;
 	}
 
@@ -40,10 +39,15 @@ class HScriptInstance
 	 */
 	public function call(funcName:String, args:Array<Dynamic> = null):Dynamic
 	{
-		if (!active) return null;
+		if (!active)
+			return null;
 
 		#if HSCRIPT_ALLOWED
-		if (args == null) args = [];
+		if (interp == null)
+			return null;
+
+		if (args == null)
+			args = [];
 
 		try
 		{
@@ -51,9 +55,9 @@ class HScriptInstance
 			if (func != null && Reflect.isFunction(func))
 				return Reflect.callMethod(null, func, args);
 		}
-		catch (e:Exception)
+		catch (e:Dynamic)
 		{
-			trace('[$name] Error en "$funcName": ${e.message}');
+			trace('[$name] Error in "$funcName": ${e.message}');
 		}
 		#end
 

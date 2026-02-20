@@ -84,6 +84,8 @@ function onUpdate(elapsed)
 
 function _updateScoreText()
 {
+	if (scoreTxt == null) return;
+
 	if (FlxG.save.data.accuracyDisplay)
 		scoreTxt.text = scoreManager.getHUDText(gameState);
 	else
@@ -92,6 +94,8 @@ function _updateScoreText()
 
 function _updateIcons()
 {
+	if (iconP1 == null || iconP2 == null || healthBar == null) return;
+
 	var healthPercent = FlxMath.remapToRange(gameState.health, 0, 2, 0, 100);
 
 	iconP1.setGraphicSize(Std.int(FlxMath.lerp(150, iconP1.width, 0.50)));

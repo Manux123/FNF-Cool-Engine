@@ -10,58 +10,57 @@ import funkin.gameplay.GameState;
 import sys.FileSystem;
 
 /**
-* UIScriptedManager — A UIManager fully controlled by HScript.
+	* UIScriptedManager — A UIManager fully controlled by HScript.
 
-* If the requested script does not exist or fails, the default script is loaded automatically.
+	* If the requested script does not exist or fails, the default script is loaded automatically.
 
-* *
+	* *
 
-* ─── API exposed to the script ──────────────────────────────────────────────
+	* ─── API exposed to the script ──────────────────────────────────────────────
 
-* // Construction
+	* // Construction
 
-* 	makeSprite(x, y) → FlxSprite (scrollFactor=0, assigned camHUD)
+	* 	makeSprite(x, y) → FlxSprite (scrollFactor=0, assigned camHUD)
 
-* 	makeText(x, y, text, size) → FlxText (scrollFactor=0, assigned camHUD)
+	* 	makeText(x, y, text, size) → FlxText (scrollFactor=0, assigned camHUD)
 
-* 	makeBar(x, y, w, h, obj, var, min, max) → FlxBar (RIGHT_TO_LEFT, scrollFactor=0, camHUD)
+	* 	makeBar(x, y, w, h, obj, var, min, max) → FlxBar (RIGHT_TO_LEFT, scrollFactor=0, camHUD)
 
-* 	uiAdd(obj) → adds to the group and assigns camHUD
+	* 	uiAdd(obj) → adds to the group and assigns camHUD
 
-* 	uiRemove(obj) → removes from the group
+	* 	uiRemove(obj) → removes from the group
 
-* 	screenCenterX(obj)
+	* 	screenCenterX(obj)
 
-* 	screenCenterY(obj)
+	* 	screenCenterY(obj)
 
-* // Manual pool (replicates UIManager.getFromPool)
+	* // Manual pool (replicates UIManager.getFromPool)
 
-* // _getFromPool(array) is used directly in the script with makeSprite+uiAdd
+	* // _getFromPool(array) is used directly in the script with makeSprite+uiAdd
 
-* // Available classes in the script
+	* // Available classes in the script
 
-* 	HealthIcon, ScoreManager, FlxMath, StringTools
+	* 	HealthIcon, ScoreManager, FlxMath, StringTools
 
-* 	PIXEL_ZOOM, BORDER_OUTLINE, BORDER_SHADOW, BORDER_NONE
+	* 	PIXEL_ZOOM, BORDER_OUTLINE, BORDER_SHADOW, BORDER_NONE
 
-* // Context references
+	* // Context references
 
-* 	camHUD, gameState, uiGroup, metaData
+	* 	camHUD, gameState, uiGroup, metaData
 
-* ─── Callbacks from the script ──────────────────────── ───────────────────────── 
-* 	onCreate() 
-* 	onUpdate(elapsed) 
-* 	onBeatHit(beat) 
-* 	onStepHit(step) 
-* 	onRatingPopup(ratingName, combo) 
-* 	onMissPopup() 
-* 	onScoreUpdate(score, misses, accuracy) ← optional, script can ignore it 
-* 	onHealthUpdate(health, percent) ← optional 
-* 	onIconsSet(p1, p2) 
-* 	onStageSet(stage) 
-* 	onDestroy()
+	* ─── Callbacks from the script ──────────────────────── ───────────────────────── 
+	* 	onCreate() 
+	* 	onUpdate(elapsed) 
+	* 	onBeatHit(beat) 
+	* 	onStepHit(step) 
+	* 	onRatingPopup(ratingName, combo) 
+	* 	onMissPopup() 
+	* 	onScoreUpdate(score, misses, accuracy) ← optional, script can ignore it 
+	* 	onHealthUpdate(health, percent) ← optional 
+	* 	onIconsSet(p1, p2) 
+	* 	onStageSet(stage) 
+	* 	onDestroy()
  */
- 
 class UIScriptedManager extends FlxGroup
 {
 	// ─── Script ─────────────────────────────────────────────────────────────
@@ -78,9 +77,9 @@ class UIScriptedManager extends FlxGroup
 	{
 		super();
 
-		this.camHUD    = camHUD;
+		this.camHUD = camHUD;
 		this.gameState = gameState;
-		this.metaData  = metaData;
+		this.metaData = metaData;
 
 		loadUIScript(metaData.ui);
 	}
@@ -124,15 +123,16 @@ class UIScriptedManager extends FlxGroup
 
 	private function exposeUIAPI():Void
 	{
-		if (uiScript == null) return;
+		if (uiScript == null)
+			return;
 
 		var self = this;
 
 		// ── Referencias de contexto ────────────────────────────────────────
-		uiScript.set('camHUD',    camHUD);
+		uiScript.set('camHUD', camHUD);
 		uiScript.set('gameState', gameState);
-		uiScript.set('uiGroup',   this);
-		uiScript.set('metaData',  metaData);
+		uiScript.set('uiGroup', this);
+		uiScript.set('metaData', metaData);
 
 		// ── Clases que el script necesita para replicar UIManager ──────────
 
@@ -154,16 +154,14 @@ class UIScriptedManager extends FlxGroup
 		// setBorderStyle wrapper — HScript no puede pasar enums nativos de Haxe directamente.
 		// En vez de exponer las constantes (que llegan como Int y crashean en applyBorderStyle),
 		// exponemos una función que llama a setBorderStyle con el enum correcto desde Haxe.
-		uiScript.set('setTextBorder', function(txt:flixel.text.FlxText, style:String,
-		                                        color:flixel.util.FlxColor,
-		                                        ?size:Float = 1, ?quality:Float = 1):Void
+		uiScript.set('setTextBorder', function(txt:flixel.text.FlxText, style:String, color:flixel.util.FlxColor, ?size:Float = 1, ?quality:Float = 1):Void
 		{
 			var s = switch (style.toLowerCase())
 			{
-				case 'outline':      flixel.text.FlxText.FlxTextBorderStyle.OUTLINE;
+				case 'outline': flixel.text.FlxText.FlxTextBorderStyle.OUTLINE;
 				case 'outline_fast': flixel.text.FlxText.FlxTextBorderStyle.OUTLINE_FAST;
-				case 'shadow':       flixel.text.FlxText.FlxTextBorderStyle.SHADOW;
-				default:             flixel.text.FlxText.FlxTextBorderStyle.NONE;
+				case 'shadow': flixel.text.FlxText.FlxTextBorderStyle.SHADOW;
+				default: flixel.text.FlxText.FlxTextBorderStyle.NONE;
 			};
 			txt.setBorderStyle(s, color, size, quality);
 		});
@@ -187,15 +185,9 @@ class UIScriptedManager extends FlxGroup
 		});
 
 		// makeBar siempre RIGHT_TO_LEFT (único caso de uso = health bar)
-		uiScript.set('makeBar', function(x:Float, y:Float, w:Int, h:Int,
-		                                  obj:Dynamic, varName:String,
-		                                  min:Float, max:Float):flixel.ui.FlxBar
+		uiScript.set('makeBar', function(x:Float, y:Float, w:Int, h:Int, obj:Dynamic, varName:String, min:Float, max:Float):flixel.ui.FlxBar
 		{
-			var bar = new flixel.ui.FlxBar(
-				x, y,
-				flixel.ui.FlxBar.FlxBarFillDirection.RIGHT_TO_LEFT,
-				w, h, obj, varName, min, max
-			);
+			var bar = new flixel.ui.FlxBar(x, y, flixel.ui.FlxBar.FlxBarFillDirection.RIGHT_TO_LEFT, w, h, obj, varName, min, max);
 			bar.scrollFactor.set();
 			bar.cameras = [camHUD];
 			return bar;
@@ -220,11 +212,9 @@ class UIScriptedManager extends FlxGroup
 
 		// ── Utilidades ─────────────────────────────────────────────────────
 
-		uiScript.set('screenCenterX', function(spr:flixel.FlxObject):Void
-			spr.screenCenter(flixel.util.FlxAxes.X));
+		uiScript.set('screenCenterX', function(spr:flixel.FlxObject):Void spr.screenCenter(flixel.util.FlxAxes.X));
 
-		uiScript.set('screenCenterY', function(spr:flixel.FlxObject):Void
-			spr.screenCenter(flixel.util.FlxAxes.Y));
+		uiScript.set('screenCenterY', function(spr:flixel.FlxObject):Void spr.screenCenter(flixel.util.FlxAxes.Y));
 	}
 
 	// ─── Ciclo de vida ───────────────────────────────────────────────────────
@@ -249,7 +239,8 @@ class UIScriptedManager extends FlxGroup
 
 	public function showRatingPopup(ratingName:String, combo:Int):Void
 	{
-		if (metaData.hideRatings) return;
+		if (metaData.hideRatings)
+			return;
 		uiScript?.call('onRatingPopup', [ratingName, combo]);
 	}
 
@@ -270,12 +261,13 @@ class UIScriptedManager extends FlxGroup
 
 	// ─── Acceso a iconos (compatibilidad con PlayState) ───────────────────────
 	// PlayState puede leer iconP1/iconP2 si el script los expone como variables.
-
 	public var iconP1(get, null):funkin.gameplay.objects.character.HealthIcon;
+
 	function get_iconP1():funkin.gameplay.objects.character.HealthIcon
 		return uiScript?.get('iconP1');
 
 	public var iconP2(get, null):funkin.gameplay.objects.character.HealthIcon;
+
 	function get_iconP2():funkin.gameplay.objects.character.HealthIcon
 		return uiScript?.get('iconP2');
 

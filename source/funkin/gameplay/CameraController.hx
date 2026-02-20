@@ -7,6 +7,7 @@ import flixel.math.FlxMath;
 import flixel.math.FlxPoint;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
+import flixel.FlxCamera.FlxCameraFollowStyle;
 import funkin.gameplay.objects.character.Character;
 
 using StringTools;
@@ -74,7 +75,7 @@ class CameraController
 		camPos    = new FlxPoint();
 
 		// Iniciar la cámara siguiendo el objeto de follow con lerp suave.
-		camGame.follow(camFollow, LOCKON, followLerp);
+		camGame.follow(camFollow, FlxCameraFollowStyle.LOCKON, followLerp);
 		camGame.zoom = defaultZoom;
 
 		// Posición inicial: sobre el oponente (target por defecto).

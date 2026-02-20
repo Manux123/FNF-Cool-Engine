@@ -7,6 +7,8 @@ import flixel.graphics.FlxGraphic;
 
 using StringTools;
 
+@:keep
+
 class HealthIcon extends FlxSprite
 {
 	public var sprTracker:FlxSprite;

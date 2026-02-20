@@ -161,15 +161,15 @@ class PlayState extends funkin.states.MusicBeatState
 	// === HOOKS ===
 	// Almacenados como Map para registro por nombre (add/remove O(1))
 	// pero iterados via arrays cacheados para evitar el overhead del iterador de Map.
-	public var onBeatHitHooks:Map<String, Int->Void>   = new Map();
-	public var onStepHitHooks:Map<String, Int->Void>   = new Map();
-	public var onUpdateHooks:Map<String, Float->Void>  = new Map();
-	public var onNoteHitHooks:Map<String, Note->Void>  = new Map();
+	public var onBeatHitHooks:Map<String, Int->Void> = new Map();
+	public var onStepHitHooks:Map<String, Int->Void> = new Map();
+	public var onUpdateHooks:Map<String, Float->Void> = new Map();
+	public var onNoteHitHooks:Map<String, Note->Void> = new Map();
 	public var onNoteMissHooks:Map<String, Note->Void> = new Map();
 
 	// Arrays cacheados para iteración en el game loop (se reconstruyen al modificar los Maps)
-	private var _beatHookArr:Array<Int->Void>   = [];
-	private var _stepHookArr:Array<Int->Void>   = [];
+	private var _beatHookArr:Array<Int->Void> = [];
+	private var _stepHookArr:Array<Int->Void> = [];
 	private var _updateHookArr:Array<Float->Void> = [];
 	private var _noteHitHookArr:Array<Note->Void> = [];
 	private var _noteMissHookArr:Array<Note->Void> = [];
@@ -177,10 +177,10 @@ class PlayState extends funkin.states.MusicBeatState
 	/** Llama tras añadir/quitar cualquier hook para reconstruir los arrays cacheados. */
 	public function rebuildHookArrays():Void
 	{
-		_beatHookArr     = [for (h in onBeatHitHooks)  h];
-		_stepHookArr     = [for (h in onStepHitHooks)  h];
-		_updateHookArr   = [for (h in onUpdateHooks)   h];
-		_noteHitHookArr  = [for (h in onNoteHitHooks)  h];
+		_beatHookArr = [for (h in onBeatHitHooks) h];
+		_stepHookArr = [for (h in onStepHitHooks) h];
+		_updateHookArr = [for (h in onUpdateHooks) h];
+		_noteHitHookArr = [for (h in onNoteHitHooks) h];
 		_noteMissHookArr = [for (h in onNoteMissHooks) h];
 	}
 
@@ -409,38 +409,34 @@ class PlayState extends funkin.states.MusicBeatState
 
 	private function loadCharacters():Void
 	{
-
 		if (SONG.characters != null)
+			// ✅ NUEVO: Si no hay personajes, crear por defecto (compatibilidad con charts antiguos)
+			if (SONG.characters == null || SONG.characters.length == 0)
+			{
+				// Crear personajes por defecto usando los campos legacy
+				SONG.characters = [];
 
-		// ✅ NUEVO: Si no hay personajes, crear por defecto (compatibilidad con charts antiguos)
-		if (SONG.characters == null || SONG.characters.length == 0)
-		{
+				SONG.characters.push({
+					name: SONG.gfVersion != null ? SONG.gfVersion : 'gf',
+					x: 0,
+					y: 0,
+					visible: true
+				});
 
-			// Crear personajes por defecto usando los campos legacy
-			SONG.characters = [];
+				SONG.characters.push({
+					name: SONG.player2 != null ? SONG.player2 : 'dad',
+					x: 0,
+					y: 0,
+					visible: true
+				});
 
-			SONG.characters.push({
-				name: SONG.gfVersion != null ? SONG.gfVersion : 'gf',
-				x: 0,
-				y: 0,
-				visible: true
-			});
-
-			SONG.characters.push({
-				name: SONG.player2 != null ? SONG.player2 : 'dad',
-				x: 0,
-				y: 0,
-				visible: true
-			});
-
-			SONG.characters.push({
-				name: SONG.player1 != null ? SONG.player1 : 'bf',
-				x: 0,
-				y: 0,
-				visible: true
-			});
-
-		}
+				SONG.characters.push({
+					name: SONG.player1 != null ? SONG.player1 : 'bf',
+					x: 0,
+					y: 0,
+					visible: true
+				});
+			}
 
 		// Crear slots de personajes
 		for (i in 0...SONG.characters.length)
@@ -461,7 +457,6 @@ class PlayState extends funkin.states.MusicBeatState
 						slot.character.setPosition(currentStage.boyfriendPosition.x, currentStage.boyfriendPosition.y);
 					default:
 						// Posicionamiento personalizado para personajes adicionales
-
 				}
 			}
 			else
@@ -472,9 +467,7 @@ class PlayState extends funkin.states.MusicBeatState
 
 			characterSlots.push(slot);
 			add(slot.character);
-
 		}
-
 	}
 
 	/**
@@ -506,10 +499,8 @@ class PlayState extends funkin.states.MusicBeatState
 
 	private function loadStrums():Void
 	{
-
 		if (SONG.strumsGroups == null || SONG.strumsGroups.length == 0)
 		{
-
 			return;
 		}
 
@@ -545,7 +536,6 @@ class PlayState extends funkin.states.MusicBeatState
 						cpuStrums.members[i].alpha = 0;
 					}
 				}
-
 			}
 			else if (!groupData.cpu && playerStrums == null)
 			{
@@ -566,9 +556,7 @@ class PlayState extends funkin.states.MusicBeatState
 					}
 				}
 			}
-
 		}
-
 	}
 
 	/**
@@ -579,10 +567,8 @@ class PlayState extends funkin.states.MusicBeatState
 		// ✅ Verificar que boyfriend y dad existan antes de crear CameraController
 		if (boyfriend == null || dad == null)
 		{
-
 			// En modo debug, crear personajes de emergencia
 			#if debug
-
 			if (boyfriend == null)
 			{
 				boyfriend = new Character(100, 100, 'bf');
@@ -602,6 +588,7 @@ class PlayState extends funkin.states.MusicBeatState
 
 		// Camera controller
 		cameraController = new CameraController(camGame, camHUD, boyfriend, dad, gf);
+
 		if (currentStage.defaultCamZoom > 0)
 			cameraController.defaultZoom = currentStage.defaultCamZoom;
 
@@ -758,7 +745,6 @@ class PlayState extends funkin.states.MusicBeatState
 		noteManager.generateNotes(SONG);
 
 		generatedMusic = true;
-
 	}
 
 	/**
@@ -779,7 +765,6 @@ class PlayState extends funkin.states.MusicBeatState
 
 		if (startedCountdown)
 		{
-
 			return;
 		}
 
@@ -789,7 +774,6 @@ class PlayState extends funkin.states.MusicBeatState
 
 			showDialogue('intro', function()
 			{
-
 				// CRÍTICO: Restaurar FlxG.sound.music con el instrumental de la canción
 				// El diálogo pudo haber usado FlxG.sound.music, así que lo restauramos
 				FlxG.sound.music = Paths.loadInst(SONG.song);
@@ -835,11 +819,9 @@ class PlayState extends funkin.states.MusicBeatState
 		// ✨ CHART TESTING: Si hay un tiempo de inicio específico, skipear countdown
 		if (startFromTime != null)
 		{
-
 			// Verificar que la música esté cargada
 			if (FlxG.sound.music == null)
 			{
-
 				startFromTime = null;
 				// Continuar con countdown normal como fallback
 			}
@@ -885,7 +867,6 @@ class PlayState extends funkin.states.MusicBeatState
 				{
 					if (FlxG.sound.music == null)
 					{
-
 						return;
 					}
 
@@ -903,10 +884,8 @@ class PlayState extends funkin.states.MusicBeatState
 					// Verificar que el tiempo se haya seteado correctamente
 					if (Math.abs(actualTime - targetTime) > 100)
 					{
-
 						FlxG.sound.music.time = targetTime;
 						actualTime = FlxG.sound.music.time;
-
 					}
 
 					// Setear tiempo para vocals
@@ -916,12 +895,10 @@ class PlayState extends funkin.states.MusicBeatState
 						vocals.play();
 						vocals.time = targetTime;
 						var vocalsTime = vocals.time;
-
 					}
 
 					// Actualizar Conductor.songPosition
 					Conductor.songPosition = actualTime;
-
 				});
 
 				return;
@@ -969,11 +946,10 @@ class PlayState extends funkin.states.MusicBeatState
 	// Cuando llega el beat, el sprite ya está listo → cero lag.
 	private function _preloadCountdown():Void
 	{
-		if (_cntdwnLoaded) return;
+		if (_cntdwnLoaded)
+			return;
 
-		var paths:Array<String> = curStage.startsWith('school')
-			? ['UI/pixelUI/ready-pixel', 'UI/pixelUI/set-pixel', 'UI/pixelUI/date-pixel']
-			: ['UI/normal/ready', 'UI/normal/set', 'UI/normal/go'];
+		var paths:Array<String> = curStage.startsWith('school') ? ['UI/pixelUI/ready-pixel', 'UI/pixelUI/set-pixel', 'UI/pixelUI/date-pixel'] : ['UI/normal/ready', 'UI/normal/set', 'UI/normal/go'];
 
 		_cntdwnSprites = [];
 		for (p in paths)
@@ -992,7 +968,7 @@ class PlayState extends funkin.states.MusicBeatState
 			spr.updateHitbox();
 			spr.alpha = 0;
 			spr.visible = false;
-			spr.active  = false;
+			spr.active = false;
 			add(spr);
 			_cntdwnSprites.push(spr);
 		}
@@ -1006,12 +982,14 @@ class PlayState extends funkin.states.MusicBeatState
 	{
 		// Determinar índice del sprite pre-cargado
 		var idx:Int = -1;
-		var paths:Array<String> = curStage.startsWith('school')
-			? ['UI/pixelUI/ready-pixel', 'UI/pixelUI/set-pixel', 'UI/pixelUI/date-pixel']
-			: ['UI/normal/ready', 'UI/normal/set', 'UI/normal/go'];
+		var paths:Array<String> = curStage.startsWith('school') ? ['UI/pixelUI/ready-pixel', 'UI/pixelUI/set-pixel', 'UI/pixelUI/date-pixel'] : ['UI/normal/ready', 'UI/normal/set', 'UI/normal/go'];
 
 		for (i in 0...paths.length)
-			if (paths[i] == path) { idx = i; break; }
+			if (paths[i] == path)
+			{
+				idx = i;
+				break;
+			}
 
 		// Fallback al comportamiento antiguo si no hay sprite pre-cargado
 		if (idx < 0 || idx >= _cntdwnSprites.length)
@@ -1019,17 +997,19 @@ class PlayState extends funkin.states.MusicBeatState
 			var asset:FlxSprite = new FlxSprite().loadGraphic(Paths.image(path));
 			asset.cameras = [camCountdown];
 			asset.scrollFactor.set();
-			asset.scale.set(0.7,0.7);
+			asset.scale.set(0.7, 0.7);
 			if (curStage.startsWith('school'))
 				asset.setGraphicSize(Std.int(asset.width * PlayStateConfig.PIXEL_ZOOM));
 			else
 				asset.antialiasing = FlxG.save.data.antialiasing;
-			
+
 			asset.updateHitbox();
 			asset.screenCenter();
 			add(asset);
-			FlxTween.tween(asset, {y: asset.y + 80, alpha: 0}, Conductor.crochet / 1000,
-				{ease: FlxEase.cubeInOut, onComplete: function(_) { asset.destroy(); }});
+			FlxTween.tween(asset, {y: asset.y + 80, alpha: 0}, Conductor.crochet / 1000, {ease: FlxEase.cubeInOut, onComplete: function(_)
+			{
+				asset.destroy();
+			}});
 			return;
 		}
 
@@ -1043,8 +1023,8 @@ class PlayState extends funkin.states.MusicBeatState
 		// Estado inicial: centrado, invisible, escala grande
 		spr.screenCenter();
 		spr.visible = true;
-		spr.active  = true;
-		spr.alpha   = 0;
+		spr.active = true;
+		spr.alpha = 0;
 		spr.scale.set(1.3, 1.3);
 
 		// Pequeña rotación aleatoria para dar vida (solo sprites HD, no pixel)
@@ -1054,30 +1034,34 @@ class PlayState extends funkin.states.MusicBeatState
 		// ── ENTRADA: alpha + scale punch rápidos ──────────────────────────────
 		final inDur = dur * 0.20;
 		FlxTween.tween(spr, {alpha: 1.0}, inDur, {ease: FlxEase.quadOut});
-		FlxTween.tween(spr.scale, {x: 1.0, y: 1.0}, inDur * 1.8,
-			{ease: FlxEase.elasticOut});
+		FlxTween.tween(spr.scale, {x: 1.0, y: 1.0}, inDur * 1.8, {ease: FlxEase.elasticOut});
 
 		// Micro-pulse a mitad del beat (scale 1.0 → 1.05 → 1.0)
-		FlxTween.tween(spr.scale, {x: 1.06, y: 1.06}, dur * 0.12,
-			{ease: FlxEase.sineOut, startDelay: dur * 0.3,
-			 onComplete: function(_) {
+		FlxTween.tween(spr.scale, {x: 1.06, y: 1.06}, dur * 0.12, {
+			ease: FlxEase.sineOut,
+			startDelay: dur * 0.3,
+			onComplete: function(_)
+			{
 				if (spr.alive)
-					FlxTween.tween(spr.scale, {x: 1.0, y: 1.0}, dur * 0.08,
-						{ease: FlxEase.sineIn});
-			}});
+					FlxTween.tween(spr.scale, {x: 1.0, y: 1.0}, dur * 0.08, {ease: FlxEase.sineIn});
+			}
+		});
 
 		// ── SALIDA: flota hacia arriba + fade ─────────────────────────────────
 		final exitDelay = dur * 0.52;
-		final exitDur   = dur * 0.48;
-		var targetY     = spr.y; // guardar Y antes de que el tween la mueva
-		FlxTween.tween(spr, {alpha: 0, y: targetY - 32}, exitDur,
-			{ease: FlxEase.quadIn, startDelay: exitDelay,
-			 onComplete: function(_) {
+		final exitDur = dur * 0.48;
+		var targetY = spr.y; // guardar Y antes de que el tween la mueva
+		FlxTween.tween(spr, {alpha: 0, y: targetY - 32}, exitDur, {
+			ease: FlxEase.quadIn,
+			startDelay: exitDelay,
+			onComplete: function(_)
+			{
 				spr.visible = false;
-				spr.active  = false;
-				spr.angle   = 0;
+				spr.active = false;
+				spr.angle = 0;
 				spr.scale.set(1, 1);
-			}});
+			}
+		});
 	}
 
 	override public function update(elapsed:Float)
@@ -1203,7 +1187,7 @@ class PlayState extends funkin.states.MusicBeatState
 		{
 			// Transferir datos al editor vía statics ANTES de hacer el switch
 			// (PlayState.destroy() se llamará después del switch)
-			ModChartEditorState.pendingManager    = modChartManager;
+			ModChartEditorState.pendingManager = modChartManager;
 			ModChartEditorState.pendingStrumsData = strumsGroups.map(function(g) return g.data);
 			// Nullear para que PlayState.destroy() no destruya el manager que el editor necesita
 			modChartManager = null;
@@ -1231,7 +1215,6 @@ class PlayState extends funkin.states.MusicBeatState
 		{
 			if (FlxG.sound.music != null && Conductor.songPosition >= 0)
 			{
-
 				startSong();
 			}
 		}
@@ -1254,7 +1237,6 @@ class PlayState extends funkin.states.MusicBeatState
 			showDebugStats = !showDebugStats;
 			if (debugText != null)
 				debugText.visible = showDebugStats;
-
 		}
 	}
 
@@ -1281,7 +1263,6 @@ class PlayState extends funkin.states.MusicBeatState
 	 */
 	private function startSong():Void
 	{
-
 		startingSong = false;
 
 		// Iniciar música e instrumental juntos
@@ -1292,7 +1273,6 @@ class PlayState extends funkin.states.MusicBeatState
 			FlxG.sound.music.time = 0;
 			FlxG.sound.music.play();
 			FlxG.sound.music.onComplete = endSong;
-
 		}
 
 		// Sincronizar vocales con música
@@ -1301,7 +1281,6 @@ class PlayState extends funkin.states.MusicBeatState
 			vocals.volume = 1;
 			vocals.time = 0;
 			vocals.play();
-
 		}
 
 		#if desktop
@@ -1394,11 +1373,9 @@ class PlayState extends funkin.states.MusicBeatState
 	 */
 	private function onKeyRelease(direction:Int):Void
 	{
-
 		// Validar dirección
 		if (direction < 0 || direction > 3)
 		{
-
 			return;
 		}
 
@@ -1420,7 +1397,6 @@ class PlayState extends funkin.states.MusicBeatState
 				var splash = holdSplashes.get(direction);
 				if (splash != null)
 				{
-
 					try
 					{
 						splash.recycleSplash();
@@ -1430,7 +1406,6 @@ class PlayState extends funkin.states.MusicBeatState
 					}
 					catch (e:Dynamic)
 					{
-
 					}
 				}
 				holdSplashes.remove(direction);
@@ -1442,26 +1417,22 @@ class PlayState extends funkin.states.MusicBeatState
 				// Validar que playerStrums existe y tiene suficientes elementos
 				if (playerStrums == null)
 				{
-
 					return;
 				}
 
 				if (playerStrums.members == null || playerStrums.members.length <= direction)
 				{
-
 					return;
 				}
 
 				var strum = playerStrums.members[direction];
 				if (strum != null)
 				{
-
 					try
 					{
 						var endSplash:NoteSplash = recycleSplashSafe();
 						if (endSplash == null)
 						{
-
 							return;
 						}
 
@@ -1474,22 +1445,18 @@ class PlayState extends funkin.states.MusicBeatState
 						{
 							grpNoteSplashes.add(endSplash);
 						}
-
 					}
 					catch (e:Dynamic)
 					{
-
 					}
 				}
 				else
 				{
-
 				}
 			}
 		}
 		else
 		{
-
 		}
 	}
 
@@ -1504,7 +1471,6 @@ class PlayState extends funkin.states.MusicBeatState
 	{
 		if (!enableHoldSplashes)
 		{
-
 			return;
 		}
 
@@ -1523,13 +1489,11 @@ class PlayState extends funkin.states.MusicBeatState
 				// Validaciones null-safe
 				if (playerStrums == null)
 				{
-
 					return;
 				}
 
 				if (playerStrums.members == null || playerStrums.members.length <= note.noteData)
 				{
-
 					return;
 				}
 
@@ -1537,13 +1501,11 @@ class PlayState extends funkin.states.MusicBeatState
 				var strum = playerStrums.members[note.noteData];
 				if (strum != null && FlxG.save.data.notesplashes)
 				{
-
 					try
 					{
 						var startSplash:NoteSplash = recycleSplashSafe();
 						if (startSplash == null)
 						{
-
 							return;
 						}
 
@@ -1557,11 +1519,9 @@ class PlayState extends funkin.states.MusicBeatState
 						{
 							grpNoteSplashes.add(startSplash);
 						}
-
 					}
 					catch (e:Dynamic)
 					{
-
 					}
 
 					// OPCIONAL: Iniciar splash continuo (descomenta si quieres el efecto continuo)
@@ -1569,7 +1529,6 @@ class PlayState extends funkin.states.MusicBeatState
 				}
 				else
 				{
-
 				}
 			}
 		}
@@ -1678,13 +1637,11 @@ class PlayState extends funkin.states.MusicBeatState
 	 */
 	private function onPlayerNoteMiss(direction:Int):Void
 	{
-
 		if (scriptsEnabled)
 		{
 			var cancel = ScriptHandler.callOnScriptsReturn('onPlayerNoteMiss', [direction], false);
 			if (cancel == true)
 			{
-
 				return;
 			}
 		}
@@ -1702,16 +1659,13 @@ class PlayState extends funkin.states.MusicBeatState
 		// Intentar usar el sistema de múltiples personajes
 		if (characterSlots.length > playerCharIndex)
 		{
-
 			var slot = characterSlots[playerCharIndex];
 			if (slot != null)
 			{
-
 				characterController.missByIndex(playerCharIndex, direction);
 			}
 			else
 			{
-
 			}
 		}
 		else if (boyfriend != null)
@@ -1725,7 +1679,6 @@ class PlayState extends funkin.states.MusicBeatState
 		}
 		else
 		{
-
 		}
 
 		// Hacer sad a GF si existe
@@ -1740,7 +1693,6 @@ class PlayState extends funkin.states.MusicBeatState
 
 		if (scriptsEnabled)
 			ScriptHandler.callOnScripts('onPlayerNoteMissPost', [direction]);
-
 	}
 
 	/**
@@ -1883,6 +1835,7 @@ class PlayState extends funkin.states.MusicBeatState
 	// ── Hitsound pool (evita new FlxSound cada golpe) ─────────────────────
 	private var _hitSounds:Array<FlxSound> = [];
 	private var _hitSoundIdx:Int = 0;
+
 	private static inline var HIT_SOUND_POOL_SIZE:Int = 4;
 
 	private function initHitSoundPool():Void
@@ -1891,8 +1844,13 @@ class PlayState extends funkin.states.MusicBeatState
 		for (i in 0...HIT_SOUND_POOL_SIZE)
 		{
 			var snd = new FlxSound();
-			try { snd.loadEmbedded(Paths.sound('hitsounds/hit-1')); }
-			catch (_:Dynamic) {}
+			try
+			{
+				snd.loadEmbedded(Paths.sound('hitsounds/hit-1'));
+			}
+			catch (_:Dynamic)
+			{
+			}
 			snd.looped = false;
 			FlxG.sound.list.add(snd);
 			_hitSounds.push(snd);
@@ -1904,10 +1862,12 @@ class PlayState extends funkin.states.MusicBeatState
 	 */
 	private function playHitSound():Void
 	{
-		if (_hitSounds.length == 0) initHitSoundPool();
+		if (_hitSounds.length == 0)
+			initHitSoundPool();
 		var snd = _hitSounds[_hitSoundIdx % HIT_SOUND_POOL_SIZE];
 		_hitSoundIdx++;
-		if (snd == null) return;
+		if (snd == null)
+			return;
 		snd.volume = 1 + FlxG.random.float(-0.2, 0.2);
 		snd.play(true);
 	}
@@ -1930,14 +1890,12 @@ class PlayState extends funkin.states.MusicBeatState
 			if (availableSplash == null && !splash.inUse && !splash.exists)
 			{
 				availableSplash = splash;
-
 			}
 		});
 
 		// Si encontramos uno disponible, usarlo
 		if (availableSplash != null)
 		{
-
 			return availableSplash;
 		}
 
@@ -1958,12 +1916,12 @@ class PlayState extends funkin.states.MusicBeatState
 		if (gameState.score == songScore && gameState.misses == misses)
 			return; // nada cambió — evitar 7 asignaciones por frame
 		songScore = gameState.score;
-		misses    = gameState.misses;
-		sicks     = gameState.sicks;
-		goods     = gameState.goods;
-		bads      = gameState.bads;
-		shits     = gameState.shits;
-		accuracy  = gameState.accuracy;
+		misses = gameState.misses;
+		sicks = gameState.sicks;
+		goods = gameState.goods;
+		bads = gameState.bads;
+		shits = gameState.shits;
+		accuracy = gameState.accuracy;
 	}
 
 	override function openSubState(SubState:FlxSubState)
@@ -2038,7 +1996,7 @@ class PlayState extends funkin.states.MusicBeatState
 			currentStage.beatHit(curBeat);
 
 		if (modChartManager != null)
-	        modChartManager.onBeatHit(curBeat);
+			modChartManager.onBeatHit(curBeat);
 
 		if (scriptsEnabled)
 			ScriptHandler.callOnScripts('onBeatHit', [curBeat]);
@@ -2066,7 +2024,7 @@ class PlayState extends funkin.states.MusicBeatState
 			hook(curStep);
 
 		if (modChartManager != null)
-	        modChartManager.onStepHit(curStep);
+			modChartManager.onStepHit(curStep);
 
 		if (currentStage != null)
 			currentStage.stepHit(curStep);
@@ -2152,7 +2110,6 @@ class PlayState extends funkin.states.MusicBeatState
 		// ✅ Verificar que boyfriend exista
 		if (boyfriend == null)
 		{
-
 			// Forzar game over de emergencia
 			StateTransition.switchState(new funkin.menus.MainMenuState());
 			return;
@@ -2214,7 +2171,7 @@ class PlayState extends funkin.states.MusicBeatState
 		if (swagSection == null)
 		{
 			_cachedSectionClassIdx = sectionIndex;
-			_cachedSectionClass    = null;
+			_cachedSectionClass = null;
 			return null;
 		}
 
@@ -2222,12 +2179,12 @@ class PlayState extends funkin.states.MusicBeatState
 		if (_cachedSectionClass == null)
 			_cachedSectionClass = new Section();
 
-		_cachedSectionClass.sectionNotes    = swagSection.sectionNotes;
-		_cachedSectionClass.lengthInSteps   = swagSection.lengthInSteps;
-		_cachedSectionClass.typeOfSection   = swagSection.typeOfSection;
-		_cachedSectionClass.mustHitSection  = swagSection.mustHitSection;
-		_cachedSectionClass.characterIndex  = swagSection.characterIndex != null ? swagSection.characterIndex : -1;
-		_cachedSectionClass.strumsGroupId   = swagSection.strumsGroupId;
+		_cachedSectionClass.sectionNotes = swagSection.sectionNotes;
+		_cachedSectionClass.lengthInSteps = swagSection.lengthInSteps;
+		_cachedSectionClass.typeOfSection = swagSection.typeOfSection;
+		_cachedSectionClass.mustHitSection = swagSection.mustHitSection;
+		_cachedSectionClass.characterIndex = swagSection.characterIndex != null ? swagSection.characterIndex : -1;
+		_cachedSectionClass.strumsGroupId = swagSection.strumsGroupId;
 		_cachedSectionClass.activeCharacters = swagSection.activeCharacters;
 
 		_cachedSectionClassIdx = sectionIndex;
@@ -2323,10 +2280,10 @@ class PlayState extends funkin.states.MusicBeatState
 		}
 
 		if (modChartManager != null)
-	  	{
-	      	modChartManager.destroy();
-      		modChartManager = null;
-  		}
+		{
+			modChartManager.destroy();
+			modChartManager = null;
+		}
 
 		// ── 8. Note batcher
 		if (noteBatcher != null)
@@ -2350,7 +2307,12 @@ class PlayState extends funkin.states.MusicBeatState
 		// ── 10. Pool de hitsounds
 		for (snd in _hitSounds)
 		{
-			if (snd != null) { snd.stop(); FlxG.sound.list.remove(snd, true); snd.destroy(); }
+			if (snd != null)
+			{
+				snd.stop();
+				FlxG.sound.list.remove(snd, true);
+				snd.destroy();
+			}
 		}
 		_hitSounds = [];
 
@@ -2360,14 +2322,14 @@ class PlayState extends funkin.states.MusicBeatState
 		onUpdateHooks.clear();
 		onNoteHitHooks.clear();
 		onNoteMissHooks.clear();
-		_beatHookArr     = [];
-		_stepHookArr     = [];
-		_updateHookArr   = [];
-		_noteHitHookArr  = [];
+		_beatHookArr = [];
+		_stepHookArr = [];
+		_updateHookArr = [];
+		_noteHitHookArr = [];
 		_noteMissHookArr = [];
 
 		// ── 12. Section wrapper cache
-		_cachedSectionClass    = null;
+		_cachedSectionClass = null;
 		_cachedSectionClassIdx = -2;
 
 		// super.destroy() destruye todos los miembros (characters, stage, notes, etc.)
@@ -2428,11 +2390,9 @@ class PlayState extends funkin.states.MusicBeatState
 		try
 		{
 			doof = new DialogueBoxImproved(songName);
-
 		}
 		catch (e:Dynamic)
 		{
-
 			if (onFinish != null)
 				onFinish();
 			return;
@@ -2440,7 +2400,6 @@ class PlayState extends funkin.states.MusicBeatState
 
 		if (doof == null)
 		{
-
 			if (onFinish != null)
 				onFinish();
 			return;
@@ -2449,7 +2408,6 @@ class PlayState extends funkin.states.MusicBeatState
 		// Configurar callback de finalización
 		doof.finishThing = function()
 		{
-
 			inCutscene = false;
 			if (onFinish != null)
 				onFinish();
@@ -2529,7 +2487,6 @@ class PlayState extends funkin.states.MusicBeatState
 		// Verificación de seguridad: solo actualizar si el juego está pausado
 		if (!paused)
 		{
-
 			return;
 		}
 
@@ -2540,7 +2497,6 @@ class PlayState extends funkin.states.MusicBeatState
 		{
 			var hideHud = FlxG.save.data.HUD;
 			uiManager.visible = !hideHud; // Controlar visibilidad del grupo completo
-
 		}
 
 		// 2. Actualizar antialiasing (solo visual, 100% seguro)
@@ -2550,14 +2506,12 @@ class PlayState extends funkin.states.MusicBeatState
 		if (inputHandler != null)
 		{
 			inputHandler.ghostTapping = FlxG.save.data.ghosttap;
-
 		}
 
 		// === CAMBIOS QUE REQUIEREN MÁS CUIDADO ===
 		// NO actualizar downscroll/middlescroll en tiempo real
 		// Estos cambios pueden causar confusión y bugs con las notas en vuelo
 		// El usuario debe reiniciar la canción para aplicar estos cambios
-
 	}
 
 	/**
@@ -2599,11 +2553,9 @@ class PlayState extends funkin.states.MusicBeatState
 		if (vocals != null && vocals.playing)
 		{
 			vocals.pause();
-
 		}
 
 		// FlxG.sound.music se pausa automáticamente, pero lo marcamos
-
 	}
 
 	/**
@@ -2626,7 +2578,6 @@ class PlayState extends funkin.states.MusicBeatState
 			{
 				vocals.time = FlxG.sound.music.time;
 				vocals.play();
-
 			}
 		}
 	}

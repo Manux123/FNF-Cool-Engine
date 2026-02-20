@@ -105,7 +105,7 @@
 	
 	<!-- Performance optimizations for release builds -->
 	<haxedef name="no-deprecation-warnings" unless="debug" />
-	<haxeflag name="-dce" value="full" unless="debug" />
+	<haxeflag name="-dce" value="std" unless="debug" />
 	
 	<!-- Memory management -->
 	<haxedef name="HXCPP_GC_GENERATIONAL" />

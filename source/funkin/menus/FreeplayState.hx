@@ -292,8 +292,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 	{
 		for (i in 0...songInfo.songsWeeks.length)
 		{
-			if (StoryMenuState.weekUnlocked[i])
-				addWeek(songInfo.songsWeeks[i].weekSongs, i, songInfo.songsWeeks[i].songIcons);
+			addWeek(songInfo.songsWeeks[i].weekSongs, i, songInfo.songsWeeks[i].songIcons);
 			coolColors.push(Std.parseInt(songInfo.songsWeeks[i].color[i]));
 		}
 	}
@@ -314,6 +313,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 	override function closeSubState()
 	{
+		trace('[FreeplayState] Songs loaded: ' + songs.length);
 		changeSelection();
 
 		// ✅ FIX: Limpiar inputs residuales al volver de un substate

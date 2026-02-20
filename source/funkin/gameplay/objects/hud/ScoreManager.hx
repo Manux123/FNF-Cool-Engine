@@ -4,6 +4,7 @@ import flixel.FlxG;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 
+@:keep
 /**
  * Gestor de puntuación y estadísticas
  * Maneja todo lo relacionado con scoring, accuracy y rankings

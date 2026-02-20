@@ -292,10 +292,8 @@ class FreeplayState extends funkin.states.MusicBeatState
 	{
 		for (i in 0...songInfo.songsWeeks.length)
 		{
-			#if !debug
 			if (StoryMenuState.weekUnlocked[i])
-			#end
-			addWeek(songInfo.songsWeeks[i].weekSongs, i, songInfo.songsWeeks[i].songIcons);
+				addWeek(songInfo.songsWeeks[i].weekSongs, i, songInfo.songsWeeks[i].songIcons);
 			coolColors.push(Std.parseInt(songInfo.songsWeeks[i].color[i]));
 		}
 	}

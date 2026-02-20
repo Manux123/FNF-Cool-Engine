@@ -11,46 +11,57 @@ import openfl.geom.Matrix;
 using StringTools;
 
 /**
- * StateTransition — Transiciones suaves y scriptables entre FlxStates.
- *
- * ─── Características ─────────────────────────────────────────────────────────
- *  • No interfiere con StickerTransition (usa capa OpenFL separada, z menor).
- *  • Configurable por switch o globalmente desde scripts HScript.
- *  • Tipos: FADE, FADE_WHITE, SLIDE_LEFT, SLIDE_RIGHT, SLIDE_UP, SLIDE_DOWN,
- *            CIRCLE_WIPE, NONE, CUSTOM.
- *  • API fluida: switchState() + setNext() + setGlobal().
- *  • El "intro" (descubrimiento) se dispara automáticamente en MusicBeatState.create().
- *
- * ─── Uso en HScript ─────────────────────────────────────────────────────────
- *  StateTransition.setNext("slide_left", 0.4);        // próximo switch
- *  StateTransition.switchState(new MainMenuState());   // switch + transición
- *
- *  StateTransition.setGlobal("fade", 0.35, 0xFF000000); // todas las transiciones
- *  StateTransition.setCustomIn(function() { ... });     // animación de entrada custom
- *  StateTransition.setCustomOut(function(done) { done(); }); // salida custom
- */
+	* StateTransition — Smooth, scriptable transitions between FlxStates.
+	*
+	* ─── Features ─────────────────────────────────────────────────────────
+	* • Does not interfere with StickerTransition (uses a separate OpenFL layer, lower z-slot).
+
+	* • Configurable via a switch or globally from HScript scripts.
+
+	* • Types: FADE, FADE_WHITE, SLIDE_LEFT, SLIDE_RIGHT, SLIDE_UP, SLIDE_DOWN,
+
+	* CIRCLE_WIPE, NONE, CUSTOM.
+
+	* Fluent API: switchState() + setNext() + setGlobal().
+
+	* The "intro" (discovery) is automatically triggered in MusicBeatState.create().
+	* 
+	* ─── Use in HScript ──────────────────────────── ───────────────────────────── 
+	* StateTransition.setNext("slide_left", 0.4); // next switch 
+	* StateTransition.switchState(new MainMenuState()); // switch + transition
+
+	*
+	* StateTransition.setGlobal("fade", 0.35, 0xFF000000); // all transitions
+
+	* StateTransition.setCustomIn(function() { ... }); // custom entrance animation
+
+	* StateTransition.setCustomOut(function(done) { done(); }); // custom exit
+*/
+
 class StateTransition
 {
 	// ─── Config global ────────────────────────────────────────────────────────
-	public static var globalType:TransitionType   = FADE;
-	public static var globalDuration:Float         = 0.35;
-	public static var globalColor:Int              = 0xFF000000;
-	public static var globalEaseIn:EaseFunction    = null;  // null = cubeInOut
-	public static var globalEaseOut:EaseFunction   = null;
+	public static var globalType:TransitionType = FADE;
+	public static var globalDuration:Float = 0.35;
+	public static var globalColor:Int = 0xFF000000;
+	public static var globalEaseIn:EaseFunction = null; // null = cubeInOut
+	public static var globalEaseOut:EaseFunction = null;
 
 	/** Si false, no se hace ninguna transición (útil para debug). */
 	public static var enabled:Bool = true;
 
 	// ─── Override para el PRÓXIMO switch (se consume una vez) ─────────────────
-	private static var _nextType:Null<TransitionType>    = null;
-	private static var _nextDuration:Null<Float>          = null;
-	private static var _nextColor:Null<Int>               = null;
-	private static var _nextEaseIn:Null<EaseFunction>     = null;
-	private static var _nextEaseOut:Null<EaseFunction>    = null;
+	private static var _nextType:Null<TransitionType> = null;
+	private static var _nextDuration:Null<Float> = null;
+	private static var _nextColor:Null<Int> = null;
+	private static var _nextEaseIn:Null<EaseFunction> = null;
+	private static var _nextEaseOut:Null<EaseFunction> = null;
 
 	// ─── Custom callbacks (scripts) ───────────────────────────────────────────
+
 	/** Función de salida custom: recibe callback `done` que debe llamarse al terminar. */
 	public static var customOut:Null<(Void->Void)->Void> = null;
+
 	/** Función de entrada custom: se llama cuando el nuevo estado ya está creado. */
 	public static var customIn:Null<Void->Void> = null;
 
@@ -77,27 +88,30 @@ class StateTransition
 	 * @param duration Duración total en segundos
 	 * @param color    Color del overlay (ARGB)
 	 */
-	public static function setNext(?type:Dynamic, ?duration:Float, ?color:Int,
-	                               ?easeIn:EaseFunction, ?easeOut:EaseFunction):Void
+	public static function setNext(?type:Dynamic, ?duration:Float, ?color:Int, ?easeIn:EaseFunction, ?easeOut:EaseFunction):Void
 	{
-		_nextType     = type     != null ? parseType(type) : null;
-		_nextDuration = duration != null ? duration        : null;
-		_nextColor    = color    != null ? color           : null;
-		_nextEaseIn   = easeIn;
-		_nextEaseOut  = easeOut;
+		_nextType = type != null ? parseType(type) : null;
+		_nextDuration = duration != null ? duration : null;
+		_nextColor = color != null ? color : null;
+		_nextEaseIn = easeIn;
+		_nextEaseOut = easeOut;
 	}
 
 	/**
 	 * Cambia la configuración global (afecta todos los switches siguientes).
 	 */
-	public static function setGlobal(?type:Dynamic, ?duration:Float, ?color:Int,
-	                                  ?easeIn:EaseFunction, ?easeOut:EaseFunction):Void
+	public static function setGlobal(?type:Dynamic, ?duration:Float, ?color:Int, ?easeIn:EaseFunction, ?easeOut:EaseFunction):Void
 	{
-		if (type != null)     globalType     = parseType(type);
-		if (duration != null) globalDuration = duration;
-		if (color != null)    globalColor    = color;
-		if (easeIn != null)   globalEaseIn   = easeIn;
-		if (easeOut != null)  globalEaseOut  = easeOut;
+		if (type != null)
+			globalType = parseType(type);
+		if (duration != null)
+			globalDuration = duration;
+		if (color != null)
+			globalColor = color;
+		if (easeIn != null)
+			globalEaseIn = easeIn;
+		if (easeOut != null)
+			globalEaseOut = easeOut;
 	}
 
 	/**
@@ -127,8 +141,7 @@ class StateTransition
 	 * Compatible con StickerTransition: si los stickers están activos,
 	 * simplemente hace el switch sin overlay para no pelear con ellos.
 	 */
-	public static function switchState(target:FlxState, ?type:Dynamic,
-	                                   ?duration:Float, ?color:Int):Void
+	public static function switchState(target:FlxState, ?type:Dynamic, ?duration:Float, ?color:Int):Void
 	{
 		if (type != null || duration != null || color != null)
 			setNext(type, duration, color);
@@ -188,14 +201,15 @@ class StateTransition
 	}
 
 	/** Devuelve true si hay una transición en curso. */
-	public static inline function isActive():Bool return _active;
+	public static inline function isActive():Bool
+		return _active;
 
 	/** Resetea todos los overrides y callbacks custom. */
 	public static function reset():Void
 	{
 		_consumeNext();
 		customOut = null;
-		customIn  = null;
+		customIn = null;
 	}
 
 	// ═════════════════════════════════════════════════════════════════════════
@@ -205,26 +219,26 @@ class StateTransition
 	static function _performSwitch(target:FlxState):Void
 	{
 		// Resolver parámetros (override de próximo switch > global)
-		var type     = _nextType     ?? globalType;
+		var type = _nextType ?? globalType;
 		var duration = _nextDuration ?? globalDuration;
-		var color    = _nextColor    ?? globalColor;
-		var easeOut  = _nextEaseOut  ?? globalEaseOut ?? FlxEase.cubeInOut;
-		var easeIn   = _nextEaseIn   ?? globalEaseIn  ?? FlxEase.cubeInOut;
+		var color = _nextColor ?? globalColor;
+		var easeOut = _nextEaseOut ?? globalEaseOut ?? FlxEase.cubeInOut;
+		var easeIn = _nextEaseIn ?? globalEaseIn ?? FlxEase.cubeInOut;
 		_consumeNext();
 
 		// Guardar parámetros para el intro del nuevo state
-		_pendingType     = type;
+		_pendingType = type;
 		_pendingDuration = duration;
-		_pendingColor    = color;
-		_pendingEaseIn   = easeIn;
-		_pendingEaseOut  = easeOut;
-		_pendingIntro    = true;
-		_active          = true;
+		_pendingColor = color;
+		_pendingEaseIn = easeIn;
+		_pendingEaseOut = easeOut;
+		_pendingIntro = true;
+		_active = true;
 
 		if (type == NONE)
 		{
 			_pendingIntro = false;
-			_active       = false;
+			_active = false;
 			FlxG.switchState(target);
 			return;
 		}
@@ -263,11 +277,11 @@ class StateTransition
 
 	static function _consumeNext():Void
 	{
-		_nextType     = null;
+		_nextType = null;
 		_nextDuration = null;
-		_nextColor    = null;
-		_nextEaseIn   = null;
-		_nextEaseOut  = null;
+		_nextColor = null;
+		_nextEaseIn = null;
+		_nextEaseOut = null;
 	}
 
 	/** Parsea un tipo desde String o TransitionType. */
@@ -277,16 +291,16 @@ class StateTransition
 		{
 			return switch (Std.string(v).toLowerCase().replace('-', '_'))
 			{
-				case 'fade':        FADE;
-				case 'fade_white':  FADE_WHITE;
-				case 'slide_left':  SLIDE_LEFT;
+				case 'fade': FADE;
+				case 'fade_white': FADE_WHITE;
+				case 'slide_left': SLIDE_LEFT;
 				case 'slide_right': SLIDE_RIGHT;
-				case 'slide_up':    SLIDE_UP;
-				case 'slide_down':  SLIDE_DOWN;
+				case 'slide_up': SLIDE_UP;
+				case 'slide_down': SLIDE_DOWN;
 				case 'circle_wipe': CIRCLE_WIPE;
-				case 'none':        NONE;
-				case 'custom':      CUSTOM;
-				default:            FADE;
+				case 'none': NONE;
+				case 'custom': CUSTOM;
+				default: FADE;
 			};
 		}
 		return cast v;
@@ -321,10 +335,10 @@ class TransitionOverlay extends Sprite
 
 	public function setup(type:TransitionType, color:Int):Void
 	{
-		_type  = type;
+		_type = type;
 		_color = color;
 		_redraw(type, 0.0);
-		alpha   = 0;
+		alpha = 0;
 		visible = true;
 	}
 
@@ -345,12 +359,12 @@ class TransitionOverlay extends Sprite
 		}
 		FlxG.removeChild(this);
 		visible = false;
-		alpha   = 0;
+		alpha = 0;
 	}
 
 	public function hideInstant():Void
 	{
-		alpha   = 0;
+		alpha = 0;
 		visible = false;
 	}
 
@@ -360,8 +374,7 @@ class TransitionOverlay extends Sprite
 	 * Anima cubriendo la pantalla (para la SALIDA del state actual).
 	 * Al terminar llama `onDone`.
 	 */
-	public function animateOut_reverse(type:TransitionType, duration:Float,
-	                                   ease:EaseFunction, onDone:Void->Void):Void
+	public function animateOut_reverse(type:TransitionType, duration:Float, ease:EaseFunction, onDone:Void->Void):Void
 	{
 		_cancelTween();
 
@@ -369,43 +382,91 @@ class TransitionOverlay extends Sprite
 		{
 			case FADE, FADE_WHITE:
 				alpha = 0;
-				_activeTween = FlxTween.num(0, 1, duration,
-					{ease: ease, onComplete: function(_) { alpha = 1; onDone(); }},
-					function(v:Float) { alpha = v; });
+				_activeTween = FlxTween.num(0, 1, duration, {
+					ease: ease,
+					onComplete: function(_)
+					{
+						alpha = 1;
+						onDone();
+					}
+				}, function(v:Float)
+				{
+					alpha = v;
+				});
 
 			case SLIDE_LEFT:
 				x = -_gw();
 				alpha = 1;
-				_activeTween = FlxTween.num(-_gw(), 0, duration,
-					{ease: ease, onComplete: function(_) { x = 0; onDone(); }},
-					function(v:Float) { x = v; });
+				_activeTween = FlxTween.num(-_gw(), 0, duration, {
+					ease: ease,
+					onComplete: function(_)
+					{
+						x = 0;
+						onDone();
+					}
+				}, function(v:Float)
+				{
+					x = v;
+				});
 
 			case SLIDE_RIGHT:
 				x = _gw();
 				alpha = 1;
-				_activeTween = FlxTween.num(_gw(), 0, duration,
-					{ease: ease, onComplete: function(_) { x = 0; onDone(); }},
-					function(v:Float) { x = v; });
+				_activeTween = FlxTween.num(_gw(), 0, duration, {
+					ease: ease,
+					onComplete: function(_)
+					{
+						x = 0;
+						onDone();
+					}
+				}, function(v:Float)
+				{
+					x = v;
+				});
 
 			case SLIDE_UP:
 				y = -_gh();
 				alpha = 1;
-				_activeTween = FlxTween.num(-_gh(), 0, duration,
-					{ease: ease, onComplete: function(_) { y = 0; onDone(); }},
-					function(v:Float) { y = v; });
+				_activeTween = FlxTween.num(-_gh(), 0, duration, {
+					ease: ease,
+					onComplete: function(_)
+					{
+						y = 0;
+						onDone();
+					}
+				}, function(v:Float)
+				{
+					y = v;
+				});
 
 			case SLIDE_DOWN:
 				y = _gh();
 				alpha = 1;
-				_activeTween = FlxTween.num(_gh(), 0, duration,
-					{ease: ease, onComplete: function(_) { y = 0; onDone(); }},
-					function(v:Float) { y = v; });
+				_activeTween = FlxTween.num(_gh(), 0, duration, {
+					ease: ease,
+					onComplete: function(_)
+					{
+						y = 0;
+						onDone();
+					}
+				}, function(v:Float)
+				{
+					y = v;
+				});
 
 			case CIRCLE_WIPE:
 				alpha = 1;
-				_activeTween = FlxTween.num(0, 1, duration,
-					{ease: ease, onComplete: function(_) { _redraw(CIRCLE_WIPE, 1); onDone(); }},
-					function(v:Float) { _redraw(CIRCLE_WIPE, v); });
+				_activeTween = FlxTween.num(0, 1, duration, {
+					ease: ease,
+					onComplete: function(_)
+					{
+						_redraw(CIRCLE_WIPE, 1);
+						onDone();
+					}
+				}, function(v:Float)
+				{
+					_redraw(CIRCLE_WIPE, v);
+				});
 
 			default:
 				// NONE / CUSTOM — no animar
@@ -417,8 +478,7 @@ class TransitionOverlay extends Sprite
 	/**
 	 * Anima descubriendo la pantalla (para la ENTRADA del nuevo state).
 	 */
-	public function animateOut(type:TransitionType, duration:Float,
-	                           ease:EaseFunction, onDone:Void->Void):Void
+	public function animateOut(type:TransitionType, duration:Float, ease:EaseFunction, onDone:Void->Void):Void
 	{
 		_cancelTween();
 
@@ -426,42 +486,85 @@ class TransitionOverlay extends Sprite
 		{
 			case FADE, FADE_WHITE:
 				alpha = 1;
-				_activeTween = FlxTween.num(1, 0, duration,
-					{ease: ease, onComplete: function(_) { onDone(); }},
-					function(v:Float) { alpha = v; });
+				_activeTween = FlxTween.num(1, 0, duration, {
+					ease: ease,
+					onComplete: function(_)
+					{
+						onDone();
+					}
+				}, function(v:Float)
+				{
+					alpha = v;
+				});
 
 			case SLIDE_LEFT:
 				x = 0;
 				alpha = 1;
-				_activeTween = FlxTween.num(0, _gw(), duration,
-					{ease: ease, onComplete: function(_) { onDone(); }},
-					function(v:Float) { x = v; });
+				_activeTween = FlxTween.num(0, _gw(), duration, {
+					ease: ease,
+					onComplete: function(_)
+					{
+						onDone();
+					}
+				}, function(v:Float)
+				{
+					x = v;
+				});
 
 			case SLIDE_RIGHT:
 				x = 0;
 				alpha = 1;
-				_activeTween = FlxTween.num(0, -_gw(), duration,
-					{ease: ease, onComplete: function(_) { onDone(); }},
-					function(v:Float) { x = v; });
+				_activeTween = FlxTween.num(0, -_gw(), duration, {
+					ease: ease,
+					onComplete: function(_)
+					{
+						onDone();
+					}
+				}, function(v:Float)
+				{
+					x = v;
+				});
 
 			case SLIDE_UP:
 				y = 0;
 				alpha = 1;
-				_activeTween = FlxTween.num(0, _gh(), duration,
-					{ease: ease, onComplete: function(_) { onDone(); }},
-					function(v:Float) { y = v; });
+				_activeTween = FlxTween.num(0, _gh(), duration, {
+					ease: ease,
+					onComplete: function(_)
+					{
+						onDone();
+					}
+				}, function(v:Float)
+				{
+					y = v;
+				});
 
 			case SLIDE_DOWN:
 				y = 0;
 				alpha = 1;
-				_activeTween = FlxTween.num(0, -_gh(), duration,
-					{ease: ease, onComplete: function(_) { onDone(); }},
-					function(v:Float) { y = v; });
+				_activeTween = FlxTween.num(0, -_gh(), duration, {
+					ease: ease,
+					onComplete: function(_)
+					{
+						onDone();
+					}
+				}, function(v:Float)
+				{
+					y = v;
+				});
 
 			case CIRCLE_WIPE:
-				_activeTween = FlxTween.num(1, 0, duration,
-					{ease: ease, onComplete: function(_) { _redraw(CIRCLE_WIPE, 0); onDone(); }},
-					function(v:Float) { _redraw(CIRCLE_WIPE, v); });
+				_activeTween = FlxTween.num(1, 0, duration, {
+					ease: ease,
+					onComplete: function(_)
+					{
+						_redraw(CIRCLE_WIPE, 0);
+						onDone();
+					}
+				}, function(v:Float)
+				{
+					_redraw(CIRCLE_WIPE, v);
+				});
 
 			default:
 				onDone();
@@ -479,8 +582,11 @@ class TransitionOverlay extends Sprite
 		}
 	}
 
-	private function _gw():Float return FlxG.width;
-	private function _gh():Float return FlxG.height;
+	private function _gw():Float
+		return FlxG.width;
+
+	private function _gh():Float
+		return FlxG.height;
 
 	private function _resize():Void
 	{
@@ -502,8 +608,8 @@ class TransitionOverlay extends Sprite
 		switch (type)
 		{
 			case CIRCLE_WIPE:
-				var cx   = _gw() * 0.5;
-				var cy   = _gh() * 0.5;
+				var cx = _gw() * 0.5;
+				var cy = _gh() * 0.5;
 				var maxR = Math.sqrt(cx * cx + cy * cy) + 10;
 				gfx.drawCircle(cx, cy, maxR * progress);
 			default:

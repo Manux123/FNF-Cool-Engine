@@ -9,6 +9,8 @@ import flixel.text.FlxText;
 import flixel.ui.FlxButton;
 import flixel.util.FlxColor;
 import flixel.addons.ui.*;
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
 import funkin.data.Song.SwagSong;
 
 /**
@@ -195,20 +197,31 @@ class EventsSidebar extends FlxGroup
 			var snappedBeat = Math.floor(relY / beatSize);
 			hoverBeatY = gridY + (snappedBeat * beatSize);
 
-			// Mostrar el botón "+"
+			// Mostrar el botón "+" con fade suave si acaba de aparecer
+			var justShown = !addEventBtn.visible;
 			addEventBtn.x = gridX - 24;
 			addEventBtn.y = hoverBeatY - 14;
 			addEventBtnText.x = gridX - 24;
 			addEventBtnText.y = hoverBeatY - 14 + 2;
 
-			addEventBtn.visible = true;
-			addEventBtnText.visible = true;
+			if (justShown)
+			{
+				addEventBtn.alpha = 0;
+				addEventBtnText.alpha = 0;
+				addEventBtn.visible = true;
+				addEventBtnText.visible = true;
+				FlxTween.cancelTweensOf(addEventBtn);
+				FlxTween.cancelTweensOf(addEventBtnText);
+				FlxTween.tween(addEventBtn,     {alpha: 0.85}, 0.12, {ease: FlxEase.quadOut});
+				FlxTween.tween(addEventBtnText, {alpha: 1.0},  0.12, {ease: FlxEase.quadOut});
+			}
 
 			// Glow/efecto hover
-			addEventBtn.alpha = FlxG.mouse.overlaps(addEventBtn, camHUD) ? 1.0 : 0.7;
+			var overBtn = FlxG.mouse.overlaps(addEventBtn, camHUD);
+			addEventBtn.alpha = overBtn ? 1.0 : 0.75;
 
 			// Click en el botón
-			if (FlxG.mouse.justPressed && FlxG.mouse.overlaps(addEventBtn, camHUD))
+			if (FlxG.mouse.justPressed && overBtn)
 			{
 				var stepTime = (hoverBeatY - gridY) / GRID_SIZE;
 				eventPopup.openAtStep(stepTime);
@@ -216,11 +229,15 @@ class EventsSidebar extends FlxGroup
 		}
 		else
 		{
-			// Ocultar botón si no estamos en hover
-			if (!FlxG.mouse.overlaps(addEventBtn, camHUD))
+			// Ocultar botón con fade rápido si estaba visible
+			if (addEventBtn.visible && !FlxG.mouse.overlaps(addEventBtn, camHUD))
 			{
-				addEventBtn.visible = false;
-				addEventBtnText.visible = false;
+				FlxTween.cancelTweensOf(addEventBtn);
+				FlxTween.cancelTweensOf(addEventBtnText);
+				FlxTween.tween(addEventBtn,     {alpha: 0}, 0.10, {ease: FlxEase.quadIn,
+					onComplete: function(_) { addEventBtn.visible = false; }});
+				FlxTween.tween(addEventBtnText, {alpha: 0}, 0.10, {ease: FlxEase.quadIn,
+					onComplete: function(_) { addEventBtnText.visible = false; }});
 			}
 		}
 
@@ -322,6 +339,7 @@ class EventPopup extends FlxGroup
 		this.sidebar = sidebar;
 
 		buildUI();
+		visible = false;
 		close();
 	}
 
@@ -402,13 +420,60 @@ class EventPopup extends FlxGroup
 		isOpen = true;
 		visible = true;
 		active = true;
+
+		// ── Animación de apertura: slide desde abajo + fade ───────────────
+		var cx = (FlxG.width  - POPUP_W) / 2;
+		var cy = (FlxG.height - POPUP_H) / 2;
+
+		overlay.alpha = 0;
+		FlxTween.cancelTweensOf(overlay);
+		FlxTween.tween(overlay, {alpha: 0.60}, 0.16, {ease: FlxEase.quadOut});
+
+		panel.y    = cy + 30;
+		panel.alpha = 0;
+		FlxTween.cancelTweensOf(panel);
+		FlxTween.tween(panel, {alpha: 1, y: cy}, 0.22, {ease: FlxEase.backOut});
+
+		// Hijos del panel (títulos, inputs, botones)
+		_fadeChildren(true, 0.10, 0.18);
 	}
 
 	public function close():Void
 	{
+		if (!isOpen && !visible) { visible = false; active = false; return; }
+
 		isOpen = false;
-		visible = false;
 		active = false;
+
+		if (!visible) { visible = false; return; }
+
+		var cy = (FlxG.height - POPUP_H) / 2;
+
+		FlxTween.cancelTweensOf(overlay);
+		FlxTween.tween(overlay, {alpha: 0}, 0.14, {ease: FlxEase.quadIn});
+
+		FlxTween.cancelTweensOf(panel);
+		FlxTween.tween(panel, {alpha: 0, y: cy + 20}, 0.17, {
+			ease: FlxEase.quadIn,
+			onComplete: function(_) { visible = false; }
+		});
+		_fadeChildren(false, 0.0, 0.12);
+	}
+
+	private function _fadeChildren(opening:Bool, delay:Float, dur:Float):Void
+	{
+		var target = opening ? 1.0 : 0.0;
+		var ease   = opening ? FlxEase.quadOut : FlxEase.quadIn;
+		forEach(function(m:flixel.FlxBasic)
+		{
+			if (m == overlay || m == panel) return;
+			if (Std.isOfType(m, FlxSprite))
+			{
+				var spr:FlxSprite = cast m;
+				FlxTween.cancelTweensOf(spr);
+				FlxTween.tween(spr, {alpha: target}, dur, {ease: ease, startDelay: delay});
+			}
+		});
 	}
 
 	override public function update(elapsed:Float):Void

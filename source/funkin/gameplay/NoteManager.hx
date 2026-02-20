@@ -85,16 +85,11 @@ class NoteManager
 		songSpeed = SONG.speed;
 		_scrollSpeed = 0.45 * FlxMath.roundDecimal(songSpeed, 2);
 
-		trace('[NoteManager] === GENERANDO NOTAS ===');
-		trace('[NoteManager] Song speed: $songSpeed, scroll speed: $_scrollSpeed');
-		trace('[NoteManager] Secciones totales: ${SONG.notes.length}');
-
 		var notesCount = 0;
 		var sectionIndex = 0;
 
 		for (section in SONG.notes)
 		{
-			trace('[NoteManager] Procesando sección $sectionIndex - mustHitSection: ${section.mustHitSection}');
 
 			for (songNotes in section.sectionNotes)
 			{
@@ -157,15 +152,6 @@ class NoteManager
 		}
 
 		unspawnNotes.sort((a, b) -> Std.int(a.strumTime - b.strumTime));
-
-		trace('[NoteManager] Total notas generadas: $notesCount');
-		trace('[NoteManager] Notas en unspawnNotes: ${unspawnNotes.length}');
-		if (unspawnNotes.length > 0)
-		{
-			trace('[NoteManager] Primera nota: t=${unspawnNotes[0].strumTime}ms, mustPress=${unspawnNotes[0].mustPress}');
-			trace('[NoteManager] Última nota: t=${unspawnNotes[unspawnNotes.length - 1].strumTime}ms');
-		}
-		trace('[NoteManager] === GENERACIÓN COMPLETA ===');
 	}
 
 	/**
@@ -187,8 +173,7 @@ class NoteManager
 
 	private function spawnNotes(songPosition:Float):Void
 	{
-		var spawnedCount = 0;
-		var spawnTime:Float = 2000 / songSpeed;
+		final spawnTime:Float = 1800 / songSpeed;
 		while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - songPosition < spawnTime)
 		{
 			var note = unspawnNotes.shift();
@@ -198,20 +183,11 @@ class NoteManager
 			note.alpha = note.isSustainNote ? 0.6 : 1.0;
 
 			notes.add(note);
-			spawnedCount++;
-		}
-
-		if (spawnedCount > 0)
-		{
-			trace('[NoteManager] Spawned $spawnedCount notas, quedan ${unspawnNotes.length}');
 		}
 	}
 
 	private function updateActiveNotes(songPosition:Float):Void
 	{
-		var playerNotesCount = 0;
-		var checkedNotes = 0;
-
 		notes.forEachAlive(function(note:Note)
 		{
 			updateNotePosition(note, songPosition);
@@ -222,28 +198,11 @@ class NoteManager
 				return;
 			}
 
-			// Contar notas del jugador para debug
-			if (note.mustPress && !note.isSustainNote)
-			{
-				playerNotesCount++;
-
-				// Debug cada 60 frames (aproximadamente 1 segundo)
-				if (checkedNotes % 60 == 0)
-				{
-					var timeDiff = songPosition - note.strumTime;
-					trace('[NoteManager] 🔍 Nota jugador - noteData=${note.noteData}, strumTime=${note.strumTime}, songPos=$songPosition, diff=$timeDiff, wasGoodHit=${note.wasGoodHit}, tooLate=${note.tooLate}');
-				}
-				checkedNotes++;
-			}
-
-			// ✅ FIX: Marcar la nota como tooLate si pasó el tiempo límite
-			// Esto permite que InputHandler.checkMisses() detecte la nota correctamente
-			// SOLO para notas normales (no sustain notes)
-			if (note.mustPress && !note.wasGoodHit && !note.isSustainNote && songPosition > note.strumTime + 350)
+			if (note.mustPress && !note.wasGoodHit && songPosition > note.strumTime + 350)
 			{
 				note.tooLate = true;
 				note.canBeHit = false;
-				trace('[NoteManager] ⚠️ Nota marcada como tooLate! noteData=${note.noteData}, strumTime=${note.strumTime}, songPos=$songPosition');
+
 				// No llamamos a missNote aquí - InputHandler.checkMisses() lo hará
 			}
 
@@ -377,7 +336,6 @@ class NoteManager
 			}
 		}
 
-		trace('[NoteManager] Notas antiguas eliminadas para iniciar en: ' + time);
 	}
 
 	private function updateNotePosition(note:Note, songPosition:Float):Void
@@ -404,7 +362,10 @@ class NoteManager
 			if (!note.isSustainNote)
 				note.scale.y = strum.scale.y;
 			note.updateHitbox();
-			note.alpha = FlxMath.bound(strum.alpha, 0.05, 1.0);
+			if (!note.isSustainNote)
+				note.alpha = FlxMath.bound(strum.alpha, 0.05, 1.0);
+			else if (strum.alpha > 0.9)
+				note.alpha = FlxMath.bound(strum.alpha, 0.05, 0.7);
 
 			// Centrar X con hitbox ya actualizado
 			note.x = strum.x + (strum.width - note.width) / 2;

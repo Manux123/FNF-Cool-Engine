@@ -269,7 +269,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 											case 'freeplay':
 												StateTransition.switchState(new FreeplayState());
 											case 'options':
-												FlxG.switchState(new OptionsMenuState());
+												StateTransition.switchState(new OptionsMenuState());
 										}
 									});
 								}

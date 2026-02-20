@@ -50,14 +50,26 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 			menuItems.insert(2, "Skip Song");
 		}
 
+		// Limpiar sonidos de pausa anteriores que pudieran haber quedado en la lista
+		// Esto evita el crash al abrir la pausa por segunda vez
+		var i = FlxG.sound.list.length - 1;
+		while (i >= 0)
+		{
+			var s = FlxG.sound.list.members[i];
+			if (s != null && !s.alive) FlxG.sound.list.remove(s, true);
+			i--;
+		}
+
 		pauseMusic = new FlxSound().loadEmbedded(Paths.music('breakfast'), true, true);
 		pauseMusic.volume = 0;
 		pauseMusic.play(false, FlxG.random.int(0, Std.int(pauseMusic.length / 2)));
 
 		FlxG.sound.list.add(pauseMusic);
 
-		// Background with gradient effect
-		bg = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
+		// Background — un píxel escalado: evita alojar ~8 MB por el bitmap 1920×1080
+		bg = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
+		bg.setGraphicSize(FlxG.width, FlxG.height);
+		bg.updateHitbox();
 		bg.alpha = 0;
 		bg.scrollFactor.set();
 		add(bg);
@@ -127,7 +139,7 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 			});
 		}
 
-		changeSelection();
+		changeSelection(0, true); // silencioso al abrir
 
 		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 
@@ -147,7 +159,7 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
 		#end
 
-		if (pauseMusic.volume < 0.5)
+		if (pauseMusic != null && pauseMusic.volume < 0.5)
 			pauseMusic.volume += 0.01 * elapsed;
 
 		super.update(elapsed);
@@ -219,7 +231,15 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 
 	override function destroy()
 	{
-		pauseMusic.destroy();
+		// CRÍTICO: quitar de la lista ANTES de destruir para que FlxG.sound.resume()
+		// no intente operar sobre un sonido ya destruido → crash en 2ª apertura.
+		if (pauseMusic != null)
+		{
+			pauseMusic.stop();
+			FlxG.sound.list.remove(pauseMusic, true);
+			pauseMusic.destroy();
+			pauseMusic = null;
+		}
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.callOnScripts('onDestroy', []);
 		StateScriptHandler.clearStateScripts();
@@ -227,9 +247,10 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 		super.destroy();
 	}
 
-	function changeSelection(change:Int = 0):Void
+	function changeSelection(change:Int = 0, silent:Bool = false):Void
 	{
-		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
+		if (!silent)
+			FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 		
 		curSelected += change;
 

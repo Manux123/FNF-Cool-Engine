@@ -1014,16 +1014,28 @@ class ChartingState extends funkin.states.MusicBeatState
 	public function showMessage(msg:String, ?color:FlxColor):Void
 	{
 		tipTimer = 0;
-		statusText.text = msg;
-		if (color != null)
-			statusText.color = color;
-		else
-			statusText.color = TEXT_GRAY;
 
-		// Reset después de 3 segundos
-		new FlxTimer().start(3.0, function(tmr:FlxTimer)
-		{
-			statusText.color = TEXT_GRAY;
+		// ── Animación: flash rápido y slide-up desde abajo ────────────────
+		FlxTween.cancelTweensOf(statusText);
+		statusText.text  = msg;
+		statusText.color = (color != null) ? color : cast TEXT_GRAY;
+		statusText.alpha = 0;
+
+		// Posición base
+		final baseY:Float = FlxG.height - 20;
+		statusText.y = baseY + 10;
+
+		// Slide up + fade in rápido
+		FlxTween.tween(statusText, {alpha: 1, y: baseY}, 0.18, {ease: FlxEase.backOut});
+
+		// Mantener visible 2.5s, luego fade out
+		FlxTween.tween(statusText, {alpha: 0}, 0.30, {
+			ease: FlxEase.quadIn,
+			startDelay: 2.5,
+			onComplete: function(_)
+			{
+				statusText.color = cast TEXT_GRAY;
+			}
 		});
 	}
 
@@ -1399,6 +1411,9 @@ class ChartingState extends funkin.states.MusicBeatState
 
 	function isAnyPopupOpen():Bool
 	{
+		if (openSectionNav)
+			return true;
+
 		if (metaPopup != null && metaPopup.isOpen)
 			return true;
 
@@ -1470,7 +1485,7 @@ class ChartingState extends funkin.states.MusicBeatState
 				});
 				_song.notes[targetSection].sectionNotes.remove(i);
 				noteExists = true;
-				FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.3);
+				FlxG.sound.play(Paths.sound('menus/chartingSounds/undo'), 0.6);
 				curSelectedNote = null; // ✨ Deseleccionar la nota eliminada
 				break;
 			}
@@ -1494,8 +1509,7 @@ class ChartingState extends funkin.states.MusicBeatState
 			curSelectedNote = newNote;
 			updateNoteUI();
 
-			if (hitsoundsEnabled)
-				FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
+			FlxG.sound.play(Paths.sound('menus/chartingSounds/openWindow'), 0.6);
 		}
 		updateGrid();
 	}
@@ -1550,7 +1564,7 @@ class ChartingState extends funkin.states.MusicBeatState
 					note: [i[0], i[1], i[2]]
 				});
 				_song.notes[targetSection].sectionNotes.remove(i);
-				FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.3);
+				FlxG.sound.play(Paths.sound('menus/chartingSounds/noteErase'), 0.6);
 				updateGrid();
 				return;
 			}
@@ -1607,7 +1621,7 @@ class ChartingState extends funkin.states.MusicBeatState
 				curSelectedNote = i;
 				updateNoteUI();
 				showMessage('📝 Note selected (Sustain: ${i[2]}ms)', ACCENT_CYAN);
-				FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.2);
+				FlxG.sound.play(Paths.sound('menus/chartingSounds/ClickUp'), 0.6);
 				return true;
 			}
 		}
@@ -1844,7 +1858,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		panel.scrollFactor.set();
 		panel.cameras = [camHUD];
 
-		var label = new FlxText(FlxG.width / 2 - 115, FlxG.height / 2 - 50, 230, 'Ir a sección (1-${_song.notes.length}):', 11);
+		var label = new FlxText(FlxG.width / 2 - 115, FlxG.height / 2 - 50, 230, 'Go to section (1-${_song.notes.length}):', 11);
 		label.setFormat(Paths.font("vcr.ttf"), 11, 0xFFAAAAAA, CENTER);
 		label.scrollFactor.set();
 		label.cameras = [camHUD];
@@ -2276,7 +2290,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		}
 
 		showMessage('📋 Copied ${clipboard.length} notes', ACCENT_SUCCESS);
-		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
+		FlxG.sound.play(Paths.sound('menus/chartingSounds/noteLay'), 0.6);
 	}
 
 	function pasteSection():Void
@@ -2300,7 +2314,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		updateGrid();
 		showMessage('📌 Pasted ${clipboard.length} notes', ACCENT_SUCCESS);
-		FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.4);
+		FlxG.sound.play(Paths.sound('menus/chartingSounds/stretchSNAP_UI'), 0.6);
 	}
 
 	function cutSection():Void
@@ -2330,7 +2344,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		updateGrid();
 		showMessage('🔄 Section mirrored (P1 ↔ P2)', ACCENT_CYAN);
-		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
+		FlxG.sound.play(Paths.sound('menus/chartingSounds/stretchSNAP_UI'), 0.6);
 	}
 
 	function mirrorHorizontal():Void
@@ -2399,7 +2413,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		updateGrid();
 		showMessage('↶ Undo', ACCENT_CYAN);
-		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.3);
+		FlxG.sound.play(Paths.sound('menus/chartingSounds/undo'), 0.6);
 	}
 
 	function redo():Void
@@ -2429,7 +2443,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		updateGrid();
 		showMessage('↷ Redo', ACCENT_CYAN);
-		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.3);
+		FlxG.sound.play(Paths.sound('menus/chartingSounds/openWindow'), 0.6);
 	}
 
 	function calculateNPS():Float

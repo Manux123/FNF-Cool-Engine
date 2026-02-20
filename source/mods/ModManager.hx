@@ -73,6 +73,13 @@ class ModManager
 			return;
 		}
 
+		// ── Extraer mods comprimidos (.zip / .rar) ANTES de escanear carpetas ──
+		// Permite cargar mods directamente desde archives sin descomprimirlos
+		// manualmente. Si ya fueron extraídos y el archivo no cambió, es un no-op.
+		final extracted = ModExtractor.extractAll();
+		if (extracted.length > 0)
+			trace('[ModManager] Mods extraídos de archivo: ' + extracted.join(', '));
+
 		// Leer lista de mods desactivados persistida
 		_loadEnabledState();
 

@@ -1,4 +1,4 @@
-# [Cool Engine REBORN (60%)](https://github.com/Manux123/FNF-Cool-Engine)
+# [Cool Engine REBORN (65%)](https://github.com/Manux123/FNF-Cool-Engine)
 
 **FNF': Cool Engine is a modification of the original FNF' source code the mod includes new Options and better Graphics!!**
 ----------------------------------------------
@@ -55,13 +55,18 @@ Once that is done you can open up a command line in the project's directory and 
 As for Mac, `lime test mac -debug` will work,
 ----------------------------------------------
 
-ADDITIONS IN 0.3.5
+ADDITIONS IN 0.4.1
 
-- Functions Switch Characters!
-- More Fixed Bugs
-- New Notes in Txt
-- New Splashes in Txt
-- Best ubication in the folders
+- REWRITTED ALL
+- Stickers!
+- Freeplay Editor
+- More Softcoding
+- HUD for Script
+- New Chart Editor
+- New Character Editor
+- Mods Support ZIP, RAR, Folder
+- More Optimization
+- Better Options
 
 ----------------------------------------------
 Thanks for checking out our Engine! Do you have any question? Go to the [discussions](https://github.com/Manux123/FNF-Cool-Engine/discussions) tab!

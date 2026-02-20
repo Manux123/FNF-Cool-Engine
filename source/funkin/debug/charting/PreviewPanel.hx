@@ -7,6 +7,8 @@ import flixel.group.FlxGroup;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flixel.addons.ui.FlxUICheckBox;
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
 import funkin.data.Song.SwagSong;
 import funkin.gameplay.objects.character.Character;
 import funkin.gameplay.CharacterController;
@@ -455,44 +457,104 @@ class PreviewPanel extends FlxGroup
 	{
 		isExpanded = !isExpanded;
 
-		panelBg.visible           = isExpanded;
-		rightBorder.visible       = isExpanded;
-		titleText.visible         = isExpanded;
-		charLabel.visible         = isExpanded;
-		activateLabel.visible     = isExpanded;
-		activateCheck.visible     = isExpanded;
-		activateCheck.active      = isExpanded;
-		gridSelectorBg.visible    = isExpanded;
-		gridSelectorLabel.visible = isExpanded;
-		gridPrevBtn.visible       = isExpanded;
-		gridNextBtn.visible       = isExpanded;
-		gridPrevTxt.visible       = isExpanded;
-		gridNextTxt.visible       = isExpanded;
-		gridValueTxt.visible      = isExpanded;
-		debugInfoTxt.visible      = isExpanded;
-		adjXMinusBtn.visible      = isExpanded;
-		adjXPlusBtn.visible       = isExpanded;
-		adjYMinusBtn.visible      = isExpanded;
-		adjYPlusBtn.visible       = isExpanded;
-		adjSMinusBtn.visible      = isExpanded;
-		adjSPlusBtn.visible       = isExpanded;
-		if (adjXLabel  != null) adjXLabel.visible  = isExpanded;
-		if (adjYLabel  != null) adjYLabel.visible  = isExpanded;
-		if (adjSLabel  != null) adjSLabel.visible  = isExpanded;
-		if (adjXValTxt != null) adjXValTxt.visible = isExpanded;
-		if (adjYValTxt != null) adjYValTxt.visible = isExpanded;
-		if (adjSValTxt != null) adjSValTxt.visible = isExpanded;
-		for (t in adjBtnTexts)  t.visible          = isExpanded;
+		// ── Animación de slide horizontal ────────────────────────────────
+		// El panel desliza hacia la izquierda (ocultar) o desde la izquierda (mostrar).
+		// El botón toggle siempre permanece visible en el borde.
+		final slideTarget:Float = isExpanded ? PANEL_X : -PANEL_W;
+		final slideDur:Float   = 0.28;
+		final slideEase        = isExpanded ? FlxEase.backOut : FlxEase.quintIn;
 
-		for (bg  in optionBgs)   bg.visible  = isExpanded;
-		for (txt in optionTexts) txt.visible = isExpanded;
+		// Recolectar todos los sprites del panel para moverlos juntos
+		var panelMembers:Array<FlxSprite> = [];
+		forEach(function(m:flixel.FlxBasic)
+		{
+			// El botón toggle y su texto NO participan en el slide
+			if (m == toggleBtn || m == toggleBtnText) return;
+			if (Std.isOfType(m, FlxSprite))
+				panelMembers.push(cast m);
+		});
 
-		camPreview.visible = isExpanded && isPreviewActive;
-		camBorder.visible  = isExpanded && isPreviewActive;
+		// Antes del slide: asegurarse de que todos estén visibles para la animación
+		if (isExpanded)
+		{
+			// Activar los elementos ANTES de animar para que sean visibles
+			panelBg.visible = true; rightBorder.visible = true;
+			titleText.visible = true; charLabel.visible = true;
+			activateLabel.visible = true;
+			activateCheck.visible = true; activateCheck.active = true;
+			gridSelectorBg.visible = true; gridSelectorLabel.visible = true;
+			gridPrevBtn.visible = true; gridNextBtn.visible = true;
+			gridPrevTxt.visible = true; gridNextTxt.visible = true;
+			gridValueTxt.visible = true; debugInfoTxt.visible = true;
+			adjXMinusBtn.visible = true; adjXPlusBtn.visible = true;
+			adjYMinusBtn.visible = true; adjYPlusBtn.visible = true;
+			adjSMinusBtn.visible = true; adjSPlusBtn.visible = true;
+			if (adjXLabel  != null) adjXLabel.visible  = true;
+			if (adjYLabel  != null) adjYLabel.visible  = true;
+			if (adjSLabel  != null) adjSLabel.visible  = true;
+			if (adjXValTxt != null) adjXValTxt.visible = true;
+			if (adjYValTxt != null) adjYValTxt.visible = true;
+			if (adjSValTxt != null) adjSValTxt.visible = true;
+			for (t in adjBtnTexts)  t.visible = true;
+			for (bg  in optionBgs)   bg.visible  = true;
+			for (txt in optionTexts) txt.visible = true;
+			camPreview.visible = isPreviewActive;
+			camBorder.visible  = isPreviewActive;
+		}
 
+		// Deslizar todos los miembros del panel
+		for (spr in panelMembers)
+		{
+			final offsetFromPanel = spr.x - (isExpanded ? -PANEL_W : PANEL_X);
+			FlxTween.cancelTweensOf(spr);
+			FlxTween.tween(spr, {x: slideTarget + offsetFromPanel}, slideDur, {
+				ease: slideEase,
+				onComplete: !isExpanded ? function(_)
+				{
+					// Ocultar DESPUÉS del slide de salida
+					panelBg.visible           = false;
+					rightBorder.visible       = false;
+					titleText.visible         = false;
+					charLabel.visible         = false;
+					activateLabel.visible     = false;
+					activateCheck.visible     = false;
+					activateCheck.active      = false;
+					gridSelectorBg.visible    = false;
+					gridSelectorLabel.visible = false;
+					gridPrevBtn.visible       = false;
+					gridNextBtn.visible       = false;
+					gridPrevTxt.visible       = false;
+					gridNextTxt.visible       = false;
+					gridValueTxt.visible      = false;
+					debugInfoTxt.visible      = false;
+					adjXMinusBtn.visible      = false;
+					adjXPlusBtn.visible       = false;
+					adjYMinusBtn.visible      = false;
+					adjYPlusBtn.visible       = false;
+					adjSMinusBtn.visible      = false;
+					adjSPlusBtn.visible       = false;
+					if (adjXLabel  != null) adjXLabel.visible  = false;
+					if (adjYLabel  != null) adjYLabel.visible  = false;
+					if (adjSLabel  != null) adjSLabel.visible  = false;
+					if (adjXValTxt != null) adjXValTxt.visible = false;
+					if (adjYValTxt != null) adjYValTxt.visible = false;
+					if (adjSValTxt != null) adjSValTxt.visible = false;
+					for (t in adjBtnTexts)  t.visible          = false;
+					for (bg  in optionBgs)   bg.visible  = false;
+					for (txt in optionTexts) txt.visible = false;
+					camPreview.visible = false;
+					camBorder.visible  = false;
+				} : null
+			});
+		}
+
+		// Botón toggle: siempre visible, desliza al borde correcto
+		final btnTarget:Float = isExpanded ? PANEL_X + PANEL_W : 0;
+		FlxTween.cancelTweensOf(toggleBtn);
+		FlxTween.cancelTweensOf(toggleBtnText);
+		FlxTween.tween(toggleBtn,     {x: btnTarget}, slideDur, {ease: slideEase});
+		FlxTween.tween(toggleBtnText, {x: btnTarget}, slideDur, {ease: slideEase});
 		toggleBtnText.text = isExpanded ? "<" : ">";
-		toggleBtn.x        = isExpanded ? PANEL_X + PANEL_W : 0;
-		toggleBtnText.x    = isExpanded ? PANEL_X + PANEL_W : 0;
 	}
 
 	// ─────────────────────────────────────────────────────

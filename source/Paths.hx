@@ -72,8 +72,11 @@ class Paths
 	static var cacheMisses:Int = 0;
 	static var totalLoads:Int  = 0;
 
-	/** Tamaño máximo de cada caché (atlas y bitmaps por separado). */
-	public static var maxCacheSize:Int = 60;
+	/**
+	 * Tamaño máximo de cada caché (atlas + bitmaps por separado).
+	 * 50 es suficiente para evitar re-cargar assets frecuentes sin acumular demasiada RAM.
+	 */
+	public static var maxCacheSize:Int = 25; // Reducido: 25 atlas/bitmaps es suficiente para FNF sin acumular RAM
 
 	/** Desactivar para depuración — todos los accesos van a disco. */
 	public static var cacheEnabled:Bool = true;
@@ -321,8 +324,12 @@ class Paths
 		{
 			cacheHits++;
 			// LRU touch
-			_bitmapLRU.remove(key);
-			_bitmapLRU.push(key);
+			final pos = _bitmapLRU.indexOf(key);
+			if (pos >= 0 && pos < _bitmapLRU.length - 1)
+			{
+				_bitmapLRU.splice(pos, 1);
+				_bitmapLRU.push(key);
+			}
 			return bitmapCache.get(key);
 		}
 		cacheMisses++;
@@ -419,6 +426,9 @@ class Paths
 
 	public static function clearAllCaches():Void
 	{
+		// Sólo limpiamos las referencias en el caché de Paths.
+		// Los bitmaps vivos siguen siendo gestionados por FlxG.bitmap hasta que
+		// super.destroy() destruya los sprites que los referencian.
 		clearCache();
 		clearFlxBitmapCache();
 	}
@@ -468,6 +478,7 @@ class Paths
 	/**
 	 * Patrón de caché unificado para atlas.
 	 * `loader` se llama solo si el atlas no está en caché.
+	 * El LRU touch se hace en O(n) con splice — aceptable para n≤25.
 	 */
 	static function _cachedAtlas(key:String, loader:() -> FlxAtlasFrames):FlxAtlasFrames
 	{
@@ -476,9 +487,13 @@ class Paths
 		if (cacheEnabled && atlasCache.exists(key))
 		{
 			cacheHits++;
-			// LRU touch: mover al final
-			_atlasLRU.remove(key);
-			_atlasLRU.push(key);
+			// LRU touch: mover al final del array (más reciente)
+			final pos = _atlasLRU.indexOf(key);
+			if (pos >= 0 && pos < _atlasLRU.length - 1)
+			{
+				_atlasLRU.splice(pos, 1);
+				_atlasLRU.push(key);
+			}
 			return atlasCache.get(key);
 		}
 		cacheMisses++;
@@ -562,33 +577,31 @@ class Paths
 	}
 
 	/**
-	 * Evicta el atlas menos usado recientemente y libera su memoria GPU.
-	 * LRU: el candidato es el primero del array (_atlasLRU[0]).
+	 * Evicta el atlas menos usado recientemente (LRU).
+	 *
+	 * IMPORTANTE: NO llamamos dispose() aquí.
+	 * El BitmapData lo gestiona FlxG.bitmap; si hacemos dispose() mientras algún
+	 * FlxSprite aún referencia ese FlxGraphic, el siguiente draw crashea
+	 * (bitmap disposed but graphic still in FlxG.bitmap cache).
+	 * Simplemente quitamos el atlas de NUESTRO caché → si nadie más lo referencia,
+	 * el GC lo colectará en su momento.
 	 */
 	static function evictAtlas():Void
 	{
 		if (_atlasLRU.length == 0) return;
-		final k = _atlasLRU.shift(); // O(n) pero n ≤ maxCacheSize (≤ 60)
-		final atlas = atlasCache.get(k);
-		if (atlas != null)
-		{
-			// Liberar bitmap de la textura si no está compartido con Flixel
-			try { if (atlas.parent?.bitmap != null) atlas.parent.bitmap.dispose(); } catch(_) {}
-		}
+		final k = _atlasLRU.shift();
 		atlasCache.remove(k);
 		atlasCount--;
 	}
 
-	/** Evicta el bitmap menos usado recientemente y llama dispose(). */
+	/**
+	 * Evicta el bitmap menos usado recientemente (LRU).
+	 * Igual que evictAtlas: no disponemos aquí para evitar crashes.
+	 */
 	static function evictBitmap():Void
 	{
 		if (_bitmapLRU.length == 0) return;
 		final k = _bitmapLRU.shift();
-		final bmp = bitmapCache.get(k);
-		if (bmp != null)
-		{
-			try { bmp.dispose(); } catch(_) {}
-		}
 		bitmapCache.remove(k);
 		bitmapCount--;
 	}

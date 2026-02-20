@@ -15,8 +15,8 @@ package funkin.gameplay.notes;
  */
 class NotePool
 {
-	static inline var INITIAL_SIZE : Int = 200;
-	static inline var MAX_SIZE     : Int = 500;
+	static inline var INITIAL_SIZE : Int = 32; // Reducido: se expande bajo demanda
+	static inline var MAX_SIZE     : Int = 128; // Reducido: más de 128 notas en pool es desperdicio
 
 	static var notePool    : Array<Note> = [];
 	static var sustainPool : Array<Note> = [];
@@ -40,7 +40,7 @@ class NotePool
 		if (initialized) return;
 		prewarm(INITIAL_SIZE);
 		initialized = true;
-		trace('[NotePool] Listo — ${totalCreated} notas pre-creadas.');
+
 	}
 
 	/** Crea `count` notas y las devuelve al pool directamente, sin arrays intermedios. */
@@ -149,7 +149,7 @@ class NotePool
 		#if cpp  cpp.vm.Gc.run(true);  #end
 		#if hl   hl.Gc.major();        #end
 		prewarm(INITIAL_SIZE);
-		trace('[NotePool] GC forzado y pool recreado.');
+
 	}
 
 	// ─── Stats ────────────────────────────────────────────────────────────────

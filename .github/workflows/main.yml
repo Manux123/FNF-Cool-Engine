@@ -29,8 +29,10 @@ jobs:
           haxelib set openfl 9.2.2
           haxelib --never install flixel 5.3.1
           haxelib set flixel 5.3.1
-          haxelib install flixel-addons 3.2.2
-          haxelib install flixel-ui 2.6.1
+          haxelib --never install flixel-addons 3.2.2
+          haxelib set flixel-addons 3.2.2
+          haxelib --never install flixel-ui 2.6.1
+          haxelib set flixel-ui 2.6.1
           haxelib install flixel-tools 1.5.1
           haxelib install actuate
           haxelib install hscript
@@ -71,8 +73,14 @@ jobs:
           haxelib set openfl 9.2.2
           haxelib --never install flixel 5.3.1
           haxelib set flixel 5.3.1
-          haxelib install flixel-addons 3.2.2
-          haxelib install flixel-ui 2.6.1
+          haxelib remove flixel-ui
+          haxelib remove flixel-addons
+
+          haxelib --never install flixel-addons 3.2.2
+          haxelib set flixel-addons 3.2.2
+
+          haxelib --never install flixel-ui 2.6.1
+          haxelib set flixel-ui 2.6.1
           haxelib install flixel-tools 1.5.1
           haxelib install actuate
           haxelib install hscript

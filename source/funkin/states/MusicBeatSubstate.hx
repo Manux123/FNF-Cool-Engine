@@ -1,6 +1,7 @@
 package funkin.states;
 
 import funkin.data.Conductor.BPMChangeEvent;
+import funkin.transitions.StateTransition;
 import flixel.FlxG;
 import flixel.FlxSubState;
 import flixel.FlxCamera;
@@ -68,6 +69,8 @@ class MusicBeatSubstate extends FlxSubState
 	{
 		_bpmIdx = 0;
 		super.create();
+
+		StateTransition.onStateCreated();
 	}
 
 	override function update(elapsed:Float)

@@ -8,6 +8,8 @@ import flixel.text.FlxText;
 import flixel.ui.FlxButton;
 import flixel.util.FlxColor;
 import flixel.addons.ui.*;
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
 import funkin.data.Song.SwagSong;
 
 using StringTools;
@@ -59,7 +61,9 @@ class MetaPopup extends FlxGroup
 		this.camHUD = camHUD;
 
 		buildUI();
-		close(); // Empieza cerrado
+		// Empezar completamente oculto sin animación
+		visible = false;
+		close();
 	}
 
 	function buildUI():Void
@@ -160,13 +164,67 @@ class MetaPopup extends FlxGroup
 			stageInput.text = _song.stage != null ? _song.stage : "";
 		if (speedStepper != null)
 			speedStepper.value = _song.speed > 0 ? _song.speed : 1.0;
+
+		// ── Animación de apertura ──────────────────────────────────────────
+		// Overlay: fade in rápido
+		overlay.alpha = 0;
+		FlxTween.cancelTweensOf(overlay);
+		FlxTween.tween(overlay, {alpha: 0.65}, 0.18, {ease: FlxEase.quadOut});
+
+		// Panel: aparece desde abajo con leve escala punch
+		var targetY = (FlxG.height - POPUP_H) / 2;
+		panel.y    = targetY + 24;
+		panel.alpha = 0;
+		FlxTween.cancelTweensOf(panel);
+		FlxTween.tween(panel, {alpha: 1, y: targetY}, 0.22, {ease: FlxEase.backOut});
+
+		// Todos los hijos del panel siguen la misma animación
+		_animateChildren(true);
 	}
 
 	public function close():Void
 	{
+		if (!isOpen && !visible)
+			return;
+
 		isOpen = false;
-		visible = false;
 		active = false;
+
+		// ── Animación de cierre ───────────────────────────────────────────
+		// Si ya era invisible (init), ocultar de inmediato sin animar
+		if (!visible) { visible = false; return; }
+
+		FlxTween.cancelTweensOf(overlay);
+		FlxTween.cancelTweensOf(panel);
+		FlxTween.tween(overlay, {alpha: 0}, 0.15, {ease: FlxEase.quadIn});
+
+		var targetY = (FlxG.height - POPUP_H) / 2;
+		FlxTween.tween(panel, {alpha: 0, y: targetY + 18}, 0.18, {
+			ease: FlxEase.quadIn,
+			onComplete: function(_) { visible = false; }
+		});
+		_animateChildren(false);
+	}
+
+	/** Fade in/out coordinado de todos los hijos (etiquetas, inputs, botones). */
+	private function _animateChildren(opening:Bool):Void
+	{
+		var delay  = opening ? 0.10 : 0.0;
+		var dur    = opening ? 0.18 : 0.12;
+		var target = opening ? 1.0  : 0.0;
+		var ease   = opening ? FlxEase.quadOut : FlxEase.quadIn;
+
+		// Sprite hijos (excluyendo overlay y panel que ya se animan solos)
+		forEach(function(m:flixel.FlxBasic)
+		{
+			if (m == overlay || m == panel) return;
+			if (Std.isOfType(m, FlxSprite))
+			{
+				var spr:FlxSprite = cast m;
+				FlxTween.cancelTweensOf(spr);
+				FlxTween.tween(spr, {alpha: target}, dur, {ease: ease, startDelay: delay});
+			}
+		});
 	}
 
 	override public function update(elapsed:Float):Void

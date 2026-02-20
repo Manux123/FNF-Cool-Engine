@@ -99,6 +99,8 @@ class RatingState extends FlxSubState
 
 		// === ANIMACIÓN DE ENTRADA ÉPICA ===
 		playIntroAnimation();
+
+		StateTransition.onStateCreated();
 	}
 
 	function createBackgrounds():Void

@@ -94,7 +94,7 @@ jobs:
   # ══════════════════════════════════════════════════════════════════════════
   build-macos:
     name: "Build — macOS"
-    runs-on: macos-14          # Apple Silicon runner (also cross-compiles x86_64)
+    runs-on: macos-13          # Intel x86_64 — matches prebuilt Lime/hxcpp ndlls
 
     steps:
       # 1 ── Checkout ─────────────────────────────────────────────────────────
@@ -102,33 +102,15 @@ jobs:
         with:
           submodules: recursive
 
-      # 2 ── Neko + Haxe (manual install — krdlab/setup-haxe does not support arm64)
-      #      haxelib is a Neko binary, so Neko MUST be installed first or
-      #      haxelib will crash with "libneko.2.dylib not found".
-      - name: Install Neko
-        run: |
-          brew install neko
-          # On Apple Silicon, Homebrew installs to /opt/homebrew instead of /usr/local.
-          # haxelib has @rpath hardcoded to /usr/local/lib, so we symlink it there.
-          sudo mkdir -p /usr/local/lib
-          sudo ln -sf "$(brew --prefix neko)/lib/libneko.2.dylib" /usr/local/lib/libneko.2.dylib
-
+      # 2 ── Haxe ─────────────────────────────────────────────────────────────
       - name: Install Haxe ${{ env.HAXE_VERSION }}
-        run: |
-          curl -fsSL "https://github.com/HaxeFoundation/haxe/releases/download/${{ env.HAXE_VERSION }}/haxe-${{ env.HAXE_VERSION }}-osx.tar.gz" -o haxe.tar.gz
-          tar -xzf haxe.tar.gz
-          HAXE_DIR="$(pwd)/$(tar -tzf haxe.tar.gz | head -1 | cut -d/ -f1)"
-          echo "$HAXE_DIR" >> "$GITHUB_PATH"
-          echo "HAXE_STD_PATH=$HAXE_DIR/std" >> "$GITHUB_ENV"
-          mkdir -p ~/haxelib
-          "$HAXE_DIR/haxelib" setup ~/haxelib
+        uses: krdlab/setup-haxe@v1
+        with:
+          haxe-version: ${{ env.HAXE_VERSION }}
 
       # 3 ── libVLC via Homebrew ───────────────────────────────────────────────
       - name: Install libvlc (Homebrew)
-        run: |
-          brew install --cask vlc
-          echo "VLC installed at: /Applications/VLC.app"
-          ls /Applications/VLC.app/Contents/MacOS/lib/ | grep vlc || true
+        run: brew install --cask vlc
 
       # 4 ── Haxe libraries ───────────────────────────────────────────────────
       - name: Install haxelibs
@@ -156,13 +138,7 @@ jobs:
       - name: Setup Lime
         run: haxelib run lime setup -y
 
-      # 5 ── Rebuild Lime native libs for arm64 ───────────────────────────────
-      #      The prebuilt .ndll inside the haxelib package is x86_64.
-      #      We must recompile it for the arm64 runner or the build will crash.
-      - name: Rebuild Lime for arm64
-        run: haxelib run lime rebuild mac
-
-      # 6 ── Build ────────────────────────────────────────────────────────────
+      # 5 ── Build ────────────────────────────────────────────────────────────
       - name: Build (macOS release)
         run: haxelib run lime build mac -final
 

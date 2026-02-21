@@ -102,19 +102,28 @@ jobs:
         with:
           submodules: recursive
 
-      # 2 ── Haxe (manual install — krdlab/setup-haxe no soporta arm64) ───────
-      #      Descargamos el tarball oficial de HaxeFoundation y lo añadimos
-      #      al PATH para que haxe/haxelib estén disponibles en los pasos
-      #      siguientes.
+      # 2 ── Neko + Haxe (manual install — krdlab/setup-haxe does not support arm64)
+      #      haxelib is a Neko binary, so Neko MUST be installed first or
+      #      haxelib will crash with "libneko.2.dylib not found".
+      - name: Install Neko
+        run: |
+          NEKO_VERSION="2.3.0"
+          curl -fsSL "https://github.com/HaxeFoundation/neko/releases/download/v${NEKO_VERSION//./-}/neko-${NEKO_VERSION}-osx64.tar.gz" -o neko.tar.gz
+          tar -xzf neko.tar.gz
+          NEKO_DIR="$(pwd)/$(tar -tzf neko.tar.gz | head -1 | cut -d/ -f1)"
+          echo "$NEKO_DIR" >> "$GITHUB_PATH"
+          # Make libneko.2.dylib visible to the dynamic linker
+          echo "DYLD_LIBRARY_PATH=$NEKO_DIR:${DYLD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+          sudo cp "$NEKO_DIR"/libneko*.dylib /usr/local/lib/
+          sudo ldconfig 2>/dev/null || true
+
       - name: Install Haxe ${{ env.HAXE_VERSION }}
         run: |
           curl -fsSL "https://github.com/HaxeFoundation/haxe/releases/download/${{ env.HAXE_VERSION }}/haxe-${{ env.HAXE_VERSION }}-osx.tar.gz" -o haxe.tar.gz
           tar -xzf haxe.tar.gz
-          # The top-level folder name inside the tarball (e.g. "haxe_20240408152548_xxxxxxx")
           HAXE_DIR="$(pwd)/$(tar -tzf haxe.tar.gz | head -1 | cut -d/ -f1)"
           echo "$HAXE_DIR" >> "$GITHUB_PATH"
           echo "HAXE_STD_PATH=$HAXE_DIR/std" >> "$GITHUB_ENV"
-          # Configure a local haxelib repository
           mkdir -p ~/haxelib
           "$HAXE_DIR/haxelib" setup ~/haxelib
 

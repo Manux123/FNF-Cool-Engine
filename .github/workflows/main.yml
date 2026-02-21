@@ -94,7 +94,7 @@ jobs:
   # ══════════════════════════════════════════════════════════════════════════
   build-macos:
     name: "Build — macOS"
-    runs-on: macos-13          # Intel x86_64 — matches prebuilt Lime/hxcpp ndlls
+    runs-on: macos-14          # arm64 — only supported modern macOS runner
 
     steps:
       # 1 ── Checkout ─────────────────────────────────────────────────────────
@@ -102,17 +102,40 @@ jobs:
         with:
           submodules: recursive
 
-      # 2 ── Haxe ─────────────────────────────────────────────────────────────
-      - name: Install Haxe ${{ env.HAXE_VERSION }}
-        uses: krdlab/setup-haxe@v1
-        with:
-          haxe-version: ${{ env.HAXE_VERSION }}
+      # 2 ── Purge pre-installed x86_64 Haxe from the runner ──────────────────
+      #      macos-14 ships a cached x86_64 Haxe in hostedtoolcache that
+      #      shadows anything we install and causes arm64 ndll mismatches.
+      - name: Remove pre-installed Haxe
+        run: |
+          sudo rm -rf /Users/runner/hostedtoolcache/haxe
+          sudo rm -f /usr/local/bin/haxe /usr/local/bin/haxelib
 
-      # 3 ── libVLC via Homebrew ───────────────────────────────────────────────
-      - name: Install libvlc (Homebrew)
+      # 3 ── Neko (haxelib is a Neko binary) ──────────────────────────────────
+      - name: Install Neko
+        run: |
+          brew install neko
+          sudo mkdir -p /usr/local/lib
+          sudo ln -sf "$(brew --prefix neko)/lib/libneko.2.dylib" /usr/local/lib/libneko.2.dylib
+
+      # 4 ── Haxe (manual — krdlab/setup-haxe does not support arm64) ─────────
+      - name: Install Haxe ${{ env.HAXE_VERSION }}
+        run: |
+          curl -fsSL "https://github.com/HaxeFoundation/haxe/releases/download/${{ env.HAXE_VERSION }}/haxe-${{ env.HAXE_VERSION }}-osx.tar.gz" -o haxe.tar.gz
+          tar -xzf haxe.tar.gz
+          HAXE_DIR="$(pwd)/$(tar -tzf haxe.tar.gz | head -1 | cut -d/ -f1)"
+          # Prepend so our Haxe wins over any remnant in PATH
+          echo "$HAXE_DIR" >> "$GITHUB_PATH"
+          echo "HAXE_STD_PATH=$HAXE_DIR/std" >> "$GITHUB_ENV"
+          echo "HAXE_DIR=$HAXE_DIR" >> "$GITHUB_ENV"
+          mkdir -p ~/haxelib
+          "$HAXE_DIR/haxelib" setup ~/haxelib
+          rm haxe.tar.gz
+
+      # 5 ── libVLC ────────────────────────────────────────────────────────────
+      - name: Install libvlc
         run: brew install --cask vlc
 
-      # 4 ── Haxe libraries ───────────────────────────────────────────────────
+      # 6 ── Haxe libraries ───────────────────────────────────────────────────
       - name: Install haxelibs
         run: |
           haxelib install hxcpp --quiet
@@ -138,11 +161,17 @@ jobs:
       - name: Setup Lime
         run: haxelib run lime setup -y
 
-      # 5 ── Build ────────────────────────────────────────────────────────────
+      # 7 ── Rebuild Lime ndlls for arm64 ─────────────────────────────────────
+      #      Prebuilt ndlls in the haxelib package are x86_64.
+      #      Now that the correct arm64 Haxe/hxcpp are active, rebuild them.
+      - name: Rebuild Lime for arm64
+        run: haxelib run lime rebuild mac
+
+      # 8 ── Build ────────────────────────────────────────────────────────────
       - name: Build (macOS release)
         run: haxelib run lime build mac -final
 
-      # 6 ── Upload artifact ──────────────────────────────────────────────────
+      # 9 ── Upload artifact ──────────────────────────────────────────────────
       - name: Upload macOS build
         uses: actions/upload-artifact@v4
         with:

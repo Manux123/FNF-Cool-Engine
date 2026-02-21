@@ -16,10 +16,9 @@ import ui.SoundTray;
 import funkin.menus.TitleState;
 import data.PlayerSettings;
 
+import CrashHandler;
+
 #if debug
-import openfl.events.UncaughtErrorEvent;
-import haxe.CallStack;
-import haxe.io.Path;
 import funkin.debug.DebugConsole;
 #end
 
@@ -30,11 +29,6 @@ import openfl.system.System;
 #if desktop
 import data.Discord.DiscordClient;
 import sys.thread.Thread;
-#end
-
-#if sys
-import sys.FileSystem;
-import sys.io.File;
 #end
 
 // Initialization modules
@@ -149,10 +143,8 @@ class Main extends Sprite
 		// Calculate optimal zoom level
 		calculateZoom();
 		
-		// Setup crash handler (debug builds only)
-		#if CRASH_HANDLER
-		setupCrashHandler();
-		#end
+		// Setup crash handler — activo en todas las builds de escritorio
+		CrashHandler.init();
 		
 		// Initialize debugging tools
 		#if debug
@@ -332,96 +324,6 @@ class Main extends Sprite
 		}
 		#end
 	}
-	
-	// ==================== CRASH HANDLER ====================
-	
-	#if CRASH_HANDLER
-	/**
-	 * Setup crash handler for uncaught errors
-	 * Logs crashes to file and displays error dialog
-	 */
-	private function setupCrashHandler():Void
-	{
-		Lib.current.loaderInfo.uncaughtErrorEvents.addEventListener(
-			UncaughtErrorEvent.UNCAUGHT_ERROR, 
-			onCrash
-		);
-	}
-	
-	/**
-	 * Handle uncaught errors
-	 * Creates crash log and displays error to user
-	 */
-	private function onCrash(e:UncaughtErrorEvent):Void
-	{
-		var errorMessage:String = "";
-		var crashPath:String;
-		var callStack:Array<StackItem> = CallStack.exceptionStack(true);
-		var timestamp:String = Date.now().toString();
-		
-		// Sanitize timestamp for filename
-		timestamp = timestamp.replace(" ", "_");
-		timestamp = timestamp.replace(":", "'");
-		
-		crashPath = "./crash/CoolEngine_" + timestamp + ".txt";
-		
-		// Build error message from call stack
-		for (stackItem in callStack)
-		{
-			switch (stackItem)
-			{
-				case FilePos(s, file, line, column):
-					errorMessage += file + " (line " + line + ")\n";
-				default:
-					Sys.println(stackItem);
-			}
-		}
-		
-		errorMessage += "\nUncaught Error: " + e.error;
-		errorMessage += "\n\nPlease report this error to: https://github.com/Manux123/FNF-Cool-Engine";
-		errorMessage += "\n\n> Crash Handler written by: sqirra-rng";
-		
-		// Save crash log
-		saveCrashLog(crashPath, errorMessage);
-		
-		// Display error to user
-		Sys.println(errorMessage);
-		Sys.println("Crash dump saved in " + Path.normalize(crashPath));
-		
-		lime.app.Application.current.window.alert(errorMessage, "Cool Engine - Fatal Error");
-		
-		// Shutdown Discord RPC if active
-		#if DISCORD_ALLOWED
-		DiscordClient.shutdown();
-		#end
-		
-		// Exit application
-		Sys.exit(1);
-	}
-	
-	/**
-	 * Save crash log to file
-	 * Creates crash directory if it doesn't exist
-	 */
-	private function saveCrashLog(path:String, content:String):Void
-	{
-		#if sys
-		try
-		{
-			if (!FileSystem.exists("./crash/"))
-			{
-				FileSystem.createDirectory("./crash/");
-			}
-			
-			File.saveContent(path, content + "\n");
-		}
-		catch (e:Dynamic)
-		{
-			Sys.println("Failed to save crash log: " + e);
-		}
-		#end
-	}
-	#end
 	
 	// ==================== PUBLIC API ====================
 	

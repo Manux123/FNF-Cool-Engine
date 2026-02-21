@@ -15,7 +15,7 @@ import funkin.scripting.StateScriptHandler;
 import funkin.transitions.StateTransition;
 import flixel.tweens.FlxEase;
 import funkin.gameplay.PlayState;
-import extensions.CoolUtil;
+import funkin.data.CoolUtil;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 import ui.Alphabet;
@@ -240,6 +240,28 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 			pauseMusic.destroy();
 			pauseMusic = null;
 		}
+
+		// Cancelar todos los tweens activos sobre los elementos visuales.
+		// Si no se cancelan, los tweens del constructor siguen corriendo el siguiente
+		// frame sobre objetos ya destruidos → crash al dibujar en la 2ª apertura.
+		FlxTween.cancelTweensOf(bg);
+		FlxTween.cancelTweensOf(levelInfo);
+		FlxTween.cancelTweensOf(levelDifficulty);
+		FlxTween.cancelTweensOf(levelDeaths);
+		FlxTween.cancelTweensOf(levelAuthor);
+
+		if (grpMenuShit != null)
+		{
+			for (item in grpMenuShit.members)
+			{
+				if (item != null)
+				{
+					FlxTween.cancelTweensOf(item);
+					FlxTween.cancelTweensOf(item.scale);
+				}
+			}
+		}
+
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.callOnScripts('onDestroy', []);
 		StateScriptHandler.clearStateScripts();

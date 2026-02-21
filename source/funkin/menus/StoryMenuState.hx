@@ -143,17 +143,34 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		rankText.setFormat(Paths.font("vcr.ttf"), 32);
 		rankText.size = scoreText.size;
 		rankText.screenCenter(X);
-
-		var ui_tex = Paths.getSparrowAtlas('storymenu/campaign_menu/campaign_menu_UI_assets');
-		yellowBG = new FlxSprite(0, 56).makeGraphic(FlxG.width, 404, 0xFFF9CF51);
+		
+		yellowBG = new FlxSprite(0, 56).makeGraphic(FlxG.width, 404, 0xFFFFFFFF);
 		inverted = new FlxSprite(0, 56).makeGraphic(FlxG.width, 400, 0xFFF9CF51);
 
 		blackBarThingie = new FlxSprite().makeGraphic(FlxG.width, 56, FlxColor.BLACK);
 
-		// Inicializar bg aquí
-		bg = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
+		// bg siempre oscuro — el color de la week se aplica a yellowBG, no aquí.
+		// CRÍTICO: Paths.image() SIEMPRE devuelve String (nunca null).
+		// bg.frames == null tampoco es fiable — HaxeFlixel puede asignar un
+		// FlxFramesCollection con bitmap interno nulo sin lanzar excepción,
+		// lo que crashea en FlxDrawQuadsItem::render línea 119.
+		// La única comprobación segura es verificar si el fichero existe.
+		bg = new FlxSprite();
+		#if sys
+		var _bgPath:String = Paths.image('menu/menuDesat');
+		if (sys.FileSystem.exists(_bgPath))
+		{
+			try { bg.loadGraphic(_bgPath); } catch (_:Dynamic) {}
+		}
+		#end
+		if (bg.graphic == null || bg.graphic.bitmap == null)
+			bg.makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		add(bg);
-		bg.color = bgcol;
+		bg.color = 0xFF0A0A0A;
+
+		// Aplicar color de la semana inicial al yellowBG
+		if (weekColors.length > 0)
+			yellowBG.color = weekColors[0];
 
 		persistentUpdate = persistentDraw = true;
 
@@ -189,12 +206,12 @@ class StoryMenuState extends funkin.states.MusicBeatState
 				// weekThing.updateHitbox();
 
 				// Needs an offset thingie
+				// CRÍTICO: solo crear el lock si ui_tex existe.
+				// lock.frames = null crashea en FlxDrawQuadsItem::render.
 				if (i < weekUnlocked.length && !weekUnlocked[i])
 				{
 					var lock:FlxSprite = new FlxSprite(weekThing.width + 10 + weekThing.x);
-					lock.frames = ui_tex;
-					lock.animation.addByPrefix('lock', 'lock');
-					lock.animation.play('lock');
+					lock.loadGraphic(Paths.image('menu/storymenu/ui/lock'));
 					lock.ID = i;
 					lock.antialiasing = true;
 					grpLocks.add(lock);
@@ -241,70 +258,35 @@ class StoryMenuState extends funkin.states.MusicBeatState
 
 		trace("Line 124");
 
-		// VALIDACIÓN CRÍTICA: Solo crear arrows si ui_tex existe Y hay al menos una semana
-		if (ui_tex != null && grpWeekText.members.length > 0 && grpWeekText.members[0] != null)
+		if (grpWeekText.members.length > 0 && grpWeekText.members[0] != null)
 		{
 			leftArrow = new FlxSprite(grpWeekText.members[0].x + grpWeekText.members[0].width + 10, grpWeekText.members[0].y + 10);
-			leftArrow.frames = ui_tex;
-			leftArrow.animation.addByPrefix('idle', "arrow left");
-			leftArrow.animation.addByPrefix('press', "arrow push left");
+			leftArrow.frames = Paths.getSparrowAtlas('menu/storymenu/ui/arrows');
+			leftArrow.animation.addByPrefix('idle', "leftIdle");
+			leftArrow.animation.addByPrefix('press', "leftConfirm");
 			leftArrow.animation.play('idle');
 			difficultySelectors.add(leftArrow);
 
-			sprDifficulty = new FlxSprite(leftArrow.x + 130, leftArrow.y);
-			sprDifficulty.frames = ui_tex;
-			sprDifficulty.animation.addByPrefix('easy', 'EASY');
-			sprDifficulty.animation.addByPrefix('normal', 'NORMAL');
-			sprDifficulty.animation.addByPrefix('hard', 'HARD');
-			sprDifficulty.animation.play('easy');
-			changeDifficulty();
-
+			// sprDifficulty y rightArrow empiezan en x=0.
+			// changeDifficulty() los reposicionará correctamente una vez que
+			// ambas flechas y el sprite estén creados.
+			sprDifficulty = new FlxSprite(0, leftArrow.y);
+			sprDifficulty.loadGraphic(Paths.image('menu/storymenu/difficulties/easy'));
 			difficultySelectors.add(sprDifficulty);
 
-			rightArrow = new FlxSprite(sprDifficulty.x + sprDifficulty.width + 50, leftArrow.y);
-			rightArrow.frames = ui_tex;
-			rightArrow.animation.addByPrefix('idle', 'arrow right');
-			rightArrow.animation.addByPrefix('press', "arrow push right", 24, false);
-			rightArrow.animation.play('idle');
-			difficultySelectors.add(rightArrow);
-		}
-		else if (ui_tex != null)
-		{
-			// FALLBACK: Crear con posiciones por defecto si ui_tex existe pero no hay semanas
-			trace("WARNING: No weeks available or invalid, using default arrow positions");
-
-			leftArrow = new FlxSprite(FlxG.width * 0.2, yellowBG.y + yellowBG.height + 100);
-			leftArrow.frames = ui_tex;
-			leftArrow.animation.addByPrefix('idle', "arrow left");
-			leftArrow.animation.addByPrefix('press', "arrow push left");
-			leftArrow.animation.play('idle');
-			difficultySelectors.add(leftArrow);
-
-			sprDifficulty = new FlxSprite(leftArrow.x + 130, leftArrow.y);
-			sprDifficulty.frames = ui_tex;
-			sprDifficulty.animation.addByPrefix('easy', 'EASY');
-			sprDifficulty.animation.addByPrefix('normal', 'NORMAL');
-			sprDifficulty.animation.addByPrefix('hard', 'HARD');
-			sprDifficulty.animation.play('easy');
-			changeDifficulty();
-
-			difficultySelectors.add(sprDifficulty);
-
-			rightArrow = new FlxSprite(sprDifficulty.x + sprDifficulty.width + 50, leftArrow.y);
-			rightArrow.frames = ui_tex;
-			rightArrow.animation.addByPrefix('idle', 'arrow right');
-			rightArrow.animation.addByPrefix('press', "arrow push right", 24, false);
+			rightArrow = new FlxSprite(leftArrow.x + 60, leftArrow.y);
+			rightArrow.frames = Paths.getSparrowAtlas('menu/storymenu/ui/arrows');
+			rightArrow.animation.addByPrefix('idle', 'rightIdle');
+			rightArrow.animation.addByPrefix('press', "rightConfirm", 24, false);
 			rightArrow.animation.play('idle');
 			difficultySelectors.add(rightArrow);
 
-			// Ocultar difficulty selectors si no hay semanas
-			difficultySelectors.visible = false;
-		}
+			// Ahora que todo está creado, posicionar correctamente.
+			changeDifficulty();
+		}	
 		else
 		{
-			// CRÍTICO: Si ui_tex es null, NO crear ningún arrow
-			trace("ERROR: ui_tex is null, cannot create arrows! difficultySelectors will be empty.");
-			difficultySelectors.visible = false;
+			trace("WARNING: grpWeekText is empty, skipping difficulty selectors initialization");
 		}
 
 		trace("Line 150");
@@ -312,32 +294,34 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		add(yellowBG);
 		add(grpWeekCharacters);
 
-		// VALIDACIÓN: Verificar que la imagen existe antes de cargar
-		var tracksMenuPath:String = 'storymenu/campaign_menu/tracksMenu';
-		if (Paths.image(tracksMenuPath) != null)
+		// Paths.image() SIEMPRE devuelve String (nunca null), así que el check
+		// anterior "!= null" era siempre true. Hay que verificar con FileSystem.
+		var tracksMenuPath:String = Paths.image('menu/storymenu/tracksMenu');
+		tracksMenu = new FlxSprite(FlxG.width * 0.07, yellowBG.y + 435);
+		var tracksLoaded:Bool = false;
+		#if sys
+		if (sys.FileSystem.exists(tracksMenuPath))
 		{
 			try
 			{
-				tracksMenu = new FlxSprite(FlxG.width * 0.07, yellowBG.y + 435).loadGraphic(Paths.image(tracksMenuPath));
-				tracksMenu.antialiasing = true;
-				add(tracksMenu);
+				tracksMenu.loadGraphic(tracksMenuPath);
+				if (tracksMenu.graphic != null && tracksMenu.graphic.bitmap != null)
+				{
+					tracksMenu.antialiasing = true;
+					tracksLoaded = true;
+				}
 			}
 			catch (e:Dynamic)
 			{
 				trace("ERROR: Failed to load tracksMenu: " + e);
-				// Crear un sprite de fallback
-				tracksMenu = new FlxSprite(FlxG.width * 0.07, yellowBG.y + 435);
-				tracksMenu.makeGraphic(Std.int(FlxG.width * 0.5), 100, 0xFFFFFFFF);
-				add(tracksMenu);
 			}
 		}
-		else
+		#end
+		if (!tracksLoaded)
 		{
-			trace("WARNING: tracksMenu image not found, creating fallback");
-			tracksMenu = new FlxSprite(FlxG.width * 0.07, yellowBG.y + 435);
 			tracksMenu.makeGraphic(Std.int(FlxG.width * 0.5), 100, 0xFF000000);
-			add(tracksMenu);
 		}
+		add(tracksMenu);
 
 		txtTracklist = new FlxText(FlxG.width * 0.05, tracksMenu.y + 60, 0, "", 32);
 		txtTracklist.alignment = CENTER;
@@ -586,16 +570,18 @@ class StoryMenuState extends funkin.states.MusicBeatState
 					trace("ERROR: Failed to update week title: " + e);
 				}
 
-				// Actualizar color de fondo según la semana
-				if (bg != null && curWeek >= 0 && curWeek < weekColors.length)
+				// El color de la semana va en yellowBG, no en bg.
+				// bg debe permanecer oscuro siempre para que las semanas
+				// se vean sobre fondo negro.
+				if (yellowBG != null && curWeek >= 0 && curWeek < weekColors.length)
 				{
 					try
 					{
-						bg.color = weekColors[curWeek];
+						yellowBG.color = weekColors[curWeek];
 					}
 					catch (e:Dynamic)
 					{
-						trace("ERROR: Failed to update bg color: " + e);
+						trace("ERROR: Failed to update yellowBG color: " + e);
 					}
 				}
 			}
@@ -802,41 +788,50 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		if (curDifficulty > 2)
 			curDifficulty = 0;
 
-		sprDifficulty.offset.x = 0;
-
-		// VALIDACIÓN: Try-catch en animaciones por si no existen
+		// Cargar la imagen de la dificultad y actualizar hitbox para que
+		// sprDifficulty.width refleje el ancho REAL de la nueva imagen.
 		try
 		{
-			switch (curDifficulty)
-			{
-				case 0:
-					sprDifficulty.animation.play('easy');
-					sprDifficulty.offset.x = 20;
-				case 1:
-					sprDifficulty.animation.play('normal');
-					sprDifficulty.offset.x = 70;
-				case 2:
-					sprDifficulty.animation.play('hard');
-					sprDifficulty.offset.x = 20;
-			}
+			sprDifficulty.loadGraphic(Paths.image('menu/storymenu/difficulties/' + funkin.data.CoolUtil.difficultyArray[curDifficulty].toLowerCase()));
+			sprDifficulty.updateHitbox();
+			sprDifficulty.offset.set(0, 0);
 		}
 		catch (e:Dynamic)
 		{
-			trace("ERROR: Failed to play difficulty animation: " + e);
+			trace("ERROR: Failed to load difficulty graphic: " + e);
 			return;
 		}
 
-		sprDifficulty.alpha = 0;
-
-		// VALIDACIÓN: Solo actualizar posición si leftArrow existe
-		if (leftArrow != null)
+		// Reposicionar todo el selector centrado respecto a leftArrow.
+		// Layout:   [leftArrow] [padding] [sprDifficulty] [padding] [rightArrow]
+		// Tanto sprDifficulty como rightArrow se recalculan con el ancho real
+		// de la imagen, así "EASY" (estrecha) y "NORMAL" (ancha) quedan bien.
+		if (leftArrow != null && rightArrow != null)
 		{
-			sprDifficulty.y = leftArrow.y - 15;
-			FlxTween.tween(sprDifficulty, {y: leftArrow.y + 15, alpha: 1}, 0.07);
+			var padding:Float = 16;
+			var arrowY:Float  = leftArrow.y;
+			var startX:Float  = leftArrow.x + leftArrow.width + padding;
+
+			// sprDifficulty centrado verticalmente respecto a la flecha
+			sprDifficulty.x = startX;
+			sprDifficulty.y = arrowY + (leftArrow.height - sprDifficulty.height) / 2;
+
+			// rightArrow justo después del sprite de dificultad
+			rightArrow.x = startX + sprDifficulty.width + padding;
+			rightArrow.y = arrowY;
+
+			// Animación de entrada: baja desde arriba con fade-in
+			sprDifficulty.alpha = 0;
+			var targetY:Float = sprDifficulty.y;
+			sprDifficulty.y = targetY - 15;
+			FlxTween.cancelTweensOf(sprDifficulty);
+			FlxTween.tween(sprDifficulty, {y: targetY, alpha: 1}, 0.1, {ease: flixel.tweens.FlxEase.cubeOut});
 		}
 		else
 		{
-			FlxTween.tween(sprDifficulty, {alpha: 1}, 0.07);
+			sprDifficulty.alpha = 0;
+			FlxTween.cancelTweensOf(sprDifficulty);
+			FlxTween.tween(sprDifficulty, {alpha: 1}, 0.1);
 		}
 
 		// VALIDACIÓN: Solo obtener score si hay semanas

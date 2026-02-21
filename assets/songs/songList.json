@@ -61,7 +61,7 @@
 			"songIcons": ["parents-christmas", "parents-christmas", "monster"],
 			"color": ["0xFF9A68A4", "0xFF9A68A4", "0xFF9A68A4"],
 			"bpm": [95, 95, 95],
-			"weekCharacters": ["parents-christmas", "bf", "gf"],
+			"weekCharacters": ["parents-xmas", "bf", "gf"],
 			"locked": false
 		},
 		{

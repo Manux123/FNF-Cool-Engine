@@ -1,87 +1,188 @@
 package funkin.menus.substate;
 
 import flixel.FlxSprite;
+import flixel.FlxCamera;
 import flixel.graphics.frames.FlxAtlasFrames;
+import haxe.Json;
 
+#if sys
+import sys.FileSystem;
+import sys.io.File;
+#else
+import openfl.Assets as OpenFlAssets;
+#end
+
+// ── Typedef del JSON ──────────────────────────────────────────────────────────
+
+typedef MenuCharacterAnimData =
+{
+	var name:String;        // nombre interno de la animación (ej: "idle")
+	var prefix:String;      // prefijo del atlas (ej: "M BF Idle")
+	var fps:Int;            // fotogramas por segundo
+	var looped:Bool;        // ¿se repite?
+}
+
+typedef MenuCharacterData =
+{
+	@:optional var offsetX:Float;          // offset X del sprite
+	@:optional var offsetY:Float;          // offset Y del sprite
+	@:optional var scale:Float;            // escala uniforme (1.0 = normal)
+	@:optional var antialiasing:Bool;      // suavizado
+	@:optional var flipX:Bool;             // voltear horizontalmente
+	@:optional var animations:Array<MenuCharacterAnimData>;
+}
+
+// ── Clase principal ───────────────────────────────────────────────────────────
+
+/**
+ * Sprite de personaje del Story Menu.
+ * Los offsets, escala y animaciones se cargan desde:
+ *   assets/data/storymenu/chars/<nombre>.json
+ *
+ * Si el JSON no existe, usa defaults seguros (visible=false).
+ * Para añadir un personaje nuevo NO hace falta tocar el código:
+ * solo crea el atlas en  assets/images/menu/storymenu/props/<nombre>.png/.xml
+ * y su JSON en          assets/data/storymenu/chars/<nombre>.json
+ */
 class MenuCharacter extends FlxSprite
 {
 	public var character:String;
 
+	// Ruta base de los JSONs de personajes del story menu
+	private static inline final DATA_PATH:String = 'storymenu/chars/';
+
 	public function new(x:Float, character:String = 'bf')
 	{
 		super(x);
-
+		// Gráfico inicial válido — garantiza que _frame nunca es null
+		// antes de que el primer changeCharacter corra.
+		makeGraphic(1, 1, 0x00000000);
+		this.character = null;
 		changeCharacter(character);
 	}
 
-	public function changeCharacter(?character:String = 'bf') {
-		if(character == this.character) return;
+	/**
+	 * Intercepta el pipeline de render ANTES de que llegue a FlxDrawQuadsItem.
+	 * Si graphic o bitmap son inválidos, simplemente no dibujamos.
+	 */
+	override function draw():Void
+	{
+		if (graphic == null || graphic.bitmap == null) return;
+		super.draw();
+	}
 
+	public function changeCharacter(?character:String = 'bf'):Void
+	{
+		if (character == this.character) return;
 		this.character = character;
-		antialiasing = true;
-		visible = true;
 
-		switch(character) {
-			case 'bf':
-				frames = Paths.getSparrowAtlas('storymenu/campaign_menu/Menu_BF');
-				animation.addByPrefix('idle', "M BF Idle", 24);
-				animation.addByPrefix('confirm', 'M bf HEY', 24, false);
-
-			case 'gf':
-				frames = Paths.getSparrowAtlas('storymenu/campaign_menu/Menu_GF');
-				animation.addByPrefix('idle', "M GF Idle", 24);
-
-			case 'dad':
-				frames = Paths.getSparrowAtlas('storymenu/campaign_menu/Menu_Dad');
-				animation.addByPrefix('idle', "M Dad Idle", 24);
-
-			case 'spooky':
-				frames = Paths.getSparrowAtlas('storymenu/campaign_menu/Menu_Spooky_Kids');
-				animation.addByPrefix('idle', "M Spooky Kids Idle", 24);
-
-			case 'pico':
-				frames = Paths.getSparrowAtlas('storymenu/campaign_menu/Menu_Pico');
-				animation.addByPrefix('idle', "M Pico Idle", 24);
-
-			case 'mom':
-				frames = Paths.getSparrowAtlas('storymenu/campaign_menu/Menu_Mom');
-				animation.addByPrefix('idle', "M Mom Idle", 24);
-
-			case 'parents-christmas':
-				frames = Paths.getSparrowAtlas('storymenu/campaign_menu/Menu_Parents');
-				animation.addByPrefix('idle', "M Parents Idle", 24);
-
-			case 'senpai':
-				frames = Paths.getSparrowAtlas('storymenu/campaign_menu/Menu_Senpai');
-				animation.addByPrefix('idle', "M Senpai Idle", 24);
-			
-			default:
-				visible = false;
+		// Slot vacío — ocultar sin tocar frames (evita useCount-- → cache corrupta)
+		if (character == null || character == '')
+		{
+			visible = false;
+			return;
 		}
+
+		// ── 1. Cargar atlas ───────────────────────────────────────────────────
+		var atlas = Paths.getSparrowAtlas('menu/storymenu/props/' + character);
+		if (atlas == null)
+		{
+			trace('[MenuCharacter] Atlas no encontrado para: $character');
+			visible = false;
+			return;
+		}
+		frames = atlas;
+
+		// Guard post-asignación
+		if (graphic == null || graphic.bitmap == null)
+		{
+			visible = false;
+			return;
+		}
+
+		// ── 2. Cargar datos desde JSON ────────────────────────────────────────
+		var data:MenuCharacterData = loadData(character);
+
+		// ── 3. Aplicar escala ─────────────────────────────────────────────────
+		var sc:Float = (data.scale != null && data.scale > 0) ? data.scale : 1.0;
+		if (sc != 1.0)
+		{
+			scale.set(sc, sc);
+			setGraphicSize(Std.int(width * sc));
+		}
+
+		// ── 4. Registrar animaciones ──────────────────────────────────────────
+		if (data.animations != null && data.animations.length > 0)
+		{
+			for (anim in data.animations)
+			{
+				animation.addByPrefix(anim.name, anim.prefix, anim.fps, anim.looped);
+			}
+		}
+		else
+		{
+			// Fallback mínimo si el JSON no tiene animaciones
+			animation.addByPrefix('idle', 'idle', 24, true);
+		}
+
+		// ── 5. Propiedades visuales ───────────────────────────────────────────
+		antialiasing = (data.antialiasing != null) ? data.antialiasing : true;
+		flipX        = (data.flipX != null) ? data.flipX : false;
+
+		// ── 6. Play idle + hitbox ─────────────────────────────────────────────
 		animation.play('idle');
 		updateHitbox();
 
-		switch(character) {
-			case 'bf':
-				offset.set(15, -40);
+		// ── 7. Aplicar offset ─────────────────────────────────────────────────
+		var ox:Float = (data.offsetX != null) ? data.offsetX : 0;
+		var oy:Float = (data.offsetY != null) ? data.offsetY : 0;
+		offset.set(ox, oy);
 
-			case 'gf':
-				offset.set(0, -25);
+		visible = true;
+	}
 
-			case 'spooky':
-				offset.set(0, -80);
+	// ── Helpers ───────────────────────────────────────────────────────────────
 
-			case 'pico':
-				offset.set(0, -120);
+	/**
+	 * Carga el JSON del personaje.
+	 * Primero busca en el mod activo (a través de Paths.json),
+	 * luego en assets base. Si no existe devuelve un objeto vacío
+	 * para que los defaults del código sean aplicados sin crashear.
+	 */
+	private static function loadData(character:String):MenuCharacterData
+	{
+		var jsonPath:String = Paths.json(DATA_PATH + character);
 
-			case 'mom':
-				offset.set(0, 10);
+		var raw:String = null;
 
-			case 'parents-christmas':
-				offset.set(110, 10);
+		#if sys
+		if (FileSystem.exists(jsonPath))
+		{
+			try { raw = File.getContent(jsonPath); }
+			catch (e:Dynamic) { trace('[MenuCharacter] Error leyendo JSON $character: $e'); }
+		}
+		#else
+		if (OpenFlAssets.exists(jsonPath))
+		{
+			try { raw = OpenFlAssets.getText(jsonPath); }
+			catch (e:Dynamic) { trace('[MenuCharacter] Error leyendo JSON $character: $e'); }
+		}
+		#end
 
-			case 'senpai':
-				offset.set(60, -70);
+		if (raw == null)
+		{
+			trace('[MenuCharacter] JSON no encontrado para "$character", usando defaults.');
+			return {};
+		}
+
+		try
+		{
+			return cast Json.parse(raw);
+		}
+		catch (e:Dynamic)
+		{
+			trace('[MenuCharacter] JSON malformado para "$character": $e');
+			return {};
 		}
 	}
 }

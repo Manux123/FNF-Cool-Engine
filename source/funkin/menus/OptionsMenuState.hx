@@ -16,7 +16,7 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
-import extensions.CoolUtil;
+import funkin.data.CoolUtil;
 import funkin.gameplay.PlayState;
 import funkin.states.MusicBeatState;
 import funkin.states.MusicBeatSubstate;

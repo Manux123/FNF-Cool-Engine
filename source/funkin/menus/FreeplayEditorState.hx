@@ -29,7 +29,7 @@ import funkin.gameplay.objects.hud.Highscore;
 import funkin.scripting.StateScriptHandler;
 import funkin.gameplay.PlayState;
 import funkin.data.Conductor;
-import extensions.CoolUtil;
+import funkin.data.CoolUtil;
 import funkin.menus.StoryMenuState.Songs;
 import funkin.menus.FreeplayState.SongMetadata;
 import ui.Alphabet;

@@ -8,7 +8,7 @@ import flash.display.BlendMode;
 import flash.display.Sprite;
 import flash.Lib;
 import flixel.FlxG;
- 
+
 @:bitmap("art/preloaderArt.png") class LogoImage extends BitmapData { }
  
 class Preloader extends FlxBasePreloader

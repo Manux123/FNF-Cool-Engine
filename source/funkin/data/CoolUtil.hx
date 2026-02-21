@@ -1,4 +1,4 @@
-package extensions;
+package funkin.data;
 
 using StringTools;
 
@@ -11,10 +11,10 @@ using StringTools;
 class CoolUtil
 {
 	/** Lista de nombres de dificultad para mostrar en UI. */
-	public static var difficultyArray : Array<String> = ['EASY', 'NORMAL', 'HARD'];
+	public static var difficultyArray:Array<String> = ['EASY', 'NORMAL', 'HARD'];
 
 	/** Sufijos de dificultad para construir paths de chart. */
-	public static var difficultyPath  : Array<String> = ['-easy', '', '-hard'];
+	public static var difficultyPath:Array<String> = ['-easy', '', '-hard'];
 
 	// ─── Dificultad ───────────────────────────────────────────────────────────
 
@@ -48,7 +48,8 @@ class CoolUtil
 	{
 		final arr = new Array<Int>();
 		arr.resize(max - min); // reserva capacidad de una vez
-		for (i in 0...(max - min)) arr[i] = min + i;
+		for (i in 0...(max - min))
+			arr[i] = min + i;
 		return arr;
 	}
 
@@ -73,7 +74,8 @@ class CoolUtil
 		for (i in 0...lines.length)
 		{
 			final l = lines[i].trim();
-			if (l.length > 0) lines[write++] = l;
+			if (l.length > 0)
+				lines[write++] = l;
 		}
 		lines.resize(write);
 		return lines;

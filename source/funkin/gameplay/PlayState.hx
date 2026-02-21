@@ -42,7 +42,7 @@ import funkin.data.Song;
 import funkin.data.Section.SwagSection;
 import funkin.data.Section;
 import funkin.data.Conductor;
-import extensions.CoolUtil;
+import funkin.data.CoolUtil;
 import funkin.gameplay.objects.hud.Highscore;
 import funkin.states.LoadingState;
 import funkin.states.GameOverSubstate;

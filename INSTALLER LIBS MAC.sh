@@ -134,6 +134,15 @@ haxelib set flixel 5.3.1
 haxelib set flixel-ui 2.6.1
 haxelib set flixel-addons 3.2.2
 
+# ── Rebuild Lime for arm64 ───────────────────────
+echo ""
+echo "==============================================="
+echo "Rebuilding Lime native libs for arm64..."
+echo "==============================================="
+# The prebuilt .ndll inside the haxelib package is x86_64.
+# This recompiles it for the current architecture (arm64).
+haxelib run lime rebuild mac
+
 # ── Done ─────────────────────────────────────────
 echo ""
 echo "==============================================="

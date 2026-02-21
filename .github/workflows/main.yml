@@ -156,7 +156,13 @@ jobs:
       - name: Setup Lime
         run: haxelib run lime setup -y
 
-      # 5 ── Build ────────────────────────────────────────────────────────────
+      # 5 ── Rebuild Lime native libs for arm64 ───────────────────────────────
+      #      The prebuilt .ndll inside the haxelib package is x86_64.
+      #      We must recompile it for the arm64 runner or the build will crash.
+      - name: Rebuild Lime for arm64
+        run: haxelib run lime rebuild mac
+
+      # 6 ── Build ────────────────────────────────────────────────────────────
       - name: Build (macOS release)
         run: haxelib run lime build mac -final
 

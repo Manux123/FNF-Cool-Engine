@@ -102,19 +102,26 @@ jobs:
         with:
           submodules: recursive
 
-      # 2 ── Haxe ─────────────────────────────────────────────────────────────
+      # 2 ── Haxe (manual install — krdlab/setup-haxe no soporta arm64) ───────
+      #      Descargamos el tarball oficial de HaxeFoundation y lo añadimos
+      #      al PATH para que haxe/haxelib estén disponibles en los pasos
+      #      siguientes.
       - name: Install Haxe ${{ env.HAXE_VERSION }}
-        uses: krdlab/setup-haxe@v1
-        with:
-          haxe-version: ${{ env.HAXE_VERSION }}
+        run: |
+          curl -fsSL "https://github.com/HaxeFoundation/haxe/releases/download/${{ env.HAXE_VERSION }}/haxe-${{ env.HAXE_VERSION }}-osx.tar.gz" -o haxe.tar.gz
+          tar -xzf haxe.tar.gz
+          # The top-level folder name inside the tarball (e.g. "haxe_20240408152548_xxxxxxx")
+          HAXE_DIR="$(pwd)/$(tar -tzf haxe.tar.gz | head -1 | cut -d/ -f1)"
+          echo "$HAXE_DIR" >> "$GITHUB_PATH"
+          echo "HAXE_STD_PATH=$HAXE_DIR/std" >> "$GITHUB_ENV"
+          # Configure a local haxelib repository
+          mkdir -p ~/haxelib
+          "$HAXE_DIR/haxelib" setup ~/haxelib
 
       # 3 ── libVLC via Homebrew ───────────────────────────────────────────────
-      #      `libvlc` installs just the library without the full GUI app,
-      #      which is enough for compilation and CI testing.
       - name: Install libvlc (Homebrew)
         run: |
           brew install libvlc
-          # Print the detected paths so they appear in the CI log
           echo "Brew prefix: $(brew --prefix)"
           ls "$(brew --prefix)/lib/" | grep vlc || true
 
@@ -191,11 +198,8 @@ jobs:
             g++ \
             gcc \
             make
-          # Create unversioned symlinks so the bundled .so names resolve at link time
-          # apt installs libvlc.so.5 and libvlccore.so.9 but our XML references .so (no version)
           sudo ldconfig
           ls /usr/lib/x86_64-linux-gnu/libvlc*.so* || true
-          # Copy versioned .so into the bundled lib folder so hxcpp finds them by exact name
           cp /usr/lib/x86_64-linux-gnu/libvlc.so source/vlc/cpp/lib/linux/libvlc.so || true
           cp /usr/lib/x86_64-linux-gnu/libvlccore.so source/vlc/cpp/lib/linux/libvlccore.so || true
 

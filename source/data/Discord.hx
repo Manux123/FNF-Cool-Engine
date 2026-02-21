@@ -1,5 +1,14 @@
 package data;
 
+// ────────────────────────────────────────────────────────────────────────────
+// Discord.hx — Rich Presence via discord_rpc
+//
+// discord_rpc depends on cpp.Function, which only exists on cpp targets.
+// Wrapping in #if cpp ensures this file is a no-op on neko / html5 / mobile.
+// ────────────────────────────────────────────────────────────────────────────
+
+#if cpp
+
 import Sys.sleep;
 import discord_rpc.DiscordRpc;
 
@@ -22,7 +31,6 @@ class DiscordClient
 		{
 			DiscordRpc.process();
 			sleep(2);
-			//trace("Discord Client Update");
 		}
 
 		DiscordRpc.shutdown();
@@ -32,7 +40,7 @@ class DiscordClient
 	{
 		DiscordRpc.shutdown();
 	}
-	
+
 	static function onReady()
 	{
 		DiscordRpc.presence({
@@ -62,26 +70,36 @@ class DiscordClient
 		trace("Discord Client initialized");
 	}
 
-	public static function changePresence(details:String, state:Null<String>, ?smallImageKey : String, ?hasStartTimestamp : Bool, ?endTimestamp: Float)
+	public static function changePresence(details:String, state:Null<String>, ?smallImageKey:String,
+		?hasStartTimestamp:Bool, ?endTimestamp:Float)
 	{
-		var startTimestamp:Float = if(hasStartTimestamp) Date.now().getTime() else 0;
+		var startTimestamp:Float = if (hasStartTimestamp) Date.now().getTime() else 0;
 
 		if (endTimestamp > 0)
-		{
 			endTimestamp = startTimestamp + endTimestamp;
-		}
 
 		DiscordRpc.presence({
 			details: details,
 			state: state,
 			largeImageKey: 'icon',
 			largeImageText: "FNF' Cool Engine",
-			smallImageKey : smallImageKey,
-			// Obtained times are in milliseconds so they are divided so Discord can use it
-			startTimestamp : Std.int(startTimestamp / 1000),
-            endTimestamp : Std.int(endTimestamp / 1000)
+			smallImageKey: smallImageKey,
+			startTimestamp: Std.int(startTimestamp / 1000),
+			endTimestamp: Std.int(endTimestamp / 1000)
 		});
-
-		//trace('Discord RPC Updated. Arguments: $details, $state, $smallImageKey, $hasStartTimestamp, $endTimestamp');
 	}
 }
+
+#else
+
+// ── Stub for non-cpp targets (neko, html5, mobile) ──────────────────────────
+// Provides the same public API so all imports resolve, but does nothing.
+class DiscordClient
+{
+	public static inline function initialize():Void {}
+	public static inline function shutdown():Void {}
+	public static inline function changePresence(details:String, state:Null<String>,
+		?smallImageKey:String, ?hasStartTimestamp:Bool, ?endTimestamp:Float):Void {}
+}
+
+#end

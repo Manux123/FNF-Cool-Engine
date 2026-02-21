@@ -78,7 +78,7 @@
 	<!-- _______________________________ Libraries ______________________________ -->
 
 	<haxelib name="flixel" />
-	<haxedev set="webgl" />
+	<haxedef name="webgl" if="html5" />
 
 	<!--In case you want to use the addons package-->
 	<haxelib name="flixel-addons" />
@@ -88,7 +88,7 @@
 	<haxelib name="flixel-ui" />
 	<haxelib name="faxe" if="switch" />
 	<haxelib name="actuate" />
-	<haxelib name="discord_rpc" if="desktop" />
+	<haxelib name="discord_rpc" if="cpp" />
 
 	<haxelib name="flxanimate"/>
 
@@ -112,7 +112,8 @@
 	<haxedef name="HXCPP_CHECK_POINTER" if="debug" />
 	
 	<!-- Additional optimizations -->
-	<haxeflag name="--macro" value="nullSafety('StrictThreaded')" if="debug" />
+	<!-- nullSafety disabled: StrictThreaded causes false positives on mac/linux -->
+	<!-- <haxeflag name="--macro" value="nullSafety('Loose')" if="debug" /> -->
 
 	<!-- _________________________________ Custom _______________________________ -->
 

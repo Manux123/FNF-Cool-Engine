@@ -1,101 +1,228 @@
-# This is a basic workflow to help you get started with Actions
+# ────────────────────────────────────────────────────────────────────────────
+# Cool Engine — CI/CD Build Pipeline
+# Builds release binaries for Windows, macOS and Linux.
+#
+# Library versions match Installation_of_the_Haxe_and_APIStuff_libraries.bat:
+#   Haxe         4.3.6
+#   lime         8.0.2
+#   openfl       9.2.2
+#   flixel       5.3.1
+#   flixel-ui    2.6.1
+#   flixel-addons 3.2.2
+#   discord_rpc  git (Aidan63/linc_discord-rpc)
+#   flxanimate   git (Dot-Stuff/flxanimate)
+#
+# Triggers:
+#   • Every push to main / master
+#   • Every pull request targeting main / master
+#   • Manual run from the GitHub Actions UI
+# ────────────────────────────────────────────────────────────────────────────
 
-name: Build
+name: Build Cool Engine
 
-# Controls when the workflow will run
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+env:
+  HAXE_VERSION: "4.3.6"
+
 jobs:
-  # This workflow contains a single job called "build"
-  buildWindows:
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # WINDOWS
+  # ══════════════════════════════════════════════════════════════════════════
+  build-windows:
+    name: "Build — Windows"
     runs-on: windows-latest
-    
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2.3.0
 
-      - uses: krdlab/setup-haxe@master
+    steps:
+      - uses: actions/checkout@v4
         with:
-          haxe-version: 4.3.6
-      # Runs a set of commands using the runners shell
-      - name: Install Haxelib
-        run: |
-          haxelib setup C:/haxelib
-          haxelib install hxcpp > nul
-          haxelib install lime 8.0.2
-          haxelib install openfl 9.2.2
-          haxelib set lime 8.0.2
-          haxelib set openfl 9.2.2
-          haxelib --never install flixel 5.3.1
-          haxelib set flixel 5.3.1
-          haxelib --never install flixel-addons 3.2.2
-          haxelib set flixel-addons 3.2.2
-          haxelib --never install flixel-ui 2.6.1
-          haxelib set flixel-ui 2.6.1
-          haxelib install flixel-tools 1.5.1
-          haxelib install actuate
-          haxelib install hscript
-          haxelib install hxcpp-debug-server
-          haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
-          haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate
-          haxelib run lime setup windows
-          haxelib run lime setup flixel
-          haxelib list
+          submodules: recursive
+
+      - name: Install Haxe ${{ env.HAXE_VERSION }}
+        uses: krdlab/setup-haxe@v1
+        with:
+          haxe-version: ${{ env.HAXE_VERSION }}
+
+      # hxcpp needs MSVC on Windows
+      - name: Install MSVC build tools
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install haxelibs
         shell: cmd
-      - name: Create Version Tag
-        run: echo "${{github.run_id}}" > VERSION
-      - name: Compile
-        run: haxelib run lime build windows --app-version="4.0.0-${{ github.run_id}}"
-      - name: Publish Artifact
-        uses: actions/upload-artifact@v4.6.2
-        with:
-          name: windowsBuild
-          path: export/release/windows/bin
-  buildMac:
-    runs-on: macos-latest
-
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-
-      - uses: krdlab/setup-haxe@master
-        with:
-          haxe-version: 4.3.6
-      # Runs a set of commands using the runners shell
-      - name: Install Haxelib
         run: |
-          haxelib setup ~/haxelib
-          haxelib install hxcpp > /dev/null
-          haxelib install lime 8.0.2
-          haxelib install openfl 9.2.2
-          haxelib set lime 8.0.2
-          haxelib set openfl 9.2.2
-          haxelib --never install flixel 5.3.1
-          haxelib set flixel 5.3.1
-          haxelib remove flixel-ui
-          haxelib remove flixel-addons
-
-          haxelib --never install flixel-addons 3.2.2
-          haxelib set flixel-addons 3.2.2
-
-          haxelib --never install flixel-ui 2.6.1
-          haxelib set flixel-ui 2.6.1
-          haxelib install flixel-tools 1.5.1
-          haxelib install actuate
-          haxelib install hscript
-          haxelib install hxcpp-debug-server
+          haxelib install hxcpp --quiet
+          haxelib install lime 8.0.2 --quiet
+          haxelib install openfl 9.2.2 --quiet
+          haxelib install flixel 5.3.1 --quiet
+          haxelib install flixel-addons 3.2.2 --quiet
+          haxelib install flixel-ui 2.6.1 --quiet
+          haxelib install flixel-tools 1.5.1 --quiet
+          haxelib install actuate --quiet
+          haxelib install hscript --quiet
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
           haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate
-          haxelib run lime setup
-          haxelib run lime setup flixel
-          haxelib list
-      - name: Create Version Tag
-        run: echo "${{github.run_id}}" > VERSION
-      - name: Compile
-        run: haxelib run lime build mac --app-version="4.0.0-${{ github.run_id}}"
-      - name: Publish Artifact
-        uses: actions/upload-artifact@v4.6.2
+
+      # Lock versions to exactly what the .bat uses
+      - name: Lock library versions
+        shell: cmd
+        run: |
+          haxelib set lime 8.0.2
+          haxelib set openfl 9.2.2
+          haxelib set flixel 5.3.1
+          haxelib set flixel-addons 3.2.2
+          haxelib set flixel-ui 2.6.1
+
+      - name: Setup Lime
+        shell: cmd
+        run: haxelib run lime setup -y
+
+      - name: Build (Windows release)
+        shell: cmd
+        run: haxelib run lime build windows -final
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
         with:
-          name: macBuild
-          path: export/release/macos/bin
+          name: CoolEngine-Windows
+          path: export/release/windows/bin/
+          if-no-files-found: error
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # macOS
+  # ══════════════════════════════════════════════════════════════════════════
+  build-macos:
+    name: "Build — macOS"
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Haxe ${{ env.HAXE_VERSION }}
+        uses: krdlab/setup-haxe@v1
+        with:
+          haxe-version: ${{ env.HAXE_VERSION }}
+
+      # libvlc for MP4 video support
+      # Tries Homebrew formula first, falls back to the VLC cask
+      - name: Install libvlc (Homebrew)
+        run: |
+          brew install libvlc || brew install --cask vlc
+          echo "Brew prefix: $(brew --prefix)"
+          ls "$(brew --prefix)/lib/" | grep -i vlc || true
+
+      - name: Install haxelibs
+        run: |
+          haxelib install hxcpp --quiet
+          haxelib install lime 8.0.2 --quiet
+          haxelib install openfl 9.2.2 --quiet
+          haxelib install flixel 5.3.1 --quiet
+          haxelib install flixel-addons 3.2.2 --quiet
+          haxelib install flixel-ui 2.6.1 --quiet
+          haxelib install flixel-tools 1.5.1 --quiet
+          haxelib install actuate --quiet
+          haxelib install hscript --quiet
+          haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
+          haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate
+
+      - name: Lock library versions
+        run: |
+          haxelib set lime 8.0.2
+          haxelib set openfl 9.2.2
+          haxelib set flixel 5.3.1
+          haxelib set flixel-addons 3.2.2
+          haxelib set flixel-ui 2.6.1
+
+      - name: Setup Lime
+        run: haxelib run lime setup -y
+
+      - name: Build (macOS release)
+        run: haxelib run lime build mac -final
+
+      - name: Upload macOS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: CoolEngine-macOS
+          path: export/release/mac/bin/
+          if-no-files-found: error
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # LINUX
+  # ══════════════════════════════════════════════════════════════════════════
+  build-linux:
+    name: "Build — Linux"
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            libvlc-dev \
+            libvlccore-dev \
+            vlc-bin \
+            libasound2-dev \
+            libpulse-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            libx11-dev \
+            libxext-dev \
+            libxi-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libdbus-1-dev \
+            g++ \
+            gcc \
+            make
+
+      - name: Install Haxe ${{ env.HAXE_VERSION }}
+        uses: krdlab/setup-haxe@v1
+        with:
+          haxe-version: ${{ env.HAXE_VERSION }}
+
+      - name: Install haxelibs
+        run: |
+          haxelib install hxcpp --quiet
+          haxelib install lime 8.0.2 --quiet
+          haxelib install openfl 9.2.2 --quiet
+          haxelib install flixel 5.3.1 --quiet
+          haxelib install flixel-addons 3.2.2 --quiet
+          haxelib install flixel-ui 2.6.1 --quiet
+          haxelib install flixel-tools 1.5.1 --quiet
+          haxelib install actuate --quiet
+          haxelib install hscript --quiet
+          haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
+          haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate
+
+      - name: Lock library versions
+        run: |
+          haxelib set lime 8.0.2
+          haxelib set openfl 9.2.2
+          haxelib set flixel 5.3.1
+          haxelib set flixel-addons 3.2.2
+          haxelib set flixel-ui 2.6.1
+
+      - name: Setup Lime
+        run: haxelib run lime setup -y
+
+      - name: Build (Linux release)
+        run: haxelib run lime build linux -final
+
+      - name: Upload Linux build
+        uses: actions/upload-artifact@v4
+        with:
+          name: CoolEngine-Linux
+          path: export/release/linux/bin/
+          if-no-files-found: error

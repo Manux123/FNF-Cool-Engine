@@ -26,7 +26,7 @@ import funkin.transitions.StickerTransition;
 
 import openfl.system.System;
 
-#if desktop
+#if (desktop && cpp)
 import data.Discord.DiscordClient;
 import sys.thread.Thread;
 #end
@@ -187,7 +187,7 @@ class Main extends Sprite
 		};
 		
 		// Initialize Discord Rich Presence
-		#if desktop
+		#if (desktop && cpp)
 		DiscordClient.initialize();
 		#end
 	}

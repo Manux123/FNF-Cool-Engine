@@ -8,10 +8,9 @@ import flixel.system.scaleModes.StageSizeScaleMode;
 import flixel.system.scaleModes.BaseScaleMode;
 
 class CppAPI
-{	
-	public static function changeColor(r:Int,g:Int,b:Int)
+{
+	public static function changeColor(r:Int, g:Int, b:Int):Void
 	{
-		return InitAPI.setWindowBorderColor(r,g,b);
+		InitAPI.setWindowBorderColor(r, g, b);
 	}
-	
 }

@@ -1,115 +1,50 @@
 # ============================================
-# FNF Engine - Configuración de Compilación
+# FNF Cool Engine - build.hxml
 # ============================================
-# Este archivo controla cómo se compila tu juego
-# Edita las opciones según tus necesidades
+# IMPORTANTE: Este archivo es solo referencia / IDE support.
+# Para compilar usa siempre lime, NO haxe directamente:
+#
+#   lime build mac          <- Mac (cpp)
+#   lime build windows      <- Windows (cpp)
+#   lime build linux        <- Linux (cpp)
+#   lime build html5        <- HTML5
+#   lime test mac           <- Compila y ejecuta en Mac
+#
+# Lime usa Project.xml como configuración real.
+# Este .hxml existe para que editores como VSCode/HaxeDevelop
+# tengan autocompletado correcto.
+# ============================================
 
-# ============================================
-# CONFIGURACIÓN BÁSICA
-# ============================================
+# Classpath
 -cp source
--cp assets/preload
--main Main
 
-# ============================================
-# BIBLIOTECAS (Descomentar las que uses)
-# ============================================
+# Librerías (mismo set que Project.xml)
+-lib lime
+-lib openfl
 -lib flixel
 -lib flixel-addons
 -lib flixel-ui
 -lib hscript
-# -lib polymod
--lib discord_rpc  # Descomentar para Discord Rich Presence
-# -lib hxCodec      # Descomentar para videos
-# -lib linc_luajit  # Descomentar para scripts Lua
+-lib discord_rpc
+-lib flxanimate
+-lib actuate
 
-# ============================================
-# OPCIONES DE OPTIMIZACIÓN
-# ============================================
-
-# Nivel de optimización (opciones: 0, 1, 2, 3)
-# 0 = Sin optimización (más rápido compilar, más lento ejecutar)
-# 3 = Máxima optimización (más lento compilar, más rápido ejecutar)
--D HXCPP_OPTIMIZATION_LEVEL=2
-
-# Compilación incremental (más rápida después de la primera vez)
---macro openfl.utils.macro.MacroHelper.setDefine("HXCPP_CHECK_POINTER", true)
-
-# ============================================
-# CONFIGURACIÓN DE DEBUG/RELEASE
-# ============================================
-
-# MODO DEBUG (comenta estas líneas para compilación RELEASE)
--debug
--D FNF_DEBUG_MODE
-
-# MODO RELEASE (descomenta para versión final)
-# -D release
-# -D no-debug
-# -D no-traces
-
-# ============================================
-# CARACTERÍSTICAS DEL JUEGO
-# ============================================
-
-# Activar/Desactivar características
--D DISCORD_ALLOWED       # Rich Presence de Discord
- -D VIDEOS_ALLOWED      # Soporte para cutscenes en video
-# -D LUA_ALLOWED         # Scripts Lua personalizados
-# -D HSCRIPT_ALLOWED     # Scripts HScript personalizados
-
-# ============================================
-# CONFIGURACIÓN DE RENDIMIENTO
-# ============================================
-
-# FPS por defecto
--D FPS_DEFAULT=60
-
-# Límite de memoria
--D HXCPP_GC_BIG_BLOCKS=4
-
-# Usar GPU para renderizado
--D FLX_RENDER_TILE
-
-# ============================================
-# PLATAFORMA OBJETIVO
-# ============================================
-
-# Windows (64-bit)
--D windows
--D desktop
--D HXCPP_M64
-
-# Para 32-bit, comenta HXCPP_M64 y descomenta:
-# -D HXCPP_M32
-
-# ============================================
-# DIRECTORIOS DE SALIDA
-# ============================================
--D HXCPP_OUTPUT_DIR=export/release/windows/obj
---class-path source
---class-path assets/preload/data
-
-# ============================================
-# CONFIGURACIÓN ADICIONAL
-# ============================================
-
-# Antialiasing
--D FLX_NO_MOUSE_ADVANCED
-
-# Precarga de assets
+# Defines del proyecto
+-D HSCRIPT_ALLOWED
 -D PRELOAD_ALL
+-D FLX_NO_FOCUS_LOST_SCREEN
+-D game_version=0.4.1B
 
-# Compilación silenciosa (menos spam en consola)
-# -D no-compilation
+# Modo debug por defecto para el IDE
+-D debug
+-D FLX_DEBUG
 
-# ============================================
-# MACROS Y DEFINICIONES PERSONALIZADAS
-# ============================================
--D game_version=0.2.8
-# ============================================
-# NOTAS
-# ============================================
-# Para compilar: lime test windows
-# Para limpiar: lime clean windows
-# Para compilar en release: lime build windows -release
+# NO poner -D windows / -D desktop / -D mac aquí:
+# Lime los define automáticamente según el target de compilación.
+# Ponerlos hardcodeados confunde al compilador cuando cambias de plataforma.
+
+# Entry point para el IDE
+-main Main
+
+# Output dummy para que haxe no se queje (lime lo ignora)
+-js /dev/null

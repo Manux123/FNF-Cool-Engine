@@ -4,65 +4,82 @@ import lime.utils.Assets;
 import funkin.states.MusicBeatState;
 import flixel.FlxState;
 import flixel.FlxG;
-#if (windows || web)
 import funkin.cutscenes.MP4Handler;
-#end
 import funkin.states.LoadingState;
+
+// ────────────────────────────────────────────────────────────────────────────
+// VideoState — plays an MP4 cutscene then transitions to the next state.
+//
+// On desktop (Windows / macOS / Linux) it uses MP4Handler backed by libVLC.
+// On all other targets (mobile, html5) it skips the video and goes straight
+// to nextState.
+// ────────────────────────────────────────────────────────────────────────────
 
 class VideoState extends MusicBeatState
 {
-    var videoPath:String;
-    var nextState:FlxState;
+	var videoPath:String;
+	var nextState:FlxState;
 
-    public function new(path:String,state:FlxState){
-        super();
+	// MP4Handler works on every platform now — the stub handles unsupported ones.
+	var video:MP4Handler = new MP4Handler();
 
-        this.videoPath = path;
-        this.nextState = state;
-    }
+	public function new(path:String, state:FlxState)
+	{
+		super();
+		this.videoPath = path;
+		this.nextState = state;
+	}
 
-    #if (windows || web)
-    var video:MP4Handler = new MP4Handler();
-    #end
+	public override function create():Void
+	{
+		FlxG.autoPause = true;
 
-    public override function create(){
-        FlxG.autoPause = true;
+		#if (cpp && !mobile)
+		// Desktop: try to play the video file via VLC
+		if (Assets.exists(Paths.video(videoPath)))
+		{
+			video.playMP4(Paths.video(videoPath));
+			video.finishCallback = function()
+			{
+				if (FlxG.sound.music != null)
+					FlxG.sound.music.stop();
+				LoadingState.loadAndSwitchState(nextState);
+			};
+		}
+		else
+		{
+			trace('VideoState: file not found — ' + Paths.video(videoPath) + ' — skipping.');
+			_skipToNext();
+		}
+		#else
+		// Mobile / HTML5: skip video entirely
+		trace('VideoState: video playback not supported on this platform — skipping.');
+		_skipToNext();
+		#end
 
-        #if (windows || web)
-        if(Assets.exists(Paths.video(videoPath))){
-            video.playMP4(Paths.video(videoPath));
-    		video.finishCallback = function(){
-                FlxG.sound.music.stop();
-                LoadingState.loadAndSwitchState(nextState);
-            }
-        }
-        else{
-            trace('Not existing path: ' + Paths.video(videoPath));
-            video.kill();
-            FlxG.sound.music.stop();
-            LoadingState.loadAndSwitchState(nextState);
-        }
-        #else
-        trace('DUM ASS, THIS ONLY WORKS ON WINDOWS/HTML XDDDD');
-        FlxG.sound.music.stop();
-        LoadingState.loadAndSwitchState(nextState);
-        #end
+		super.create();
+	}
 
-        super.create();
-    }
+	public override function update(elapsed:Float):Void
+	{
+		super.update(elapsed);
 
-    public override function update(elapsed:Float){
-        super.update(elapsed);
-        #if (windows || web)
-        if(controls.ACCEPT){
-            video.kill();
-            FlxG.sound.music.stop();
-            LoadingState.loadAndSwitchState(nextState);
-        }
-        #else
-        video.kill();
-        FlxG.sound.music.stop();
-        LoadingState.loadAndSwitchState(nextState);
-        #end
-    }
+		#if (cpp && !mobile)
+		// Allow the player to skip the cutscene
+		if (controls.ACCEPT)
+		{
+			video.kill();
+			_skipToNext();
+		}
+		#end
+	}
+
+	// ── helpers ────────────────────────────────────────────────────────────
+
+	function _skipToNext():Void
+	{
+		if (FlxG.sound.music != null)
+			FlxG.sound.music.stop();
+		LoadingState.loadAndSwitchState(nextState);
+	}
 }

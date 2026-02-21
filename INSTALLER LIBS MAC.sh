@@ -57,9 +57,11 @@ echo "Haxe installed at: $HAXE_DIR"
 # ── libvlc ──────────────────────────────────────
 echo ""
 echo "==============================================="
-echo "Installing libvlc via Homebrew..."
+echo "Installing VLC (libvlc) via Homebrew cask..."
 echo "==============================================="
-brew install libvlc
+brew install --cask vlc
+echo "VLC installed at: /Applications/VLC.app"
+ls /Applications/VLC.app/Contents/MacOS/lib/ | grep vlc || true
 
 # ── Clean conflicting libraries ──────────────────
 echo ""

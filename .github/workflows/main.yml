@@ -126,9 +126,9 @@ jobs:
       # 3 ── libVLC via Homebrew ───────────────────────────────────────────────
       - name: Install libvlc (Homebrew)
         run: |
-          brew install libvlc
-          echo "Brew prefix: $(brew --prefix)"
-          ls "$(brew --prefix)/lib/" | grep vlc || true
+          brew install --cask vlc
+          echo "VLC installed at: /Applications/VLC.app"
+          ls /Applications/VLC.app/Contents/MacOS/lib/ | grep vlc || true
 
       # 4 ── Haxe libraries ───────────────────────────────────────────────────
       - name: Install haxelibs

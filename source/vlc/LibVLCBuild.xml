@@ -2,53 +2,45 @@
 	<set name="PROJECT_DIR" value="${this_dir}" />
 	<set name="CPP_DIR" value="${PROJECT_DIR}/cpp" />
 
+	<!-- ── Compiler include paths (all platforms) ───────────────── -->
 	<files id='haxe'>
 		<compilervalue name="-I" value="${CPP_DIR}/include/" />
 		<compilervalue name="-I" value="${CPP_DIR}/src/" />
 	</files>
 
-	<!-- ── Windows ──────────────────────────────────────────────── -->
+	<!-- ── Windows: link bundled .lib files ─────────────────────── -->
 	<target id='haxe' tool='linker' toolid='exe'>
 		<lib name='${CPP_DIR}/lib/libvlc.lib'     if='windows' />
 		<lib name='${CPP_DIR}/lib/libvlccore.lib' if='windows' />
 	</target>
 
-	<!-- ── Linux: use bundled .so files ─────────────────────────── -->
+	<!-- ── Linux: link directly to bundled .so files ────────────── -->
 	<!--
-		The .so files are stored under cpp/lib/linux/.
-		At runtime the player must ship them next to the binary,
-		or the user must have VLC installed (libvlc-dev / vlc package).
-		The RPATH flag below makes the linker search the binary's own
-		directory first so bundled copies work out of the box.
+		<lib name="...so"> points the linker straight at the file —
+		no need for -L / -l flags which hxcpp XML handles inconsistently.
+		The RPATH tells the runtime loader to look in the binary's own
+		directory first, so the shipped .so files are found automatically.
 	-->
 	<target id='haxe' tool='linker' toolid='exe'>
-		<linkervalue value='-L${CPP_DIR}/lib/linux' if='linux' />
-		<linkervalue value='-lvlc'                  if='linux' />
-		<linkervalue value='-lvlccore'              if='linux' />
-		<linkervalue value="-Wl,-rpath,'\$\$ORIGIN'" if='linux' />
+		<lib name='${CPP_DIR}/lib/linux/libvlc.so'     if='linux' />
+		<lib name='${CPP_DIR}/lib/linux/libvlccore.so' if='linux' />
+		<linkervalue value="-Wl,-rpath,'$$ORIGIN'"     if='linux' />
 	</target>
 
-	<!-- ── macOS: link against system / Homebrew VLC ────────────── -->
+	<!-- ── macOS: link against Homebrew / VLC.app dylibs ────────── -->
 	<!--
-		Install VLC via Homebrew before building:
-		  brew install --cask vlc        (installs VLC.app + dylibs)
-		  OR: brew install libvlc        (headless, no GUI)
-
-		Intel Mac  → Homebrew prefix: /usr/local
-		Apple Silicon → Homebrew prefix: /opt/homebrew
-		VLC.app    → /Applications/VLC.app/Contents/MacOS/lib
-
-		We add all three search paths so it works on any Mac setup.
+		Homebrew Intel  : /usr/local/lib
+		Homebrew Silicon: /opt/homebrew/lib
+		VLC.app         : /Applications/VLC.app/Contents/MacOS/lib
+		All three paths are searched so any Mac setup works.
 	-->
 	<target id='haxe' tool='linker' toolid='exe'>
-		<linkervalue value='-L/usr/local/lib'                             if='macos' />
-		<linkervalue value='-L/opt/homebrew/lib'                          if='macos' />
-		<linkervalue value='-L/Applications/VLC.app/Contents/MacOS/lib'  if='macos' />
-		<linkervalue value='-lvlc'                                        if='macos' />
-		<!-- rpath so the binary finds the dylib at runtime even without
-		     the user having VLC in their PATH -->
-		<linkervalue value='-Wl,-rpath,/usr/local/lib'                    if='macos' />
-		<linkervalue value='-Wl,-rpath,/opt/homebrew/lib'                 if='macos' />
+		<linkervalue value='-L/usr/local/lib'                            if='macos' />
+		<linkervalue value='-L/opt/homebrew/lib'                         if='macos' />
+		<linkervalue value='-L/Applications/VLC.app/Contents/MacOS/lib' if='macos' />
+		<linkervalue value='-lvlc'                                       if='macos' />
+		<linkervalue value='-Wl,-rpath,/usr/local/lib'                   if='macos' />
+		<linkervalue value='-Wl,-rpath,/opt/homebrew/lib'                if='macos' />
 		<linkervalue value='-Wl,-rpath,/Applications/VLC.app/Contents/MacOS/lib' if='macos' />
 	</target>
 

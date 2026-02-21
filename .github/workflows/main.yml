@@ -1,16 +1,6 @@
 # ────────────────────────────────────────────────────────────────────────────
 # Cool Engine — CI/CD Build Pipeline
-# Builds release binaries for Windows, macOS and Linux.
-#
-# Library versions match Installation_of_the_Haxe_and_APIStuff_libraries.bat:
-#   Haxe         4.3.6
-#   lime         8.0.2
-#   openfl       9.2.2
-#   flixel       5.3.1
-#   flixel-ui    2.6.1
-#   flixel-addons 3.2.2
-#   discord_rpc  git (Aidan63/linc_discord-rpc)
-#   flxanimate   git (Dot-Stuff/flxanimate)
+# Builds release binaries for Windows, macOS (x86_64 + arm64) and Linux.
 #
 # Triggers:
 #   • Every push to main / master
@@ -27,9 +17,11 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+# ── Shared constants ─────────────────────────────────────────────────────────
 env:
   HAXE_VERSION: "4.3.6"
 
+# ── Jobs ─────────────────────────────────────────────────────────────────────
 jobs:
 
   # ══════════════════════════════════════════════════════════════════════════
@@ -40,19 +32,22 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      # 1 ── Checkout ─────────────────────────────────────────────────────────
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
+      # 2 ── Haxe ─────────────────────────────────────────────────────────────
       - name: Install Haxe ${{ env.HAXE_VERSION }}
         uses: krdlab/setup-haxe@v1
         with:
           haxe-version: ${{ env.HAXE_VERSION }}
 
-      # hxcpp needs MSVC on Windows
+      # 3 ── Visual C++ build tools (needed by hxcpp) ─────────────────────────
       - name: Install MSVC build tools
         uses: microsoft/setup-msbuild@v2
 
+      # 4 ── Haxe libraries ───────────────────────────────────────────────────
       - name: Install haxelibs
         shell: cmd
         run: |
@@ -68,7 +63,6 @@ jobs:
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
           haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate
 
-      # Lock versions to exactly what the .bat uses
       - name: Lock library versions
         shell: cmd
         run: |
@@ -82,10 +76,12 @@ jobs:
         shell: cmd
         run: haxelib run lime setup -y
 
+      # 5 ── Build ────────────────────────────────────────────────────────────
       - name: Build (Windows release)
         shell: cmd
         run: haxelib run lime build windows -final
 
+      # 6 ── Upload artifact ──────────────────────────────────────────────────
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
@@ -94,30 +90,35 @@ jobs:
           if-no-files-found: error
 
   # ══════════════════════════════════════════════════════════════════════════
-  # macOS
+  # macOS  (universal: x86_64 + arm64)
   # ══════════════════════════════════════════════════════════════════════════
   build-macos:
     name: "Build — macOS"
-    runs-on: macos-14
+    runs-on: macos-14          # Apple Silicon runner (also cross-compiles x86_64)
 
     steps:
+      # 1 ── Checkout ─────────────────────────────────────────────────────────
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
+      # 2 ── Haxe ─────────────────────────────────────────────────────────────
       - name: Install Haxe ${{ env.HAXE_VERSION }}
         uses: krdlab/setup-haxe@v1
         with:
           haxe-version: ${{ env.HAXE_VERSION }}
 
-      # libvlc for MP4 video support
-      # Tries Homebrew formula first, falls back to the VLC cask
+      # 3 ── libVLC via Homebrew ───────────────────────────────────────────────
+      #      `libvlc` installs just the library without the full GUI app,
+      #      which is enough for compilation and CI testing.
       - name: Install libvlc (Homebrew)
         run: |
-          brew install libvlc || brew install --cask vlc
+          brew install libvlc
+          # Print the detected paths so they appear in the CI log
           echo "Brew prefix: $(brew --prefix)"
-          ls "$(brew --prefix)/lib/" | grep -i vlc || true
+          ls "$(brew --prefix)/lib/" | grep vlc || true
 
+      # 4 ── Haxe libraries ───────────────────────────────────────────────────
       - name: Install haxelibs
         run: |
           haxelib install hxcpp --quiet
@@ -143,9 +144,11 @@ jobs:
       - name: Setup Lime
         run: haxelib run lime setup -y
 
+      # 5 ── Build ────────────────────────────────────────────────────────────
       - name: Build (macOS release)
         run: haxelib run lime build mac -final
 
+      # 6 ── Upload artifact ──────────────────────────────────────────────────
       - name: Upload macOS build
         uses: actions/upload-artifact@v4
         with:
@@ -154,17 +157,19 @@ jobs:
           if-no-files-found: error
 
   # ══════════════════════════════════════════════════════════════════════════
-  # LINUX
+  # LINUX  (Ubuntu)
   # ══════════════════════════════════════════════════════════════════════════
   build-linux:
     name: "Build — Linux"
     runs-on: ubuntu-22.04
 
     steps:
+      # 1 ── Checkout ─────────────────────────────────────────────────────────
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
+      # 2 ── System dependencies ──────────────────────────────────────────────
       - name: Install system dependencies
         run: |
           sudo apt-get update -y
@@ -186,12 +191,21 @@ jobs:
             g++ \
             gcc \
             make
+          # Create unversioned symlinks so the bundled .so names resolve at link time
+          # apt installs libvlc.so.5 and libvlccore.so.9 but our XML references .so (no version)
+          sudo ldconfig
+          ls /usr/lib/x86_64-linux-gnu/libvlc*.so* || true
+          # Copy versioned .so into the bundled lib folder so hxcpp finds them by exact name
+          cp /usr/lib/x86_64-linux-gnu/libvlc.so source/vlc/cpp/lib/linux/libvlc.so || true
+          cp /usr/lib/x86_64-linux-gnu/libvlccore.so source/vlc/cpp/lib/linux/libvlccore.so || true
 
+      # 3 ── Haxe ─────────────────────────────────────────────────────────────
       - name: Install Haxe ${{ env.HAXE_VERSION }}
         uses: krdlab/setup-haxe@v1
         with:
           haxe-version: ${{ env.HAXE_VERSION }}
 
+      # 4 ── Haxe libraries ───────────────────────────────────────────────────
       - name: Install haxelibs
         run: |
           haxelib install hxcpp --quiet
@@ -217,9 +231,11 @@ jobs:
       - name: Setup Lime
         run: haxelib run lime setup -y
 
+      # 5 ── Build ────────────────────────────────────────────────────────────
       - name: Build (Linux release)
         run: haxelib run lime build linux -final
 
+      # 6 ── Upload artifact ──────────────────────────────────────────────────
       - name: Upload Linux build
         uses: actions/upload-artifact@v4
         with:

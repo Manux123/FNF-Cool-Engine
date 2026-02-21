@@ -106,16 +106,7 @@ jobs:
       #      haxelib is a Neko binary, so Neko MUST be installed first or
       #      haxelib will crash with "libneko.2.dylib not found".
       - name: Install Neko
-        run: |
-          NEKO_VERSION="2.3.0"
-          curl -fsSL "https://github.com/HaxeFoundation/neko/releases/download/v${NEKO_VERSION//./-}/neko-${NEKO_VERSION}-osx64.tar.gz" -o neko.tar.gz
-          tar -xzf neko.tar.gz
-          NEKO_DIR="$(pwd)/$(tar -tzf neko.tar.gz | head -1 | cut -d/ -f1)"
-          echo "$NEKO_DIR" >> "$GITHUB_PATH"
-          # Make libneko.2.dylib visible to the dynamic linker
-          echo "DYLD_LIBRARY_PATH=$NEKO_DIR:${DYLD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
-          sudo cp "$NEKO_DIR"/libneko*.dylib /usr/local/lib/
-          sudo ldconfig 2>/dev/null || true
+        run: brew install neko
 
       - name: Install Haxe ${{ env.HAXE_VERSION }}
         run: |

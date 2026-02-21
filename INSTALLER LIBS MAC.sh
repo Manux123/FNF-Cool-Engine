@@ -12,7 +12,6 @@
 set -e  # Stop the script if any command fails
 
 HAXE_VERSION="4.3.6"
-NEKO_VERSION="2.3.0"
 
 echo "==============================================="
 echo "   FNF / HaxeFlixel Environment Setup — macOS"
@@ -32,17 +31,9 @@ read -rp "Press ENTER to continue..."
 # or haxelib will crash with "libneko.2.dylib not found".
 echo ""
 echo "==============================================="
-echo "Installing Neko $NEKO_VERSION..."
+echo "Installing Neko via Homebrew..."
 echo "==============================================="
-NEKO_TAG="${NEKO_VERSION//./-}"
-curl -fsSL "https://github.com/HaxeFoundation/neko/releases/download/v${NEKO_TAG}/neko-${NEKO_VERSION}-osx64.tar.gz" -o neko.tar.gz
-tar -xzf neko.tar.gz
-NEKO_DIR="$(pwd)/$(tar -tzf neko.tar.gz | head -1 | cut -d/ -f1)"
-export PATH="$NEKO_DIR:$PATH"
-export DYLD_LIBRARY_PATH="$NEKO_DIR:${DYLD_LIBRARY_PATH:-}"
-sudo cp "$NEKO_DIR"/libneko*.dylib /usr/local/lib/
-rm neko.tar.gz
-echo "Neko installed at: $NEKO_DIR"
+brew install neko
 
 # ── Haxe ─────────────────────────────────────────
 echo ""

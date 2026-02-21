@@ -103,12 +103,13 @@ jobs:
           submodules: recursive
 
       # 2 ── Purge pre-installed x86_64 Haxe from the runner ──────────────────
-      #      macos-14 ships a cached x86_64 Haxe in hostedtoolcache that
-      #      shadows anything we install and causes arm64 ndll mismatches.
       - name: Remove pre-installed Haxe
         run: |
-          sudo rm -rf /Users/runner/hostedtoolcache/haxe
-          sudo rm -f /usr/local/bin/haxe /usr/local/bin/haxelib
+          # Kill every trace of the x86_64 Haxe that ships in the runner image
+          sudo rm -rf /Users/runner/hostedtoolcache/haxe || true
+          sudo rm -f  /usr/local/bin/haxe /usr/local/bin/haxelib || true
+          # Confirm nothing is left
+          which haxe || echo "haxe not found — good"
 
       # 3 ── Neko (haxelib is a Neko binary) ──────────────────────────────────
       - name: Install Neko
@@ -162,14 +163,14 @@ jobs:
         run: haxelib run lime setup -y
 
       # 7 ── Rebuild Lime ndlls for arm64 ─────────────────────────────────────
-      #      Prebuilt ndlls in the haxelib package are x86_64.
-      #      Now that the correct arm64 Haxe/hxcpp are active, rebuild them.
+      #      arch -arm64 ensures hxcpp compiles native code for arm64,
+      #      not x86_64. Without this the prebuilt x86_64 ndll stays in place.
       - name: Rebuild Lime for arm64
-        run: haxelib run lime rebuild mac
+        run: arch -arm64 haxelib run lime rebuild mac
 
       # 8 ── Build ────────────────────────────────────────────────────────────
       - name: Build (macOS release)
-        run: haxelib run lime build mac -final
+        run: arch -arm64 haxelib run lime build mac -final
 
       # 9 ── Upload artifact ──────────────────────────────────────────────────
       - name: Upload macOS build

@@ -8,6 +8,7 @@ import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 import openfl.events.Event;
 
+using StringTools;
 // ────────────────────────────────────────────────────────────────────────────
 // MP4Handler — VLC-backed MP4 playback
 //

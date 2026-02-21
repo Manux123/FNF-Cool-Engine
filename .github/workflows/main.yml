@@ -106,7 +106,12 @@ jobs:
       #      haxelib is a Neko binary, so Neko MUST be installed first or
       #      haxelib will crash with "libneko.2.dylib not found".
       - name: Install Neko
-        run: brew install neko
+        run: |
+          brew install neko
+          # On Apple Silicon, Homebrew installs to /opt/homebrew instead of /usr/local.
+          # haxelib has @rpath hardcoded to /usr/local/lib, so we symlink it there.
+          sudo mkdir -p /usr/local/lib
+          sudo ln -sf "$(brew --prefix neko)/lib/libneko.2.dylib" /usr/local/lib/libneko.2.dylib
 
       - name: Install Haxe ${{ env.HAXE_VERSION }}
         run: |

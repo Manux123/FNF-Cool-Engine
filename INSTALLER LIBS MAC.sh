@@ -34,6 +34,10 @@ echo "==============================================="
 echo "Installing Neko via Homebrew..."
 echo "==============================================="
 brew install neko
+# On Apple Silicon, Homebrew installs to /opt/homebrew instead of /usr/local.
+# haxelib has @rpath hardcoded to /usr/local/lib, so we symlink it there.
+sudo mkdir -p /usr/local/lib
+sudo ln -sf "$(brew --prefix neko)/lib/libneko.2.dylib" /usr/local/lib/libneko.2.dylib
 
 # ── Haxe ─────────────────────────────────────────
 echo ""

@@ -122,6 +122,7 @@ class AddSongSubState extends FlxSubState
 	override function create()
 	{
 		super.create();
+		funkin.debug.themes.EditorTheme.load();
 
 		// Background darkener
 		bgDarkener = new FlxSprite();
@@ -137,14 +138,14 @@ class AddSongSubState extends FlxSubState
 		var windowY:Float = (FlxG.height - windowHeight) / 2;
 
 		windowBg = new FlxSprite(windowX, windowY);
-		windowBg.makeGraphic(windowWidth, windowHeight, 0xFF1a1a2e);
+		windowBg.makeGraphic(windowWidth, windowHeight, funkin.debug.themes.EditorTheme.current.bgPanel);
 		windowBg.alpha = 0;
 		windowBg.scale.set(0.8, 0.8);
 		add(windowBg);
 		FlxTween.tween(windowBg, {alpha: 0.98, "scale.x": 1, "scale.y": 1}, 0.4, {ease: FlxEase.backOut, startDelay: 0.1});
 
 		topBar = new FlxSprite(windowX, windowY);
-		topBar.makeGraphic(windowWidth, 50, 0xFF0f3460);
+		topBar.makeGraphic(windowWidth, 50, funkin.debug.themes.EditorTheme.current.bgPanelAlt);
 		topBar.alpha = 0;
 		add(topBar);
 		FlxTween.tween(topBar, {alpha: 1}, 0.3, {ease: FlxEase.quadOut, startDelay: 0.2});
@@ -157,7 +158,7 @@ class AddSongSubState extends FlxSubState
 		FlxTween.tween(titleText, {alpha: 1}, 0.3, {ease: FlxEase.quadOut, startDelay: 0.25});
 
 		statusText = new FlxText(windowX, windowY + windowHeight - 35, windowWidth, "Fill in the song details", 14);
-		statusText.setFormat(Paths.font("vcr.ttf"), 14, 0xFF53a8b6, CENTER);
+		statusText.setFormat(Paths.font("vcr.ttf"), 14, funkin.debug.themes.EditorTheme.current.accent, CENTER);
 		statusText.alpha = 0;
 		add(statusText);
 		FlxTween.tween(statusText, {alpha: 1}, 0.3, {ease: FlxEase.quadOut, startDelay: 0.3});
@@ -170,6 +171,13 @@ class AddSongSubState extends FlxSubState
 		createActionButtons(windowX, windowY, windowWidth, windowHeight);
 
 		if (editMode && editingSong != null) loadEditData();
+
+		// ✨ Botón de tema
+		var _themeBtn = new flixel.ui.FlxButton(windowX + windowWidth - 90, windowY + 10, "\u2728 Theme", function()
+		{
+			openSubState(new funkin.debug.themes.ThemePickerSubState());
+		});
+		add(_themeBtn);
 
 		FlxG.mouse.visible = true;
 	}
@@ -212,7 +220,7 @@ class AddSongSubState extends FlxSubState
 		noteSkinInput = _inp(windowX + 240, startY + 20, colW, "default", 40, 0.59);
 
 		var h1 = new FlxText(windowX + 30, startY + 44, 430, "Leave 'default' to use global config", 11);
-		h1.setFormat(Paths.font("vcr.ttf"), 11, 0xFF53a8b6, LEFT);
+		h1.setFormat(Paths.font("vcr.ttf"), 11, funkin.debug.themes.EditorTheme.current.textSecondary, LEFT);
 		h1.alpha = 0; add(h1); FlxTween.tween(h1, {alpha: 0.7}, 0.3, {startDelay: 0.6});
 
 		// Row 2 — Intro Video | Outro Video
@@ -223,7 +231,7 @@ class AddSongSubState extends FlxSubState
 		outroVideoInput = _inp(windowX + 240, startY + 20, colW, "", 80, 0.63);
 
 		var h2 = new FlxText(windowX + 30, startY + 44, 430, "Video filename without extension  (empty = no cutscene)", 11);
-		h2.setFormat(Paths.font("vcr.ttf"), 11, 0xFF53a8b6, LEFT);
+		h2.setFormat(Paths.font("vcr.ttf"), 11, funkin.debug.themes.EditorTheme.current.textSecondary, LEFT);
 		h2.alpha = 0; add(h2); FlxTween.tween(h2, {alpha: 0.7}, 0.3, {startDelay: 0.64});
 	}
 
@@ -267,7 +275,7 @@ class AddSongSubState extends FlxSubState
 			d.browse(OPEN, "ogg", null, "Select Inst.ogg");
 			#else updateStatus("File loading only available on Desktop"); #end
 		});
-		styleButton(loadInstBtn, 0xFF4a5568, 270); loadInstBtn.alpha = 0; add(loadInstBtn);
+		styleButton(loadInstBtn, funkin.debug.themes.EditorTheme.current.bgHover, 270); loadInstBtn.alpha = 0; add(loadInstBtn);
 		FlxTween.tween(loadInstBtn, {alpha: 1}, 0.3, {startDelay: 0.7});
 
 		instStatusText = _statusIcon(btnX + 280, btnY + 7, 0.72);
@@ -281,7 +289,7 @@ class AddSongSubState extends FlxSubState
 			d.browse(OPEN, "ogg", null, "Select Vocals.ogg");
 			#else updateStatus("File loading only available on Desktop"); #end
 		});
-		styleButton(loadVocalsBtn, 0xFF4a5568, 270); loadVocalsBtn.alpha = 0; add(loadVocalsBtn);
+		styleButton(loadVocalsBtn, funkin.debug.themes.EditorTheme.current.bgHover, 270); loadVocalsBtn.alpha = 0; add(loadVocalsBtn);
 		FlxTween.tween(loadVocalsBtn, {alpha: 1}, 0.3, {startDelay: 0.72});
 
 		vocalsStatusText = _statusIcon(btnX + 280, btnY + 7, 0.74);
@@ -295,7 +303,7 @@ class AddSongSubState extends FlxSubState
 			d.browse(OPEN, "png", null, "Select Icon.png");
 			#else updateStatus("File loading only available on Desktop"); #end
 		});
-		styleButton(loadIconBtn, 0xFF4a5568, 270); loadIconBtn.alpha = 0; add(loadIconBtn);
+		styleButton(loadIconBtn, funkin.debug.themes.EditorTheme.current.bgHover, 270); loadIconBtn.alpha = 0; add(loadIconBtn);
 		FlxTween.tween(loadIconBtn, {alpha: 1}, 0.3, {startDelay: 0.74});
 
 		iconStatusText = _statusIcon(btnX + 280, btnY + 7, 0.76);
@@ -740,8 +748,8 @@ class AddSongSubState extends FlxSubState
 	function _inp(x:Float, y:Float, w:Int, def:String, maxLen:Int, delay:Float):FlxInputText
 	{
 		var f = new FlxInputText(x, y, w, def, 15);
-		f.backgroundColor    = 0xFF0f3460;
-		f.fieldBorderColor   = 0xFF53a8b6;
+		f.backgroundColor    = funkin.debug.themes.EditorTheme.current.bgHover;
+		f.fieldBorderColor   = funkin.debug.themes.EditorTheme.current.borderColor;
 		f.fieldBorderThickness = 2;
 		f.color    = FlxColor.WHITE;
 		f.maxLength = maxLen;

@@ -177,6 +177,29 @@ class ModFormatDetector
 			final notes = s.notes;
 			if (notes != null && !Std.isOfType(notes, Array))
 				return CODENAME_ENGINE;
+
+			// ── Flat Psych chart (no events array, no song wrapper) ──────────
+			// Señales características:
+			//   • player1 en root (Psych usa esto, Cool usa characters[])
+			//   • sectionBeats en las secciones (campo exclusivo de Psych;
+			//     Cool Engine usa lengthInSteps)
+			//   • mustHitSection presente Y sin bpm a nivel raíz
+			// Si se cumple alguna de estas, lo tratamos como Psych para que
+			// PsychConverter genere los eventos Camera Follow correctamente.
+			if (notes != null && Std.isOfType(notes, Array))
+			{
+				final notesArr:Array<Dynamic> = cast notes;
+				if (notesArr.length > 0)
+				{
+					final firstSec:Dynamic = notesArr[0];
+					// sectionBeats es un campo exclusivo de Psych
+					if (firstSec.sectionBeats != null)
+						return PSYCH_ENGINE;
+				}
+			}
+			// player1 sin bpm a raíz → Psych plano (Cool nativo siempre tiene bpm)
+			if (root.player1 != null && root.bpm == null && root.events == null)
+				return PSYCH_ENGINE;
 		}
 		catch (_:Dynamic)
 		{

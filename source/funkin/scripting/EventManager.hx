@@ -133,7 +133,8 @@ class EventManager
 		for (section in sections)
 		{
 			final stepsInSection:Float = section.lengthInSteps > 0 ? section.lengthInSteps : 16;
-			final target = section.mustHitSection ? 'player' : 'opponent';
+			// gfSing (gfSection en Psych) tiene prioridad sobre mustHitSection
+			final target = (section.gfSing == true) ? 'gf' : (section.mustHitSection ? 'player' : 'opponent');
 
 			if (target != lastTarget)
 			{
@@ -149,7 +150,7 @@ class EventManager
 			if (section.changeBPM && section.bpm > 0) bpm = section.bpm;
 			step += stepsInSection;
 		}
-		trace('[EventManager] Auto-generados $count Camera Follow desde mustHitSection.');
+		trace('[EventManager] Auto-generados $count Camera Follow desde mustHitSection/gfSection.');
 	}
 
 	// ─── Update ───────────────────────────────────────────────────────────────

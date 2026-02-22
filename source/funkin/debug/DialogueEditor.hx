@@ -171,6 +171,7 @@ class DialogueEditor extends FlxState
 
 	override public function create():Void
 	{
+		funkin.debug.themes.EditorTheme.load();
 		FlxG.sound.playMusic(Paths.music('chartEditorLoop/chartEditorLoop'), 0.7);
 
 		if (PlayState.SONG.song == null)
@@ -193,6 +194,13 @@ class DialogueEditor extends FlxState
 
 		// Mostrar pestaña inicial
 		switchTab(CONVERSATION);
+
+		// ✨ Botón de tema (esquina superior derecha)
+		var _themeBtn = new flixel.ui.FlxButton(FlxG.width - 80, 4, "\u2728 Theme", function()
+		{
+			openSubState(new funkin.debug.themes.ThemePickerSubState());
+		});
+		add(_themeBtn);
 
 		FlxG.mouse.visible = true;
 
@@ -231,7 +239,7 @@ class DialogueEditor extends FlxState
 	 */
 	function createBackground():Void
 	{
-		bg = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, 0xFF1A1A1A);
+		bg = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, funkin.debug.themes.EditorTheme.current.bgDark);
 		add(bg);
 
 		titleText = new FlxText(0, PADDING, FlxG.width, "DIALOGUE EDITOR - With Skins", 28);
@@ -257,7 +265,7 @@ class DialogueEditor extends FlxState
 			{
 				switchTab(tabs[i]);
 			});
-			btn.makeGraphic(Std.int(tabWidth), TAB_HEIGHT, FlxColor.GRAY);
+			btn.makeGraphic(Std.int(tabWidth), TAB_HEIGHT, funkin.debug.themes.EditorTheme.current.bgHover);
 			btn.label.color = FlxColor.WHITE;
 			btn.label.size = 16;
 			add(btn);
@@ -276,7 +284,7 @@ class DialogueEditor extends FlxState
 		for (t in tabButtons.keys())
 		{
 			var btn = tabButtons.get(t);
-			btn.color = (t == tab) ? FlxColor.CYAN : FlxColor.GRAY;
+			btn.color = (t == tab) ? funkin.debug.themes.EditorTheme.current.accent : funkin.debug.themes.EditorTheme.current.bgHover;
 		}
 
 		// Ocultar todos los elementos
@@ -449,7 +457,7 @@ class DialogueEditor extends FlxState
 
 		skinNameDisplay = new FlxText(leftX, startY, PANEL_WIDTH - 20, currentSkinName, 14);
 		skinNameDisplay.setBorderStyle(OUTLINE, FlxColor.BLACK, 1);
-		skinNameDisplay.color = FlxColor.CYAN;
+		skinNameDisplay.color = funkin.debug.themes.EditorTheme.current.accent;
 		add(skinNameDisplay);
 		startY += 35;
 
@@ -457,18 +465,18 @@ class DialogueEditor extends FlxState
 		var btnWidth = (PANEL_WIDTH - 20) / 2;
 
 		saveConversationBtn = new FlxButton(leftX, startY, "SAVE", saveConversation);
-		saveConversationBtn.makeGraphic(Std.int(btnWidth), 30, FlxColor.GREEN);
+		saveConversationBtn.makeGraphic(Std.int(btnWidth), 30, funkin.debug.themes.EditorTheme.current.success);
 		saveConversationBtn.label.color = FlxColor.BLACK;
 		add(saveConversationBtn);
 
 		loadConversationBtn = new FlxButton(leftX + btnWidth + 10, startY, "LOAD", loadConversation);
-		loadConversationBtn.makeGraphic(Std.int(btnWidth), 30, FlxColor.BLUE);
+		loadConversationBtn.makeGraphic(Std.int(btnWidth), 30, funkin.debug.themes.EditorTheme.current.accent);
 		loadConversationBtn.label.color = FlxColor.BLACK;
 		add(loadConversationBtn);
 		startY += 40;
 
 		testBtn = new FlxButton(leftX, startY, "TEST DIALOGUE", testDialogue);
-		testBtn.makeGraphic(PANEL_WIDTH - 10, 30, FlxColor.YELLOW);
+		testBtn.makeGraphic(PANEL_WIDTH - 10, 30, funkin.debug.themes.EditorTheme.current.warning);
 		testBtn.label.color = FlxColor.BLACK;
 		add(testBtn);
 		startY += 40;
@@ -490,7 +498,7 @@ class DialogueEditor extends FlxState
 		add(messageButtons);
 
 		addMessageBtn = new FlxButton(midX, FlxG.height - 120, "ADD MESSAGE", addMessage);
-		addMessageBtn.makeGraphic(midWidth, 30, FlxColor.GREEN);
+		addMessageBtn.makeGraphic(midWidth, 30, funkin.debug.themes.EditorTheme.current.success);
 		addMessageBtn.label.color = FlxColor.BLACK;
 		add(addMessageBtn);
 
@@ -555,7 +563,7 @@ class DialogueEditor extends FlxState
 			var next = (current + 1) % types.length;
 			bubbleTypeText.text = types[next];
 		});
-		convCycleBubbleBtn.makeGraphic(120, 25, FlxColor.CYAN);
+		convCycleBubbleBtn.makeGraphic(120, 25, funkin.debug.themes.EditorTheme.current.accent);
 		convCycleBubbleBtn.label.color = FlxColor.BLACK;
 		convCycleBubbleBtn.label.size = 12;
 		add(convCycleBubbleBtn);
@@ -581,12 +589,12 @@ class DialogueEditor extends FlxState
 
 		// Botones
 		convUpdateBtn = new FlxButton(rightX, startY, "UPDATE", updateCurrentMessage);
-		convUpdateBtn.makeGraphic(Std.int((rightWidth - 10) / 2), 30, FlxColor.CYAN);
+		convUpdateBtn.makeGraphic(Std.int((rightWidth - 10) / 2), 30, funkin.debug.themes.EditorTheme.current.accent);
 		convUpdateBtn.label.color = FlxColor.BLACK;
 		add(convUpdateBtn);
 
 		removeMessageBtn = new FlxButton(rightX + (rightWidth - 10) / 2 + 10, startY, "REMOVE", removeMessage);
-		removeMessageBtn.makeGraphic(Std.int((rightWidth - 10) / 2), 30, FlxColor.RED);
+		removeMessageBtn.makeGraphic(Std.int((rightWidth - 10) / 2), 30, funkin.debug.themes.EditorTheme.current.error);
 		removeMessageBtn.label.color = FlxColor.BLACK;
 		add(removeMessageBtn);
 
@@ -655,7 +663,7 @@ class DialogueEditor extends FlxState
 		add(skinButtons);
 
 		createSkinBtn = new FlxButton(leftX, FlxG.height - 120, "CREATE NEW SKIN", createNewSkin);
-		createSkinBtn.makeGraphic(PANEL_WIDTH, 30, FlxColor.GREEN);
+		createSkinBtn.makeGraphic(PANEL_WIDTH, 30, funkin.debug.themes.EditorTheme.current.success);
 		createSkinBtn.label.color = FlxColor.BLACK;
 		add(createSkinBtn);
 
@@ -694,7 +702,7 @@ class DialogueEditor extends FlxState
 			currentSkin.backgroundColor = DialogueData.getDefaultBackgroundColor(currentSkin.style);
 			bgColorText.text = currentSkin.backgroundColor;
 		});
-		skinToggleStyleBtn.makeGraphic(120, 25, FlxColor.CYAN);
+		skinToggleStyleBtn.makeGraphic(120, 25, funkin.debug.themes.EditorTheme.current.accent);
 		skinToggleStyleBtn.label.color = FlxColor.BLACK;
 		skinToggleStyleBtn.label.size = 12;
 		add(skinToggleStyleBtn);
@@ -761,7 +769,7 @@ class DialogueEditor extends FlxState
 		var btnWidth = (rightWidth - 20) / 2;
 
 		saveSkinBtn = new FlxButton(rightX, startY, "SAVE SKIN", saveSkin);
-		saveSkinBtn.makeGraphic(Std.int(btnWidth), 30, FlxColor.GREEN);
+		saveSkinBtn.makeGraphic(Std.int(btnWidth), 30, funkin.debug.themes.EditorTheme.current.success);
 		saveSkinBtn.label.color = FlxColor.BLACK;
 		add(saveSkinBtn);
 
@@ -769,7 +777,7 @@ class DialogueEditor extends FlxState
 		{
 			loadSkin(currentSkinName);
 		});
-		loadSkinBtn.makeGraphic(Std.int(btnWidth), 30, FlxColor.BLUE);
+		loadSkinBtn.makeGraphic(Std.int(btnWidth), 30, funkin.debug.themes.EditorTheme.current.accent);
 		loadSkinBtn.label.color = FlxColor.BLACK;
 		add(loadSkinBtn);
 
@@ -833,12 +841,12 @@ class DialogueEditor extends FlxState
 		add(portraitButtons);
 
 		importPortraitBtn = new FlxButton(leftX, FlxG.height - 160, "IMPORT FILE", importPortrait);
-		importPortraitBtn.makeGraphic(PANEL_WIDTH, 30, FlxColor.GREEN);
+		importPortraitBtn.makeGraphic(PANEL_WIDTH, 30, funkin.debug.themes.EditorTheme.current.success);
 		importPortraitBtn.label.color = FlxColor.BLACK;
 		add(importPortraitBtn);
 
 		addPortraitBtn = new FlxButton(leftX, FlxG.height - 120, "ADD CONFIG", addPortraitConfig);
-		addPortraitBtn.makeGraphic(PANEL_WIDTH, 30, FlxColor.CYAN);
+		addPortraitBtn.makeGraphic(PANEL_WIDTH, 30, funkin.debug.themes.EditorTheme.current.accent);
 		addPortraitBtn.label.color = FlxColor.BLACK;
 		add(addPortraitBtn);
 
@@ -898,12 +906,12 @@ class DialogueEditor extends FlxState
 		var btnWidth = (rightWidth - 20) / 2;
 
 		portraitsUpdateBtn = new FlxButton(rightX, startY, "UPDATE", updatePortraitConfig);
-		portraitsUpdateBtn.makeGraphic(Std.int(btnWidth), 30, FlxColor.CYAN);
+		portraitsUpdateBtn.makeGraphic(Std.int(btnWidth), 30, funkin.debug.themes.EditorTheme.current.accent);
 		portraitsUpdateBtn.label.color = FlxColor.BLACK;
 		add(portraitsUpdateBtn);
 
 		removePortraitBtn = new FlxButton(rightX + btnWidth + 10, startY, "REMOVE", removePortraitConfig);
-		removePortraitBtn.makeGraphic(Std.int(btnWidth), 30, FlxColor.RED);
+		removePortraitBtn.makeGraphic(Std.int(btnWidth), 30, funkin.debug.themes.EditorTheme.current.error);
 		removePortraitBtn.label.color = FlxColor.BLACK;
 		add(removePortraitBtn);
 	}

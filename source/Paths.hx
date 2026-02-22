@@ -672,7 +672,14 @@ class Paths
 					return FlxAtlasFrames.fromSparrow(bmp, File.getContent(xmlPath));
 				}
 			}
+			// Si alguno de los paths es de mod y no se pudo cargar vía lime, no usar OpenFL
+			if (pngPath.startsWith('mods/') || xmlPath.startsWith('mods/'))
+			{
+				trace('[Paths] _sparrow: asset de mod no encontrado pngPath="$pngPath" xmlPath="$xmlPath"');
+				return null;
+			}
 			#end
+			// Solo usar OpenFL string-based para assets base embebidos
 			return FlxAtlasFrames.fromSparrow(pngPath, xmlPath);
 		}
 		catch (e:Dynamic)
@@ -690,8 +697,15 @@ class Paths
 			#if sys
 			if (FileSystem.exists(xmlPath))
 				return FlxAtlasFrames.fromSparrow(bmp, File.getContent(xmlPath));
-			#end
+			// Si el xmlPath apunta a assets base (no mod), intentar con OpenFlAssets
+			if (!xmlPath.startsWith('mods/') && OpenFlAssets.exists(xmlPath, TEXT))
+				return FlxAtlasFrames.fromSparrow(bmp, OpenFlAssets.getText(xmlPath));
+			// Para paths de mod sin XML encontrado, no podemos cargar el atlas animado
+			trace('[Paths] _sparrowFromBitmap: XML no encontrado en disco "$xmlPath"');
+			return null;
+			#else
 			return FlxAtlasFrames.fromSparrow(bmp, OpenFlAssets.getText(xmlPath));
+			#end
 		}
 		catch (e:Dynamic)
 		{

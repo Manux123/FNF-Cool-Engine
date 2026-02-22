@@ -45,17 +45,33 @@ using StringTools;
 
 class ChartingState extends funkin.states.MusicBeatState
 {
-	// COLORES - CORREGIDOS
-	static inline var BG_DARK:Int = 0xFF1E1E1E;
-	static inline var BG_PANEL:Int = 0xFF2D2D2D;
-	static inline var ACCENT_CYAN:Int = 0xFF00D9FF;
-	static inline var ACCENT_PINK:Int = 0xFFFF00E5;
-	static inline var ACCENT_GREEN:Int = 0xFF00FF88;
-	static inline var ACCENT_SUCCESS:Int = 0xFF00FF88;
-	static inline var ACCENT_WARNING:Int = 0xFFFFAA00;
-	static inline var ACCENT_ERROR:Int = 0xFFFF3366;
-	static inline var TEXT_WHITE:Int = 0xFFFFFFFF;
-	static inline var TEXT_GRAY:Int = 0xFFAAAAAA;
+	// COLORES — actualizados desde EditorTheme en _applyTheme()
+	static var BG_DARK:Int         = 0xFF1E1E1E;
+	static var BG_PANEL:Int        = 0xFF2D2D2D;
+	static var ACCENT_CYAN:Int     = 0xFF00D9FF;
+	static var ACCENT_PINK:Int     = 0xFFFF00E5;
+	static var ACCENT_GREEN:Int    = 0xFF00FF88;
+	static var ACCENT_SUCCESS:Int  = 0xFF00FF88;
+	static var ACCENT_WARNING:Int  = 0xFFFFAA00;
+	static var ACCENT_ERROR:Int    = 0xFFFF3366;
+	static var TEXT_WHITE:Int      = 0xFFFFFFFF;
+	static var TEXT_GRAY:Int       = 0xFFAAAAAA;
+
+	/** Sincroniza las vars de color con el tema activo. */
+	static function _applyTheme():Void
+	{
+		var T   = funkin.debug.themes.EditorTheme.current;
+		BG_DARK        = T.bgDark;
+		BG_PANEL       = T.bgPanel;
+		ACCENT_CYAN    = T.accent;
+		ACCENT_PINK    = T.accentAlt;
+		ACCENT_GREEN   = T.success;
+		ACCENT_SUCCESS = T.success;
+		ACCENT_WARNING = T.warning;
+		ACCENT_ERROR   = T.error;
+		TEXT_WHITE     = T.textPrimary;
+		TEXT_GRAY      = T.textSecondary;
+	}
 
 	// NOTAS COLORES
 	static var NOTE_COLORS:Array<Int> = [
@@ -112,6 +128,7 @@ class ChartingState extends funkin.states.MusicBeatState
 	var infoValues:Array<FlxText> = [];
 
 	// BOTONES
+	var _themeBtnRect:{x:Float, y:Float, w:Int, h:Int} = {x:0, y:0, w:0, h:0};
 	var playBtn:FlxSprite;
 	var pauseBtn:FlxSprite;
 	var stopBtn:FlxSprite;
@@ -180,6 +197,8 @@ class ChartingState extends funkin.states.MusicBeatState
 
 	override function create()
 	{
+		funkin.debug.themes.EditorTheme.load();
+		_applyTheme();
 		FlxG.mouse.visible = true;
 
 		#if desktop
@@ -379,6 +398,18 @@ class ChartingState extends funkin.states.MusicBeatState
 		metaBorder.scrollFactor.set();
 		metaBorder.cameras = [camHUD];
 		add(metaBorder);
+
+		// ✨ Botón de tema (abre ThemePickerSubState)
+		var themeBtnBg = new FlxSprite(FlxG.width - 38, 40).makeGraphic(32, 32, BG_PANEL);
+		themeBtnBg.scrollFactor.set();
+		themeBtnBg.cameras = [camHUD];
+		add(themeBtnBg);
+		_themeBtnRect = {x: FlxG.width - 38.0, y: 40.0, w: 32, h: 32};
+		var themeBtnTxt = new FlxText(FlxG.width - 38, 46, 32, "\u2728", 13);
+		themeBtnTxt.setFormat(Paths.font("vcr.ttf"), 13, ACCENT_CYAN, CENTER);
+		themeBtnTxt.scrollFactor.set();
+		themeBtnTxt.cameras = [camHUD];
+		add(themeBtnTxt);
 	}
 
 	function createToolButton(x:Float, y:Float, icon:String):FlxSprite

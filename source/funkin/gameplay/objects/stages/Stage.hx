@@ -311,7 +311,11 @@ class Stage extends FlxTypedGroup<FlxBasic>
 	function createSprite(element:StageElement):Void
 	{
 		var sprite:FlxSprite = new FlxSprite(element.position[0], element.position[1]);
-		sprite.loadGraphic(Paths.imageStage(element.asset));
+		final bmp = Paths.imageStage(element.asset);
+		if (bmp != null)
+			sprite.loadGraphic(bmp);
+		else
+			trace('[Stage] createSprite: imagen no encontrada para asset="${element.asset}"');
 
 		applyElementProperties(sprite, element);
 		add(sprite);

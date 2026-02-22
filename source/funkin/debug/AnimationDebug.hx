@@ -61,7 +61,7 @@ class AnimationDebug extends MusicBeatState
 	var layeringbullshit:FlxTypedGroup<FlxSprite>;
 	var animList:Array<String> = [];
 	var curAnim:Int = 0;
-	var daAnim:String = 'bf';
+	public var daAnim:String = 'bf';
 	var camFollow:FlxObject;
 	var camHUD:FlxCamera;
 	var camGame:FlxCamera;
@@ -155,6 +155,7 @@ class AnimationDebug extends MusicBeatState
 
 	override function create()
 	{
+		funkin.debug.themes.EditorTheme.load();
 		FlxG.mouse.visible = true;
 		FreeplayState.destroyFreeplayVocals();
 		FlxG.sound.playMusic(Paths.music('configurator'));
@@ -191,27 +192,27 @@ class AnimationDebug extends MusicBeatState
 		// ── Panel oscuro izquierdo ────────────────────────────────────────────
 		// Cubre el área de controles + lista de offsets
 		leftPanel = new FlxSprite(0, 0);
-		leftPanel.makeGraphic(340, FlxG.height, 0xCC0A0A0F);
+		leftPanel.makeGraphic(340, FlxG.height, (funkin.debug.themes.EditorTheme.current.bgPanel & 0x00FFFFFF) | 0xCC000000);
 		leftPanel.cameras = [camHUD];
 		leftPanel.scrollFactor.set();
 		add(leftPanel);
 
 		// Borde derecho del panel izquierdo (línea accent cyan)
 		var leftPanelBorder = new FlxSprite(340, 0);
-		leftPanelBorder.makeGraphic(2, FlxG.height, 0xFF00E5FF);
+		leftPanelBorder.makeGraphic(2, FlxG.height, funkin.debug.themes.EditorTheme.current.accent);
 		leftPanelBorder.cameras = [camHUD];
 		leftPanelBorder.scrollFactor.set();
 		add(leftPanelBorder);
 
 		// ── Header del personaje (arriba del panel izquierdo) ─────────────────
 		charHeaderBg = new FlxSprite(0, 0);
-		charHeaderBg.makeGraphic(340, 36, 0xFF00E5FF);
+		charHeaderBg.makeGraphic(340, 36, funkin.debug.themes.EditorTheme.current.accent);
 		charHeaderBg.cameras = [camHUD];
 		charHeaderBg.scrollFactor.set();
 		add(charHeaderBg);
 
 		charHeaderText = new FlxText(8, 6, 330, '', 16);
-		charHeaderText.color = 0xFF0A0A0F;
+		charHeaderText.color = funkin.debug.themes.EditorTheme.current.bgDark;
 		charHeaderText.cameras = [camHUD];
 		charHeaderText.scrollFactor.set();
 		charHeaderText.font = "VCR OSD Mono";
@@ -219,7 +220,7 @@ class AnimationDebug extends MusicBeatState
 
 		// ── Fila de highlight de la animación seleccionada ────────────────────
 		animRowHighlight = new FlxSprite(4, 0);
-		animRowHighlight.makeGraphic(332, 20, 0x4400E5FF);
+		animRowHighlight.makeGraphic(332, 20, (funkin.debug.themes.EditorTheme.current.accent & 0x00FFFFFF) | 0x44000000);
 		animRowHighlight.cameras = [camHUD];
 		animRowHighlight.scrollFactor.set();
 		animRowHighlight.visible = false;
@@ -238,7 +239,7 @@ class AnimationDebug extends MusicBeatState
 		textControls.text = "W/S · Switch Anim   ARROWS · Offset (SHIFT=x10)\n" + "I/K · Cam Up/Down   J/L · Cam Left/Right\n"
 			+ "SCROLL · Zoom   SPACE · Play   R · Reset   T · Ghost\n" + "RIGHT DRAG · Move Offset (SHIFT=x3)   ESC · Exit";
 		textControls.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
-		textControls.color = 0xFFB0E8FF;
+		textControls.color = funkin.debug.themes.EditorTheme.current.textSecondary;
 		textControls.cameras = [camHUD];
 		textControls.scrollFactor.set();
 		add(textControls);
@@ -246,7 +247,7 @@ class AnimationDebug extends MusicBeatState
 		// ── Texto de animación actual ─────────────────────────────────────────
 		textAnim = new FlxText(8, 132, 330, '', 18);
 		textAnim.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 2);
-		textAnim.color = 0xFF00E5FF;
+		textAnim.color = funkin.debug.themes.EditorTheme.current.accent;
 		textAnim.cameras = [camHUD];
 		textAnim.scrollFactor.set();
 		add(textAnim);
@@ -254,21 +255,21 @@ class AnimationDebug extends MusicBeatState
 		// ── Texto de offset / zoom ────────────────────────────────────────────
 		textInfo = new FlxText(8, 154, 330, '', 12);
 		textInfo.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
-		textInfo.color = 0xFFFFE566;
+		textInfo.color = funkin.debug.themes.EditorTheme.current.warning;
 		textInfo.cameras = [camHUD];
 		textInfo.scrollFactor.set();
 		add(textInfo);
 
 		// ── Barra de estado inferior ──────────────────────────────────────────
 		statusBar = new FlxSprite(0, FlxG.height - 30);
-		statusBar.makeGraphic(FlxG.width, 30, 0xDD0A0A0F);
+		statusBar.makeGraphic(FlxG.width, 30, (funkin.debug.themes.EditorTheme.current.bgDark & 0x00FFFFFF) | 0xDD000000);
 		statusBar.cameras = [camHUD];
 		statusBar.scrollFactor.set();
 		add(statusBar);
 
 		// Acento de color en la barra de estado (izquierda, 4px)
 		statusAccentBar = new FlxSprite(0, FlxG.height - 30);
-		statusAccentBar.makeGraphic(4, 30, 0xFF00E5FF);
+		statusAccentBar.makeGraphic(4, 30, funkin.debug.themes.EditorTheme.current.accent);
 		statusAccentBar.cameras = [camHUD];
 		statusAccentBar.scrollFactor.set();
 		add(statusAccentBar);
@@ -276,10 +277,19 @@ class AnimationDebug extends MusicBeatState
 		textHelp = new FlxText(12, FlxG.height - 24, FlxG.width - 200, '', 12);
 		textHelp.text = "TIP · Use the UI tabs to edit properties and animations";
 		textHelp.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
-		textHelp.color = 0xFF00E5FF;
+		textHelp.color = funkin.debug.themes.EditorTheme.current.accent;
 		textHelp.cameras = [camHUD];
 		textHelp.scrollFactor.set();
 		add(textHelp);
+
+		// ✨ Botón de tema en barra de estado (esquina inferior derecha)
+		var _themeBtn = new flixel.ui.FlxButton(FlxG.width - 75, FlxG.height - 28, "\u2728 Theme", function()
+		{
+			openSubState(new funkin.debug.themes.ThemePickerSubState());
+		});
+		_themeBtn.cameras = [camHUD];
+		_themeBtn.scrollFactor.set();
+		add(_themeBtn);
 
 		// ── Icon preview ──────────────────────────────────────────────────────
 		var iconAreaX = FlxG.width - 340 + 5; // dentro del panel derecho no existe aún, lo ponemos en la barra inferior
@@ -288,19 +298,19 @@ class AnimationDebug extends MusicBeatState
 		var iconY = FlxG.height - 185;
 
 		iconBG = new FlxSprite(iconX - 10, iconY - 28);
-		iconBG.makeGraphic(170, 162, 0xEE0A0A0F);
+		iconBG.makeGraphic(170, 162, (funkin.debug.themes.EditorTheme.current.bgDark & 0x00FFFFFF) | 0xEE000000);
 		iconBG.cameras = [camHUD];
 		add(iconBG);
 
 		// Borde superior del recuadro del ícono (línea cyan)
 		var iconTopBorder = new FlxSprite(iconX - 10, iconY - 28);
-		iconTopBorder.makeGraphic(170, 2, 0xFF00E5FF);
+		iconTopBorder.makeGraphic(170, 2, funkin.debug.themes.EditorTheme.current.accent);
 		iconTopBorder.cameras = [camHUD];
 		add(iconTopBorder);
 
 		var iconLabel = new FlxText(iconX - 10, iconY - 22, 170, "ICON PREVIEW", 10);
 		iconLabel.alignment = CENTER;
-		iconLabel.color = 0xFF00E5FF;
+		iconLabel.color = funkin.debug.themes.EditorTheme.current.accent;
 		iconLabel.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
 		iconLabel.cameras = [camHUD];
 		add(iconLabel);
@@ -315,7 +325,7 @@ class AnimationDebug extends MusicBeatState
 		// Se muestra debajo del ícono, siempre visible con el color del personaje
 		hudHealthBarLabel = new FlxText(iconX - 10, iconY + 150, 170, "HEALTH BAR", 10);
 		hudHealthBarLabel.alignment = CENTER;
-		hudHealthBarLabel.color = 0xFF00E5FF;
+		hudHealthBarLabel.color = funkin.debug.themes.EditorTheme.current.accent;
 		hudHealthBarLabel.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
 		hudHealthBarLabel.cameras = [camHUD];
 		add(hudHealthBarLabel);
@@ -375,7 +385,7 @@ class AnimationDebug extends MusicBeatState
 
 		// Panel oscuro detrás del tab menu (se crea aquí para poder referenciar el tamaño)
 		uiPanelBg = new FlxSprite(UI_box.x - 4, UI_box.y - 4);
-		uiPanelBg.makeGraphic(Std.int(UI_box.width) + 8, Std.int(UI_box.height) + 8, 0xDD060610);
+		uiPanelBg.makeGraphic(Std.int(UI_box.width) + 8, Std.int(UI_box.height) + 8, (funkin.debug.themes.EditorTheme.current.bgDark & 0x00FFFFFF) | 0xDD000000);
 		uiPanelBg.cameras = [camHUD];
 		add(uiPanelBg);
 

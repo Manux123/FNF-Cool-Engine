@@ -220,18 +220,15 @@ class ModManager
 		if (activeMod == null)
 			return null;
 		final base = '$MODS_FOLDER/$activeMod';
-		// Check both Cool Engine layout (mods/mod/file)
-		// and Psych Engine layout (mods/mod/file)
-		final candidates = ['$base/$file', '$base/$file'];
+		// Resolve file in the active mod's root folder
+		final path = '$base/$file';
 		#if sys
-		for (p in candidates)
-			if (FileSystem.exists(p))
-				return p;
+		if (FileSystem.exists(path))
+			return path;
 		return null;
 		#else
-		for (p in candidates)
-			if (openfl.utils.Assets.exists(p))
-				return p;
+		if (openfl.utils.Assets.exists(path))
+			return path;
 		return null;
 		#end
 	}

@@ -101,6 +101,7 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 
 	override function create()
 	{
+		funkin.debug.themes.EditorTheme.load();
 		transIn = FlxTransitionableState.defaultTransIn;
 		transOut = FlxTransitionableState.defaultTransOut;
 
@@ -132,9 +133,9 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 		}
 		else
 		{
-			bg.makeGraphic(FlxG.width, FlxG.height, 0xFF2A2A2A);
+			bg.makeGraphic(FlxG.width, FlxG.height, funkin.debug.themes.EditorTheme.current.bgDark);
 		}
-		bg.color = 0xFF2A2A2A;
+		bg.color = funkin.debug.themes.EditorTheme.current.bgDark;
 		bg.scrollFactor.set(0.1, 0.1);
 		add(bg);
 
@@ -235,7 +236,7 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 		add(scoreText);
 
 		diffText = new FlxText(FlxG.width * 0.66, 85, 0, "", 24);
-		diffText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.CYAN, RIGHT);
+		diffText.setFormat(Paths.font("vcr.ttf"), 24, funkin.debug.themes.EditorTheme.current.accent, RIGHT);
 		diffText.setBorderStyle(OUTLINE, FlxColor.BLACK, 2);
 		add(diffText);
 
@@ -246,13 +247,13 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 
 		if (songs.length > 0)
 		{
-			bg.color = 0xFF00D9FF; // Color for editor mode
+			bg.color = funkin.debug.themes.EditorTheme.current.accent; // Color for editor mode
 			intendedColor = bg.color;
 		}
 		else
 		{
-			bg.color = 0xFF2A2A2A;
-			intendedColor = 0xFF2A2A2A;
+			bg.color = funkin.debug.themes.EditorTheme.current.bgDark;
+			intendedColor = funkin.debug.themes.EditorTheme.current.bgDark;
 		}
 		changeSelection();
 
@@ -269,8 +270,14 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 
 		var versionShit:FlxText = new FlxText(12, FlxG.height - 26, 0, "EDITOR MODE", 12);
 		versionShit.scrollFactor.set();
-		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.CYAN, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionShit.setFormat("VCR OSD Mono", 16, funkin.debug.themes.EditorTheme.current.accent, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
+		// ✨ Botón de tema
+		var _themeBtn = new flixel.ui.FlxButton(FlxG.width - 85, 4, "\u2728 Theme", function()
+		{
+			openSubState(new funkin.debug.themes.ThemePickerSubState());
+		});
+		add(_themeBtn);
 
 		// Entry animation
 		FlxTween.tween(bg, {alpha: 1, "scale.x": 1, "scale.y": 1}, 0.6, {ease: FlxEase.expoOut});
@@ -290,9 +297,8 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 	{
 		for (i in 0...songInfo.songsWeeks.length)
 		{
-			#if !debug
-			if (StoryMenuState.weekUnlocked[i])
-			#end
+			// En el editor siempre mostramos TODAS las canciones,
+			// independientemente de si la semana está desbloqueada.
 			addWeek(songInfo.songsWeeks[i].weekSongs, i, songInfo.songsWeeks[i].songIcons);
 			coolColors.push(Std.parseInt(songInfo.songsWeeks[i].color[i]));
 		}
@@ -848,7 +854,7 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 		if (curSelected == 0)
 		{
 			// Add song option - special color
-			var newColor:Int = 0xFF00D9FF;
+			var newColor:Int = funkin.debug.themes.EditorTheme.current.accent;
 			if (newColor != intendedColor)
 			{
 				if (colorTween != null)

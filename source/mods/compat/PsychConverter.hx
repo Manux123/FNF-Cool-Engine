@@ -111,6 +111,14 @@ class PsychConverter
 			song.notes.push(converted);
 		}
 
+		// ── Camera Follow desde mustHitSection / gfSection ───────────────────
+		// Psych define el target de cámara por sección (mustHitSection + gfSection).
+		// Cool Engine usa eventos explícitos "Camera Follow" en el array events.
+		// Los generamos aquí para que funcionen correctamente aunque el chart
+		// tenga además otros eventos explícitos (BPM change, etc.), ya que
+		// EventManager.generateCameraFollow() solo corre cuando events está vacío.
+		_convertCameraFromSections(psychSections, song);
+
 		// ── Events ───────────────────────────────────────────────────────────
 		// Psych format: Array<[Float, Array<[String, String, String]>]>
 		// Cool format : Array<{stepTime, type, value}>
@@ -242,6 +250,80 @@ class PsychConverter
 	}
 
 	// ─── Helpers ─────────────────────────────────────────────────────────────
+
+	/**
+	 * Genera eventos "Camera Follow" a partir de mustHitSection / gfSection.
+	 *
+	 * Psych Engine no usa eventos explícitos para los cambios de cámara por sección —
+	 * los define implícitamente con mustHitSection (true=BF, false=Dad) y gfSection (GF).
+	 * Cool Engine los necesita como ChartEvent { type: "Camera Follow", value: target }.
+	 *
+	 * Solo se genera un evento cuando el target CAMBIA respecto al anterior, para no
+	 * saturar la lista. Se coloca al COMIENZO del array events para que los eventos
+	 * explícitos del chart (Hey!, BPM Change, etc.) puedan sobrescribir si hace falta.
+	 *
+	 * Los eventos explícitos de Psych que también cambian la cámara (Camera Follow
+	 * Opponent / Camera Follow Player) se manejan por separado en _mapEventType y
+	 * NO se duplican aquí: si hay un evento explícito en el mismo step, el orden
+	 * de inserción (secciones primero, explícitos después) garantiza que el
+	 * explícito sobreescribe — que es el comportamiento correcto.
+	 *
+	 * @param psychSections  Array de secciones crudas del JSON de Psych.
+	 * @param song           SwagSong en construcción (se modificará su .events).
+	 */
+	static function _convertCameraFromSections(psychSections:Array<Dynamic>, song:SwagSong):Void
+	{
+		var currentStep:Float = 0;
+		var currentBpm:Float  = song.bpm;
+		var lastTarget:String = ''; // '' = ningún evento emitido aún
+
+		final cameraEvents:Array<funkin.data.Song.ChartEvent> = [];
+
+		for (sec in psychSections)
+		{
+			// Número de steps de esta sección. Psych usa sectionBeats*4 si no hay
+			// lengthInSteps explícito (igual que Cool Engine).
+			final beats        = _float(sec.sectionBeats, 4);
+			final stepsInSec:Float = sec.lengthInSteps != null
+				? _float(sec.lengthInSteps, beats * 4)
+				: beats * 4;
+
+			// Determinar target de cámara según flags de Psych
+			final isGfSection  = _bool(sec.gfSection, false);
+			final mustHitSec   = _bool(sec.mustHitSection, true);
+			final target:String = isGfSection ? 'gf' : (mustHitSec ? 'player' : 'opponent');
+
+			// Solo emitir evento si el target cambia (o es el primer step)
+			if (target != lastTarget)
+			{
+				cameraEvents.push({
+					stepTime: currentStep,
+					type:     'Camera Follow',
+					value:    target
+				});
+				lastTarget = target;
+			}
+
+			// Avanzar BPM si la sección lo cambia (para cálculos futuros si se
+			// necesitara convertir a ms; aquí solo usamos steps así que es informativo)
+			if (_bool(sec.changeBPM, false) && _float(sec.bpm, 0) > 0)
+				currentBpm = _float(sec.bpm, currentBpm);
+
+			currentStep += stepsInSec;
+		}
+
+		// Insertar al frente para que los eventos explícitos (procesados después)
+		// queden al final y prevalezcan en el EventManager cuando comparte step.
+		// La inserción en reverso mantiene el orden original (step ascendente).
+		var insertIdx = 0;
+		for (evt in cameraEvents)
+		{
+			song.events.insert(insertIdx, evt);
+			insertIdx++;
+		}
+
+		trace('[PsychConverter] ${cameraEvents.length} Camera Follow generados desde mustHitSection.');
+	}
 
 	/** Converts a Psych sectionNotes array to Cool's format.
 	 *  Psych note: [time:Float, lane:Int, sustainLength:Float, ?altAnim:Bool]

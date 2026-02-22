@@ -59,7 +59,7 @@ class PsychLuaStageAPI
 				// Try mod image paths: Psych layout (images/<path>) and Cool (stages/<stage>/images/<name>)
 				final pngPath = _resolveImage(imagePath, stage.curStage);
 				if (pngPath != null)
-					spr.loadGraphic(pngPath);
+					_loadGraphicFromDisk(spr, pngPath);
 				else
 					trace('[PsychLuaStageAPI] Image not found: $imagePath');
 			}
@@ -370,5 +370,35 @@ class PsychLuaStageAPI
 			case 'smootherstep':  FlxEase.smootherStepIn;
 			default:              FlxEase.linear;
 		};
+	}
+
+	/**
+	 * Carga una imagen desde el disco directamente usando Lime, sin pasar por
+	 * el sistema de assets de OpenFL (que solo conoce assets embebidos en el binario).
+	 * Necesario para paths de mods como 'mods/MyMod/images/stages/Bg.png'.
+	 */
+	static function _loadGraphicFromDisk(spr:flixel.FlxSprite, path:String):Void
+	{
+		#if sys
+		try
+		{
+			final limeImage = lime.graphics.Image.fromFile(path);
+			if (limeImage != null)
+			{
+				final bmp = openfl.display.BitmapData.fromImage(limeImage);
+				if (bmp != null)
+				{
+					spr.loadGraphic(bmp);
+					return;
+				}
+			}
+		}
+		catch (e:Dynamic)
+		{
+			trace('[PsychLuaStageAPI] Error cargando imagen desde disco "$path": $e');
+		}
+		#end
+		// Fallback solo para assets embebidos (base game)
+		try { spr.loadGraphic(path); } catch (e:Dynamic) {}
 	}
 }

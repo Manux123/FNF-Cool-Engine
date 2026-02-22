@@ -34,6 +34,7 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 	var levelDifficulty:FlxText;
 	var levelDeaths:FlxText;
 	var levelAuthor:FlxText;
+	var helpText:FlxText;
 
 	public function new()
 	{
@@ -144,7 +145,7 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 
 		// Help text at bottom
-		var helpText:FlxText = new FlxText(20, FlxG.height - 40, FlxG.width - 40, "ENTER: Select  |  ARROWS: Navigate  |  ESC: Resume", 16);
+		helpText = new FlxText(20, FlxG.height - 40, FlxG.width - 40, "ENTER: Select  |  ARROWS: Navigate  |  ESC: Resume", 16);
 		helpText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.GRAY, CENTER, OUTLINE, FlxColor.BLACK);
 		helpText.scrollFactor.set();
 		helpText.alpha = 0;
@@ -241,14 +242,19 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 			pauseMusic = null;
 		}
 
-		// Cancelar todos los tweens activos sobre los elementos visuales.
-		// Si no se cancelan, los tweens del constructor siguen corriendo el siguiente
-		// frame sobre objetos ya destruidos → crash al dibujar en la 2ª apertura.
-		FlxTween.cancelTweensOf(bg);
-		FlxTween.cancelTweensOf(levelInfo);
-		FlxTween.cancelTweensOf(levelDifficulty);
-		FlxTween.cancelTweensOf(levelDeaths);
-		FlxTween.cancelTweensOf(levelAuthor);
+		// Cancelar todos los tweens activos sobre los elementos visuales ANTES de destroy().
+		// Si no se cancelan, los tweens siguen corriendo el siguiente frame sobre objetos
+		// ya destruidos por super.destroy() → crash al dibujar en la 2ª apertura.
+		if (bg != null)           FlxTween.cancelTweensOf(bg);
+		if (levelInfo != null)    FlxTween.cancelTweensOf(levelInfo);
+		if (levelDifficulty != null) FlxTween.cancelTweensOf(levelDifficulty);
+		if (levelDeaths != null)  FlxTween.cancelTweensOf(levelDeaths);
+		if (levelAuthor != null)  FlxTween.cancelTweensOf(levelAuthor);
+		if (helpText != null)
+		{
+			FlxTween.cancelTweensOf(helpText);
+			helpText = null;
+		}
 
 		if (grpMenuShit != null)
 		{
@@ -260,6 +266,7 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 					FlxTween.cancelTweensOf(item.scale);
 				}
 			}
+			grpMenuShit = null;
 		}
 
 		#if HSCRIPT_ALLOWED

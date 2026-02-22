@@ -143,9 +143,11 @@ class Stage extends FlxTypedGroup<FlxBasic>
 	{
 		super();
 		curStage = stageName;
-		loadStage(stageName);
+		// Skip loading when used internally by fromData()
+		if (stageName != '__fromData__')
+			loadStage(stageName);
 	}
-
+	
 	function loadStage(stageName:String):Void
 	{
 		try
@@ -184,6 +186,13 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 	public function buildStage():Void
 	{
+		// FIX: apuntar Paths.currentStage al stage actual ANTES de cargar imágenes,
+		// de lo contrario imageStage() buscará en la carpeta del stage anterior.
+		if (curStage != null && curStage != '__fromData__')
+			Paths.currentStage = curStage;
+		else if (stageData != null && stageData.name != null)
+			Paths.currentStage = stageData.name;
+
 		// Load basic properties
 		defaultCamZoom = stageData.defaultZoom;
 		isPixelStage = stageData.isPixelStage;

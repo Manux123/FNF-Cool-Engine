@@ -86,7 +86,8 @@ class EditorTheme
 			var raw:Dynamic = Json.parse(File.getContent(SAVE_PATH));
 
 			// Elegir la base según el campo 'preset'
-			var base:ThemeData = switch ((raw.preset : String) ?? 'dark')
+			var presetName:String = (raw.preset : String) ?? 'dark';
+			var base:ThemeData = switch (presetName.toLowerCase())
 			{
 				case 'neon':      _neonTheme();
 				case 'pastel':    _pastelTheme();
@@ -97,17 +98,48 @@ class EditorTheme
 			};
 
 			// ── Comprobación de formato ───────────────────────────────────
-			// Si el archivo no tiene 'version' (guardado con código viejo)
-			// o tiene una versión anterior, puede estar corrupto (todos los
-			// colores en #FFFFFF). En ese caso usamos solo el preset base
-			// y re-guardamos el archivo en el nuevo formato limpio.
 			var fileVersion:Int = (raw.version == null) ? 0 : Std.int(raw.version);
 			if (fileVersion < FORMAT_VERSION)
 			{
-				trace('[EditorTheme] Archivo antiguo/corrupto (v$fileVersion < v$FORMAT_VERSION). Regenerando desde preset "${base.name}".');
+				trace('[EditorTheme] Archivo antiguo/corrupto (v$fileVersion < v$FORMAT_VERSION). Regenerando desde preset "$presetName".');
 				current = base;
 				save(); // re-guarda en formato nuevo
 				return;
+			}
+
+			// Si el nombre del preset coincide con uno conocido y no hay overrides custom,
+			// usamos el preset directamente para evitar cualquier problema de parsing.
+			var knownPresets = ['dark', 'neon', 'midnight', 'flstudio', 'pastel', 'light'];
+			var isKnownPreset = Lambda.has(knownPresets, presetName.toLowerCase());
+			var hasCustom = (raw.name != null && raw.name != presetName);
+			if (isKnownPreset && !hasCustom)
+			{
+				// Verificar si hay algún color custom diferente al preset base
+				var hasCustomColors = false;
+				var fields = ['bgDark','bgPanel','bgPanelAlt','bgHover','borderColor',
+					'accent','accentAlt','selection','textPrimary','textSecondary',
+					'textDim','warning','success','error','rowSelected','rowEven','rowOdd'];
+				for (f in fields)
+				{
+					var rawVal = Reflect.field(raw, f);
+					if (rawVal != null)
+					{
+						// Parsear y comparar con el preset base
+						var parsedColor = _parseColorString(Std.string(rawVal));
+						var baseColor:Int = cast Reflect.field(base, f);
+						if (parsedColor != null && parsedColor != baseColor)
+						{
+							hasCustomColors = true;
+							break;
+						}
+					}
+				}
+				if (!hasCustomColors)
+				{
+					current = base;
+					trace('[EditorTheme] Cargado preset limpio: "$presetName"');
+					return;
+				}
 			}
 
 			// Sobreescribe campos individuales si están en el JSON (tema custom)
@@ -154,9 +186,14 @@ class EditorTheme
 			obj.name    = current.name;
 			for (f in fields)
 			{
-				var v:Int = Reflect.field(current, f);
-				// Solo los 6 dígitos RGB, sin el byte alpha (evita overflow)
-				Reflect.setField(obj, f, '#' + StringTools.hex(v & 0xFFFFFF, 6));
+				// Leer el color del ThemeData de forma segura
+				var colorInt:Int = 0;
+				try { colorInt = cast Reflect.field(current, f); } catch (_:Dynamic) {}
+				// Solo los 6 dígitos RGB, sin el byte alpha (evita overflow en C++)
+				var rgb = colorInt & 0xFFFFFF;
+				// Asegurar que tenemos 6 dígitos (rellenar con ceros a la izquierda)
+				var hex = StringTools.hex(rgb < 0 ? 0 : rgb, 6);
+				Reflect.setField(obj, f, '#' + hex);
 			}
 
 			File.saveContent(SAVE_PATH, Json.stringify(obj, null, '\t'));
@@ -212,6 +249,26 @@ class EditorTheme
 	// Helper: merge JSON sobre ThemeData
 	// ─────────────────────────────────────────────────────────────────────────
 
+	/** Parsea un string "#RRGGBB" o "RRGGBB" a Int ARGB. Devuelve null si falla. */
+	static function _parseColorString(s:String):Null<Int>
+	{
+		if (s == null) return null;
+		s = s.trim().replace('#', '').replace('0x', '').replace('0X', '');
+		if (s.length == 6)
+		{
+			var rgb = Std.parseInt('0x' + s);
+			return (rgb != null) ? (rgb | 0xFF000000) : null;
+		}
+		if (s.length == 8)
+		{
+			var hi = Std.parseInt('0x' + s.substr(0, 2));
+			var lo = Std.parseInt('0x' + s.substr(2));
+			if (hi != null && lo != null)
+				return ((hi & 0xFF) << 24) | lo;
+		}
+		return null;
+	}
+
 	static function _mergeTheme(base:ThemeData, raw:Dynamic):ThemeData
 	{
 		inline function _col(field:String, fallback:Int):Int
@@ -220,12 +277,9 @@ class EditorTheme
 			if (v == null) return fallback;
 
 			// ── Caso Int (guardado directamente como número) ──────────────
-			// Nota: en C++ Haxe los Int con signo >= 0x80000000 pueden llegar
-			// como Float desde JSON.parse, así que también chequeamos Float.
 			if (Std.isOfType(v, Int))
 			{
 				var iv:Int = v;
-				// Si no tiene alpha (valor < 0x1000000), añadir FF alpha
 				if (iv >= 0 && iv < 0x1000000) return iv | 0xFF000000;
 				return iv;
 			}
@@ -237,31 +291,9 @@ class EditorTheme
 				return iv;
 			}
 
-			// ── Caso String "#RRGGBB" o "#AARRGGBB" o "0xFFRRGGBB" ────────
-			var s:String = Std.string(v);
-			s = s.replace('#', '').replace('0x', '').replace('0X', '');
-
-			if (s.length == 6)
-			{
-				// ¡NO concatenar 'FF' antes! Eso haría 8 dígitos > Int32.MAX
-				// y Std.parseInt overflowearía en C++ devolviendo 0x7FFFFFFF.
-				// En su lugar parseamos los 6 dígitos RGB (cabe en Int32) y
-				// ponemos el alpha con OR.
-				var rgb = Std.parseInt('0x' + s);  // max = 0xFFFFFF = 16777215 ✓
-				return (rgb != null) ? (rgb | 0xFF000000) : fallback;
-			}
-
-			if (s.length == 8)
-			{
-				// AARRGGBB — parseamos en dos mitades para evitar overflow
-				var hi  = Std.parseInt('0x' + s.substr(0, 2));  // alpha byte
-				var lo  = Std.parseInt('0x' + s.substr(2));     // RGB (≤ 0xFFFFFF) ✓
-				if (hi != null && lo != null)
-					return ((hi & 0xFF) << 24) | lo;
-				return fallback;
-			}
-
-			return fallback;
+			// ── Caso String "#RRGGBB" o "AARRGGBB" ────────────────────────
+			var parsed = _parseColorString(Std.string(v));
+			return (parsed != null) ? parsed : fallback;
 		}
 
 		return {

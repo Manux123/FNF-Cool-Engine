@@ -356,9 +356,14 @@ class StageEditor extends funkin.states.MusicBeatState
 		// Load stage
 		try
 		{
+			// Use Stage.fromData() so the already-loaded stageData is used directly,
+			// without re-reading from disk by name. This allows loading stages from
+			// any mod (or custom path) without requiring that mod to be active.
 			stage = new Stage(stageData.name);
 			stage.cameras = [camGame];
 			add(stage);
+
+			// Sync stageData from the built stage (in case buildStage normalised anything)
 			if (stage.stageData != null)
 				stageData = stage.stageData;
 
@@ -1388,13 +1393,15 @@ class StageEditor extends funkin.states.MusicBeatState
 		// Tab header strip sits at y ≈ TOP_H, height ≈ 20px. 5 tabs share RIGHT_W-2 px.
 		if (FlxG.mouse.justPressed)
 		{
-			var mx = FlxG.mouse.screenX;
-			var my = FlxG.mouse.screenY;
+			var mx = FlxG.mouse.x;
+			var my = FlxG.mouse.y;
 			if (my >= TOP_H && my <= TOP_H + 22 && mx >= FlxG.width - RIGHT_W)
 			{
 				var tabW:Float = (RIGHT_W - 2) / 5;
 				var ti = Std.int((mx - (FlxG.width - RIGHT_W + 2)) / tabW);
-				_animTabVisible = (ti == 1); // tab index 1 = "Anims"
+				// FlxUITabMenu sorts tabs alphabetically:
+				// [Anims=0, Chars=1, Element=2, Shaders=3, Stage=4]
+				_animTabVisible = (ti == 0); // tab index 0 = "Anims" (sorted first)
 			}
 		}
 		if (animListBg != null)
@@ -1405,6 +1412,9 @@ class StageEditor extends funkin.states.MusicBeatState
 
 	function handleKeyboard():Void
 	{
+		// Si el usuario está escribiendo en un input, no disparar shortcuts ni nudge
+		if (isTyping()) return;
+
 		if (FlxG.keys.pressed.CONTROL)
 		{
 			if (FlxG.keys.justPressed.Z)
@@ -1450,6 +1460,9 @@ class StageEditor extends funkin.states.MusicBeatState
 			var step = FlxG.keys.pressed.SHIFT ? 10.0 : 1.0;
 			var elem = stageData.elements[selectedIdx];
 			var moved = false;
+
+			// Guardia: position puede ser null si el elemento se cargó de un JSON incompleto
+			if (elem.position == null) elem.position = [0.0, 0.0];
 
 			if (FlxG.keys.justPressed.LEFT)
 			{
@@ -1543,8 +1556,8 @@ class StageEditor extends funkin.states.MusicBeatState
 
 	function handleLayerPanelClick():Void
 	{
-		var mx = FlxG.mouse.screenX;
-		var my = FlxG.mouse.screenY;
+		var mx = FlxG.mouse.x;
+		var my = FlxG.mouse.y;
 
 		// Mouse wheel scrolling over layer panel
 		if (FlxG.mouse.wheel != 0 && mx < LEFT_W && my > TOP_H && my < FlxG.height - STATUS_H)
@@ -1784,10 +1797,11 @@ class StageEditor extends funkin.states.MusicBeatState
 	{
 		if (!FlxG.mouse.justPressed)
 			return;
-		var mx = FlxG.mouse.screenX;
-		var my = FlxG.mouse.screenY;
+		var mx = FlxG.mouse.x;
+		var my = FlxG.mouse.y;
 		// Toolbar occupies TITLE_H → TOP_H (i.e. y=34 to y=74)
-		if (my < TITLE_H || my > TOP_H)
+		// Use a slightly generous top bound to avoid missing the top row
+		if (my < 0 || my > TOP_H)
 			return;
 
 		for (bg => cb in _toolBtns)
@@ -2347,17 +2361,48 @@ class StageEditor extends funkin.states.MusicBeatState
 		_fileRef = new FileReference();
 		_fileRef.addEventListener(Event.SELECT, function(e:Event)
 		{
-			var path = _fileRef.name;
-			// Strip extension for asset keys
-			if (path.endsWith('.png'))
-				path = path.replace('.png', '');
-			else if (path.endsWith('.jpg'))
-				path = path.replace('.jpg', '');
+			_fileRef.addEventListener(Event.COMPLETE, function(e2:Event)
+			{
+				var filename = _fileRef.name;
 
-			if (elemAssetInput != null)
-				elemAssetInput.text = 'images/stages/' + path;
-			setStatus('Asset: ' + path);
+				// Determine destination folder based on active mod
+				var stageName = stageData.name ?? 'stage';
+				var destDir:String;
+				if (ModManager.isActive())
+					destDir = '${ModManager.modRoot()}/stages/$stageName/images';
+				else
+					destDir = 'assets/stages/$stageName/images';
+
+				try
+				{
+					if (!FileSystem.exists(destDir))
+						FileSystem.createDirectory(destDir);
+
+					var destPath = '$destDir/$filename';
+					var bytes = _fileRef.data;
+					if (bytes != null)
+					{
+						sys.io.File.saveBytes(destPath, bytes);
+						setStatus('Imagen copiada a: $destPath');
+					}
+				}
+				catch (ex:Dynamic)
+				{
+					setStatus('Error copiando imagen: $ex');
+				}
+
+				// Set asset key (strip extension, use relative path for asset system)
+				var assetKey = filename;
+				if (assetKey.endsWith('.png'))  assetKey = assetKey.substr(0, assetKey.length - 4);
+				else if (assetKey.endsWith('.jpg')) assetKey = assetKey.substr(0, assetKey.length - 4);
+
+				if (elemAssetInput != null)
+					elemAssetInput.text = 'images/$assetKey';
+			});
+			_fileRef.load();
 		});
+		_fileRef.addEventListener(Event.CANCEL, function(_) { setStatus('Browse cancelado.'); });
+		_fileRef.addEventListener(IOErrorEvent.IO_ERROR, function(_) { setStatus('Error abriendo el explorador de archivos.'); });
 		_fileRef.browse([new openfl.net.FileFilter('Images/XML', '*.png;*.jpg;*.xml')]);
 		#end
 	}
@@ -2429,6 +2474,24 @@ class StageEditor extends funkin.states.MusicBeatState
 		trace('[StageEditor] $msg');
 	}
 
+	/** True si algún input de texto tiene el foco.
+	 *  Mientras el usuario escribe, las flechas/delete NO deben mover el elemento. */
+	function isTyping():Bool
+	{
+		if (elemNameInput    != null && elemNameInput.hasFocus)    return true;
+		if (elemAssetInput   != null && elemAssetInput.hasFocus)   return true;
+		if (elemColorInput   != null && elemColorInput.hasFocus)   return true;
+		if (animNameInput    != null && animNameInput.hasFocus)    return true;
+		if (animPrefixInput  != null && animPrefixInput.hasFocus)  return true;
+		if (animIndicesInput != null && animIndicesInput.hasFocus) return true;
+		if (animFirstInput   != null && animFirstInput.hasFocus)   return true;
+		if (stageNameInput   != null && stageNameInput.hasFocus)   return true;
+		if (gfVersionInput   != null && gfVersionInput.hasFocus)   return true;
+		if (stageShaderInput != null && stageShaderInput.hasFocus) return true;
+		if (elemShaderInput  != null && elemShaderInput.hasFocus)  return true;
+		return false;
+	}
+
 	function isMouseOverUI():Bool
 	{
 		var mx = FlxG.mouse.screenX;
@@ -2479,6 +2542,10 @@ class AddElementSubState extends flixel.FlxSubState
 	static inline final W:Int = 380;
 	static inline final H:Int = 280;
 
+	// FIX: cámara propia para que el substate sea visible
+	// (cameras[0] = camUI tiene alpha=0 en el StageEditor)
+	var _camSub:flixel.FlxCamera;
+
 	public function new(cb:StageElement->Void)
 	{
 		super();
@@ -2489,25 +2556,35 @@ class AddElementSubState extends flixel.FlxSubState
 	{
 		super.create();
 
+		// FIX: crear y registrar una cámara opaca para el substate
+		_camSub = new flixel.FlxCamera();
+		_camSub.bgColor.alpha = 0;
+		FlxG.cameras.add(_camSub, false);
+		cameras = [_camSub];
+
 		var T = EditorTheme.current;
 		var panX = (FlxG.width - W) * 0.5;
 		var panY = (FlxG.height - H) * 0.5;
 
 		var overlay = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, 0xBB000000);
 		overlay.scrollFactor.set();
+		overlay.cameras = [_camSub];
 		add(overlay);
 
 		var panel = new FlxSprite(panX, panY).makeGraphic(W, H, T.bgPanel);
 		panel.scrollFactor.set();
+		panel.cameras = [_camSub];
 		add(panel);
 
 		var topBorder = new FlxSprite(panX, panY).makeGraphic(W, 3, T.borderColor);
 		topBorder.scrollFactor.set();
+		topBorder.cameras = [_camSub];
 		add(topBorder);
 
 		var title = new FlxText(panX + 12, panY + 10, W - 24, '\u2795  ADD ELEMENT', 16);
 		title.setFormat(Paths.font('vcr.ttf'), 16, T.accent, LEFT);
 		title.scrollFactor.set();
+		title.cameras = [_camSub];
 		add(title);
 
 		var y = panY + 44.0;
@@ -2517,12 +2594,14 @@ class AddElementSubState extends flixel.FlxSubState
 			var tx = new FlxText(panX + 12, ly, 0, t, 10);
 			tx.color = T.textSecondary;
 			tx.scrollFactor.set();
+			tx.cameras = [_camSub];
 			add(tx);
 		}
 
 		lbl('Element Name:', y);
 		nameInput = new FlxUIInputText(panX + 12, y + 14, W - 28, 'new_element', 11);
 		nameInput.scrollFactor.set();
+		nameInput.cameras = [_camSub];
 		add(nameInput);
 
 		y += 40;
@@ -2530,12 +2609,14 @@ class AddElementSubState extends flixel.FlxSubState
 		var types = ['sprite', 'animated', 'group', 'custom_class', 'sound'];
 		typeDropdown = new FlxUIDropDownMenu(panX + 12, y + 14, FlxUIDropDownMenu.makeStrIdLabelArray(types, true), null);
 		typeDropdown.scrollFactor.set();
+		typeDropdown.cameras = [_camSub];
 		add(typeDropdown);
 
 		y += 50;
 		lbl('Asset path (relative to images/stages/):', y);
 		assetInput = new FlxUIInputText(panX + 12, y + 14, W - 28, 'images/stages/myAsset', 11);
 		assetInput.scrollFactor.set();
+		assetInput.cameras = [_camSub];
 		add(assetInput);
 
 		y += 48;
@@ -2569,15 +2650,29 @@ class AddElementSubState extends flixel.FlxSubState
 			onConfirm(newElem);
 			close();
 		});
+		confirmBtn.cameras = [_camSub];
 		add(confirmBtn);
 
 		var cancelBtn = new FlxButton(panX + W - 102, y, 'Cancel', close);
+		cancelBtn.cameras = [_camSub];
 		add(cancelBtn);
 
 		var hint = new FlxText(panX + 12, panY + H - 20, W - 24, 'ESC para cancelar', 9);
 		hint.color = T.textDim;
 		hint.scrollFactor.set();
+		hint.cameras = [_camSub];
 		add(hint);
+	}
+
+	override function close():Void
+	{
+		// FIX: limpiar la cámara temporal al cerrar el substate
+		if (_camSub != null)
+		{
+			FlxG.cameras.remove(_camSub, true);
+			_camSub = null;
+		}
+		super.close();
 	}
 
 	override function update(elapsed:Float):Void

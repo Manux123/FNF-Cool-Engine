@@ -79,6 +79,17 @@ class ThemePickerSubState extends FlxSubState
 	override function create():Void
 	{
 		super.create();
+
+		// FIX: cámara propia para ser visible sobre camUI (transparente) del StageEditor
+		var camSub = new flixel.FlxCamera();
+		camSub.bgColor.alpha = 0;
+		FlxG.cameras.add(camSub, false);
+		cameras = [camSub];
+		// Limpiar al cerrar
+		var _selfCam = camSub;
+		// (se limpia en close() via override abajo, ver destroy)
+		FlxG.signals.postDraw.addOnce(function() {}); // dummy para evitar warning
+
 		panX = (FlxG.width  - W) / 2;
 		panY = (FlxG.height - H) / 2;
 
@@ -337,10 +348,23 @@ class ThemePickerSubState extends FlxSubState
 		var changed = false;
 		for (i in 0...COLOR_FIELDS.length)
 		{
-			var s = _colorInputs[i].text.trim().replace('#', '');
-			if (s.length == 6) s = 'FF' + s;
-			if (s.length != 8) continue;
-			var val = Std.parseInt('0x' + s);
+			var s = _colorInputs[i].text.trim().replace('#', '').replace('0x', '').replace('0X', '');
+			var val:Null<Int> = null;
+			if (s.length == 6)
+			{
+				// Parsear sólo los 6 dígitos RGB (max 0xFFFFFF = 16777215, cabe en Int32).
+				// Si concatenamos 'FF' antes → '0xFFRRGGBB' overflowea en C++ Haxe
+				// y Std.parseInt devuelve 0x7FFFFFFF → todos los colores se vuelven #FFFFFF.
+				var rgb = Std.parseInt('0x' + s);
+				if (rgb != null) val = rgb | 0xFF000000;
+			}
+			else if (s.length == 8)
+			{
+				// AARRGGBB: parsear en dos mitades para evitar overflow
+				var hi = Std.parseInt('0x' + s.substr(0, 2));
+				var lo = Std.parseInt('0x' + s.substr(2));
+				if (hi != null && lo != null) val = ((hi & 0xFF) << 24) | lo;
+			}
 			if (val == null) continue;
 			var cur:Int = Reflect.field(_preview, COLOR_FIELDS[i].f);
 			if (cur != val)
@@ -428,5 +452,17 @@ class ThemePickerSubState extends FlxSubState
 		var g = ((c >>  8) & 0xFF) / 255.0;
 		var b = ( c        & 0xFF) / 255.0;
 		return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+	}
+
+	override function close():Void
+	{
+		// FIX: limpiar la cámara temporal al cerrar
+		if (cameras != null && cameras.length > 0)
+		{
+			var cam = cameras[0];
+			if (cam != null)
+				FlxG.cameras.remove(cam, true);
+		}
+		super.close();
 	}
 }

@@ -299,7 +299,48 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 	function loadSongsData():Void
 	{
-		// ── Leer el songList: del mod activo primero, luego el base ──────────
+		#if sys
+		// ── Cuando hay un mod activo, solo mostrar las canciones del mod ──────
+		if (mods.ModManager.isActive())
+		{
+			final fmt = mods.compat.ModCompatLayer.getActiveModFormat();
+
+			if (fmt == mods.compat.ModFormat.PSYCH_ENGINE)
+			{
+				songInfo = { songsWeeks: [] };
+				for (modWeek in mods.compat.ModCompatLayer.getModSongsInfo())
+				{
+					var hideFP:Bool = Reflect.field(modWeek, 'hideFreeplay') == true;
+					if (!hideFP)
+						songInfo.songsWeeks.push(cast modWeek);
+				}
+				trace('[FreeplayEditorState] Mod Psych activo "${mods.ModManager.activeMod}" — semanas: ${songInfo.songsWeeks.length}');
+			}
+			else
+			{
+				var modSongListPath = '${mods.ModManager.modRoot()}/data/songList.json';
+				var file:String = null;
+				if (sys.FileSystem.exists(modSongListPath))
+					file = sys.io.File.getContent(modSongListPath);
+
+				if (file != null && file.trim() != '')
+				{
+					try { songInfo = cast haxe.Json.parse(file); }
+					catch (e:Dynamic) { songInfo = null; }
+				}
+
+				if (songInfo == null)
+				{
+					songInfo = _autoDiscoverModSongs();
+					if (songInfo != null)
+						trace('[FreeplayEditorState] Mod "${mods.ModManager.activeMod}" — canciones auto-descubiertas: ${songInfo.songsWeeks.length} semanas');
+				}
+			}
+			return; // No cargar canciones base
+		}
+		#end
+
+		// ── Sin mod activo: cargar songList base ──────────────────────────────
 		var songListPath:String = Paths.jsonSong('songList');
 		var file:String = null;
 		#if sys
@@ -310,7 +351,6 @@ class FreeplayState extends funkin.states.MusicBeatState
 		{
 			try { file = lime.utils.Assets.getText(songListPath); } catch (_:Dynamic) {}
 		}
-
 		try
 		{
 			if (file != null && file.trim() != '')
@@ -321,35 +361,6 @@ class FreeplayState extends funkin.states.MusicBeatState
 			trace("Error loading song data for " + songListPath + ": " + e);
 			songInfo = null;
 		}
-
-		// ── Inyectar canciones del mod activo según formato ──────────────────
-		#if sys
-		if (mods.ModManager.isActive())
-		{
-			final fmt = mods.compat.ModCompatLayer.getActiveModFormat();
-
-			if (fmt == mods.compat.ModFormat.PSYCH_ENGINE)
-			{
-				// Psych: obtener semanas desde weekList + datos propios del mod
-				if (songInfo == null) songInfo = { songsWeeks: [] };
-				for (modWeek in mods.compat.ModCompatLayer.getModSongsInfo())
-				{
-					var hideFP:Bool = Reflect.field(modWeek, 'hideFreeplay') == true;
-					if (!hideFP)
-						songInfo.songsWeeks.push(cast modWeek);
-				}
-				trace('[FreeplayState] Mod Psych activo "${mods.ModManager.activeMod}" — semanas inyectadas: ${songInfo.songsWeeks.length}');
-			}
-			else if (songInfo == null)
-			{
-				// Cool Engine mod o formato desconocido sin songList: auto-descubrir
-				// canciones desde la carpeta songs/ del mod
-				songInfo = _autoDiscoverModSongs();
-				if (songInfo != null)
-					trace('[FreeplayState] Mod "${mods.ModManager.activeMod}" — canciones auto-descubiertas: ${songInfo.songsWeeks.length} semanas');
-			}
-		}
-		#end
 	}
 
 	#if sys

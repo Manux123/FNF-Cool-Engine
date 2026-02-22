@@ -306,6 +306,48 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 
 	function loadSongsData():Void
 	{
+		#if sys
+		// ── Cuando hay un mod activo, solo mostrar las canciones del mod ──────
+		if (mods.ModManager.isActive())
+		{
+			final fmt = mods.compat.ModCompatLayer.getActiveModFormat();
+
+			if (fmt == mods.compat.ModFormat.PSYCH_ENGINE)
+			{
+				songInfo = { songsWeeks: [] };
+				for (modWeek in mods.compat.ModCompatLayer.getModSongsInfo())
+				{
+					var hideFP:Bool = Reflect.field(modWeek, 'hideFreeplay') == true;
+					if (!hideFP)
+						songInfo.songsWeeks.push(cast modWeek);
+				}
+				trace('[FreeplayEditorState] Mod Psych activo "${mods.ModManager.activeMod}" — semanas: ${songInfo.songsWeeks.length}');
+			}
+			else
+			{
+				var modSongListPath = '${mods.ModManager.modRoot()}/data/songList.json';
+				var file:String = null;
+				if (sys.FileSystem.exists(modSongListPath))
+					file = sys.io.File.getContent(modSongListPath);
+
+				if (file != null && file.trim() != '')
+				{
+					try { songInfo = cast haxe.Json.parse(file); }
+					catch (e:Dynamic) { songInfo = null; }
+				}
+
+				if (songInfo == null)
+				{
+					songInfo = _autoDiscoverModSongs();
+					if (songInfo != null)
+						trace('[FreeplayEditorState] Mod "${mods.ModManager.activeMod}" — canciones auto-descubiertas: ${songInfo.songsWeeks.length} semanas');
+				}
+			}
+			return; // No cargar canciones base
+		}
+		#end
+
+		// ── Sin mod activo: cargar songList base ──────────────────────────────
 		var songListPath:String = Paths.jsonSong('songList');
 		var file:String = null;
 		#if sys
@@ -327,6 +369,48 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 			songInfo = null;
 		}
 	}
+
+	#if sys
+	/** Auto-descubre canciones desde la carpeta songs/ del mod activo como una semana única. */
+	function _autoDiscoverModSongs():StoryMenuState.Songs
+	{
+		final modId   = mods.ModManager.activeMod;
+		if (modId == null) return null;
+		final songsDir = '${mods.ModManager.MODS_FOLDER}/$modId/songs';
+		if (!sys.FileSystem.exists(songsDir)) return null;
+
+		var songNames:Array<String> = [];
+		var songIcons:Array<String> = [];
+		var bpms:Array<Float>       = [];
+		for (entry in sys.FileSystem.readDirectory(songsDir))
+		{
+			final ep = '$songsDir/$entry';
+			if (!sys.FileSystem.isDirectory(ep)) continue;
+			// Check that a chart file exists
+			var hasChart = false;
+			for (diff in ['hard', 'normal', 'easy', 'chart'])
+				if (sys.FileSystem.exists('$ep/$diff.json')) { hasChart = true; break; }
+			if (!hasChart) continue;
+			songNames.push(entry);
+			songIcons.push('icon-$entry');
+			bpms.push(120.0);
+		}
+		if (songNames.length == 0) return null;
+
+		final modInfo = mods.ModManager.getInfo(modId);
+		final colorHex = modInfo != null ? StringTools.hex(modInfo.color & 0xFFFFFF, 6) : 'FF9900';
+		return {
+			songsWeeks: [{
+				weekName:       modInfo != null ? modInfo.name : modId,
+				weekSongs:      songNames,
+				songIcons:      songIcons,
+				color:          [colorHex],
+				bpm:            bpms,
+				weekCharacters: ['bf', 'gf', 'dad']
+			}]
+		};
+	}
+	#end
 
 	public function addWeek(songs:Array<String>, weekNum:Int, ?songCharacters:Array<String>)
 	{

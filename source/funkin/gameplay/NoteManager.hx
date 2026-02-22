@@ -22,6 +22,10 @@ class NoteManager
 	public var splashes:FlxTypedGroup<NoteSplash>; // NUEVO: Grupo de splashes
 
 	private var unspawnNotes:Array<Note> = [];
+	// ── Índice en unspawnNotes para spawning sin shift() O(n) ──────────────
+	// En vez de unspawnNotes.shift() (O(n) por reasignación de índices),
+	// avanzamos un puntero. Cuando supera el 50% del array lo compactamos.
+	private var _unspawnIdx:Int = 0;
 
 	// === STRUMS ===
 	private var playerStrums:FlxTypedGroup<FlxSprite>;
@@ -82,6 +86,7 @@ class NoteManager
 	public function generateNotes(SONG:SwagSong):Void
 	{
 		unspawnNotes = [];
+		_unspawnIdx  = 0;
 		songSpeed = SONG.speed;
 		_scrollSpeed = 0.45 * FlxMath.roundDecimal(songSpeed, 2);
 
@@ -181,40 +186,55 @@ class NoteManager
 	private function spawnNotes(songPosition:Float):Void
 	{
 		final spawnTime:Float = 1800 / songSpeed;
-		while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - songPosition < spawnTime)
+		while (_unspawnIdx < unspawnNotes.length &&
+		       unspawnNotes[_unspawnIdx].strumTime - songPosition < spawnTime)
 		{
-			var note = unspawnNotes.shift();
+			final note = unspawnNotes[_unspawnIdx];
+			_unspawnIdx++;
 
 			note.visible = true;
-			note.active = true;
-			note.alpha = note.isSustainNote ? 0.6 : 1.0;
+			note.active  = true;
+			note.alpha   = note.isSustainNote ? 0.6 : 1.0;
 
 			notes.add(note);
+
+			// Compactar el array cuando el puntero supere el 50% del tamaño
+			// (elimina referencias muertas para que el GC pueda recolectarlas).
+			if (_unspawnIdx > 512 && _unspawnIdx >= (unspawnNotes.length >> 1))
+			{
+				unspawnNotes.splice(0, _unspawnIdx);
+				_unspawnIdx = 0;
+			}
 		}
 	}
 
 	private function updateActiveNotes(songPosition:Float):Void
 	{
-		notes.forEachAlive(function(note:Note)
+		// Iteración directa sobre members[] en lugar de forEachAlive(closure)
+		// para eliminar la alloc de closure en cada frame (hot path).
+		final members = notes.members;
+		final len     = members.length;
+		for (i in 0...len)
 		{
+			final note = members[i];
+			if (note == null || !note.alive) continue;
+
 			updateNotePosition(note, songPosition);
 
 			if (!note.mustPress && note.strumTime <= songPosition)
 			{
 				handleCPUNote(note);
-				return;
+				continue;
 			}
 
 			if (note.mustPress && !note.wasGoodHit && songPosition > note.strumTime + 350)
 			{
-				note.tooLate = true;
-				note.canBeHit = false;
-
-				// No llamamos a missNote aquí - InputHandler.checkMisses() lo hará
+				note.tooLate   = true;
+				note.canBeHit  = false;
 			}
 
 			manageNoteVisibility(note);
-		});
+		}
 	}
 
 	private function handleCPUNote(note:Note):Void
@@ -255,16 +275,26 @@ class NoteManager
 
 	private function updateStrumAnimations():Void
 	{
-		var resetStrum = function(spr:FlxSprite)
+		// Iteración directa sin closure para evitar alloc por frame
+		_resetStrumsGroup(cpuStrums);
+		_resetStrumsGroup(playerStrums);
+	}
+
+	private static inline function _resetStrumsGroup(group:FlxTypedGroup<FlxSprite>):Void
+	{
+		if (group == null) return;
+		final m   = group.members;
+		final len = m.length;
+		for (i in 0...len)
 		{
-			if (spr.animation.curAnim != null && spr.animation.curAnim.name == 'confirm' && spr.animation.finished)
+			final spr = m[i];
+			if (spr == null || spr.animation == null || spr.animation.curAnim == null) continue;
+			if (spr.animation.curAnim.name == 'confirm' && spr.animation.finished)
 			{
 				spr.animation.play('static');
 				spr.centerOffsets();
 			}
-		};
-		cpuStrums.forEach(resetStrum);
-		playerStrums.forEach(resetStrum);
+		}
 	}
 
 	private function handleStrumAnimation(data:Int, strumsGroupIndex:Int, isPlayer:Bool):Void
@@ -332,15 +362,22 @@ class NoteManager
 	 */
 	public function clearNotesBefore(time:Float):Void
 	{
-		// Mientras haya notas y la primera nota sea anterior al tiempo deseado (con un pequeño margen de 100ms)
-		while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime < time - 100)
+		// Usar _unspawnIdx como punto de inicio para no procesar notas ya spawneadas
+		while (_unspawnIdx < unspawnNotes.length && unspawnNotes[_unspawnIdx].strumTime < time - 100)
 		{
-			var note = unspawnNotes.shift(); // Eliminar de la lista de espera
+			var note = unspawnNotes[_unspawnIdx];
+			_unspawnIdx++;
 			if (note != null)
 			{
-				note.kill(); // Marcar como muerta
-				note.destroy(); // Liberar memoria
+				note.kill();
+				note.destroy();
 			}
+		}
+		// Compactar el array tras la limpieza
+		if (_unspawnIdx > 0)
+		{
+			unspawnNotes.splice(0, _unspawnIdx);
+			_unspawnIdx = 0;
 		}
 
 	}
@@ -595,6 +632,7 @@ class NoteManager
 	public function destroy():Void
 	{
 		unspawnNotes = [];
+		_unspawnIdx  = 0;
 		heldNotes.clear();
 		holdStartTimes.clear();
 

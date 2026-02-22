@@ -560,6 +560,11 @@ class Paths
 
 	public static function clearCache():Void
 	{
+		// Restaurar destroyOnNoUse antes de limpiar el caché,
+		// para que HaxeFlixel pueda gestionar el ciclo de vida de los bitmaps.
+		for (atlas in atlasCache)
+			if (atlas != null && atlas.parent != null)
+				atlas.parent.destroyOnNoUse = true;
 		atlasCache.clear();
 		bitmapCache.clear();
 		_atlasLRU  = [];
@@ -589,8 +594,15 @@ class Paths
 	public static function forceClearCache():Void
 	{
 		for (a in atlasCache)
-			if (a?.parent?.bitmap != null)
-				a.parent.bitmap.dispose();
+		{
+			if (a?.parent != null)
+			{
+				// Restaurar gestión normal antes de destruir
+				a.parent.destroyOnNoUse = true;
+				if (a.parent.bitmap != null)
+					a.parent.bitmap.dispose();
+			}
+		}
 		atlasCache.clear();
 
 		for (b in bitmapCache)
@@ -639,15 +651,28 @@ class Paths
 
 		if (cacheEnabled && atlasCache.exists(key))
 		{
-			cacheHits++;
-			// LRU touch: mover al final del array (más reciente)
-			final pos = _atlasLRU.indexOf(key);
-			if (pos >= 0 && pos < _atlasLRU.length - 1)
+			final cached = atlasCache.get(key);
+			// ── Validar que el atlas siga siendo usable ──────────────────────
+			// Si por alguna razón el bitmap fue dispuesto (ej. clearFlxBitmapCache
+			// manual, o destroyOnNoUse no estaba seteado en una versión anterior),
+			// eliminamos la entrada del caché y recargamos limpiamente.
+			if (_atlasValid(cached))
 			{
-				_atlasLRU.splice(pos, 1);
-				_atlasLRU.push(key);
+				cacheHits++;
+				// LRU touch: mover al final del array (más reciente)
+				final pos = _atlasLRU.indexOf(key);
+				if (pos >= 0 && pos < _atlasLRU.length - 1)
+				{
+					_atlasLRU.splice(pos, 1);
+					_atlasLRU.push(key);
+				}
+				return cached;
 			}
-			return atlasCache.get(key);
+			// Atlas inválido → limpiar entrada y recargar
+			atlasCache.remove(key);
+			final pos = _atlasLRU.indexOf(key);
+			if (pos >= 0) _atlasLRU.splice(pos, 1);
+			atlasCount--;
 		}
 		cacheMisses++;
 
@@ -743,6 +768,13 @@ class Paths
 	{
 		if (atlasCount >= maxCacheSize)
 			evictAtlas();
+		// ── PIN: impedir que HaxeFlixel destruya el bitmap cuando
+		//        todos los sprites que lo usan sean destruidos.
+		//        Sin esto, abrir un substate por segunda vez crashea porque
+		//        los AlphaCharacter/sprites destruyen el bitmap al cerrarse (useCount→0)
+		//        y el caché de Paths devuelve un atlas con bitmap disposed. ──
+		if (atlas != null && atlas.parent != null)
+			atlas.parent.destroyOnNoUse = false;
 		atlasCache.set(key, atlas);
 		_atlasLRU.push(key);
 		atlasCount++;
@@ -759,25 +791,27 @@ class Paths
 
 	/**
 	 * Evicta el atlas menos usado recientemente (LRU).
-	 *
-	 * IMPORTANTE: NO llamamos dispose() aquí.
-	 * El BitmapData lo gestiona FlxG.bitmap; si hacemos dispose() mientras algún
-	 * FlxSprite aún referencia ese FlxGraphic, el siguiente draw crashea
-	 * (bitmap disposed but graphic still in FlxG.bitmap cache).
-	 * Simplemente quitamos el atlas de NUESTRO caché → si nadie más lo referencia,
-	 * el GC lo colectará en su momento.
+	 * Al salir del caché de Paths, restauramos destroyOnNoUse=true para que
+	 * HaxeFlixel gestione el ciclo de vida. Si ya no hay sprites usándolo
+	 * (useCount≤0), lo destruimos de inmediato para liberar VRAM.
 	 */
 	static function evictAtlas():Void
 	{
 		if (_atlasLRU.length == 0) return;
 		final k = _atlasLRU.shift();
+		final atlas = atlasCache.get(k);
 		atlasCache.remove(k);
 		atlasCount--;
+		if (atlas != null && atlas.parent != null)
+		{
+			atlas.parent.destroyOnNoUse = true;
+			if (atlas.parent.useCount <= 0)
+				atlas.parent.destroy();
+		}
 	}
 
 	/**
 	 * Evicta el bitmap menos usado recientemente (LRU).
-	 * Igual que evictAtlas: no disponemos aquí para evitar crashes.
 	 */
 	static function evictBitmap():Void
 	{
@@ -785,5 +819,15 @@ class Paths
 		final k = _bitmapLRU.shift();
 		bitmapCache.remove(k);
 		bitmapCount--;
+	}
+
+	/**
+	 * Valida que un atlas en caché todavía sea usable.
+	 * Retorna false si el bitmap subyacente fue dispuesto o el graphic es null.
+	 */
+	static inline function _atlasValid(atlas:FlxAtlasFrames):Bool
+	{
+		try { return atlas != null && atlas.parent != null && atlas.parent.bitmap != null; }
+		catch (_:Dynamic) { return false; }
 	}
 }

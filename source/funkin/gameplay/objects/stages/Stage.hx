@@ -666,6 +666,8 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 		if (element.active != null)
 			sprite.active = element.active;
+		else if (element.type == 'sprite') // sprites estáticos sin animación
+			sprite.active = false;         // no necesitan update() cada frame
 
 		if (element.alpha != null)
 			sprite.alpha = element.alpha;
@@ -857,6 +859,14 @@ class Stage extends FlxTypedGroup<FlxBasic>
 			ScriptHandler.clearStageScripts();
 			scriptsLoaded = false;
 		}
+
+		// Limpiar los Maps de elementos para que el GC pueda liberar las texturas.
+		// Codename Engine hace esto explicitamente; sin esto los Maps retienen
+		// referencias a FlxSprites aunque ya esten destruidos por super.destroy().
+		elements.clear();
+		groups.clear();
+		customClasses.clear();
+		customClassGroups.clear();
 
 		super.destroy();
 	}

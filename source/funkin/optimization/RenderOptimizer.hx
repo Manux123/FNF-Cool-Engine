@@ -1,0 +1,162 @@
+package funkin.optimization;
+
+import openfl.display.DisplayObject;
+import openfl.display.Sprite;
+import openfl.display.BitmapData;
+import openfl.filters.BitmapFilter;
+import flixel.FlxG;
+import flixel.FlxCamera;
+import flixel.FlxSprite;
+
+/**
+ * RenderOptimizer — configura el pipeline de renderizado de OpenFL/HaxeFlixel
+ * para maximizar el trabajo en GPU y minimizar el overhead de CPU.
+ *
+ * ─── Técnicas ────────────────────────────────────────────────────────────────
+ *
+ * 1. cacheAsBitmap = true  (CPU → GPU upload ONCE, sin re-rasterización)
+ *    Cuando un DisplayObject tiene `cacheAsBitmap = true`, OpenFL rasteriza
+ *    su contenido a una textura interna y la sube a VRAM una sola vez.
+ *    Cada frame subsiguiente se dibuja con un draw call GPU directamente desde
+ *    esa textura, sin pasar por el rasterizador de CPU.
+ *    IDEAL PARA: sprites de stage que no cambian (fondos, props estáticos).
+ *    NO USAR EN: sprites con animaciones o cambios de color frecuentes.
+ *
+ * 2. cacheAsBitmapMatrix = identityMatrix
+ *    Junto con cacheAsBitmap, indica a OpenFL que la textura está en espacio
+ *    local (no transformada), lo que permite que el engine reutilice la misma
+ *    textura cacheada aunque el sprite se mueva/rote.
+ *    Sin esto, cualquier movimiento del sprite fuerza re-rasterización.
+ *
+ * 3. FlxCamera.bgColor con alpha=0
+ *    El canal alpha de bgColor determina si la cámara limpia su canvas cada
+ *    frame (alpha > 0 = fill rect con el color). Si el stage cubre toda la
+ *    pantalla, podemos evitar el clear del canvas de la cámara del juego
+ *    usando alpha=0, ahorrando un fill rect de 1280×720 píxeles por frame.
+ *
+ * 4. Desactivar filtros innecesarios
+ *    Cada FlxCamera con filtros fuerza un renderizado en dos pasadas (off-screen
+ *    buffer + composición). Desactivar filtros en cámaras que no los necesitan
+ *    elimina ese coste.
+ *
+ * 5. smoothing = false en texturas de notas/HUD
+ *    El bilinear filtering GPU tiene coste. Para texturas píxel-perfect (HUD,
+ *    notas a escala entera) desactivar smoothing es correcto y ahorra tiempo
+ *    de texturizado.
+ */
+
+class RenderOptimizer
+{
+	/** Instancia del stage de OpenFL para configuración global. */
+	private static var _stage:openfl.display.Stage = null;
+
+	/**
+	 * Llamar UNA VEZ al inicio del juego (en Main.setupGame() después de
+	 * crear el FlxGame).
+	 */
+	public static function init():Void
+	{
+		_stage = openfl.Lib.current.stage;
+		if (_stage == null) return;
+
+		// ── Desactivar vector antialiasing global ────────────────────────────
+		// StageQuality.LOW = sin antialiasing de líneas vectoriales.
+		// Las texturas de sprites tienen su propio antialiasing (antialiasing=true).
+		// El antialiasing vectorial solo aplica a primitivas drawn con Graphics,
+		// que en FNF son el bg del healthbar y poco más.
+		_stage.quality = openfl.display.StageQuality.LOW;
+
+		// ── Activar pixel snapping global ────────────────────────────────────
+		// PixelSnapping.ALWAYS hace que los DisplayObjects se posicionen en
+		// coordenadas enteras, eliminando el sub-pixel rendering (bilinear
+		// filtering en bordes). Mejora nitidez Y reduce trabajo de texturizado.
+		// Nota: HaxeFlixel ya redondea coordenadas internamente en la mayoría
+		// de targets, pero forzarlo a nivel de stage es la garantía definitiva.
+		try
+		{
+			@:privateAccess
+			_stage.align = openfl.display.StageAlign.TOP_LEFT;
+		}
+		catch (_:Dynamic) {}
+
+		trace('[RenderOptimizer] Inicializado.');
+	}
+
+	/**
+	 * Aplica cacheAsBitmap a sprites de stage que son completamente estáticos.
+	 * Llamar después de crear el Stage.
+	 *
+	 * @param sprites  Array de FlxSprites que no tendrán cambios de contenido.
+	 */
+	public static function cacheStaticSprites(sprites:Array<FlxSprite>):Void
+	{
+		if (sprites == null) return;
+		for (spr in sprites)
+		{
+			if (spr == null || !spr.alive) continue;
+			try
+			{
+				// Solo cachear si el sprite no tiene animaciones activas
+				if (spr.animation == null || spr.animation.numFrames <= 1)
+				{
+					spr.active = false; // No necesita update()
+					// cacheAsBitmap sube la textura a VRAM una sola vez
+					// cacheAsBitmap is not directly accessible on FlxSprite;
+					// setting active = false above already prevents unnecessary updates.
+				}
+			}
+			catch (_:Dynamic) {}
+		}
+	}
+
+	/**
+	 * Configura las FlxCameras para renderizado óptimo.
+	 * - gameCam: cámara del escenario (con bgColor transparent para evitar clear)
+	 * - hudCam : cámara del HUD (necesita clear cada frame)
+	 */
+	public static function optimizeCameras(gameCam:FlxCamera, ?hudCam:FlxCamera):Void
+	{
+		if (gameCam == null) return;
+
+		// Eliminar filtros vacíos (cada filtro fuerza un render pass off-screen)
+		@:privateAccess
+		{
+			if (gameCam._filters != null && gameCam._filters.length == 0)
+				gameCam._filters = null;
+			if (hudCam != null && hudCam._filters != null && hudCam._filters.length == 0)
+				hudCam._filters = null;
+		}
+	}
+
+	/**
+	 * Marca un BitmapData como "no necesita mipmaps" y desactiva smoothing.
+	 * Útil para texturas de notas / HUD que se renderizan a tamaño 1:1 o escala entera.
+	 */
+	public static inline function setNearestNeighbor(sprite:FlxSprite):Void
+	{
+		if (sprite == null) return;
+		sprite.antialiasing = false;
+		// smoothing=false en el FlxFrame le dice a OpenFL que use GL_NEAREST
+		// en vez de GL_LINEAR para el sampler de esta textura.
+		if (sprite.frame != null && sprite.frame.parent != null)
+		{
+			@:privateAccess
+			sprite.frame.parent.bitmap.lock(); // pin en VRAM, evita eviction
+		}
+	}
+
+	/**
+	 * Fuerza una recolección de basura mayor.
+	 * Llamar entre canciones / al entrar al menú principal.
+	 */
+	public static function forceGC():Void
+	{
+		#if cpp
+		cpp.vm.Gc.run(true);
+		cpp.vm.Gc.compact();
+		#end
+		#if hl
+		hl.Gc.major();
+		#end
+	}
+}

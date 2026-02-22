@@ -192,6 +192,24 @@ class Note extends FlxSprite
 		
 		// Revivir sprite
 		revive();
+
+		// CORREGIDO: Restaurar animación y setup según tipo de nota.
+		// Sin esto, notas recicladas del pool conservan la animación anterior
+		// (ej. una nota normal reciclada como sustain sigue mostrando 'purpleScroll').
+		if (!isSustainNote)
+		{
+			// Nota normal: reproducir la animación de dirección correcta
+			if (animation.exists(animArrows[noteData] + 'Scroll'))
+				animation.play(animArrows[noteData] + 'Scroll');
+		}
+		else
+		{
+			// Nota sustain: resetear escala, aplicar flip y reproducir 'holdend'
+			scale.set(1, 1);
+			flipY = false;
+			flipX = false;
+			setupSustainNote();
+		}
 	}
 
 	function loadPixelNotes():Void
@@ -209,8 +227,8 @@ class Note extends FlxSprite
 			// ANIMATIONS for hold ends
 			for (i in 0...animArrows.length)
 			{
-				animation.add(animArrows[i] + 'holdend', [noteData + 4]);
-				animation.add(animArrows[i] + 'hold', [noteData]);
+				animation.add(animArrows[i] + 'holdend', [i + 4]);
+				animation.add(animArrows[i] + 'hold', [i]);
 			}
 		}
 		else
@@ -222,9 +240,9 @@ class Note extends FlxSprite
 				loadGraphic('assets/skins/Default/arrows-pixels.png');
 
 			// Animations pixel (statics)
-			for (anim in animArrows)
+			for (i in 0...animArrows.length)
 			{
-				animation.add(anim + 'Scroll', [noteData + 4]);
+				animation.add(animArrows[i] + 'Scroll', [i + 4]);
 			}
 		}
 
@@ -355,39 +373,28 @@ class Note extends FlxSprite
 	{
 		super.update(elapsed);
 
-		if (mustPress && !wasGoodHit && !tooLate)
-		{
-			if (strumTime < Conductor.songPosition - _hitWindowCache)
-			{
-				tooLate = true;
-				canBeHit = false;
-				alpha = 0.3; // Feedback visual de que se perdió
-			}
-		}
-
-		// OPTIMIZATION: Solo recalcular si la posición de la canción cambió significativamente
+		// canBeHit se recalcula solo cada ~10ms de cambio en songPosition (cache).
+		// tooLate lo gestiona NoteManager exclusivamente para evitar duplicados
+		// (antes se seteaba aqui Y en NoteManager, causando que missNote() nunca
+		// se llamara porque el manager asumia que ya estaba gestionado).
 		if (Math.abs(Conductor.songPosition - _lastSongPos) > 10)
 		{
 			_lastSongPos = Conductor.songPosition;
-			
+
 			if (mustPress)
 			{
-				// Usar hit window cacheada
-				canBeHit = (strumTime > Conductor.songPosition - _hitWindowCache && strumTime < Conductor.songPosition + _hitWindowCache);
-
-				if (strumTime < Conductor.songPosition - _hitWindowCache && !wasGoodHit)
-					tooLate = true;
+				canBeHit = (strumTime > Conductor.songPosition - _hitWindowCache
+				         && strumTime < Conductor.songPosition + _hitWindowCache);
 			}
 			else
 			{
 				canBeHit = false;
-
 				if (strumTime <= Conductor.songPosition)
 					wasGoodHit = true;
 			}
 		}
 
-		// OPTIMIZATION: Solo actualizar alpha si cambió el estado
+		// Visual feedback cuando NoteManager marca la nota como tooLate
 		if (tooLate && alpha > 0.3)
 			alpha = 0.3;
 	}

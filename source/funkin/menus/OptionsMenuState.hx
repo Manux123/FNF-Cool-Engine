@@ -32,6 +32,17 @@ class OptionsMenuState extends MusicBeatSubstate
 {
 	// Categorías principales (se pueden agregar más desde scripts)
 	var categories:Array<String> = ['General', 'Graphics', 'Gameplay', 'Controls', 'Note Skin', 'Offset'];
+
+	// ── FPS Cap — valores disponibles (inspirado en Codename Engine) ────────────
+	static final FPS_OPTIONS:Array<Int> = [30, 60, 120, 144, 240];
+
+	static function getFPSIndex():Int
+	{
+		var target:Int = FlxG.save.data.fpsTarget != null ? Std.int(FlxG.save.data.fpsTarget) : 60;
+		for (i in 0...FPS_OPTIONS.length)
+			if (FPS_OPTIONS[i] == target) return i;
+		return 1; // default 60
+	}
 	var curCategory:Int = 0;
 	
 	// UI Elements
@@ -179,7 +190,7 @@ class OptionsMenuState extends MusicBeatSubstate
 		add(footerBorder);
 		
 		var helpText = new FlxText(footerBG.x + 20, footerBG.y + 12, footerBG.width - 40, 
-			"← → : Change Tab  |  ↑ ↓ : Navigate  |  ENTER : Toggle/Select  |  ESC : Back", 18);
+			"← → : Change Tab  |  ↑ ↓ : Navigate  |  ENTER : Toggle  |  A/D : Adjust  |  ESC : Back", 18);
 		helpText.setFormat(Paths.font("Funkin.otf"), 18, 0xFFAAAAAA, CENTER, OUTLINE, FlxColor.BLACK);
 		helpText.borderSize = 1.5;
 		helpText.scrollFactor.set();
@@ -358,10 +369,41 @@ class OptionsMenuState extends MusicBeatSubstate
 					var mainInstance = cast(openfl.Lib.current.getChildAt(0), Main);
 					mainInstance.data.visible = !mainInstance.data.visible;
 				}
+			},
+			{
+				// ── FPS Cap ─────────────────────────────────────────────────────
+				// Cicla por los valores con ENTER o LEFT/RIGHT.
+				// Se guarda en FlxG.save.data.fpsTarget y se aplica de inmediato.
+				name: "FPS Cap",
+				get: function() {
+					var t:Int = FlxG.save.data.fpsTarget != null ? Std.int(FlxG.save.data.fpsTarget) : 60;
+					return t + " FPS";
+				},
+				toggle: function() {
+					var idx = getFPSIndex();
+					applyFPSCap(FPS_OPTIONS[(idx + 1) % FPS_OPTIONS.length]);
+				},
+				left: function() {
+					var idx = getFPSIndex();
+					applyFPSCap(FPS_OPTIONS[(idx - 1 + FPS_OPTIONS.length) % FPS_OPTIONS.length]);
+				},
+				right: function() {
+					var idx = getFPSIndex();
+					applyFPSCap(FPS_OPTIONS[(idx + 1) % FPS_OPTIONS.length]);
+				}
 			}
 		];
 
 		createOptionTexts();
+	}
+
+	/** Aplica el FPS cap y lo persiste en el save */
+	function applyFPSCap(fps:Int):Void
+	{
+		FlxG.save.data.fpsTarget = fps;
+		FlxG.save.flush();
+		openfl.Lib.current.stage.frameRate = fps;
+		trace('[Options] FPS cap -> $fps');
 	}
 
 	function loadGraphicsOptions()
@@ -645,6 +687,22 @@ class OptionsMenuState extends MusicBeatSubstate
 		if (controls.DOWN_P)
 		{
 			changeSelection(1);
+		}
+
+		// Ajuste izquierda/derecha para opciones con slider (p.ej. FPS Cap)
+		// Solo cuando NO estamos cambiando de categoria (tab), es decir,
+		// la opcion actual tiene funciones left/right definidas.
+		if (categories[curCategory] != 'Controls' && currentOptions.length > 0)
+		{
+			final opt = currentOptions[curSelected];
+			if (FlxG.keys.justPressed.A || FlxG.keys.justPressed.LEFT)
+			{
+				if (opt.left != null) { FlxG.sound.play(Paths.sound('menus/scrollMenu')); opt.left(); updateOptionDisplay(); }
+			}
+			if (FlxG.keys.justPressed.D || FlxG.keys.justPressed.RIGHT)
+			{
+				if (opt.right != null) { FlxG.sound.play(Paths.sound('menus/scrollMenu')); opt.right(); updateOptionDisplay(); }
+			}
 		}
 
 		// Aceptar/Toggle opción

@@ -153,8 +153,11 @@ class LoadingState extends funkin.states.MusicBeatState
 			checkLoadSong(getSongPath());
 			if (PlayState.SONG.needsVoices)
 				checkLoadSong(getVocalPath());
-			checkLibrary("characters");
-			checkLibrary("stages");
+			// ── NO cargar librerías "characters" y "stages" completas ──────────
+			// Codename Engine NO hace Assets.loadLibrary("characters/stages").
+			// Cargar esas librerías sube TODOS los personajes y stages a RAM de
+			// golpe (~100-150 MB). Los assets de personajes/stage se cargan
+			// on-demand por FunkinSprite/Stage cuando los sprites los piden.
 
 			// Fade desde negro + tiempo mínimo
 			var fadeTime:Float = 0.4;

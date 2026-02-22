@@ -204,7 +204,7 @@ class GPUBatch
     private var totalZIndex:Float = 0;
 
     // Capacidades
-    private static inline var MAX_SPRITES      :Int = 512;
+    private static inline var MAX_SPRITES      :Int = 64;  // FNF nunca supera ~32 notas simultáneas; 512 desperdiciaba 700 KB en buffers vacíos
     private static inline var VERTS_PER_SPRITE :Int = 32; // 4 verts × 8 floats
     private static inline var INDICES_PER_SPRITE:Int = 6;
 

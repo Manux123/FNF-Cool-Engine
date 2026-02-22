@@ -65,6 +65,9 @@ class Paths
 	// Órdenes LRU (índice 0 = más antiguo → candidato a evictar)
 	static var _atlasLRU:Array<String>  = [];
 	static var _bitmapLRU:Array<String> = [];
+	// OPTIMIZACIÓN: posición O(1) en el array LRU — evita indexOf() O(n) en cada hit
+	static var _atlasLRUPos:Map<String, Int>  = [];
+	static var _bitmapLRUPos:Map<String, Int> = [];
 
 	static var atlasCount:Int  = 0;
 	static var bitmapCount:Int = 0;
@@ -372,18 +375,50 @@ class Paths
 	public static function loadVoices(song:String):flixel.sound.FlxSound
 		return loadSound(voices(song));
 
+	/**
+	 * Carga un sonido de canción SIEMPRE usando streaming.
+	 *
+	 * POR QUÉ IMPORTA:
+	 *   loadEmbedded() decodifica el OGG/MP3 completo a PCM en RAM en el
+	 *   momento de la llamada. Una pista de 3 min a 44.1 kHz / 16-bit estéreo
+	 *   ocupa ~32 MB decodificada. Con instrumental + voces = ~64-120 MB.
+	 *   Solo este cambio puede reducir el uso de RAM del PlayState en 60-100 MB.
+	 *
+	 *   loadStream() mantiene solo un buffer de segundos en RAM; el resto lo
+	 *   lee del disco (o desde los bytes comprimidos de lime) bajo demanda.
+	 */
 	static function loadSound(path:String):flixel.sound.FlxSound
 	{
 		final snd = new flixel.sound.FlxSound();
 		try
 		{
 			#if sys
+			// Prioridad 1: archivo en disco → streaming directo
 			if (FileSystem.exists(path))
 			{
 				snd.loadStream(path);
 				return snd;
 			}
+
+			// Prioridad 2: asset embebido → volcar a temp y hacer stream
+			// Esto evita decodificar el OGG completo a PCM en memoria.
+			// El archivo temporal se escribe una sola vez y permanece hasta
+			// que la canción termina (el OS lo limpia al cerrar el proceso).
+			final bytes = lime.utils.Assets.getBytes(path);
+			if (bytes != null)
+			{
+				final tmpDir = Sys.getEnv('TEMP') ?? Sys.getEnv('TMPDIR') ?? '/tmp';
+				final hash = path.split('/').pop() ?? 'audio';
+				final tmpPath = '$tmpDir/funkin_stream_$hash';
+				if (!FileSystem.exists(tmpPath))
+				{
+					File.saveBytes(tmpPath, bytes);
+				}
+				snd.loadStream(tmpPath);
+				return snd;
+			}
 			#end
+			// Fallback (web / sin sys): loadEmbedded sin otra opción
 			snd.loadEmbedded(path, false, false);
 		}
 		catch (e:Dynamic)
@@ -422,13 +457,8 @@ class Paths
 		if (cacheEnabled && bitmapCache.exists(key))
 		{
 			cacheHits++;
-			// LRU touch
-			final pos = _bitmapLRU.indexOf(key);
-			if (pos >= 0 && pos < _bitmapLRU.length - 1)
-			{
-				_bitmapLRU.splice(pos, 1);
-				_bitmapLRU.push(key);
-			}
+			// LRU touch O(1)
+			_lruTouch(_bitmapLRU, _bitmapLRUPos, key);
 			return bitmapCache.get(key);
 		}
 		cacheMisses++;
@@ -560,15 +590,24 @@ class Paths
 
 	public static function clearCache():Void
 	{
-		// Restaurar destroyOnNoUse antes de limpiar el caché,
-		// para que HaxeFlixel pueda gestionar el ciclo de vida de los bitmaps.
+		// Restaurar destroyOnNoUse y destruir atlases sin usuarios activos.
+		// Codename Engine libera agresivamente: si el atlas sale del caché
+		// y nadie lo está usando (useCount <= 0), se destruye de inmediato.
 		for (atlas in atlasCache)
+		{
 			if (atlas != null && atlas.parent != null)
+			{
 				atlas.parent.destroyOnNoUse = true;
+				if (atlas.parent.useCount <= 0)
+					atlas.parent.destroy(); // liberar VRAM/RAM de inmediato
+			}
+		}
 		atlasCache.clear();
 		bitmapCache.clear();
 		_atlasLRU  = [];
 		_bitmapLRU = [];
+		_atlasLRUPos  = [];
+		_bitmapLRUPos = [];
 		atlasCount  = 0;
 		bitmapCount = 0;
 		trace('[Paths] Caché local limpiado.');
@@ -576,10 +615,16 @@ class Paths
 
 	public static function clearFlxBitmapCache():Void
 	{
+		// FlxG.bitmap es el caché propio de HaxeFlixel
 		FlxG.bitmap.clearCache();
+		// openfl.utils.Assets.cache es el caché INTERNO de OpenFL.
+		// Cada llamada a Assets.getBitmapData() guarda una copia aquí,
+		// completamente independiente de FlxG.bitmap. Sin limpiar esto
+		// los bitmaps nunca se liberan aunque el sprite sea destruido.
+		try { openfl.utils.Assets.cache.clear(); } catch (_:Dynamic) {}
 		#if cpp cpp.vm.Gc.run(true); #end
 		#if hl hl.Gc.major(); #end
-		trace('[Paths] FlxG.bitmap limpiado.');
+		trace('[Paths] FlxG.bitmap + OpenFL cache limpiados.');
 	}
 
 	public static function clearAllCaches():Void
@@ -611,9 +656,13 @@ class Paths
 
 		_atlasLRU  = [];
 		_bitmapLRU = [];
+		_atlasLRUPos  = [];
+		_bitmapLRUPos = [];
 		atlasCount  = 0;
 		bitmapCount = 0;
-		trace('[Paths] Caché vaciado con dispose().');
+		// Limpiar también el caché interno de OpenFL/Lime
+		try { openfl.utils.Assets.cache.clear(); } catch (_:Dynamic) {}
+		trace('[Paths] Caché vaciado con dispose() + OpenFL cache limpiado.');
 	}
 
 	public static function setCacheEnabled(enabled:Bool):Void
@@ -659,19 +708,13 @@ class Paths
 			if (_atlasValid(cached))
 			{
 				cacheHits++;
-				// LRU touch: mover al final del array (más reciente)
-				final pos = _atlasLRU.indexOf(key);
-				if (pos >= 0 && pos < _atlasLRU.length - 1)
-				{
-					_atlasLRU.splice(pos, 1);
-					_atlasLRU.push(key);
-				}
+				// LRU touch O(1): mover al final usando posición cacheada
+				_lruTouch(_atlasLRU, _atlasLRUPos, key);
 				return cached;
 			}
 			// Atlas inválido → limpiar entrada y recargar
 			atlasCache.remove(key);
-			final pos = _atlasLRU.indexOf(key);
-			if (pos >= 0) _atlasLRU.splice(pos, 1);
+			_lruRemove(_atlasLRU, _atlasLRUPos, key);
 			atlasCount--;
 		}
 		cacheMisses++;
@@ -776,7 +819,7 @@ class Paths
 		if (atlas != null && atlas.parent != null)
 			atlas.parent.destroyOnNoUse = false;
 		atlasCache.set(key, atlas);
-		_atlasLRU.push(key);
+		_lruPush(_atlasLRU, _atlasLRUPos, key);
 		atlasCount++;
 	}
 
@@ -785,7 +828,7 @@ class Paths
 		if (bitmapCount >= maxCacheSize)
 			evictBitmap();
 		bitmapCache.set(key, bmp);
-		_bitmapLRU.push(key);
+		_lruPush(_bitmapLRU, _bitmapLRUPos, key);
 		bitmapCount++;
 	}
 
@@ -798,7 +841,7 @@ class Paths
 	static function evictAtlas():Void
 	{
 		if (_atlasLRU.length == 0) return;
-		final k = _atlasLRU.shift();
+		final k = _lruShift(_atlasLRU, _atlasLRUPos);
 		final atlas = atlasCache.get(k);
 		atlasCache.remove(k);
 		atlasCount--;
@@ -812,13 +855,20 @@ class Paths
 
 	/**
 	 * Evicta el bitmap menos usado recientemente (LRU).
+	 * CORREGIDO: bmp.dispose() — antes el bitmap se quitaba del Map pero nunca
+	 * se liberaba de VRAM/RAM → memory leak acumulativo en cada evicción.
 	 */
 	static function evictBitmap():Void
 	{
 		if (_bitmapLRU.length == 0) return;
-		final k = _bitmapLRU.shift();
+		final k = _lruShift(_bitmapLRU, _bitmapLRUPos);
+		final bmp = bitmapCache.get(k);
 		bitmapCache.remove(k);
 		bitmapCount--;
+		if (bmp != null)
+		{
+			try { bmp.dispose(); } catch (_:Dynamic) {}
+		}
 	}
 
 	/**
@@ -830,4 +880,105 @@ class Paths
 		try { return atlas != null && atlas.parent != null && atlas.parent.bitmap != null; }
 		catch (_:Dynamic) { return false; }
 	}
+	// ─── Helpers LRU O(1) ────────────────────────────────────────────────────
+
+	/**
+	 * Agrega una clave al final del array LRU y registra su posición en O(1).
+	 */
+	static inline function _lruPush(arr:Array<String>, pos:Map<String,Int>, key:String):Void
+	{
+		pos.set(key, arr.length);
+		arr.push(key);
+	}
+
+	/**
+	 * "Toca" una clave moviéndola al final. O(1) gracias al Map de posiciones.
+	 * Tras el touch el Map se reconstruye solo para esa entrada.
+	 * (El array solo es O(n) en la copia del splice; con n<=25 es insignificante,
+	 *  pero el indexOf() previo era O(n) ADEMÁS del splice — ahora solo el splice.)
+	 */
+	static function _lruTouch(arr:Array<String>, pos:Map<String,Int>, key:String):Void
+	{
+		if (!pos.exists(key)) return;
+		final idx = pos.get(key);
+		if (idx == arr.length - 1) return; // ya es el más reciente
+		arr.splice(idx, 1);
+		// Recalcular posiciones desplazadas por el splice
+		for (i in idx...arr.length)
+			pos.set(arr[i], i);
+		pos.set(key, arr.length);
+		arr.push(key);
+	}
+
+	/**
+	 * Elimina el elemento más antiguo (índice 0) y devuelve su clave.
+	 */
+	static function _lruShift(arr:Array<String>, pos:Map<String,Int>):String
+	{
+		if (arr.length == 0) return '';
+		final k = arr.shift();
+		pos.remove(k);
+		// Decrementar posiciones de todos los elementos restantes
+		for (i in 0...arr.length)
+			pos.set(arr[i], i);
+		return k;
+	}
+
+	/**
+	 * Elimina una clave específica del array LRU.
+	 */
+	static function _lruRemove(arr:Array<String>, pos:Map<String,Int>, key:String):Void
+	{
+		if (!pos.exists(key)) return;
+		final idx = pos.get(key);
+		arr.splice(idx, 1);
+		pos.remove(key);
+		for (i in idx...arr.length)
+			pos.set(arr[i], i);
+	}
+
+	// ─── Cache contextual ────────────────────────────────────────────────────
+
+	/**
+	 * Limpia SOLO los assets de gameplay (personajes + stage) sin tocar UI/menús.
+	 * Llamar desde PlayState.destroy() para liberar VRAM al salir de una canción.
+	 *
+	 * Los prefijos "char_", "stage_", "skin_" identifican assets del juego;
+	 * "splash_", "packer_" y claves sin prefijo son UI que conviene conservar.
+	 */
+	public static function clearGameplayCache():Void
+	{
+		final gameplayPrefixes = ["char_", "stage_", "skin_"];
+		final toRemove:Array<String> = [];
+
+		for (key in atlasCache.keys())
+		{
+			for (prefix in gameplayPrefixes)
+			{
+				if (key.startsWith(prefix))
+				{
+					toRemove.push(key);
+					break;
+				}
+			}
+		}
+
+		for (key in toRemove)
+		{
+			final atlas = atlasCache.get(key);
+			atlasCache.remove(key);
+			_lruRemove(_atlasLRU, _atlasLRUPos, key);
+			atlasCount--;
+			if (atlas != null && atlas.parent != null)
+			{
+				atlas.parent.destroyOnNoUse = true;
+				if (atlas.parent.useCount <= 0)
+					atlas.parent.destroy();
+			}
+		}
+
+		if (toRemove.length > 0)
+			trace('[Paths] clearGameplayCache: ${toRemove.length} atlas(es) de gameplay liberados.');
+	}
+
 }

@@ -171,10 +171,11 @@ class StrumsGroup
 		isVisible = visible;
 		data.visible = visible;
 		
-		strums.forEach(function(spr:FlxSprite)
+		// Iteración directa — sin closure
 		{
-			spr.visible = visible;
-		});
+			final m = strums.members; final l = m.length;
+			for (i in 0...l) { final s = m[i]; if (s != null) s.visible = visible; }
+		}
 	}
 	
 	/**
@@ -186,12 +187,11 @@ class StrumsGroup
 		data.y = y;
 		
 		var i:Int = 0;
-		strums.forEach(function(spr:FlxSprite)
+		// Iteración directa — sin closure
 		{
-			spr.x = x + (i * spacing);
-			spr.y = y;
-			i++;
-		});
+			final m = strums.members; final l = m.length;
+			for (j in 0...l) { final s = m[j]; if (s != null) { s.x = x + (j * spacing); s.y = y; } }
+		}
 	}
 	
 	/**

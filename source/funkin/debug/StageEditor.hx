@@ -1306,7 +1306,7 @@ class StageEditor extends funkin.states.MusicBeatState
 		var T = EditorTheme.current;
 		var y = 8.0;
 
-		var info = new FlxText(8, y, RIGHT_W - 20, 'Shaders se guardan en el JSON del stage\ny se aplican en runtime via scripts.', 10);
+		var info = new FlxText(8, y, RIGHT_W - 20, 'Shaders are stored in the stage\'s JSON file\nand are applied at runtime via scripts.', 10);
 		info.color = T.textSecondary;
 		tab.add(info);
 		y += 40;
@@ -1360,12 +1360,12 @@ class StageEditor extends funkin.states.MusicBeatState
 			Reflect.setField(stageData.elements[selectedIdx].customProperties, 'shader', shaderName);
 			markUnsaved();
 			saveHistory();
-			setStatus('Shader "${shaderName}" asignado al elemento seleccionado');
+			setStatus('Shader "${shaderName}" assigned to selected element');
 		});
 		tab.add(applyElemShader);
 
 		y += 34;
-		var note = new FlxText(8, y, RIGHT_W - 20, 'Para usar shaders, agrega un script al stage que aplique el shader en onStageCreate.', 9);
+		var note = new FlxText(8, y, RIGHT_W - 20, 'To use shaders, add a script to the stage that applies the shader in onStageCreate.', 9);
 		note.color = T.textDim;
 		tab.add(note);
 
@@ -1906,7 +1906,7 @@ class StageEditor extends funkin.states.MusicBeatState
 			syncElementFieldsToUI();
 			refreshLayerPanel();
 			markUnsaved();
-			setStatus('Elemento "${elem.name}" añadido');
+			setStatus('Element "${elem.name}" added');
 		}));
 	}
 
@@ -1914,14 +1914,14 @@ class StageEditor extends funkin.states.MusicBeatState
 	{
 		if (selectedIdx < 0 || selectedIdx >= stageData.elements.length)
 			return;
-		var name = stageData.elements[selectedIdx].name ?? 'elemento';
+		var name = stageData.elements[selectedIdx].name ?? 'element';
 		stageData.elements.splice(selectedIdx, 1);
 		selectedIdx = -1;
 		saveHistory();
 		reloadStageView();
 		refreshLayerPanel();
 		markUnsaved();
-		setStatus('Elemento "$name" eliminado');
+		setStatus('Element "$name" deleted');
 	}
 
 	function copyElement():Void
@@ -1929,7 +1929,7 @@ class StageEditor extends funkin.states.MusicBeatState
 		if (selectedIdx < 0 || selectedIdx >= stageData.elements.length)
 			return;
 		clipboard = Json.parse(Json.stringify(stageData.elements[selectedIdx]));
-		setStatus('Elemento copiado al portapapeles');
+		setStatus('Element copied to clipboard');
 	}
 
 	function pasteElement():Void
@@ -1946,7 +1946,7 @@ class StageEditor extends funkin.states.MusicBeatState
 		syncElementFieldsToUI();
 		refreshLayerPanel();
 		markUnsaved();
-		setStatus('Elemento pegado: "${newElem.name}"');
+		setStatus('Element pasted: "${newElem.name}"');
 	}
 
 	function moveLayer(idx:Int, delta:Int):Void
@@ -1998,7 +1998,7 @@ class StageEditor extends funkin.states.MusicBeatState
 		selectedIdx = stageData.elements.length > 0 ? Std.int(Math.min(selectedIdx, stageData.elements.length - 1)) : -1;
 		refreshLayerPanel();
 		markUnsaved();
-		setStatus('Propiedades aplicadas: "${elem.name}"');
+		setStatus('Properties applied: "${elem.name}"');
 	}
 
 	function syncElementFieldsToUI():Void
@@ -2205,7 +2205,7 @@ class StageEditor extends funkin.states.MusicBeatState
 		syncAnimListUI();
 		saveHistory();
 		markUnsaved();
-		setStatus('Animación "${anim.name}" guardada');
+		setStatus('Animation "${anim.name}" saved');
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -2221,7 +2221,7 @@ class StageEditor extends funkin.states.MusicBeatState
 		titleText.text = '\u26AA  STAGE EDITOR  \u2022  ' + stageData.name;
 		saveHistory();
 		markUnsaved();
-		setStatus('Propiedades del stage actualizadas');
+		setStatus('Stage properties updated');
 	}
 
 	function applyCharProps():Void
@@ -2236,7 +2236,7 @@ class StageEditor extends funkin.states.MusicBeatState
 		saveHistory();
 		markUnsaved();
 		refreshLayerPanel();
-		setStatus('Posiciones de personajes actualizadas');
+		setStatus('Character positions updated');
 	}
 
 	function addScript():Void
@@ -2246,7 +2246,7 @@ class StageEditor extends funkin.states.MusicBeatState
 		stageData.scripts.push('scripts/newScript.hx');
 		saveHistory();
 		markUnsaved();
-		setStatus('Script placeholder añadido — edita el JSON para la ruta real');
+		setStatus('Script placeholder added — edit the JSON to set the real path');
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -2287,11 +2287,11 @@ class StageEditor extends funkin.states.MusicBeatState
 			hasUnsavedChanges = false;
 			unsavedDot.visible = false;
 			modBadge.text = _modLabel();
-			setStatus('Guardado: $path');
+			setStatus('Saved: $path');
 		}
 		catch (e:Dynamic)
 		{
-			setStatus('ERROR al guardar: $e');
+			setStatus('ERROR saving: $e');
 		}
 		#end
 	}
@@ -2301,7 +2301,7 @@ class StageEditor extends funkin.states.MusicBeatState
 		#if sys
 		if (!ModManager.isActive())
 		{
-			setStatus('No hay un mod activo — usando ruta base');
+			setStatus('No active mod — using base path');
 			saveJSON();
 			return;
 		}
@@ -2313,11 +2313,11 @@ class StageEditor extends funkin.states.MusicBeatState
 			currentFilePath = path;
 			hasUnsavedChanges = false;
 			unsavedDot.visible = false;
-			setStatus('Guardado en mod: $path');
+			setStatus('Saved in mod: $path');
 		}
 		catch (e:Dynamic)
 		{
-			setStatus('ERROR al guardar en mod: $e');
+			setStatus('ERROR saving in mod: $e');
 		}
 		#end
 	}
@@ -2342,11 +2342,11 @@ class StageEditor extends funkin.states.MusicBeatState
 					currentFilePath = _fileRef.name;
 					hasUnsavedChanges = false;
 					unsavedDot.visible = false;
-					setStatus('Stage cargado: ' + _fileRef.name);
+					setStatus('Stage loaded: ' + _fileRef.name);
 				}
 				catch (e:Dynamic)
 				{
-					setStatus('Error al parsear JSON: $e');
+					setStatus('Error parsing JSON: $e');
 				}
 			});
 			_fileRef.load();
@@ -2383,12 +2383,12 @@ class StageEditor extends funkin.states.MusicBeatState
 					if (bytes != null)
 					{
 						sys.io.File.saveBytes(destPath, bytes);
-						setStatus('Imagen copiada a: $destPath');
+						setStatus('Image copied to: $destPath');
 					}
 				}
 				catch (ex:Dynamic)
 				{
-					setStatus('Error copiando imagen: $ex');
+					setStatus('Error copying image: $ex');
 				}
 
 				// Set asset key (strip extension, use relative path for asset system)
@@ -2401,8 +2401,8 @@ class StageEditor extends funkin.states.MusicBeatState
 			});
 			_fileRef.load();
 		});
-		_fileRef.addEventListener(Event.CANCEL, function(_) { setStatus('Browse cancelado.'); });
-		_fileRef.addEventListener(IOErrorEvent.IO_ERROR, function(_) { setStatus('Error abriendo el explorador de archivos.'); });
+		_fileRef.addEventListener(Event.CANCEL, function(_) { setStatus('Browse cancelled.'); });
+		_fileRef.addEventListener(IOErrorEvent.IO_ERROR, function(_) { setStatus('Error opening file browser.'); });
 		_fileRef.browse([new openfl.net.FileFilter('Images/XML', '*.png;*.jpg;*.xml')]);
 		#end
 	}
@@ -2657,7 +2657,7 @@ class AddElementSubState extends flixel.FlxSubState
 		cancelBtn.cameras = [_camSub];
 		add(cancelBtn);
 
-		var hint = new FlxText(panX + 12, panY + H - 20, W - 24, 'ESC para cancelar', 9);
+		var hint = new FlxText(panX + 12, panY + H - 20, W - 24, 'ESC for cancel', 9);
 		hint.color = T.textDim;
 		hint.scrollFactor.set();
 		hint.cameras = [_camSub];

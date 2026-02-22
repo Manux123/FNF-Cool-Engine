@@ -62,6 +62,9 @@ class MusicBeatState extends FlxUIState
 	
 	override function destroy() {
 		controls.removeFlxInput(trackedinputs);
+		Paths.clearCache();
+		Paths.clearFlxBitmapCache();
+		try { openfl.utils.Assets.cache.clear(); } catch (_:Dynamic) {}
 		super.destroy();
 	}
 	#else
@@ -71,7 +74,13 @@ class MusicBeatState extends FlxUIState
 	#if !mobileC
 	override function destroy():Void
 	{
+		// Limpieza agresiva igual a la de Codename Engine:
+		// 1. LRU local de Paths (atlas + bitmaps propios del engine)
 		Paths.clearCache();
+		// 2. Caché de bitmaps de HaxeFlixel (FlxG.bitmap acumula entre estados)
+		Paths.clearFlxBitmapCache();
+		// 3. Caché interno de OpenFL/Lime (getBitmapData() tiene su propio pool)
+		try { openfl.utils.Assets.cache.clear(); } catch (_:Dynamic) {}
 		super.destroy();
 	}
 	#end

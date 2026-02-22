@@ -207,7 +207,7 @@ class ThemePickerSubState extends FlxSubState
 
 		// Hint
 		var hint = new FlxText(ox, oy + 4, PRESET_COL - 10,
-			'Haz clic para previsualizar.\nEdita colores en la columna\ncentral para un tema custom.', 8);
+			'Click to preview.\nEdit colors in the column\ncentral to a custom theme.', 8);
 		hint.color = T.textDim; hint.scrollFactor.set(); add(hint);
 	}
 
@@ -312,7 +312,7 @@ class ThemePickerSubState extends FlxSubState
 		cancelBtn.scrollFactor.set(); add(cancelBtn);
 
 		var hint = new FlxText(panX + 8, by, PRESET_COL - 8,
-			'Apply & Restart:\naplicar y reabrir\nel editor.', 8);
+			'Apply & Restart:\napply and restart\nthe editor.', 8);
 		hint.color = T.textDim; hint.scrollFactor.set(); add(hint);
 	}
 
@@ -340,7 +340,7 @@ class ThemePickerSubState extends FlxSubState
 		var pw = Std.int(W - PRESET_COL - COLOR_COL - 26);
 		_buildPreviewSwatches(ox, oy, pw);
 
-		_setStatus('Previewing: $name  —  clic en "Apply & Restart" para confirmar');
+		_setStatus('Previewing: $name  —  click "Apply & Restart" to confirm');
 	}
 
 	function _flushColorInputs():Void
@@ -390,7 +390,7 @@ class ThemePickerSubState extends FlxSubState
 		if (_nameInput != null && _nameInput.text.trim() != '')
 			_preview.name = _nameInput.text.trim();
 		EditorTheme.applyCustom(_preview);
-		_setStatus('Guardado "${_preview.name}". Reiniciando…');
+		_setStatus('Saved "${_preview.name}". Restarting…');
 		close();
 		// Restart the current editor state so all colors refresh
 		var curState = flixel.FlxG.state;
@@ -428,7 +428,7 @@ class ThemePickerSubState extends FlxSubState
 		if (_nameInput != null && _nameInput.text.trim() != '')
 			_preview.name = _nameInput.text.trim();
 		EditorTheme.applyCustom(_preview);
-		_setStatus('Tema "${_preview.name}" guardado. Cierra y vuelve a abrir el editor para verlo.');
+		_setStatus('Theme "${_preview.name}" saved. Close and reopen the editor to see it.');
 	}
 
 	function _setStatus(msg:String):Void { if (_statusTxt != null) _statusTxt.text = msg; }

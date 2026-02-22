@@ -125,13 +125,35 @@ class Main extends Sprite
 	{
 		stage.scaleMode = StageScaleMode.NO_SCALE;
 		stage.align     = StageAlign.TOP_LEFT;
-		stage.quality   = openfl.display.StageQuality.LOW; // mejor rendimiento
+		// LOW = sin antialiasing de líneas vectoriales → menos trabajo del rasterizador.
+		// Las notas y personajes usan texturas rasterizadas propias, no primitivas vectoriales.
+		stage.quality   = openfl.display.StageQuality.LOW;
 
-		// ── Configuración del GC (Haxe C++) ──────────────────────────────────
-		// Reducir la presión del GC durante el gameplay.
+		// ── GC tuning (Haxe/hxcpp) ───────────────────────────────────────────
+		// Objetivo: evitar pausas de GC durante el gameplay.
+		//
+		// setMinimumFreeSpace: cuánta RAM libre antes de que el GC haga major-GC.
+		//   Más espacio libre → el GC actúa menos frecuentemente → menos stutters.
+		//   Contrapartida: el proceso puede tener más RAM "reservada" entre GCs.
+		//
+		// setTargetHeapSize: reservar un heap fijo de ~192 MB de entrada.
+		//   Sin esto el GC hace un major-GC cada vez que el heap crece más allá
+		//   del objetivo, lo cual coincide con la carga de personajes/stage.
+		//
+		// threadPool: aumentar el pool de threads del GC concurrente para
+		//   mover trabajo de GC fuera del thread principal.
 		#if cpp
-		cpp.vm.Gc.setMinimumFreeSpace(4 * 1024 * 1024); // 4 MB antes de GC mayor
+		// 32 MB de espacio libre antes de que el GC haga un major-cycle.
+		// Codename Engine tiene objetos mas ligeros, asi que con 16 MB bastaba.
+		// Con el lazy spawning de notas ya eliminamos la mayor presion al GC,
+		// pero subir el threshold a 32 MB evita los picos durante carga de personajes.
+		cpp.vm.Gc.setMinimumFreeSpace(32 * 1024 * 1024);
+		cpp.vm.Gc.enable(true);
 		#end
+
+		// OpenFL uses hardware rendering automatically when available.
+		// No manual renderer override needed — forcing __renderer = null
+		// destroys the renderer entirely and causes a black screen.
 	}
 	
 	/**
@@ -263,14 +285,23 @@ class Main extends Sprite
 		framerate = 60;
 		#end
 		
-		// Apply FPS cap from saved settings
-		if (FlxG.save.data.FPSCap != null && FlxG.save.data.FPSCap)
+		// Aplicar FPS cap guardado (fpsTarget = Int, FPSCap = Bool legacy).
+		// Si fpsTarget existe lo usamos; si no, migramos el flag binario viejo.
+		if (FlxG.save.data.fpsTarget != null)
 		{
+			setMaxFps(Std.int(FlxG.save.data.fpsTarget));
+		}
+		else if (FlxG.save.data.FPSCap != null && FlxG.save.data.FPSCap)
+		{
+			// Migrar flag viejo: FPSCap=true era 120, false era 240
+			FlxG.save.data.fpsTarget = 120;
 			setMaxFps(120);
 		}
 		else
 		{
-			setMaxFps(240);
+			// Default 60 FPS (antes era 240, que consumia CPU sin beneficio visible)
+			FlxG.save.data.fpsTarget = 60;
+			setMaxFps(60);
 		}
 	}
 	

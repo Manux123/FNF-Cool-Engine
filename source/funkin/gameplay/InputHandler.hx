@@ -221,35 +221,23 @@ class InputHandler
 		}
 	}
 
+	/**
+	 * OBSOLETO — NoteManager.updateActiveNotes() ya gestiona los misses.
+	 *
+	 * Bug que tenía esta implementación:
+	 *   1. Race condition: ventana de 350ms hace que la nota ya esté fuera de
+	 *      pantalla cuando se marca tooLate → NoteManager la elimina via
+	 *      shouldRemoveNote() ANTES de que checkMisses() la vea. Miss nunca dispara.
+	 *   2. note.kill() sin notes.remove() ni renderer.recycleNote() → pool leak.
+	 *
+	 * Fix real: noteManager.onNoteMiss = onPlayerNoteMiss en PlayState.
+	 */
 	public function checkMisses(notes:FlxTypedGroup<Note>):Void
 	{
-		notes.forEachAlive(function(note:Note)
-		{
-			// Si la nota debe ser presionada, no ha sido golpeada y ya es tarde
-			if (note.mustPress && !note.wasGoodHit && note.tooLate)
-			{
-				trace('[InputHandler] ❌ MISS DETECTADO! noteData=${note.noteData}, tooLate=${note.tooLate}');
-				
-				// Evitamos que se procese de nuevo
-				note.tooLate = false;
-				note.canBeHit = false;
-
-				// Ejecutamos el callback de fallo (penalización)
-				if (onNoteMiss != null)
-				{
-					trace('[InputHandler] Llamando onNoteMiss para noteData=${note.noteData}');
-					onNoteMiss(note);
-				}
-				else
-				{
-					trace('[InputHandler] ERROR: onNoteMiss es NULL!');
-				}
-
-				// Opcional: eliminar la nota para optimizar
-				note.kill();
-			}
-		});
+		// No-op: NoteManager.updateActiveNotes() detecta tooLate y llama
+		// missNote() → onNoteMiss (PlayState.onPlayerNoteMiss) en el mismo frame.
 	}
+
 
 	/**
 	 * Procesar sustain notes (hold)

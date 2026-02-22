@@ -36,6 +36,7 @@ using StringTools;
  *
  * CORRECCIÓN: Ahora extiende FlxSprite y usa FlxAnimate como instancia interna.
  */
+
 class FunkinSprite extends FlxSprite
 {
 	// ─── Estado ────────────────────────────────────────────────
@@ -394,23 +395,43 @@ class FunkinSprite extends FlxSprite
 
 		if (isAnimateAtlas && _animateSprite != null)
 		{
-			// Sincronizar posición del FlxAnimate con el contenedor
-			_animateSprite.x = this.x;
-			_animateSprite.y = this.y;
+			_syncToAnimate();
 			_animateSprite.update(elapsed);
 		}
+	}
+
+	/**
+	 * Sincroniza TODAS las propiedades visuales relevantes al _animateSprite.
+	 * Antes solo se sincronizaban x/y → alpha, scale, angle, cameras, etc.
+	 * quedaban desincronizados causando bugs visuales (fades, zoom, rotaciones).
+	 */
+	private function _syncToAnimate():Void
+	{
+		_animateSprite.x            = this.x;
+		_animateSprite.y            = this.y;
+		_animateSprite.alpha        = this.alpha;
+		_animateSprite.angle        = this.angle;
+		_animateSprite.scale.x      = this.scale.x;
+		_animateSprite.scale.y      = this.scale.y;
+		_animateSprite.flipX        = this.flipX;
+		_animateSprite.flipY        = this.flipY;
+		_animateSprite.visible      = this.visible;
+		_animateSprite.scrollFactor.x = this.scrollFactor.x;
+		_animateSprite.scrollFactor.y = this.scrollFactor.y;
+		_animateSprite.cameras      = this.cameras;
 	}
 
 	override public function draw():Void
 	{
 		if (isAnimateAtlas && _animateSprite != null)
 		{
-			// Dibujar el FlxAnimate en lugar del sprite base
+			// Re-sync antes del draw para capturar cambios hechos fuera de update()
+			// (ej. tweens que modifican alpha/scale directamente en el frame)
+			_syncToAnimate();
 			_animateSprite.draw();
 		}
 		else
 		{
-			// Dibujar el sprite normal
 			super.draw();
 		}
 	}

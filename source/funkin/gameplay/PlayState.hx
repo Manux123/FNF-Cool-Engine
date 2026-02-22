@@ -329,6 +329,10 @@ class PlayState extends funkin.states.MusicBeatState
 		optimizationManager = new OptimizationManager();
 		optimizationManager.init();
 
+		// Configurar pipeline de renderizado para GPU
+		funkin.optimization.RenderOptimizer.init();
+		funkin.optimization.RenderOptimizer.optimizeCameras(camGame, camHUD);
+
 		// Pre-cargar sprites de countdown ANTES de iniciar el timer
 		// (evita el lag del primer frame donde loadGraphic parsea la imagen)
 		_preloadCountdown();
@@ -627,6 +631,7 @@ class PlayState extends funkin.states.MusicBeatState
 		noteManager.middlescroll = FlxG.save.data.middlescroll;
 		noteManager.onCPUNoteHit = onCPUNoteHit;
 		noteManager.onNoteHit = onNoteHitCallback; // NUEVO: Callback para gestionar splashes
+		noteManager.onNoteMiss = onPlayerNoteMiss; // FIX: sin esto missNote() llama a null y la penalización nunca se aplica
 	}
 
 	/**
@@ -740,6 +745,10 @@ class PlayState extends funkin.states.MusicBeatState
 		vocals.volume = 0;
 		vocals.pause();
 		FlxG.sound.list.add(vocals);
+
+		// Limpiar NotePool antes de regenerar (evita acumulación en retry)
+		// Codename Engine siempre resetea el pool al generar notas nuevas.
+		NotePool.clear();
 
 		// Generar notas
 
@@ -855,15 +864,6 @@ class PlayState extends funkin.states.MusicBeatState
 
 				// Resetear startFromTime inmediatamente
 				startFromTime = null;
-
-				// ✨ LIMPIAR NOTAS ANTIGUAS antes de empezar (marcarlas como ya golpeadas)
-				// ✨ NUEVO: Limpieza profunda de notas (internas y activas)
-
-				if (noteManager != null)
-				{
-					// 1. Limpiar las notas que aún no han "nacido" (unspawnNotes) en el manager
-					noteManager.clearNotesBefore(targetTime);
-				}
 
 				// 2. Limpiar cualquier nota que ya esté en el grupo activo por error
 				notes.forEachAlive(function(note:Note)
@@ -1153,8 +1153,9 @@ class PlayState extends funkin.states.MusicBeatState
 						group.update();
 				}
 
-				if (inputHandler != null && noteManager != null)
-					inputHandler.checkMisses(notes);
+				// checkMisses() eliminado: NoteManager.updateActiveNotes() ya detecta tooLate
+				// y llama missNote() en el mismo frame — hacer checkMisses() después
+				// causaba que las notas ya hubieran sido removidas (race condition).
 			}
 
 			// Update UI
@@ -2295,6 +2296,8 @@ class PlayState extends funkin.states.MusicBeatState
 			optimizationManager = null;
 		}
 
+		funkin.optimization.RenderOptimizer.forceGC();
+
 		// ── 7. Controllers
 		if (cameraController != null)
 		{
@@ -2370,10 +2373,16 @@ class PlayState extends funkin.states.MusicBeatState
 		// Limpiar caché de assets: todos los sprites ya están destruidos (arriba).
 		Paths.forceClearCache();
 		Paths.clearFlxBitmapCache();
+		// openfl.utils.Assets.cache es un tercer cache independiente de FlxG.bitmap
+		// y del LRU de Paths. Sin esto, texturas de personajes y stage se quedan
+		// en RAM hasta la siguiente cancion. Codename no lo tiene porque usa assets
+		// distintos, pero el efecto es el mismo.
+		try { openfl.utils.Assets.cache.clear(); } catch (_:Dynamic) {}
 
 		// Forzar GC con todo ya limpiado
 		#if cpp
 		cpp.vm.Gc.run(true);
+		cpp.vm.Gc.compact();
 		#end
 	}
 

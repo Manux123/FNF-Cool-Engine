@@ -40,8 +40,11 @@ class NoteRenderer
     private var splashPool:Array<NoteSplash> = [];
     private var maxSplashPoolSize:Int = 32;
     
-    // NUEVO: Tracking de hold notes activas para splashes continuos
+    // Tracking de hold notes activas para splashes continuos
     private var activeHoldSplashes:Map<Note, NoteSplash> = new Map();
+    // Buffer reutilizable para updateHoldSplashes — cero allocs por frame.
+    // Antes: var notesToRemove:Array<Note> = [] dentro del metodo → ~60 new() por seg
+    private var _holdSplashRemoveBuffer:Array<Note> = [];
     
     // Stats de pooling
     public var pooledNotes:Int = 0;
@@ -240,17 +243,16 @@ class NoteRenderer
     public function updateHoldSplashes():Void
     {
         // Limpiar splashes de notas que ya no existen
-        var notesToRemove:Array<Note> = [];
+        // Reutilizar buffer preallocado en vez de new Array cada frame
+        _holdSplashRemoveBuffer.resize(0);
         
         for (note in activeHoldSplashes.keys())
         {
             if (!note.exists || note.wasGoodHit || !note.alive)
-            {
-                notesToRemove.push(note);
-            }
+                _holdSplashRemoveBuffer.push(note);
         }
         
-        for (note in notesToRemove)
+        for (note in _holdSplashRemoveBuffer)
         {
             var splash = activeHoldSplashes.get(note);
             if (splash != null)

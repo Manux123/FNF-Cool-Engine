@@ -4,6 +4,7 @@ import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.system.FlxAssets.FlxShader;
 import haxe.Exception;
+import mods.ModManager;
 import openfl.display.ShaderParameter;
 import sys.FileSystem;
 import sys.io.File;
@@ -20,52 +21,80 @@ class ShaderManager
 	public static var shaderPaths:Map<String, String> = new Map();
 	
 	/**
-	 * Inicializar el sistema de shaders
+	 * Inicializar el sistema de shaders.
+	 * Registra un callback en ModManager para re-escanear cuando cambie el mod activo.
 	 */
 	public static function init():Void
 	{
 		trace('[ShaderManager] Inicializando sistema de shaders...');
 		scanShaders();
+
+		// Re-escanear shaders cada vez que se activa/desactiva un mod
+		final prevCallback = ModManager.onModChanged;
+		ModManager.onModChanged = function(modId:String)
+		{
+			if (prevCallback != null) prevCallback(modId);
+			trace('[ShaderManager] Mod cambiado a "$modId", re-escaneando shaders...');
+			reloadAllShaders();
+		};
 	}
 	
 	/**
-	 * Escanear la carpeta de shaders y cargar todos los .frag
+	 * Escanea la carpeta base de shaders y, después, las carpetas `shaders/`
+	 * de todos los mods habilitados (en orden de prioridad, de menor a mayor).
+	 * Los shaders de mods sobreescriben a los base si tienen el mismo nombre.
 	 */
 	public static function scanShaders():Void
 	{
-		var shadersPath = 'assets/shaders';
-		
-		if (!FileSystem.exists(shadersPath) || !FileSystem.isDirectory(shadersPath))
+		shaderPaths.clear();
+
+		// ── 1. Shaders base ───────────────────────────────────────────────────
+		_scanFolder('assets/shaders', null);
+
+		// ── 2. Shaders de mods (prioridad: mayor priority = se registra último = gana) ──
+		#if sys
+		final mods = ModManager.installedMods.copy();
+		// installedMods ya viene ordenado priority DESC; invertimos para que el
+		// de mayor prioridad sobreescriba al de menor prioridad.
+		mods.reverse();
+		for (mod in mods)
 		{
-			trace('[ShaderManager] Carpeta assets/shaders no encontrada. Creando...');
-			try
+			if (!ModManager.isEnabled(mod.id)) continue;
+			final modShadersPath = '${ModManager.MODS_FOLDER}/${mod.id}/shaders';
+			_scanFolder(modShadersPath, mod.id);
+		}
+		#end
+	}
+
+	/**
+	 * Escanea una carpeta de shaders y registra los .frag encontrados.
+	 * @param folderPath  Ruta de la carpeta a escanear
+	 * @param modId       ID del mod al que pertenece, o null si es base
+	 */
+	private static function _scanFolder(folderPath:String, modId:Null<String>):Void
+	{
+		#if sys
+		if (!FileSystem.exists(folderPath) || !FileSystem.isDirectory(folderPath))
+		{
+			if (modId == null) // Solo crear la carpeta base, no las de mods
 			{
-				FileSystem.createDirectory(shadersPath);
-				trace('[ShaderManager] Carpeta creada: $shadersPath');
-			}
-			catch (e:Exception)
-			{
-				trace('[ShaderManager] Error al crear carpeta: ${e.message}');
+				trace('[ShaderManager] Carpeta $folderPath no encontrada. Creando...');
+				try { FileSystem.createDirectory(folderPath); }
+				catch (e:Exception) { trace('[ShaderManager] Error al crear carpeta: ${e.message}'); }
 			}
 			return;
 		}
-		
-		var count = 0;
-		
-		for (file in FileSystem.readDirectory(shadersPath))
+
+		final prefix = modId != null ? '[$modId] ' : '[base] ';
+		for (file in FileSystem.readDirectory(folderPath))
 		{
-			if (file.endsWith('.frag'))
-			{
-				var shaderName = file.substr(0, file.length - 5); // Remover .frag
-				var fullPath = '$shadersPath/$file';
-				
-				shaderPaths.set(shaderName, fullPath);
-				trace('[ShaderManager] Shader registrado: $shaderName');
-				count++;
-			}
+			if (!file.endsWith('.frag')) continue;
+			final shaderName = file.substr(0, file.length - 5);
+			final fullPath   = '$folderPath/$file';
+			shaderPaths.set(shaderName, fullPath);
+			trace('[ShaderManager] Shader registrado ${prefix}$shaderName');
 		}
-		
-		trace('[ShaderManager] $count shaders encontrados');
+		#end
 	}
 	
 	/**
@@ -108,7 +137,7 @@ class ShaderManager
 			// Guardar en el mapa
 			shaders.set(shaderName, shader);
 			
-			trace('[ShaderManager] Shader "$shaderName" cargado exitosamente');
+			trace('[ShaderManager] Shader "$shaderName" cargado desde: $path');
 			return shader;
 		}
 		catch (e:Exception)
@@ -213,6 +242,7 @@ class ShaderManager
 		trace('[ShaderManager] Recargando todos los shaders...');
 		shaders.clear();
 		scanShaders();
+		trace('[ShaderManager] ${Lambda.count(shaderPaths)} shaders disponibles tras recarga');
 	}
 	
 	/**

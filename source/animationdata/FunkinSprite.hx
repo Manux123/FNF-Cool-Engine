@@ -237,6 +237,15 @@ class FunkinSprite extends FlxSprite
 			if (framesTxt != null) this.frames = framesTxt;
 		}
 
+		// Guard: si no se encontraron frames, usar placeholder invisible
+		// para evitar null object reference en FlxDrawQuadsItem::render
+		if (!isAnimateAtlas && this.frames == null)
+		{
+			trace('[FunkinSprite] WARNING: No graphics found for "" — using invisible placeholder');
+			makeGraphic(1, 1, 0x00000000);
+			visible = false;
+		}
+
 		return this;
 	}
 
@@ -422,11 +431,48 @@ class FunkinSprite extends FlxSprite
 	 */
 	static function resolveAtlasFolder(key:String):Null<String>
 	{
+		// key is typically 'characters/images/NAME' or 'stages/STAGE/images/NAME'
+		final charPrefix  = 'characters/images/';
+		final stagePrefix = 'stages/';
+
+		final isCharKey  = key.startsWith(charPrefix);
+		final charName   = isCharKey ? key.substr(charPrefix.length) : null;
+
 		var candidates = [
 			'assets/$key',
 			'assets/${key}-atlas',
-			key,          // path absoluto
+			key, // absolute path fallback
 		];
+
+		if (mods.ModManager.activeMod != null)
+		{
+			final base = '${mods.ModManager.MODS_FOLDER}/${mods.ModManager.activeMod}';
+
+			if (isCharKey)
+			{
+				// Cool Engine layout: mods/mod/characters/images/NAME
+				candidates.unshift('$base/characters/images/$charName');
+				// Psych Engine layout: mods/mod/images/characters/NAME
+				candidates.unshift('$base/images/characters/$charName');
+			}
+			else if (key.startsWith(stagePrefix))
+			{
+				// For stage atlas keys like 'stages/STAGE/images/NAME',
+				// extract the image name after the last /images/ segment
+				final imgIdx = key.lastIndexOf('/images/');
+				final imgName = imgIdx >= 0 ? key.substr(imgIdx + 8) : key;
+				// Cool Engine layout: mods/mod/stages/STAGE/images/NAME
+				candidates.unshift('$base/$key');
+				// Psych Engine layout: mods/mod/images/stages/NAME
+				candidates.unshift('$base/images/stages/$imgName');
+				candidates.unshift('$base/images/$imgName');
+			}
+			else
+			{
+				// Generic mod path attempt
+				candidates.unshift('$base/$key');
+			}
+		}
 
 		for (folder in candidates)
 		{

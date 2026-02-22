@@ -300,14 +300,24 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 
 	function loadSongsData():Void
 	{
-		var file:String = Assets.getText(Paths.jsonSong('songList'));
+		var songListPath:String = Paths.jsonSong('songList');
+		var file:String = null;
+		#if sys
+		if (sys.FileSystem.exists(songListPath))
+			file = sys.io.File.getContent(songListPath);
+		#end
+		if (file == null)
+		{
+			try { file = lime.utils.Assets.getText(songListPath); } catch (_:Dynamic) {}
+		}
 		try
 		{
-			songInfo = cast Json.parse(file);
+			if (file != null && file.trim() != '')
+				songInfo = cast haxe.Json.parse(file);
 		}
 		catch (e:Dynamic)
 		{
-			trace("Error loading song data for " + file + ": " + e);
+			trace("Error loading song data for " + songListPath + ": " + e);
 			songInfo = null;
 		}
 	}

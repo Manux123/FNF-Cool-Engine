@@ -348,7 +348,7 @@ class NoteSplash extends FlxSprite
 	function loadDefaultSplash(noteData:Int, ?type:SplashType = NORMAL):Void
 	{
 		// Cargar splash por defecto de FNF
-		frames = Paths.getSparrowAtlas('splashes/Default/noteSplashes_clasic');
+		frames = Paths.getSparrowAtlas('splashes/Default/noteSplashes');
 
 		antialiasing = true;
 

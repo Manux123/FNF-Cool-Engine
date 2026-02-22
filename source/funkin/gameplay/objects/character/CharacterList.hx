@@ -6,6 +6,8 @@ import lime.utils.Assets;
 import sys.FileSystem;
 import sys.io.File;
 #end
+import mods.compat.ModFormat.ModFormatDetector;
+import mods.compat.ModFormat;
 
 using StringTools;
 
@@ -56,44 +58,64 @@ class CharacterList
     }
     
     /**
-     * Detecta todos los personajes en assets/characters/
+     * Detecta todos los personajes en assets/characters/ y en el mod activo
      */
     private static function discoverCharacters():Void
     {
-        var charactersPath:String = Paths.resolve("characters");
-        
+        // Rutas a escanear: primero base, luego todas las posibles del mod activo
+        var charPaths:Array<String> = [Paths.resolve("characters")];
+
         #if sys
-        // En desktop, leer directamente del filesystem
-        if (FileSystem.exists(charactersPath) && FileSystem.isDirectory(charactersPath))
+        final activeMod = mods.ModManager.activeMod;
+        if (activeMod != null)
         {
+            final modBase = '${mods.ModManager.MODS_FOLDER}/$activeMod';
+            // Psych / Cool layout
+            charPaths.push('$modBase/characters');
+            // Codename layout
+            charPaths.push('$modBase/data/characters');
+        }
+
+        for (charactersPath in charPaths)
+        {
+            if (!FileSystem.exists(charactersPath) || !FileSystem.isDirectory(charactersPath))
+                continue;
+
             for (file in FileSystem.readDirectory(charactersPath))
             {
-                if (file.endsWith(".json"))
+                if (!file.endsWith(".json")) continue;
+                var charName:String = file.replace(".json", "");
+                // Don't add duplicates already found in a previous path
+                if (characterNames.exists(charName)) continue;
+
+                var fullPath:String = '$charactersPath/$file';
+                try
                 {
-                    var charName:String = file.replace(".json", "");
-                    var fullPath:String = '$charactersPath/$file';
-                    
-                    try
-                    {
-                        var jsonContent:String = File.getContent(fullPath);
-                        var charData:Dynamic = Json.parse(jsonContent);
-                        
-                        // Determinar tipo de personaje
-                        addCharacterToList(charName, charData);
-                        
-                        // Guardar nombre legible si existe
-                        if (charData.name != null)
-                            characterNames.set(charName, charData.name);
-                        else
-                            characterNames.set(charName, formatName(charName));
-                    }
-                    catch (e:Dynamic)
-                    {
-                        trace('Error loading character $charName: $e');
-                        // Agregar de todas formas con nombre formateado
+                    var jsonContent:String = File.getContent(fullPath);
+                    var charData:Dynamic = Json.parse(jsonContent);
+
+                    // Detect format and convert if needed so we can read the type field
+                    var normalised:Dynamic = charData;
+                    try {
+                        final fmt = ModFormatDetector.detectFromCharJson(jsonContent);
+                        if (fmt == ModFormat.PSYCH_ENGINE)
+                            normalised = mods.compat.PsychConverter.convertCharacter(jsonContent, charName);
+                    } catch (_:Dynamic) {}
+
+                    addCharacterToList(charName, normalised);
+
+                    if (normalised.name != null)
+                        characterNames.set(charName, normalised.name);
+                    else if (charData.name != null)
+                        characterNames.set(charName, charData.name);
+                    else
                         characterNames.set(charName, formatName(charName));
-                        addCharacterToListByName(charName);
-                    }
+                }
+                catch (e:Dynamic)
+                {
+                    trace('Error loading character $charName: $e');
+                    characterNames.set(charName, formatName(charName));
+                    addCharacterToListByName(charName);
                 }
             }
         }
@@ -105,14 +127,15 @@ class CharacterList
             if (asset.contains("characters/") && asset.endsWith(".json"))
             {
                 var charName:String = asset.split("/").pop().replace(".json", "");
-                
+                if (characterNames.exists(charName)) continue;
+
                 try
                 {
                     var jsonContent:String = Assets.getText(asset);
                     var charData:Dynamic = Json.parse(jsonContent);
-                    
+
                     addCharacterToList(charName, charData);
-                    
+
                     if (charData.name != null)
                         characterNames.set(charName, charData.name);
                     else
@@ -130,42 +153,50 @@ class CharacterList
     }
     
     /**
-     * Detecta todos los stages en assets/stages/
+     * Detecta todos los stages en assets/stages/ y en el mod activo
      */
     private static function discoverStages():Void
     {
-        var stagesPath:String = Paths.resolve("stages");
-        
+        var stagePaths:Array<String> = [Paths.resolve("stages")];
+
         #if sys
-        // En desktop, leer directamente del filesystem
-        if (FileSystem.exists(stagesPath) && FileSystem.isDirectory(stagesPath))
+        final activeMod = mods.ModManager.activeMod;
+        if (activeMod != null)
         {
+            final modBase = '${mods.ModManager.MODS_FOLDER}/$activeMod';
+            stagePaths.push('$modBase/stages');
+            stagePaths.push('$modBase/data/stages');
+        }
+
+        for (stagesPath in stagePaths)
+        {
+            if (!FileSystem.exists(stagesPath) || !FileSystem.isDirectory(stagesPath))
+                continue;
+
             for (file in FileSystem.readDirectory(stagesPath))
             {
-                if (file.endsWith(".json"))
+                if (!file.endsWith(".json")) continue;
+                var stageName:String = file.replace(".json", "");
+                if (stages.contains(stageName)) continue;
+
+                var fullPath:String = '$stagesPath/$file';
+                try
                 {
-                    var stageName:String = file.replace(".json", "");
-                    var fullPath:String = '$stagesPath/$file';
-                    
-                    try
-                    {
-                        var jsonContent:String = File.getContent(fullPath);
-                        var stageData:Dynamic = Json.parse(jsonContent);
-                        
-                        stages.push(stageName);
-                        
-                        // Guardar nombre legible si existe
-                        if (stageData.name != null)
-                            stageNames.set(stageName, stageData.name);
-                        else
-                            stageNames.set(stageName, formatName(stageName));
-                    }
-                    catch (e:Dynamic)
-                    {
-                        trace('Error loading stage $stageName: $e');
-                        stages.push(stageName);
+                    var jsonContent:String = File.getContent(fullPath);
+                    var stageData:Dynamic = Json.parse(jsonContent);
+
+                    stages.push(stageName);
+
+                    if (stageData.name != null)
+                        stageNames.set(stageName, stageData.name);
+                    else
                         stageNames.set(stageName, formatName(stageName));
-                    }
+                }
+                catch (e:Dynamic)
+                {
+                    trace('Error loading stage $stageName: $e');
+                    stages.push(stageName);
+                    stageNames.set(stageName, formatName(stageName));
                 }
             }
         }
@@ -177,14 +208,15 @@ class CharacterList
             if (asset.contains("stages/") && asset.endsWith(".json"))
             {
                 var stageName:String = asset.split("/").pop().replace(".json", "");
-                
+                if (stages.contains(stageName)) continue;
+
                 try
                 {
                     var jsonContent:String = Assets.getText(asset);
                     var stageData:Dynamic = Json.parse(jsonContent);
-                    
+
                     stages.push(stageName);
-                    
+
                     if (stageData.name != null)
                         stageNames.set(stageName, stageData.name);
                     else
@@ -199,7 +231,7 @@ class CharacterList
             }
         }
         #end
-        
+
         // Si no se encontraron stages, usar detección por nombre de archivo
         if (stages.length == 0)
         {

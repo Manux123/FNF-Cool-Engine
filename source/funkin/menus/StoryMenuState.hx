@@ -359,17 +359,59 @@ class StoryMenuState extends funkin.states.MusicBeatState
 	// === FUNCIÓN PARA CARGAR DATOS DESDE EL MISMO JSON QUE FREEPLAY ===
 	function loadSongsData():Void
 	{
+		// ── Leer el songList: del mod activo primero, luego el base ──────────
+		var songListPath:String = Paths.jsonSong('songList');
+		var file:String = null;
+		#if sys
+		if (sys.FileSystem.exists(songListPath))
+			file = sys.io.File.getContent(songListPath);
+		#end
+		if (file == null)
+		{
+			try { file = lime.utils.Assets.getText(songListPath); } catch (_:Dynamic) {}
+		}
+
 		try
 		{
-			var file:String = Assets.getText(Paths.jsonSong('songList'));
-			songInfo = cast Json.parse(file);
-			trace("Songs data loaded successfully from songList.json");
+			if (file != null && file.trim() != '')
+			{
+				songInfo = cast haxe.Json.parse(file);
+				trace("Songs data loaded successfully from songList.json");
+			}
 		}
 		catch (e:Dynamic)
 		{
 			trace("Error loading songs data: " + e);
 			songInfo = null;
 		}
+
+		// ── Semanas de mod activo según formato ───────────────────────────
+		#if sys
+		if (mods.ModManager.isActive())
+		{
+			final fmt = mods.compat.ModCompatLayer.getActiveModFormat();
+
+			if (fmt == mods.compat.ModFormat.PSYCH_ENGINE)
+			{
+				if (songInfo == null) songInfo = { songsWeeks: [] };
+				for (modWeek in mods.compat.ModCompatLayer.getModSongsInfo())
+				{
+					var hasStory:Bool = false;
+					var showArr:Dynamic = Reflect.field(modWeek, 'showInStoryMode');
+					if (showArr != null && Std.isOfType(showArr, Array))
+					{
+						for (v in (cast showArr : Array<Dynamic>))
+							if (v == true) { hasStory = true; break; }
+					}
+					else hasStory = true;
+
+					if (hasStory)
+						songInfo.songsWeeks.push(cast modWeek);
+				}
+				trace('[StoryMenuState] Mod Psych activo "${mods.ModManager.activeMod}" — semanas inyectadas: ${songInfo.songsWeeks.length}');
+			}
+		}
+		#end
 	}
 
 	// === CONSTRUIR SEMANAS DESDE JSON ===

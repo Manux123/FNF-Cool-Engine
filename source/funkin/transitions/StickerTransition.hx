@@ -80,14 +80,34 @@ class StickerTransition
 				{
 					try
 					{
-						var graphic = FlxGraphic.fromBitmapData(openfl.Assets.getBitmapData(Paths.image(stickerPath)));
-						graphic.persist = true;
-						graphicsCache.set(cacheKey, graphic);
-						loadedCount++;
+						// En native cpp, openfl.Assets.getBitmapData() solo funciona con
+						// assets embebidos, no con rutas de filesystem de mods — de ahí
+						// el crash en lime build (FlxImageFrame::findFrame con bitmap null).
+						// Solución: usar BitmapData.fromFile() en targets sys.
+						var resolvedPath = Paths.image(stickerPath);
+						var bitmapData:openfl.display.BitmapData = null;
+						#if sys
+						if (sys.FileSystem.exists(resolvedPath))
+							bitmapData = openfl.display.BitmapData.fromFile(resolvedPath);
+						#else
+						bitmapData = openfl.Assets.getBitmapData(resolvedPath);
+						#end
+						if (bitmapData == null)
+						{
+							trace('[StickerTransition] ❌ BitmapData null (asset no existe): $stickerPath');
+							failedCount++;
+						}
+						else
+						{
+							var graphic = FlxGraphic.fromBitmapData(bitmapData);
+							graphic.persist = true;
+							graphicsCache.set(cacheKey, graphic);
+							loadedCount++;
+						}
 					}
 					catch (e:Dynamic)
 					{
-						trace('[StickerTransition] ❌ Failed to cache: $stickerPath');
+						trace('[StickerTransition] ❌ Failed to cache: $stickerPath ($e)');
 						failedCount++;
 					}
 				}
@@ -309,6 +329,13 @@ class StickerTransition
 		if (graphic == null)
 		{
 			trace('[StickerTransition] ⚠️ Graphic not in cache: $cacheKey');
+			return null;
+		}
+		// Segunda defensa: bitmap puede ser null si el asset no existía al cachear
+		if (graphic.bitmap == null)
+		{
+			trace('[StickerTransition] ⚠️ Graphic bitmap=null, descartando: $cacheKey');
+			graphicsCache.remove(cacheKey);
 			return null;
 		}
 

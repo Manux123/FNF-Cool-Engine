@@ -69,6 +69,17 @@ class ScriptHandler
 
 	public static function loadGlobalScripts():Void
 	{
+		// Mod activo primero, luego assets base
+		#if sys
+		if (mods.ModManager.isActive())
+		{
+			final modRoot = mods.ModManager.modRoot();
+			loadScriptsFromFolder('$modRoot/data/scripts/global', 'global');
+			loadScriptsFromFolder('$modRoot/data/scripts/events', 'global');
+			loadScriptsFromFolder('$modRoot/scripts/global',      'global');
+			loadScriptsFromFolder('$modRoot/scripts/events',      'global');
+		}
+		#end
 		loadScriptsFromFolder('assets/data/scripts/global', 'global');
 		loadScriptsFromFolder('assets/data/scripts/events', 'global');
 		trace('[ScriptHandler] Scripts globales cargados.');
@@ -81,7 +92,16 @@ class ScriptHandler
 	 * Tipos válidos: `"global"`, `"stage"`, `"song"`, `"ui"`.
 	 * Devuelve `null` si el archivo no existe o hay un error de parse.
 	 */
-	public static function loadScript(scriptPath:String, scriptType:String = 'song'):HScriptInstance
+	/**
+	 * Loads and executes a script file.
+	 * Supports .hx / .hscript natively, and .lua via LuaStageConverter transpilation.
+	 *
+	 * @param presetVars  Optional vars injected BEFORE execute() so top-level Lua code sees them.
+	 * @param stage       Optional Stage reference — enables the Psych Lua API shim.
+	 */
+	public static function loadScript(scriptPath:String, scriptType:String = 'song',
+		?presetVars:Map<String, Dynamic>,
+		?stage:funkin.gameplay.objects.stages.Stage):HScriptInstance
 	{
 		#if HSCRIPT_ALLOWED
 		if (!FileSystem.exists(scriptPath))
@@ -90,16 +110,35 @@ class ScriptHandler
 			return null;
 		}
 
+		final isLua      = scriptPath.endsWith('.lua');
+		final rawContent = File.getContent(scriptPath);
+
+		// Transpile Lua -> HScript if needed
+		final content = isLua
+			? mods.compat.LuaStageConverter.convert(rawContent, extractName(scriptPath))
+			: rawContent;
+
+		if (isLua)
+			trace('[ScriptHandler] Transpiling Lua stage script: $scriptPath');
+
 		final scriptName = extractName(scriptPath);
-		final content = File.getContent(scriptPath);
-		final script = new HScriptInstance(scriptName, scriptPath);
+		final script     = new HScriptInstance(scriptName, scriptPath);
 
 		try
 		{
 			script.program = parser.parseString(content, scriptPath);
-			script.interp = new Interp();
+			script.interp  = new Interp();
 
 			ScriptAPI.expose(script.interp);
+
+			// Inject preset variables BEFORE execute() so top-level code sees them
+			if (presetVars != null)
+				for (k => v in presetVars)
+					script.interp.variables.set(k, v);
+
+			// For Lua stage scripts, inject the full Psych Lua API shim
+			if (isLua && stage != null)
+				mods.compat.PsychLuaStageAPI.expose(script.interp, stage);
 
 			script.interp.execute(script.program);
 			script.call('onCreate');
@@ -107,12 +146,14 @@ class ScriptHandler
 
 			registerScript(script, scriptType);
 
-			trace('[ScriptHandler] Cargado [$scriptType]: $scriptName');
+			trace('[ScriptHandler] Cargado [$scriptType]: $scriptName' + (isLua ? ' (from Lua)' : ''));
 			return script;
 		}
 		catch (e:Dynamic)
 		{
 			trace('[ScriptHandler] Error parseando "$scriptName": ' + Std.string(e));
+			if (isLua)
+				trace('[ScriptHandler] Transpiled code:\n$content');
 			return null;
 		}
 		#else
@@ -131,7 +172,9 @@ class ScriptHandler
 
 		for (file in FileSystem.readDirectory(folderPath))
 		{
-			if (!file.endsWith('.hx') && !file.endsWith('.hscript'))
+			// Accept .hx, .hscript (native) and .lua (transpiled Psych stage scripts)
+			final isScript = file.endsWith('.hx') || file.endsWith('.hscript') || file.endsWith('.lua');
+			if (!isScript)
 				continue;
 			final script = loadScript('$folderPath/$file', scriptType);
 			if (script != null)
@@ -158,16 +201,61 @@ class ScriptHandler
 	public static function loadSongScripts(songName:String):Void
 	{
 		clearSongScripts();
+
+		// Resolver carpeta real de la canción (cubre espacios vs guiones en mods)
+		#if sys
+		final resolvedFolder = _resolveSongFolder(songName);
+		loadScriptsFromFolder('$resolvedFolder/scripts', 'song');
+		loadScriptsFromFolder('$resolvedFolder/events',  'song');
+		#else
 		final base = 'assets/songs/${songName.toLowerCase()}';
 		loadScriptsFromFolder('$base/scripts', 'song');
 		loadScriptsFromFolder('$base/events', 'song');
+		#end
+
 		trace('[ScriptHandler] Scripts de "$songName" cargados.');
+	}
+
+	/** Resuelve la carpeta real de una canción (mismo algoritmo que Paths._resolveSongFolder). */
+	static function _resolveSongFolder(song:String):String
+	{
+		#if sys
+		final s = song.toLowerCase();
+		final variants:Array<String> = [];
+		function addV(v:String) { v = v.trim(); if (v != '' && variants.indexOf(v) == -1) variants.push(v); }
+		addV(s); addV(s.replace(' ', '-')); addV(s.replace('-', ' '));
+		addV(s.replace('!', '')); addV(s.replace(' ', '-').replace('!', '')); addV(s.replace('-', ' ').replace('!', ''));
+
+		if (mods.ModManager.isActive())
+		{
+			final modRoot = mods.ModManager.modRoot();
+			for (v in variants)
+				for (base in ['$modRoot/songs', '$modRoot/assets/songs'])
+					if (sys.FileSystem.isDirectory('$base/$v'))
+						return '$base/$v';
+		}
+		for (v in variants)
+			if (sys.FileSystem.isDirectory('assets/songs/$v'))
+				return 'assets/songs/$v';
+		return 'assets/songs/$s';
+		#else
+		return 'assets/songs/${song.toLowerCase()}';
+		#end
 	}
 
 	/** Carga scripts para el stage `stageName`. */
 	public static function loadStageScripts(stageName:String):Void
 	{
 		clearStageScripts();
+		#if sys
+		if (mods.ModManager.isActive())
+		{
+			final modRoot = mods.ModManager.modRoot();
+			final sn = stageName.toLowerCase();
+			loadScriptsFromFolder('$modRoot/stages/$sn/scripts', 'stage');
+			loadScriptsFromFolder('$modRoot/assets/stages/$sn/scripts', 'stage');
+		}
+		#end
 		loadScriptsFromFolder('assets/stages/${stageName.toLowerCase()}/scripts', 'stage');
 		trace('[ScriptHandler] Scripts de stage "$stageName" cargados.');
 	}
@@ -221,6 +309,36 @@ class ScriptHandler
 			s.set(varName, value);
 		for (s in songScripts)
 			s.set(varName, value);
+	}
+
+	/**
+	 * Obtiene el valor de una variable de los scripts activos.
+	 * Busca en orden: song -> stage -> global. Devuelve null si no existe.
+	 */
+	public static function getFromScripts(varName:String):Dynamic
+	{
+		for (s in songScripts)
+		{
+			#if HSCRIPT_ALLOWED
+			if (s.interp != null && s.interp.variables.exists(varName))
+				return s.interp.variables.get(varName);
+			#end
+		}
+		for (s in stageScripts)
+		{
+			#if HSCRIPT_ALLOWED
+			if (s.interp != null && s.interp.variables.exists(varName))
+				return s.interp.variables.get(varName);
+			#end
+		}
+		for (s in globalScripts)
+		{
+			#if HSCRIPT_ALLOWED
+			if (s.interp != null && s.interp.variables.exists(varName))
+				return s.interp.variables.get(varName);
+			#end
+		}
+		return null;
 	}
 
 	/** Establece una variable sólo en scripts de stage. */

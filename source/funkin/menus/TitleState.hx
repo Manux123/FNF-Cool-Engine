@@ -150,7 +150,15 @@ class TitleState extends funkin.states.MusicBeatState
 		FlxG.mouse.visible = false;
 
 		if (initialized)
+		{
+			// Coming back from a mod restart — music was destroyed, restart it
+			if (FlxG.sound.music == null || !FlxG.sound.music.playing)
+			{
+				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7);
+				Conductor.changeBPM(102);
+			}
 			skipIntro();
+		}
 		else
 		{
 			var diamond:FlxGraphic = FlxGraphic.fromClass(GraphicTransTileDiamond);

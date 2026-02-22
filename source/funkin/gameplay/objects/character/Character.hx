@@ -21,11 +21,13 @@ typedef CharacterData =
 	@:optional var flipX:Bool;
 	@:optional var isTxt:Bool;
 	@:optional var isSpritemap:Bool;
+
 	/**
 	 * Conservado por compatibilidad con JSONs existentes.
 	 * FunkinSprite auto-detecta el tipo de asset — ya no es obligatorio.
 	 */
 	@:optional var isFlxAnimate:Bool;
+
 	@:optional var spritemapName:String;
 	@:optional var healthIcon:String;
 	@:optional var healthBarColor:String;
@@ -39,11 +41,13 @@ typedef AnimData =
 	var name:String;
 	var looped:Bool;
 	var framerate:Float;
+
 	/**
 	 * Sprites normales : prefix del XML/TXT.
 	 * FlxAnimate       : nombre exacto del símbolo (campo SN en Animation.json).
 	 */
 	var prefix:String;
+
 	@:optional var indices:Array<Int>;
 }
 
@@ -64,21 +68,22 @@ class Character extends FunkinSprite
 	public var animOffsets:Map<String, Array<Dynamic>>;
 	public var debugMode:Bool = false;
 
-	public var canSing:Bool     = true;
-	public var stunned:Bool     = false;
-	public var isPlayer:Bool    = false;
+	public var canSing:Bool = true;
+	public var stunned:Bool = false;
+	public var isPlayer:Bool = false;
 	public var curCharacter:String = 'bf';
-	public var holdTimer:Float  = 0;
+	public var holdTimer:Float = 0;
 
 	public var healthIcon:String = 'bf';
 	public var healthBarColor:FlxColor = FlxColor.fromString("#31B0D1");
 	public var cameraOffset:Array<Float> = [0, 0];
 
 	public var characterData:CharacterData;
+
 	var danced:Bool = false;
 
 	var _singAnimPrefix:String = "sing";
-	var _idleAnim:String       = "idle";
+	var _idleAnim:String = "idle";
 
 	// ── Constructor ───────────────────────────────────────────────────────────
 
@@ -86,10 +91,10 @@ class Character extends FunkinSprite
 	{
 		super(x, y); // FunkinSprite(x, y) → FlxAnimate(x, y)
 
-		animOffsets   = new Map<String, Array<Dynamic>>();
-		curCharacter  = character;
+		animOffsets = new Map<String, Array<Dynamic>>();
+		curCharacter = character;
 		this.isPlayer = isPlayer;
-		antialiasing  = true;
+		antialiasing = true;
 
 		loadCharacterData(character);
 
@@ -109,6 +114,9 @@ class Character extends FunkinSprite
 
 		isPlayer = characterData.isPlayer;
 
+		if (characterData.flipX != null && characterData.flipX)
+			flipX = characterData.flipX;
+
 		if (isPlayer)
 		{
 			flipX = !flipX;
@@ -121,7 +129,7 @@ class Character extends FunkinSprite
 
 	function loadCharacterData(character:String):Void
 	{
-		var jsonPath = Paths.characterJSON(character);
+		var jsonPath = mods.compat.ModCompatLayer.resolveCharacterPath(character);
 
 		try
 		{
@@ -131,11 +139,11 @@ class Character extends FunkinSprite
 			else
 				content = lime.utils.Assets.getText(jsonPath);
 
-			characterData = cast Json.parse(content);
+			characterData = cast mods.compat.ModCompatLayer.loadCharacter(content, character);
 
-			healthIcon     = characterData.healthIcon     != null ? characterData.healthIcon     : character;
+			healthIcon = characterData.healthIcon != null ? characterData.healthIcon : character;
 			healthBarColor = characterData.healthBarColor != null ? FlxColor.fromString(characterData.healthBarColor) : healthBarColor;
-			cameraOffset   = characterData.cameraOffset   != null ? characterData.cameraOffset   : cameraOffset;
+			cameraOffset = characterData.cameraOffset != null ? characterData.cameraOffset : cameraOffset;
 		}
 		catch (e:Dynamic)
 		{
@@ -165,13 +173,8 @@ class Character extends FunkinSprite
 		{
 			// addAnim() llama internamente a anim.addBySymbol (atlas)
 			// o animation.addByPrefix / addByIndices (sparrow/packer)
-			addAnim(
-				animData.name,
-				animData.prefix,
-				Std.int(animData.framerate),
-				animData.looped,
-				(animData.indices != null && animData.indices.length > 0) ? animData.indices : null
-			);
+			addAnim(animData.name, animData.prefix, Std.int(animData.framerate), animData.looped,
+				(animData.indices != null && animData.indices.length > 0) ? animData.indices : null);
 
 			var fa = isAnimateAtlas ? null : animation.getByName(animData.name);
 			if (!isAnimateAtlas && (fa == null || fa.numFrames == 0))
@@ -187,12 +190,12 @@ class Character extends FunkinSprite
 		applyCharacterSpecificAdjustments();
 
 		// Animación inicial
-		if (animOffsets.exists('danceRight'))        playAnim('danceRight');
-		else if (animOffsets.exists('danceLeft'))     playAnim('danceLeft');
-		else if (animOffsets.exists(_idleAnim))       playAnim(_idleAnim);
-
-		if (characterData.flipX != null && characterData.flipX)
-			flipX = true;
+		if (animOffsets.exists('danceRight'))
+			playAnim('danceRight');
+		else if (animOffsets.exists('danceLeft'))
+			playAnim('danceLeft');
+		else if (animOffsets.exists(_idleAnim))
+			playAnim(_idleAnim);
 	}
 
 	// ── playAnim ──────────────────────────────────────────────────────────────
@@ -239,12 +242,18 @@ class Character extends FunkinSprite
 		var name = getCurAnimName();
 		if (name == '' || isCurAnimFinished())
 			return false;
-		if (name.startsWith(_singAnimPrefix)) return false;
-		if (name == _idleAnim)               return false;
-		if (name.startsWith('dance'))        return false;
-		if (name.endsWith('miss'))           return false;
-		if (name == 'firstDeath')            return false;
-		if (name == 'deathLoop')             return false;
+		if (name.startsWith(_singAnimPrefix))
+			return false;
+		if (name == _idleAnim)
+			return false;
+		if (name.startsWith('dance'))
+			return false;
+		if (name.endsWith('miss'))
+			return false;
+		if (name == 'firstDeath')
+			return false;
+		if (name == 'deathLoop')
+			return false;
 		// Anything else (hey, cheer, scared, hairFall, sad…) is special
 		return true;
 	}
@@ -384,7 +393,7 @@ class Character extends FunkinSprite
 		switch (curCharacter)
 		{
 			case 'bf-pixel-enemy':
-				width  -= 100;
+				width -= 100;
 				height -= 100;
 		}
 	}
@@ -392,19 +401,20 @@ class Character extends FunkinSprite
 	function flipAnimations():Void
 	{
 		// Solo aplica en modo sparrow (no en atlas — FlxAnimate no expone los frames directamente)
-		if (isAnimateAtlas) return; // FunkinSprite.isAnimateAtlas
+		if (isAnimateAtlas)
+			return; // FunkinSprite.isAnimateAtlas
 
 		if (animation.getByName('singRIGHT') != null && animation.getByName('singLEFT') != null)
 		{
 			var oldRight = animation.getByName('singRIGHT').frames;
 			animation.getByName('singRIGHT').frames = animation.getByName('singLEFT').frames;
-			animation.getByName('singLEFT').frames  = oldRight;
+			animation.getByName('singLEFT').frames = oldRight;
 		}
 		if (animation.getByName('singRIGHTmiss') != null && animation.getByName('singLEFTmiss') != null)
 		{
 			var oldMiss = animation.getByName('singRIGHTmiss').frames;
 			animation.getByName('singRIGHTmiss').frames = animation.getByName('singLEFTmiss').frames;
-			animation.getByName('singLEFTmiss').frames  = oldMiss;
+			animation.getByName('singLEFTmiss').frames = oldMiss;
 		}
 	}
 
@@ -416,7 +426,8 @@ class Character extends FunkinSprite
 	public function getAnimationList():Array<String>
 	{
 		var list:Array<String> = [];
-		for (a in animOffsets.keys()) list.push(a);
+		for (a in animOffsets.keys())
+			list.push(a);
 		return list;
 	}
 
@@ -437,7 +448,11 @@ class Character extends FunkinSprite
 	override function destroy():Void
 	{
 		// FunkinSprite (FlxAnimate) limpia sus propios recursos internamente
-		if (animOffsets != null) { animOffsets.clear(); animOffsets = null; }
+		if (animOffsets != null)
+		{
+			animOffsets.clear();
+			animOffsets = null;
+		}
 		characterData = null;
 		super.destroy();
 	}

@@ -39,9 +39,12 @@ class AddSongSubState extends FlxSubState
 	var iconNameInput:FlxInputText;
 	var bpmInput:FlxInputText;
 	var weekInput:FlxInputText;
+
 	// === META INPUT FIELDS ===
 	var uiInput:FlxInputText;
 	var noteSkinInput:FlxInputText;
+	var introVideoInput:FlxInputText;   // video de intro (antes del countdown)
+	var outroVideoInput:FlxInputText;   // video de outro (tras la cancion)
 
 	// === BUTTONS ===
 	var loadInstBtn:FlxButton;
@@ -50,24 +53,29 @@ class AddSongSubState extends FlxSubState
 	var saveBtn:FlxButton;
 	var cancelBtn:FlxButton;
 
-	// === NUEVO: TOGGLE PARA STORY MODE ===
+	// === TOGGLE: STORY MODE ===
 	var storyModeToggleBtn:FlxButton;
 	var storyModeToggleText:FlxText;
-	var showInStoryMode:Bool = true; // Por defecto activado
+	var showInStoryMode:Bool = true;
+
+	// === TOGGLE: NEEDS VOICES ===
+	var needsVoicesToggleBtn:FlxButton;
+	var needsVoicesToggleText:FlxText;
+	var needsVoices:Bool = true;
 
 	// === COLOR PICKER ===
 	var selectedColor:String = "0xFFAF66CE";
 	var colorButtons:Array<FlxButton> = [];
-	var colorLabels:Array<FlxText> = [];
+	var colorLabels:Array<FlxText>   = [];
 
 	// === DATA ===
 	var songListData:StoryMenuState.Songs;
-	var currentInstPath:String = "";
+	var currentInstPath:String  = "";
 	var currentVocalsPath:String = "";
-	var currentIconPath:String = "";
-	var instLoaded:Bool = false;
-	var vocalsLoaded:Bool = false;
-	var iconFileLoaded:Bool = false;
+	var currentIconPath:String  = "";
+	var instLoaded:Bool      = false;
+	var vocalsLoaded:Bool    = false;
+	var iconFileLoaded:Bool  = false;
 
 	// === EDIT MODE ===
 	var editMode:Bool = false;
@@ -75,36 +83,26 @@ class AddSongSubState extends FlxSubState
 
 	// === ICON PRESETS ===
 	var iconPresets:Array<String> = [
-		"bf",
-		"bf-pixel",
-		"gf",
-		"dad",
-		"mom",
-		"pico",
-		"spooky",
-		"monster",
-		"parents-christmas",
-		"senpai",
-		"senpai-angry",
-		"spirit",
-		"face"
+		"bf", "bf-pixel", "gf", "dad", "mom", "pico",
+		"spooky", "monster", "parents-christmas",
+		"senpai", "senpai-angry", "spirit", "face"
 	];
 	var currentIconIndex:Int = 0;
 
 	// === COLOR PRESETS ===
 	var colorPresets:Array<{name:String, hex:String}> = [
-		{name: "Purple", hex: "0xFFAF66CE"},
-		{name: "Dark", hex: "0xFF2A2A2A"},
-		{name: "Green", hex: "0xFF6BAA4C"},
-		{name: "Pink", hex: "0xFFD85889"},
-		{name: "Violet", hex: "0xFF9A68A4"},
-		{name: "Orange", hex: "0xFFFFAA6F"},
-		{name: "Blue", hex: "0xFF31A2F4"},
-		{name: "Red", hex: "0xFFFF0000"},
-		{name: "Yellow", hex: "0xFFFFFF00"},
-		{name: "Cyan", hex: "0xFF00FFFF"},
-		{name: "White", hex: "0xFFFFFFFF"},
-		{name: "Magenta", hex: "0xFFFF78BF"}
+		{name:"Purple",  hex:"0xFFAF66CE"},
+		{name:"Dark",    hex:"0xFF2A2A2A"},
+		{name:"Green",   hex:"0xFF6BAA4C"},
+		{name:"Pink",    hex:"0xFFD85889"},
+		{name:"Violet",  hex:"0xFF9A68A4"},
+		{name:"Orange",  hex:"0xFFFFAA6F"},
+		{name:"Blue",    hex:"0xFF31A2F4"},
+		{name:"Red",     hex:"0xFFFF0000"},
+		{name:"Yellow",  hex:"0xFFFFFF00"},
+		{name:"Cyan",    hex:"0xFF00FFFF"},
+		{name:"White",   hex:"0xFFFFFFFF"},
+		{name:"Magenta", hex:"0xFFFF78BF"}
 	];
 
 	// === FILE STATUS INDICATORS ===
@@ -112,16 +110,12 @@ class AddSongSubState extends FlxSubState
 	var vocalsStatusText:FlxText;
 	var iconStatusText:FlxText;
 
+	// ─────────────────────────────────────────────────────────────────────────
+
 	public function new(?editSong:SongMetadata)
 	{
 		super();
-
-		if (editSong != null)
-		{
-			editMode = true;
-			editingSong = editSong;
-		}
-
+		if (editSong != null) { editMode = true; editingSong = editSong; }
 		loadSongList();
 	}
 
@@ -129,18 +123,17 @@ class AddSongSubState extends FlxSubState
 	{
 		super.create();
 
-		// === BACKGROUND DARKENER ===
+		// Background darkener
 		bgDarkener = new FlxSprite();
 		bgDarkener.makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		bgDarkener.alpha = 0;
 		add(bgDarkener);
-
 		FlxTween.tween(bgDarkener, {alpha: 0.7}, 0.3, {ease: FlxEase.quadOut});
 
-		// === WINDOW BACKGROUND ===
-		var windowWidth:Int = 900;
-		var windowHeight:Int = 680; // Ajustado para caber en 720px
-		var windowX:Float = (FlxG.width - windowWidth) / 2;
+		// Window — height 720 to fit all fields on a 720p screen
+		var windowWidth:Int  = 900;
+		var windowHeight:Int = 720;
+		var windowX:Float = (FlxG.width  - windowWidth)  / 2;
 		var windowY:Float = (FlxG.height - windowHeight) / 2;
 
 		windowBg = new FlxSprite(windowX, windowY);
@@ -148,506 +141,245 @@ class AddSongSubState extends FlxSubState
 		windowBg.alpha = 0;
 		windowBg.scale.set(0.8, 0.8);
 		add(windowBg);
+		FlxTween.tween(windowBg, {alpha: 0.98, "scale.x": 1, "scale.y": 1}, 0.4, {ease: FlxEase.backOut, startDelay: 0.1});
 
-		FlxTween.tween(windowBg, {alpha: 0.98, "scale.x": 1, "scale.y": 1}, 0.4, {
-			ease: FlxEase.backOut,
-			startDelay: 0.1
-		});
-
-		// === TOP BAR ===
 		topBar = new FlxSprite(windowX, windowY);
 		topBar.makeGraphic(windowWidth, 50, 0xFF0f3460);
 		topBar.alpha = 0;
 		add(topBar);
-
 		FlxTween.tween(topBar, {alpha: 1}, 0.3, {ease: FlxEase.quadOut, startDelay: 0.2});
 
-		// === TITLE ===
-		var titleStr = editMode ? "EDIT SONG" : "ADD NEW SONG";
-		titleText = new FlxText(windowX + 20, windowY + 11, 0, titleStr, 24);
+		titleText = new FlxText(windowX + 20, windowY + 11, 0, editMode ? "EDIT SONG" : "ADD NEW SONG", 24);
 		titleText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE, LEFT);
 		titleText.setBorderStyle(OUTLINE, FlxColor.BLACK, 2);
 		titleText.alpha = 0;
 		add(titleText);
-
 		FlxTween.tween(titleText, {alpha: 1}, 0.3, {ease: FlxEase.quadOut, startDelay: 0.25});
 
-		// === STATUS TEXT ===
 		statusText = new FlxText(windowX, windowY + windowHeight - 35, windowWidth, "Fill in the song details", 14);
 		statusText.setFormat(Paths.font("vcr.ttf"), 14, 0xFF53a8b6, CENTER);
 		statusText.alpha = 0;
 		add(statusText);
-
 		FlxTween.tween(statusText, {alpha: 1}, 0.3, {ease: FlxEase.quadOut, startDelay: 0.3});
 
-		// === CREATE UI ===
 		createInputFields(windowX, windowY);
-		createMetaFields(windowX, windowY); // NUEVO: campos UI y NoteSkin
-		createStoryModeToggle(windowX, windowY); // NUEVO
+		createMetaFields(windowX, windowY);
+		createToggles(windowX, windowY);
 		createFileButtons(windowX, windowY);
 		createColorPicker(windowX, windowY);
 		createActionButtons(windowX, windowY, windowWidth, windowHeight);
 
-		// === LOAD EDIT DATA ===
-		if (editMode && editingSong != null)
-		{
-			loadEditData();
-		}
+		if (editMode && editingSong != null) loadEditData();
 
 		FlxG.mouse.visible = true;
 	}
 
+	// ─────────────────────────────────────────────────────────────────────────
+	// UI BUILDERS
+	// ─────────────────────────────────────────────────────────────────────────
+
 	function createInputFields(windowX:Float, windowY:Float):Void
 	{
-		var startY:Float = windowY + 65; // era +80
-		var inputWidth:Int = 400;
+		var startY:Float = windowY + 65;
 
 		// Song Name
-		var label1 = new FlxText(windowX + 30, startY, 0, "Song Name:", 16);
-		label1.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
-		label1.alpha = 0;
-		add(label1);
-		FlxTween.tween(label1, {alpha: 1}, 0.3, {startDelay: 0.35});
-
-		songNameInput = new FlxInputText(windowX + 30, startY + 20, inputWidth, "", 15);
-		songNameInput.backgroundColor = 0xFF0f3460;
-		songNameInput.fieldBorderColor = 0xFF53a8b6;
-		songNameInput.fieldBorderThickness = 2;
-		songNameInput.color = FlxColor.WHITE;
-		songNameInput.maxLength = 50;
-		songNameInput.alpha = 0;
-		add(songNameInput);
-		FlxTween.tween(songNameInput, {alpha: 1}, 0.3, {startDelay: 0.4});
+		_lbl(windowX + 30, startY, "Song Name:", 0.35);
+		songNameInput = _inp(windowX + 30, startY + 20, 400, "", 50, 0.4);
 
 		// Icon Name
-		startY += 62; // era 75
-		var label2 = new FlxText(windowX + 30, startY, 0, "Icon Name (use \u2190 \u2192 arrows):", 16);
-		label2.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
-		label2.alpha = 0;
-		add(label2);
-		FlxTween.tween(label2, {alpha: 1}, 0.3, {startDelay: 0.4});
+		startY += 62;
+		_lbl(windowX + 30, startY, "Icon Name (use \u2190 \u2192 arrows):", 0.4);
+		iconNameInput = _inp(windowX + 30, startY + 20, 400, iconPresets[0], 30, 0.45);
 
-		iconNameInput = new FlxInputText(windowX + 30, startY + 20, inputWidth, iconPresets[0], 15);
-		iconNameInput.backgroundColor = 0xFF0f3460;
-		iconNameInput.fieldBorderColor = 0xFF53a8b6;
-		iconNameInput.fieldBorderThickness = 2;
-		iconNameInput.color = FlxColor.WHITE;
-		iconNameInput.maxLength = 30;
-		iconNameInput.alpha = 0;
-		add(iconNameInput);
-		FlxTween.tween(iconNameInput, {alpha: 1}, 0.3, {startDelay: 0.45});
-
-		// BPM and Week on same row
-		startY += 62; // era 75
-		var label3 = new FlxText(windowX + 30, startY, 0, "BPM:", 16);
-		label3.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
-		label3.alpha = 0;
-		add(label3);
-		FlxTween.tween(label3, {alpha: 1}, 0.3, {startDelay: 0.45});
-
-		bpmInput = new FlxInputText(windowX + 30, startY + 20, 180, "120", 15);
-		bpmInput.backgroundColor = 0xFF0f3460;
-		bpmInput.fieldBorderColor = 0xFF53a8b6;
-		bpmInput.fieldBorderThickness = 2;
-		bpmInput.color = FlxColor.WHITE;
-		bpmInput.filterMode = FlxInputText.ONLY_NUMERIC;
-		bpmInput.alpha = 0;
-		add(bpmInput);
-		FlxTween.tween(bpmInput, {alpha: 1}, 0.3, {startDelay: 0.5});
-
-		var label4 = new FlxText(windowX + 250, startY, 0, "Week Index:", 16);
-		label4.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
-		label4.alpha = 0;
-		add(label4);
-		FlxTween.tween(label4, {alpha: 1}, 0.3, {startDelay: 0.5});
-
-		weekInput = new FlxInputText(windowX + 250, startY + 20, 180, "0", 15);
-		weekInput.backgroundColor = 0xFF0f3460;
-		weekInput.fieldBorderColor = 0xFF53a8b6;
-		weekInput.fieldBorderThickness = 2;
-		weekInput.color = FlxColor.WHITE;
-		weekInput.filterMode = FlxInputText.ONLY_NUMERIC;
-		weekInput.alpha = 0;
-		add(weekInput);
-		FlxTween.tween(weekInput, {alpha: 1}, 0.3, {startDelay: 0.55});
+		// BPM + Week (same row)
+		startY += 62;
+		_lbl(windowX + 30,  startY, "BPM:",        0.45);
+		_lbl(windowX + 250, startY, "Week Index:", 0.5);
+		bpmInput  = _inpNum(windowX + 30,  startY + 20, 180, "120", 0.5);
+		weekInput = _inpNum(windowX + 250, startY + 20, 180, "0",   0.55);
 	}
 
-	// === NUEVO: CAMPOS DE META (UI + NOTESKIN) ===
+	// ── Meta: UI / NoteSkin / Intro Video / Outro Video ──────────────────────
 	function createMetaFields(windowX:Float, windowY:Float):Void
 	{
-		var startY:Float = windowY + 255; // era +305
-		var inputWidth:Int = 180;
+		var startY:Float = windowY + 255;
+		var colW:Int     = 180;
 
-		// UI Script
-		var labelUI = new FlxText(windowX + 30, startY, 0, "UI Script:", 16);
-		labelUI.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
-		labelUI.alpha = 0;
-		add(labelUI);
-		FlxTween.tween(labelUI, {alpha: 1}, 0.3, {startDelay: 0.55});
+		// Row 1 — UI Script | Note Skin
+		_lbl(windowX + 30,  startY, "UI Script:", 0.55);
+		_lbl(windowX + 240, startY, "Note Skin:", 0.55);
+		uiInput       = _inp(windowX + 30,  startY + 20, colW, "default", 40, 0.57);
+		noteSkinInput = _inp(windowX + 240, startY + 20, colW, "default", 40, 0.59);
 
-		uiInput = new FlxInputText(windowX + 30, startY + 20, inputWidth, "default", 15);
-		uiInput.backgroundColor = 0xFF0f3460;
-		uiInput.fieldBorderColor = 0xFF53a8b6;
-		uiInput.fieldBorderThickness = 2;
-		uiInput.color = FlxColor.WHITE;
-		uiInput.maxLength = 40;
-		uiInput.alpha = 0;
-		add(uiInput);
-		FlxTween.tween(uiInput, {alpha: 1}, 0.3, {startDelay: 0.57});
+		var h1 = new FlxText(windowX + 30, startY + 44, 430, "Leave 'default' to use global config", 11);
+		h1.setFormat(Paths.font("vcr.ttf"), 11, 0xFF53a8b6, LEFT);
+		h1.alpha = 0; add(h1); FlxTween.tween(h1, {alpha: 0.7}, 0.3, {startDelay: 0.6});
 
-		// NoteSkin
-		var labelNS = new FlxText(windowX + 240, startY, 0, "Note Skin:", 16);
-		labelNS.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
-		labelNS.alpha = 0;
-		add(labelNS);
-		FlxTween.tween(labelNS, {alpha: 1}, 0.3, {startDelay: 0.57});
+		// Row 2 — Intro Video | Outro Video
+		startY += 65;
+		_lbl(windowX + 30,  startY, "Intro Video:", 0.61);
+		_lbl(windowX + 240, startY, "Outro Video:", 0.61);
+		introVideoInput = _inp(windowX + 30,  startY + 20, colW, "", 80, 0.63);
+		outroVideoInput = _inp(windowX + 240, startY + 20, colW, "", 80, 0.63);
 
-		noteSkinInput = new FlxInputText(windowX + 240, startY + 20, inputWidth, "default", 15);
-		noteSkinInput.backgroundColor = 0xFF0f3460;
-		noteSkinInput.fieldBorderColor = 0xFF53a8b6;
-		noteSkinInput.fieldBorderThickness = 2;
-		noteSkinInput.color = FlxColor.WHITE;
-		noteSkinInput.maxLength = 40;
-		noteSkinInput.alpha = 0;
-		add(noteSkinInput);
-		FlxTween.tween(noteSkinInput, {alpha: 1}, 0.3, {startDelay: 0.59});
-
-		// Hint
-		var hint = new FlxText(windowX + 30, startY + 44, 430, "Leave 'default' to use global config", 11);
-		hint.setFormat(Paths.font("vcr.ttf"), 11, 0xFF53a8b6, LEFT);
-		hint.alpha = 0;
-		add(hint);
-		FlxTween.tween(hint, {alpha: 0.7}, 0.3, {startDelay: 0.6});
+		var h2 = new FlxText(windowX + 30, startY + 44, 430, "Video filename without extension  (empty = no cutscene)", 11);
+		h2.setFormat(Paths.font("vcr.ttf"), 11, 0xFF53a8b6, LEFT);
+		h2.alpha = 0; add(h2); FlxTween.tween(h2, {alpha: 0.7}, 0.3, {startDelay: 0.64});
 	}
 
-	// === NUEVO: GUARDAR META.JSON ===
-	function saveMetaJSON(songName:String):Void
+	// ── Toggles: Story Mode + Needs Voices (same row) ─────────────────────
+	function createToggles(windowX:Float, windowY:Float):Void
 	{
-		var ui = uiInput.text.trim();
-		var noteSkin = noteSkinInput.text.trim();
+		var y:Float = windowY + 385;
 
-		// Solo guardamos si alguno difiere de "default" — pero guardamos siempre
-		// para que el archivo exista y sea editable
-		MetaData.save(songName, ui != '' ? ui : 'default', noteSkin != '' ? noteSkin : 'default');
-	}
-
-	// === NUEVO: CREAR TOGGLE PARA STORY MODE ===
-	function createStoryModeToggle(windowX:Float, windowY:Float):Void
-	{
-		var toggleY:Float = windowY + 320; // era +380
-		var toggleX:Float = windowX + 30;
-
-		// Label
-		var label = new FlxText(toggleX, toggleY, 0, "Show in Story Mode:", 16);
-		label.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
-		label.alpha = 0;
-		add(label);
-		FlxTween.tween(label, {alpha: 1}, 0.3, {startDelay: 0.55});
-
-		// Toggle button
-		storyModeToggleBtn = new FlxButton(toggleX + 195, toggleY - 4, "", function()
-		{
+		// Story Mode (left side)
+		_lbl(windowX + 30, y, "Show in Story Mode:", 0.65);
+		storyModeToggleBtn = _toggleBtn(windowX + 225, y - 4, function() {
 			showInStoryMode = !showInStoryMode;
-			updateToggleButton();
+			_refreshStoryToggle();
 			FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.6);
-		});
-		styleToggleButton(storyModeToggleBtn);
-		storyModeToggleBtn.alpha = 0;
-		add(storyModeToggleBtn);
-		FlxTween.tween(storyModeToggleBtn, {alpha: 1}, 0.3, {startDelay: 0.6});
+		}, 0.67);
+		storyModeToggleText = _toggleText(windowX + 232, y, 0.69);
 
-		// Toggle text
-		storyModeToggleText = new FlxText(toggleX + 205, toggleY, 0, "ON", 16);
-		storyModeToggleText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, CENTER);
-		storyModeToggleText.alpha = 0;
-		add(storyModeToggleText);
-		FlxTween.tween(storyModeToggleText, {alpha: 1}, 0.3, {startDelay: 0.65});
+		// Needs Voices (right side, same row)
+		_lbl(windowX + 340, y, "Needs Voices:", 0.65);
+		needsVoicesToggleBtn = _toggleBtn(windowX + 480, y - 4, function() {
+			needsVoices = !needsVoices;
+			_refreshVoicesToggle();
+			FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.6);
+		}, 0.67);
+		needsVoicesToggleText = _toggleText(windowX + 487, y, 0.69);
 
-		updateToggleButton();
-	}
-
-	function styleToggleButton(btn:FlxButton):Void
-	{
-		btn.makeGraphic(80, 35, 0xFF4CAF50);
-		btn.label.size = 16;
-		btn.label.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, CENTER);
-	}
-
-	function updateToggleButton():Void
-	{
-		if (showInStoryMode)
-		{
-			storyModeToggleBtn.makeGraphic(80, 35, 0xFF4CAF50); // Verde
-			storyModeToggleText.text = "ON";
-			storyModeToggleText.color = 0xFF4CAF50;
-		}
-		else
-		{
-			storyModeToggleBtn.makeGraphic(80, 35, 0xFFFF5252); // Rojo
-			storyModeToggleText.text = "OFF";
-			storyModeToggleText.color = 0xFFFF5252;
-		}
+		_refreshStoryToggle();
+		_refreshVoicesToggle();
 	}
 
 	function createFileButtons(windowX:Float, windowY:Float):Void
 	{
-		var btnY:Float = windowY + 365; // era +435
+		var btnY:Float = windowY + 430;
 		var btnX:Float = windowX + 30;
 
-		// Load Inst Button
-		loadInstBtn = new FlxButton(btnX, btnY, "Load Inst.ogg", function()
-		{
+		// Inst.ogg
+		loadInstBtn = new FlxButton(btnX, btnY, "Load Inst.ogg", function() {
 			#if desktop
-			var dialog = new FileDialog();
-			dialog.onSelect.add(function(path:String)
-			{
-				currentInstPath = path;
-				instLoaded = true;
-				updateFileStatus();
-				updateStatus("✓ Inst.ogg loaded");
-			});
-			dialog.browse(OPEN, "ogg", null, "Select Inst.ogg");
-			#else
-			updateStatus("File loading only available on Desktop");
-			#end
+			var d = new FileDialog();
+			d.onSelect.add(function(p) { currentInstPath = p; instLoaded = true; updateFileStatus(); updateStatus("\u2713 Inst.ogg loaded"); });
+			d.browse(OPEN, "ogg", null, "Select Inst.ogg");
+			#else updateStatus("File loading only available on Desktop"); #end
 		});
-		styleButton(loadInstBtn, 0xFF4a5568, 270);
-		loadInstBtn.alpha = 0;
-		add(loadInstBtn);
-		FlxTween.tween(loadInstBtn, {alpha: 1}, 0.3, {startDelay: 0.6});
+		styleButton(loadInstBtn, 0xFF4a5568, 270); loadInstBtn.alpha = 0; add(loadInstBtn);
+		FlxTween.tween(loadInstBtn, {alpha: 1}, 0.3, {startDelay: 0.7});
 
-		// Inst status
-		instStatusText = new FlxText(btnX + 280, btnY + 7, 0, "✗", 20);
-		instStatusText.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.RED, LEFT);
-		instStatusText.alpha = 0;
-		add(instStatusText);
-		FlxTween.tween(instStatusText, {alpha: 1}, 0.3, {startDelay: 0.65});
+		instStatusText = _statusIcon(btnX + 280, btnY + 7, 0.72);
 
-		// Load Vocals Button
-		btnY += 42; // era 50
-		loadVocalsBtn = new FlxButton(btnX, btnY, "Load Vocals.ogg", function()
-		{
+		// Vocals.ogg
+		btnY += 42;
+		loadVocalsBtn = new FlxButton(btnX, btnY, "Load Vocals.ogg", function() {
 			#if desktop
-			var dialog = new FileDialog();
-			dialog.onSelect.add(function(path:String)
-			{
-				currentVocalsPath = path;
-				vocalsLoaded = true;
-				updateFileStatus();
-				updateStatus("✓ Vocals.ogg loaded");
-			});
-			dialog.browse(OPEN, "ogg", null, "Select Vocals.ogg");
-			#else
-			updateStatus("File loading only available on Desktop");
-			#end
+			var d = new FileDialog();
+			d.onSelect.add(function(p) { currentVocalsPath = p; vocalsLoaded = true; updateFileStatus(); updateStatus("\u2713 Vocals.ogg loaded"); });
+			d.browse(OPEN, "ogg", null, "Select Vocals.ogg");
+			#else updateStatus("File loading only available on Desktop"); #end
 		});
-		styleButton(loadVocalsBtn, 0xFF4a5568, 270);
-		loadVocalsBtn.alpha = 0;
-		add(loadVocalsBtn);
-		FlxTween.tween(loadVocalsBtn, {alpha: 1}, 0.3, {startDelay: 0.65});
+		styleButton(loadVocalsBtn, 0xFF4a5568, 270); loadVocalsBtn.alpha = 0; add(loadVocalsBtn);
+		FlxTween.tween(loadVocalsBtn, {alpha: 1}, 0.3, {startDelay: 0.72});
 
-		// Vocals status
-		vocalsStatusText = new FlxText(btnX + 280, btnY + 7, 0, "✗", 20);
-		vocalsStatusText.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.RED, LEFT);
-		vocalsStatusText.alpha = 0;
-		add(vocalsStatusText);
-		FlxTween.tween(vocalsStatusText, {alpha: 1}, 0.3, {startDelay: 0.7});
+		vocalsStatusText = _statusIcon(btnX + 280, btnY + 7, 0.74);
 
-		// Load Icon Button
-		btnY += 42; // era 50
-		loadIconBtn = new FlxButton(btnX, btnY, "Load Icon.png", function()
-		{
+		// Icon.png
+		btnY += 42;
+		loadIconBtn = new FlxButton(btnX, btnY, "Load Icon.png", function() {
 			#if desktop
-			var dialog = new FileDialog();
-			dialog.onSelect.add(function(path:String)
-			{
-				currentIconPath = path;
-				iconFileLoaded = true;
-				updateFileStatus();
-				updateStatus("✓ Icon.png loaded");
-			});
-			dialog.browse(OPEN, "png", null, "Select Icon.png");
-			#else
-			updateStatus("File loading only available on Desktop");
-			#end
+			var d = new FileDialog();
+			d.onSelect.add(function(p) { currentIconPath = p; iconFileLoaded = true; updateFileStatus(); updateStatus("\u2713 Icon.png loaded"); });
+			d.browse(OPEN, "png", null, "Select Icon.png");
+			#else updateStatus("File loading only available on Desktop"); #end
 		});
-		styleButton(loadIconBtn, 0xFF4a5568, 270);
-		loadIconBtn.alpha = 0;
-		add(loadIconBtn);
-		FlxTween.tween(loadIconBtn, {alpha: 1}, 0.3, {startDelay: 0.7});
+		styleButton(loadIconBtn, 0xFF4a5568, 270); loadIconBtn.alpha = 0; add(loadIconBtn);
+		FlxTween.tween(loadIconBtn, {alpha: 1}, 0.3, {startDelay: 0.74});
 
-		// Icon status
-		iconStatusText = new FlxText(btnX + 280, btnY + 7, 0, "✗", 20);
-		iconStatusText.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.RED, LEFT);
-		iconStatusText.alpha = 0;
-		add(iconStatusText);
-		FlxTween.tween(iconStatusText, {alpha: 1}, 0.3, {startDelay: 0.75});
+		iconStatusText = _statusIcon(btnX + 280, btnY + 7, 0.76);
 	}
 
 	function createColorPicker(windowX:Float, windowY:Float):Void
 	{
-		var colorY:Float = windowY + 365; // era +435
+		var colorY:Float = windowY + 430;
 		var colorX:Float = windowX + 480;
 
-		// Title
-		var colorTitle = new FlxText(colorX, colorY, 0, "Select Color:", 16);
-		colorTitle.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
-		colorTitle.alpha = 0;
-		add(colorTitle);
-		FlxTween.tween(colorTitle, {alpha: 1}, 0.3, {startDelay: 0.7});
+		var t = new FlxText(colorX, colorY, 0, "Select Color:", 16);
+		t.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
+		t.alpha = 0; add(t); FlxTween.tween(t, {alpha: 1}, 0.3, {startDelay: 0.7});
 
 		colorY += 24;
-
-		// Color grid
-		var colorsPerRow:Int = 4;
-		var btnSize:Int = 30; // era 35
-		var spacing:Int = 8; // era 10
+		var btnSize = 30; var spacing = 8; var perRow = 4;
 
 		for (i in 0...colorPresets.length)
 		{
-			var row:Int = Math.floor(i / colorsPerRow);
-			var col:Int = i % colorsPerRow;
+			var bx = colorX + (i % perRow)         * (btnSize + spacing);
+			var by = colorY + Math.floor(i / perRow) * (btnSize + spacing + 16);
 
-			var btnX:Float = colorX + (col * (btnSize + spacing));
-			var btnY:Float = colorY + (row * (btnSize + spacing + 16)); // era +20
-
-			var colorBtn = new FlxButton(btnX, btnY, "", function()
-			{
+			var cb = new FlxButton(bx, by, "", function() {
 				selectedColor = colorPresets[i].hex;
 				updateColorButtons();
 				FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 			});
-			colorBtn.makeGraphic(btnSize, btnSize, Std.parseInt(colorPresets[i].hex));
-			colorBtn.alpha = 0;
-			add(colorBtn);
-			colorButtons.push(colorBtn);
-			FlxTween.tween(colorBtn, {alpha: 0.7}, 0.3, {startDelay: 0.75 + (i * 0.02)});
+			cb.makeGraphic(btnSize, btnSize, Std.parseInt(colorPresets[i].hex));
+			cb.alpha = 0; add(cb); colorButtons.push(cb);
+			FlxTween.tween(cb, {alpha: 0.7}, 0.3, {startDelay: 0.75 + i * 0.02});
 
-			// Label
-			var label = new FlxText(btnX, btnY + btnSize + 1, btnSize, colorPresets[i].name, 9);
-			label.setFormat(Paths.font("vcr.ttf"), 9, FlxColor.WHITE, CENTER);
-			label.alpha = 0;
-			add(label);
-			colorLabels.push(label);
-			FlxTween.tween(label, {alpha: 0.8}, 0.3, {startDelay: 0.75 + (i * 0.02)});
+			var lbl = new FlxText(bx, by + btnSize + 1, btnSize, colorPresets[i].name, 9);
+			lbl.setFormat(Paths.font("vcr.ttf"), 9, FlxColor.WHITE, CENTER);
+			lbl.alpha = 0; add(lbl); colorLabels.push(lbl);
+			FlxTween.tween(lbl, {alpha: 0.8}, 0.3, {startDelay: 0.75 + i * 0.02});
 		}
-
 		updateColorButtons();
-	}
-
-	function updateColorButtons():Void
-	{
-		for (i in 0...colorButtons.length)
-		{
-			if (colorPresets[i].hex == selectedColor)
-			{
-				colorButtons[i].alpha = 1;
-				colorLabels[i].color = FlxColor.YELLOW;
-			}
-			else
-			{
-				colorButtons[i].alpha = 0.7;
-				colorLabels[i].color = FlxColor.WHITE;
-			}
-		}
 	}
 
 	function createActionButtons(windowX:Float, windowY:Float, windowWidth:Int, windowHeight:Int):Void
 	{
-		var btnY:Float = windowY + windowHeight - 70;
+		var y = windowY + windowHeight - 70;
 
-		// Save button
-		saveBtn = new FlxButton(windowX + windowWidth - 220, btnY, editMode ? "UPDATE" : "SAVE", saveSong);
-		styleButton(saveBtn, 0xFF2ecc71, 100);
-		saveBtn.alpha = 0;
-		add(saveBtn);
+		saveBtn = new FlxButton(windowX + windowWidth - 220, y, editMode ? "UPDATE" : "SAVE", saveSong);
+		styleButton(saveBtn, 0xFF2ecc71, 100); saveBtn.alpha = 0; add(saveBtn);
 		FlxTween.tween(saveBtn, {alpha: 1}, 0.3, {startDelay: 0.8});
 
-		// Cancel button
-		cancelBtn = new FlxButton(windowX + windowWidth - 110, btnY, "CANCEL", closeWindow);
-		styleButton(cancelBtn, 0xFFe74c3c, 100);
-		cancelBtn.alpha = 0;
-		add(cancelBtn);
+		cancelBtn = new FlxButton(windowX + windowWidth - 110, y, "CANCEL", closeWindow);
+		styleButton(cancelBtn, 0xFFe74c3c, 100); cancelBtn.alpha = 0; add(cancelBtn);
 		FlxTween.tween(cancelBtn, {alpha: 1}, 0.3, {startDelay: 0.85});
 	}
 
-	function styleButton(btn:FlxButton, color:Int, width:Int):Void
+	// ─────────────────────────────────────────────────────────────────────────
+	// TOGGLE REFRESH
+	// ─────────────────────────────────────────────────────────────────────────
+
+	function _refreshStoryToggle():Void
 	{
-		btn.makeGraphic(width, 40, color);
-		btn.label.size = 18;
-		btn.label.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, CENTER);
+		var on = showInStoryMode;
+		storyModeToggleBtn.makeGraphic(80, 35, on ? 0xFF4CAF50 : 0xFFFF5252);
+		storyModeToggleText.text  = on ? "ON" : "OFF";
+		storyModeToggleText.color = on ? 0xFF4CAF50 : 0xFFFF5252;
 	}
 
-	function updateFileStatus():Void
+	function _refreshVoicesToggle():Void
 	{
-		instStatusText.text = instLoaded ? "✓" : "✗";
-		instStatusText.color = instLoaded ? FlxColor.GREEN : FlxColor.RED;
-
-		vocalsStatusText.text = vocalsLoaded ? "✓" : "✗";
-		vocalsStatusText.color = vocalsLoaded ? FlxColor.GREEN : FlxColor.RED;
-
-		iconStatusText.text = iconFileLoaded ? "✓" : "✗";
-		iconStatusText.color = iconFileLoaded ? FlxColor.GREEN : FlxColor.RED;
+		var on = needsVoices;
+		needsVoicesToggleBtn.makeGraphic(80, 35, on ? 0xFF4CAF50 : 0xFFFF5252);
+		needsVoicesToggleText.text  = on ? "ON" : "OFF";
+		needsVoicesToggleText.color = on ? 0xFF4CAF50 : 0xFFFF5252;
 	}
 
-	function loadEditData():Void
-	{
-		if (editingSong == null)
-			return;
-
-		// Load existing data into fields
-		songNameInput.text = editingSong.songName;
-		iconNameInput.text = editingSong.songCharacter;
-		weekInput.text = Std.string(editingSong.week);
-
-		// Find BPM from songInfo
-		for (week in songListData.songsWeeks)
-		{
-			var idx = week.weekSongs.indexOf(editingSong.songName);
-			if (idx != -1)
-			{
-				if (week.bpm.length > idx)
-					bpmInput.text = Std.string(week.bpm[idx]);
-				if (week.color.length > idx)
-					selectedColor = week.color[idx];
-
-				// NUEVO: Cargar estado del toggle de Story Mode
-				if (week.showInStoryMode != null && week.showInStoryMode.length > idx)
-					showInStoryMode = week.showInStoryMode[idx];
-
-				break;
-			}
-		}
-
-		updateColorButtons();
-		updateToggleButton(); // NUEVO
-
-		// NUEVO: cargar valores de meta.json si existe
-		var existingMeta = MetaData.load(editingSong.songName);
-		if (uiInput != null)
-			uiInput.text = existingMeta.ui;
-		if (noteSkinInput != null)
-			noteSkinInput.text = existingMeta.noteSkin;
-	}
+	// ─────────────────────────────────────────────────────────────────────────
+	// SAVE / LOAD
+	// ─────────────────────────────────────────────────────────────────────────
 
 	function saveSong():Void
 	{
-		var songName:String = songNameInput.text.trim();
+		var songName = songNameInput.text.trim();
+		if (songName == "") { updateStatus("Song name cannot be empty!"); return; }
 
-		if (songName == "")
-		{
-			updateStatus("Song name cannot be empty!");
-			return;
-		}
-
-		var weekIndex:Int = Std.parseInt(weekInput.text);
-		var bpmVal:Float = Std.parseFloat(bpmInput.text);
-
-		if (Math.isNaN(bpmVal) || bpmVal <= 0)
-		{
-			updateStatus("Invalid BPM value!");
-			return;
-		}
+		var weekIndex = Std.parseInt(weekInput.text);
+		var bpmVal    = Std.parseFloat(bpmInput.text);
+		if (Math.isNaN(bpmVal) || bpmVal <= 0) { updateStatus("Invalid BPM value!"); return; }
 
 		FlxG.sound.play(Paths.sound('menus/confirmMenu'));
 
@@ -663,59 +395,34 @@ class AddSongSubState extends FlxSubState
 		}
 
 		saveJSON();
-		saveMetaJSON(songName); // NUEVO: guarda meta.json de la canción
-
+		saveMetaJSON(songName);
 		closeWindow();
 	}
 
 	function addNewSong(songName:String, weekIndex:Int, bpmVal:Float):Void
 	{
-		// Ensure week exists
 		while (songListData.songsWeeks.length <= weekIndex)
-		{
-			songListData.songsWeeks.push({
-				weekSongs: [],
-				songIcons: [],
-				color: [],
-				bpm: [],
-				showInStoryMode: [] // NUEVO
-			});
-		}
+			songListData.songsWeeks.push({weekSongs:[], songIcons:[], color:[], bpm:[], showInStoryMode:[]});
 
 		var week = songListData.songsWeeks[weekIndex];
 		week.weekSongs.push(songName);
 		week.songIcons.push(iconNameInput.text.trim());
 		week.color.push(selectedColor);
 		week.bpm.push(bpmVal);
-
-		// NUEVO: Agregar flag de Story Mode
-		if (week.showInStoryMode == null)
-			week.showInStoryMode = [];
+		if (week.showInStoryMode == null) week.showInStoryMode = [];
 		week.showInStoryMode.push(showInStoryMode);
 
-		// Create base chart JSON
 		createBaseChartJSON(songName.toLowerCase(), bpmVal);
 
-		// Copy files
 		#if desktop
-		if (instLoaded && currentInstPath != "")
-		{
-			copySongFile(currentInstPath, songName, "Inst");
-		}
-		if (vocalsLoaded && currentVocalsPath != "")
-		{
-			copySongFile(currentVocalsPath, songName, "Voices");
-		}
-		if (iconFileLoaded && currentIconPath != "")
-		{
-			copyIconFile(currentIconPath, iconNameInput.text.trim());
-		}
+		if (instLoaded     && currentInstPath   != "") copySongFile(currentInstPath,   songName, "Inst");
+		if (vocalsLoaded   && currentVocalsPath != "") copySongFile(currentVocalsPath, songName, "Voices");
+		if (iconFileLoaded && currentIconPath   != "") copyIconFile(currentIconPath,   iconNameInput.text.trim());
 		#end
 	}
 
 	function updateExistingSong(songName:String, weekIndex:Int, bpmVal:Float):Void
 	{
-		// Find and remove old entry
 		for (week in songListData.songsWeeks)
 		{
 			var idx = week.weekSongs.indexOf(editingSong.songName);
@@ -725,149 +432,212 @@ class AddSongSubState extends FlxSubState
 				week.songIcons.splice(idx, 1);
 				week.color.splice(idx, 1);
 				week.bpm.splice(idx, 1);
-				// NUEVO: Remover flag de Story Mode
 				if (week.showInStoryMode != null && week.showInStoryMode.length > idx)
 					week.showInStoryMode.splice(idx, 1);
 				break;
 			}
 		}
 
-		// Add updated entry
 		while (songListData.songsWeeks.length <= weekIndex)
-		{
-			songListData.songsWeeks.push({
-				weekSongs: [],
-				songIcons: [],
-				color: [],
-				bpm: [],
-				showInStoryMode: [] // NUEVO
-			});
-		}
+			songListData.songsWeeks.push({weekSongs:[], songIcons:[], color:[], bpm:[], showInStoryMode:[]});
 
 		var week = songListData.songsWeeks[weekIndex];
 		week.weekSongs.push(songName);
 		week.songIcons.push(iconNameInput.text.trim());
 		week.color.push(selectedColor);
 		week.bpm.push(bpmVal);
-
-		// NUEVO: Agregar flag de Story Mode
-		if (week.showInStoryMode == null)
-			week.showInStoryMode = [];
+		if (week.showInStoryMode == null) week.showInStoryMode = [];
 		week.showInStoryMode.push(showInStoryMode);
 
-		// Create base chart JSON if it doesn't exist
 		createBaseChartJSON(songName.toLowerCase(), bpmVal);
+		_patchNeedsVoicesInCharts(songName.toLowerCase()); // patch existing charts too
 
-		// Copy files if new ones were loaded
 		#if desktop
-		if (instLoaded && currentInstPath != "")
+		if (instLoaded     && currentInstPath   != "") copySongFile(currentInstPath,   songName, "Inst");
+		if (vocalsLoaded   && currentVocalsPath != "") copySongFile(currentVocalsPath, songName, "Voices");
+		if (iconFileLoaded && currentIconPath   != "") copyIconFile(currentIconPath,   iconNameInput.text.trim());
+		#end
+	}
+
+	// ── meta.json ─────────────────────────────────────────────────────────────
+	/**
+	 * Saves meta.json for the song including all fields:
+	 *   ui, noteSkin, needsVoices, introVideo (if set), outroVideo (if set).
+	 */
+	function saveMetaJSON(songName:String):Void
+	{
+		var ui         = uiInput != null         ? uiInput.text.trim()         : 'default';
+		var noteSkin   = noteSkinInput != null    ? noteSkinInput.text.trim()   : 'default';
+		var introVideo = introVideoInput != null  ? introVideoInput.text.trim() : '';
+		var outroVideo = outroVideoInput != null  ? outroVideoInput.text.trim() : '';
+
+		#if sys
+		try
 		{
-			copySongFile(currentInstPath, songName, "Inst");
+			var dir = Paths.resolve('songs/${songName.toLowerCase()}');
+			if (!FileSystem.exists(dir)) FileSystem.createDirectory(dir);
+
+			var meta:Dynamic    = {};
+			meta.ui             = ui       != '' ? ui       : 'default';
+			meta.noteSkin       = noteSkin != '' ? noteSkin : 'default';
+			meta.needsVoices    = needsVoices;
+			if (introVideo != '') meta.introVideo = introVideo;
+			if (outroVideo != '') meta.outroVideo = outroVideo;
+
+			File.saveContent('$dir/meta.json', Json.stringify(meta, null, "\t"));
+			trace('[AddSongSubState] meta.json saved for "$songName"');
 		}
-		if (vocalsLoaded && currentVocalsPath != "")
+		catch (e:Dynamic) { trace('[AddSongSubState] Error saving meta.json: $e'); }
+		#else
+		MetaData.save(songName, ui != '' ? ui : 'default', noteSkin != '' ? noteSkin : 'default');
+		#end
+	}
+
+	function loadEditData():Void
+	{
+		if (editingSong == null) return;
+
+		songNameInput.text = editingSong.songName;
+		iconNameInput.text = editingSong.songCharacter;
+		weekInput.text     = Std.string(editingSong.week);
+
+		for (week in songListData.songsWeeks)
 		{
-			copySongFile(currentVocalsPath, songName, "Voices");
+			var idx = week.weekSongs.indexOf(editingSong.songName);
+			if (idx != -1)
+			{
+				if (week.bpm.length > idx)   bpmInput.text = Std.string(week.bpm[idx]);
+				if (week.color.length > idx)  selectedColor = week.color[idx];
+				if (week.showInStoryMode != null && week.showInStoryMode.length > idx)
+					showInStoryMode = week.showInStoryMode[idx];
+				break;
+			}
 		}
-		if (iconFileLoaded && currentIconPath != "")
+
+		updateColorButtons();
+		_refreshStoryToggle();
+
+		// Load meta.json fields
+		var m = MetaData.load(editingSong.songName);
+		if (uiInput         != null) uiInput.text         = m.ui;
+		if (noteSkinInput   != null) noteSkinInput.text   = m.noteSkin;
+		if (introVideoInput != null) introVideoInput.text = m.introVideo ?? '';
+		if (outroVideoInput != null) outroVideoInput.text = m.outroVideo ?? '';
+
+		// needsVoices: read from chart (most accurate source), fall back to true
+		needsVoices = _readNeedsVoicesFromChart(editingSong.songName);
+		_refreshVoicesToggle();
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// CHART HELPERS
+	// ─────────────────────────────────────────────────────────────────────────
+
+	/**
+	 * Creates base chart JSONs (normal / easy / hard) if they don't exist yet.
+	 * Writes the current `needsVoices` value.
+	 */
+	function createBaseChartJSON(songName:String, bpm:Float):Void
+	{
+		#if desktop
+		try
 		{
-			copyIconFile(currentIconPath, iconNameInput.text.trim());
+			var dir = Paths.resolve("songs/" + songName);
+			var nv  = needsVoices ? "true" : "false";
+
+			var sb = new StringBuf();
+			sb.add('{\n\t"song": {\n');
+			sb.add('\t\t"song": "$songName",\n');
+			sb.add('\t\t"bpm": $bpm,\n');
+			sb.add('\t\t"speed": 2.5,\n');
+			sb.add('\t\t"needsVoices": $nv,\n');
+			sb.add('\t\t"player1": "bf",\n');
+			sb.add('\t\t"player2": "dad",\n');
+			sb.add('\t\t"gfVersion": "gf",\n');
+			sb.add('\t\t"stage": "stage_week1",\n');
+			sb.add('\t\t"notes": []\n\t}\n}');
+			var json = sb.toString();
+
+			for (suffix in ["", "-easy", "-hard"])
+			{
+				var p = '$dir/$songName$suffix.json';
+				if (!FileSystem.exists(p)) { File.saveContent(p, json); trace('Chart created: $p'); }
+				else trace('Chart already exists: $p');
+			}
+		}
+		catch (e:Dynamic) { trace('Error creating base chart: $e'); }
+		#end
+	}
+
+	/**
+	 * Patches `needsVoices` into ALL existing chart JSONs of the song.
+	 * Called when editing an existing song so old charts are updated.
+	 */
+	function _patchNeedsVoicesInCharts(songLower:String):Void
+	{
+		#if sys
+		var dir = Paths.resolve('songs/$songLower');
+		if (!FileSystem.exists(dir)) return;
+		for (file in FileSystem.readDirectory(dir))
+		{
+			if (!file.endsWith('.json')) continue;
+			var p = '$dir/$file';
+			try
+			{
+				var raw:Dynamic     = Json.parse(File.getContent(p));
+				var songObj:Dynamic = (raw.song != null) ? raw.song : raw;
+				if (Reflect.hasField(songObj, 'song')) // valid chart object
+				{
+					songObj.needsVoices = needsVoices;
+					File.saveContent(p, Json.stringify(raw, null, "\t"));
+				}
+			}
+			catch (_:Dynamic) {}
 		}
 		#end
 	}
+
+	/**
+	 * Reads `needsVoices` from the first chart JSON found.
+	 * Returns true (safe default) when no chart exists.
+	 */
+	function _readNeedsVoicesFromChart(songName:String):Bool
+	{
+		#if sys
+		var lower = songName.toLowerCase();
+		for (suffix in ["", "-hard", "-easy"])
+		{
+			var p = Paths.resolve('songs/$lower/$lower$suffix.json');
+			if (!FileSystem.exists(p)) continue;
+			try
+			{
+				var raw:Dynamic     = Json.parse(File.getContent(p));
+				var songObj:Dynamic = (raw.song != null) ? raw.song : raw;
+				if (Reflect.hasField(songObj, 'needsVoices'))
+					return (songObj.needsVoices == true);
+			}
+			catch (_:Dynamic) {}
+		}
+		#end
+		return true;
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// FILE OPS
+	// ─────────────────────────────────────────────────────────────────────────
 
 	function copySongFile(sourcePath:String, songName:String, fileType:String):Void
 	{
 		#if desktop
 		try
 		{
-			var targetDir = Paths.resolve("songs/" + songName.toLowerCase());
-			if (!FileSystem.exists(targetDir))
-			{
-				FileSystem.createDirectory(targetDir);
-			}
-
-			var targetPath = targetDir + "/song/" + fileType + ".ogg";
-			File.copy(sourcePath, targetPath);
-
-			trace('File copied: ' + targetPath);
-
-			// Create base chart JSON if it doesn't exist
+			var dir = Paths.resolve("songs/" + songName.toLowerCase());
+			if (!FileSystem.exists(dir)) FileSystem.createDirectory(dir);
+			File.copy(sourcePath, '$dir/song/$fileType.ogg');
+			trace('File copied: $dir/song/$fileType.ogg');
 			createBaseChartJSON(songName.toLowerCase(), Std.parseFloat(bpmInput.text));
 		}
-		catch (e:Dynamic)
-		{
-			trace('Error copying file: ' + e);
-			updateStatus("Error copying " + fileType + ".ogg");
-		}
-		#end
-	}
-
-	function createBaseChartJSON(songName:String, bpm:Float):Void
-	{
-		#if desktop
-		try
-		{
-			var targetDir = Paths.resolve("songs/" + songName);
-
-			// Create JSON manually to ensure correct field order
-			var sb = new StringBuf();
-			sb.add('{\n');
-			sb.add('\t"song": {\n');
-			sb.add('\t\t"song": "$songName",\n');
-			sb.add('\t\t"bpm": $bpm,\n');
-			sb.add('\t\t"speed": 2.5,\n');
-			sb.add('\t\t"needsVoices": true,\n');
-			sb.add('\t\t"player1": "bf",\n');
-			sb.add('\t\t"player2": "dad",\n');
-			sb.add('\t\t"gfVersion": "gf",\n');
-			sb.add('\t\t"stage": "stage_week1",\n');
-			sb.add('\t\t"notes": []\n');
-			sb.add('\t}\n');
-			sb.add('}');
-
-			var jsonString = sb.toString();
-
-			// Create chart files for all difficulties
-			// Normal difficulty (no suffix)
-			var chartPathNormal = targetDir + "/" + songName + ".json";
-			if (!FileSystem.exists(chartPathNormal))
-			{
-				File.saveContent(chartPathNormal, jsonString);
-				trace('Base chart created: ' + chartPathNormal);
-			}
-			else
-			{
-				trace('Chart already exists: ' + chartPathNormal);
-			}
-
-			// Easy difficulty
-			var chartPathEasy = targetDir + "/" + songName + "-easy.json";
-			if (!FileSystem.exists(chartPathEasy))
-			{
-				File.saveContent(chartPathEasy, jsonString);
-				trace('Easy chart created: ' + chartPathEasy);
-			}
-			else
-			{
-				trace('Easy chart already exists: ' + chartPathEasy);
-			}
-
-			// Hard difficulty
-			var chartPathHard = targetDir + "/" + songName + "-hard.json";
-			if (!FileSystem.exists(chartPathHard))
-			{
-				File.saveContent(chartPathHard, jsonString);
-				trace('Hard chart created: ' + chartPathHard);
-			}
-			else
-			{
-				trace('Hard chart already exists: ' + chartPathHard);
-			}
-		}
-		catch (e:Dynamic)
-		{
-			trace('Error creating base chart: ' + e);
-		}
+		catch (e:Dynamic) { trace('Error copying file: $e'); updateStatus("Error copying " + fileType + ".ogg"); }
 		#end
 	}
 
@@ -876,21 +646,12 @@ class AddSongSubState extends FlxSubState
 		#if desktop
 		try
 		{
-			var targetDir = Paths.resolve("images/icons");
-			if (!FileSystem.exists(targetDir))
-			{
-				FileSystem.createDirectory(targetDir);
-			}
-
-			var targetPath = targetDir + "/" + iconName + ".png";
-			File.copy(sourcePath, targetPath);
-
-			trace('Icon copied: ' + targetPath);
+			var dir = Paths.resolve("images/icons");
+			if (!FileSystem.exists(dir)) FileSystem.createDirectory(dir);
+			File.copy(sourcePath, '$dir/$iconName.png');
+			trace('Icon copied: $dir/$iconName.png');
 		}
-		catch (e:Dynamic)
-		{
-			trace('Error copying icon: ' + e);
-		}
+		catch (e:Dynamic) { trace('Error copying icon: $e'); }
 		#end
 	}
 
@@ -899,32 +660,50 @@ class AddSongSubState extends FlxSubState
 		#if desktop
 		try
 		{
-			var jsonString = Json.stringify(songListData, null, "\t");
-			File.saveContent(Paths.resolve("songs/songList.json"), jsonString);
+			File.saveContent(Paths.resolve("songs/songList.json"), Json.stringify(songListData, null, "\t"));
 			trace("songList.json saved!");
 		}
-		catch (e:Dynamic)
-		{
-			trace('Error saving JSON: ' + e);
-			updateStatus("Error saving JSON");
-		}
+		catch (e:Dynamic) { trace('Error saving JSON: $e'); updateStatus("Error saving JSON"); }
 		#end
 	}
 
 	function loadSongList():Void
 	{
+		var path = Paths.jsonSong('songList');
+		var content:String = null;
+		#if sys
+		if (sys.FileSystem.exists(path)) content = sys.io.File.getContent(path);
+		#end
+		if (content == null) try { content = lime.utils.Assets.getText(path); } catch (_:Dynamic) {}
 		try
 		{
-			var fileContent:String = Assets.getText(Paths.jsonSong('songList'));
-			songListData = Json.parse(fileContent);
+			songListData = (content != null && content.trim() != '') ? haxe.Json.parse(content) : {songsWeeks:[]};
 		}
-		catch (e:Dynamic)
+		catch (e:Dynamic) { trace("Error loading songList.json: " + e); songListData = {songsWeeks:[]}; }
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// UI MISC
+	// ─────────────────────────────────────────────────────────────────────────
+
+	function updateColorButtons():Void
+	{
+		for (i in 0...colorButtons.length)
 		{
-			trace("Error loading songList.json: " + e);
-			songListData = {
-				songsWeeks: []
-			};
+			var sel = colorPresets[i].hex == selectedColor;
+			colorButtons[i].alpha = sel ? 1 : 0.7;
+			colorLabels[i].color  = sel ? FlxColor.YELLOW : FlxColor.WHITE;
 		}
+	}
+
+	function updateFileStatus():Void
+	{
+		instStatusText.text    = instLoaded      ? "\u2713" : "\u2717";
+		instStatusText.color   = instLoaded      ? FlxColor.GREEN : FlxColor.RED;
+		vocalsStatusText.text  = vocalsLoaded    ? "\u2713" : "\u2717";
+		vocalsStatusText.color = vocalsLoaded    ? FlxColor.GREEN : FlxColor.RED;
+		iconStatusText.text    = iconFileLoaded  ? "\u2713" : "\u2717";
+		iconStatusText.color   = iconFileLoaded  ? FlxColor.GREEN : FlxColor.RED;
 	}
 
 	function updateStatus(text:String):Void
@@ -939,43 +718,103 @@ class AddSongSubState extends FlxSubState
 	function closeWindow():Void
 	{
 		FlxG.sound.play(Paths.sound('menus/cancelMenu'));
-
 		FlxTween.tween(bgDarkener, {alpha: 0}, 0.3);
 		FlxTween.tween(windowBg, {alpha: 0, "scale.x": 0.8, "scale.y": 0.8}, 0.3, {
 			ease: FlxEase.backIn,
-			onComplete: function(twn:FlxTween)
-			{
-				close();
-			}
+			onComplete: function(_) { close(); }
 		});
 	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// WIDGET FACTORIES
+	// ─────────────────────────────────────────────────────────────────────────
+
+	function _lbl(x:Float, y:Float, text:String, delay:Float):Void
+	{
+		var l = new FlxText(x, y, 0, text, 16);
+		l.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
+		l.alpha = 0; add(l);
+		FlxTween.tween(l, {alpha: 1}, 0.3, {startDelay: delay});
+	}
+
+	function _inp(x:Float, y:Float, w:Int, def:String, maxLen:Int, delay:Float):FlxInputText
+	{
+		var f = new FlxInputText(x, y, w, def, 15);
+		f.backgroundColor    = 0xFF0f3460;
+		f.fieldBorderColor   = 0xFF53a8b6;
+		f.fieldBorderThickness = 2;
+		f.color    = FlxColor.WHITE;
+		f.maxLength = maxLen;
+		f.alpha     = 0;
+		add(f);
+		FlxTween.tween(f, {alpha: 1}, 0.3, {startDelay: delay});
+		return f;
+	}
+
+	function _inpNum(x:Float, y:Float, w:Int, def:String, delay:Float):FlxInputText
+	{
+		var f = _inp(x, y, w, def, 10, delay);
+		f.filterMode = FlxInputText.ONLY_NUMERIC;
+		return f;
+	}
+
+	function _toggleBtn(x:Float, y:Float, cb:Void->Void, delay:Float):FlxButton
+	{
+		var b = new FlxButton(x, y, "", cb);
+		b.makeGraphic(80, 35, 0xFF4CAF50);
+		b.label.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, CENTER);
+		b.alpha = 0; add(b);
+		FlxTween.tween(b, {alpha: 1}, 0.3, {startDelay: delay});
+		return b;
+	}
+
+	function _toggleText(x:Float, y:Float, delay:Float):FlxText
+	{
+		var t = new FlxText(x, y, 66, "ON", 15);
+		t.setFormat(Paths.font("vcr.ttf"), 15, 0xFF4CAF50, CENTER);
+		t.alpha = 0; add(t);
+		FlxTween.tween(t, {alpha: 1}, 0.3, {startDelay: delay});
+		return t;
+	}
+
+	function _statusIcon(x:Float, y:Float, delay:Float):FlxText
+	{
+		var t = new FlxText(x, y, 0, "\u2717", 20);
+		t.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.RED, LEFT);
+		t.alpha = 0; add(t);
+		FlxTween.tween(t, {alpha: 1}, 0.3, {startDelay: delay});
+		return t;
+	}
+
+	function styleButton(btn:FlxButton, color:Int, width:Int):Void
+	{
+		btn.makeGraphic(width, 40, color);
+		btn.label.size = 18;
+		btn.label.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, CENTER);
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// UPDATE
+	// ─────────────────────────────────────────────────────────────────────────
 
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
 
-		// Icon selector with arrow keys
 		if (FlxG.keys.justPressed.LEFT)
 		{
-			currentIconIndex--;
-			if (currentIconIndex < 0)
-				currentIconIndex = iconPresets.length - 1;
+			currentIconIndex = (currentIconIndex - 1 + iconPresets.length) % iconPresets.length;
 			iconNameInput.text = iconPresets[currentIconIndex];
 			FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 		}
 		else if (FlxG.keys.justPressed.RIGHT)
 		{
-			currentIconIndex++;
-			if (currentIconIndex >= iconPresets.length)
-				currentIconIndex = 0;
+			currentIconIndex = (currentIconIndex + 1) % iconPresets.length;
 			iconNameInput.text = iconPresets[currentIconIndex];
 			FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 		}
 
-		// ESC to close
 		if (FlxG.keys.justPressed.ESCAPE)
-		{
 			closeWindow();
-		}
 	}
 }

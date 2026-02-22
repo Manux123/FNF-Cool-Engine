@@ -150,8 +150,13 @@ class Stage extends FlxTypedGroup<FlxBasic>
 	{
 		try
 		{
-			var file:String = Paths.getText(Paths.stageJSON(stageName));
-			stageData = cast Json.parse(file);
+			var file:String = mods.compat.ModCompatLayer.readStageFile(stageName);
+			if (file == null)
+			{
+				loadDefaultStage();
+				return;
+			}
+			stageData = cast mods.compat.ModCompatLayer.loadStage(file, stageName);
 			trace('stagefile: $file');
 
 			for (script in ScriptHandler.stageScripts)
@@ -230,37 +235,48 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		else
 		{
 			trace('[Stage] Intentando cargar scripts desde carpeta...');
-			// Busca en mod primero, luego en assets
-			var stagePath = Paths.stageScripts(curStage);
-
 			#if sys
+			// ── Cool Engine: stages/<name>/scripts/*.hx ──────────────────────
+			var stagePath = Paths.stageScripts(curStage);
 			if (sys.FileSystem.exists(stagePath))
 			{
-				trace('[Stage] Carpeta de scripts encontrada: $stagePath');
-				var files = sys.FileSystem.readDirectory(stagePath);
-
-				for (file in files)
+				trace('[Stage] Carpeta de scripts Cool encontrada: $stagePath');
+				for (file in sys.FileSystem.readDirectory(stagePath))
 				{
 					if (file.endsWith('.hx') || file.endsWith('.hscript'))
-					{
-						trace('[Stage] Cargando script: $file');
 						scripts.push(file);
-					}
 				}
+			}
 
-				if (scripts.length > 0)
+			// ── Psych Engine: mods/mod/stages/<name>.lua (no scripts/ subdir) ─
+			if (mods.ModManager.isActive())
+			{
+				final modRoot = mods.ModManager.modRoot();
+				// Psych flat: mods/mod/stages/StageName.lua
+				final psychLua = '$modRoot/stages/$curStage.lua';
+				if (sys.FileSystem.exists(psychLua))
 				{
-					loadStageScripts();
-					trace('[Stage] ${scripts.length} scripts cargados desde carpeta');
+					trace('[Stage] Found Psych Lua script: $psychLua');
+					scripts.push(psychLua); // full path — loadStageScripts handles it
 				}
-				else
+				// Also check stages/<name>/scripts/*.lua
+				final psychScriptDir = '$modRoot/stages/$curStage/scripts';
+				if (sys.FileSystem.exists(psychScriptDir) && sys.FileSystem.isDirectory(psychScriptDir))
 				{
-					trace('[Stage] No se encontraron scripts en la carpeta');
+					for (file in sys.FileSystem.readDirectory(psychScriptDir))
+						if (file.endsWith('.lua') || file.endsWith('.hx') || file.endsWith('.hscript'))
+							scripts.push('$psychScriptDir/$file');
 				}
+			}
+
+			if (scripts.length > 0)
+			{
+				loadStageScripts();
+				trace('[Stage] ${scripts.length} script(s) cargados');
 			}
 			else
 			{
-				trace('[Stage] Carpeta de scripts no existe: $stagePath');
+				trace('[Stage] No se encontraron scripts para el stage: $curStage');
 			}
 			#else
 			trace('[Stage] Carga de scripts desde carpeta no disponible en esta plataforma');
@@ -305,6 +321,7 @@ class Stage extends FlxTypedGroup<FlxBasic>
 	}
 
 	// ── Sprite animado — ahora usa FunkinSprite ───────────────────────────────
+
 	/**
 	 * createAnimatedSprite — integración FunkinSprite
 	 *
@@ -319,9 +336,7 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		var sprite:FunkinSprite = new FunkinSprite(element.position[0], element.position[1]);
 
 		// Cargar frames: Sparrow (XML) o Packer (TXT) — auto-detectado
-		var assetKey:String = element.asset.endsWith('.txt')
-			? element.asset.replace('.txt', '')
-			: element.asset;
+		var assetKey:String = element.asset.endsWith('.txt') ? element.asset.replace('.txt', '') : element.asset;
 
 		sprite.loadStageSparrow(assetKey);
 
@@ -330,13 +345,8 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		{
 			for (anim in element.animations)
 			{
-				sprite.addAnim(
-					anim.name,
-					anim.prefix,
-					anim.framerate != null ? anim.framerate : 24,
-					anim.looped != null ? anim.looped : false,
-					(anim.indices != null && anim.indices.length > 0) ? anim.indices : null
-				);
+				sprite.addAnim(anim.name, anim.prefix, anim.framerate != null ? anim.framerate : 24, anim.looped != null ? anim.looped : false,
+					(anim.indices != null && anim.indices.length > 0) ? anim.indices : null);
 			}
 
 			// Reproducir la primera animación
@@ -373,13 +383,8 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 					for (anim in member.animations)
 					{
-						spr.addAnim(
-							anim.name,
-							anim.prefix,
-							anim.framerate != null ? anim.framerate : 24,
-							anim.looped != null ? anim.looped : false,
-							(anim.indices != null && anim.indices.length > 0) ? anim.indices : null
-						);
+						spr.addAnim(anim.name, anim.prefix, anim.framerate != null ? anim.framerate : 24, anim.looped != null ? anim.looped : false,
+							(anim.indices != null && anim.indices.length > 0) ? anim.indices : null);
 					}
 
 					// Reproducir la primera animación
@@ -528,6 +533,10 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		if (scriptsLoaded)
 			return;
 
+		// Build presetVars for Lua scripts: songName must be visible at top-level
+		final songName = funkin.gameplay.PlayState.SONG != null ? funkin.gameplay.PlayState.SONG.song : '';
+		final luaPreset:Map<String, Dynamic> = ['songName' => songName, 'stage' => this];
+
 		for (scriptPath in scripts)
 		{
 			var fullPath = scriptPath;
@@ -535,11 +544,18 @@ class Stage extends FlxTypedGroup<FlxBasic>
 			// Busca el script en mod activo, luego en assets
 			if (!scriptPath.startsWith('assets/') && !scriptPath.startsWith('mods/'))
 			{
-				final modScriptPath = mods.ModManager.resolveInMod('stages/${curStage}/scripts/$scriptPath');
+				// Also check Psych layout: mods/mod/stages/<name>.lua (no scripts/ subdir)
+				final modScriptPath = mods.ModManager.resolveInMod('stages/${curStage}/scripts/$scriptPath')
+					?? (scriptPath.endsWith('.lua')
+						? mods.ModManager.resolveInMod('stages/$scriptPath')
+						: null);
 				fullPath = modScriptPath ?? 'assets/stages/${curStage}/scripts/$scriptPath';
 			}
 
-			ScriptHandler.loadScript(fullPath, "stage");
+			final isLua = fullPath.endsWith('.lua');
+			ScriptHandler.loadScript(fullPath, 'stage',
+				isLua ? luaPreset : null,
+				isLua ? this      : null);
 		}
 
 		scriptsLoaded = true;
@@ -605,7 +621,7 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 	function createSound(element:StageElement):Void
 	{
-		var sound:FlxSound = new FlxSound().loadEmbedded(Paths.soundStage('$curStage/sounds/'+element.asset));
+		var sound:FlxSound = new FlxSound().loadEmbedded(Paths.soundStage('$curStage/sounds/' + element.asset));
 
 		if (element.volume != null)
 			sound.volume = element.volume;
@@ -674,6 +690,12 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		defaultCamZoom = 0.9;
 		isPixelStage = false;
 
+		// El stage por defecto usa los assets de 'stage' (week 1).
+		// Si Paths.currentStage apunta a otro stage que no existe,
+		// lo redirigimos temporalmente para no romper imageStage().
+		final _prevStage = Paths.currentStage;
+		Paths.currentStage = 'stage_week1';
+
 		var bg:FlxSprite = new FlxSprite(-600, -200).loadGraphic(Paths.imageStage('stageback'));
 		bg.antialiasing = FlxG.save.data.antialiasing;
 		bg.scrollFactor.set(0.9, 0.9);
@@ -695,6 +717,8 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		stageCurtains.scrollFactor.set(1.3, 1.3);
 		stageCurtains.active = false;
 		add(stageCurtains);
+
+		Paths.currentStage = _prevStage;
 	}
 
 	// ── Helper getters ────────────────────────────────────────────────────────

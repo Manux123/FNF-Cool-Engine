@@ -109,34 +109,90 @@ class Song
 	 *   1. mods/{activeMod}/songs/{folder}/{jsonInput}.json
 	 *   2. assets/songs/{folder}/{jsonInput}.json
 	 */
+	/**
+	 * Genera variantes normalizadas de un nombre para cubrir mods Cool Engine
+	 * que usan espacios en lugar de guiones y caracteres especiales distintos.
+	 * Ejemplo: "break it down!" → ["break it down!", "break-it-down!", "break-it-down", ...]
+	 */
+	static function _nameVariants(name:String):Array<String>
+	{
+		final variants:Array<String> = [];
+		function add(v:String) { v = v.trim(); if (v != '' && variants.indexOf(v) == -1) variants.push(v); }
+		add(name);
+		add(name.replace(' ', '-'));
+		add(name.replace('-', ' '));
+		add(name.replace('!', ''));
+		add(name.replace(' ', '-').replace('!', ''));
+		add(name.replace('-', ' ').replace('!', ''));
+		return variants;
+	}
+
+	/**
+	 * Resuelve la ruta real de un chart con normalización de
+	 * espacios/guiones y caracteres especiales en folder y diff.
+	 * Busca en el mod activo primero, luego en assets/.
+	 * @return  Ruta al .json, o null si no existe.
+	 */
+	public static function findChart(folder:String, diff:String):Null<String>
+	{
+		#if sys
+		final folderVars = _nameVariants(folder.toLowerCase());
+		final diffVars   = _nameVariants(diff.toLowerCase());
+
+		if (mods.ModManager.isActive())
+		{
+			final modRoot = mods.ModManager.modRoot();
+			for (fv in folderVars)
+				for (dv in diffVars)
+				{
+					// Cool / Psych flat: songs/name/hard.json
+					for (base in ['$modRoot/songs', '$modRoot/assets/songs'])
+					{
+						final p = '$base/$fv/$dv.json';
+						if (FileSystem.exists(p)) return p;
+					}
+					// Psych: data/name/name-diff.json  o  data/name/diff.json
+					for (base in ['$modRoot/data', '$modRoot/assets/data'])
+					{
+						for (p in ['$base/$fv/$fv-$dv.json', '$base/$fv/$dv.json'])
+							if (FileSystem.exists(p)) return p;
+					}
+				}
+		}
+
+		for (fv in folderVars)
+			for (dv in diffVars)
+			{
+				final p = 'assets/songs/$fv/$dv.json';
+				if (FileSystem.exists(p)) return p;
+			}
+
+		return null;
+		#else
+		final assetPath = Paths.jsonSong('${folder.toLowerCase()}/${diff.toLowerCase()}');
+		return Assets.exists(assetPath) ? assetPath : null;
+		#end
+	}
+
+	/**
+	 * Carga un chart desde JSON con normalización automática de nombres.
+	 * Cubre mods Cool Engine con espacios/guiones mezclados en folder o diff.
+	 */
 	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong
 	{
 		final songFolder = folder != null ? folder.toLowerCase() : '';
 		final diffName   = jsonInput.toLowerCase();
-		final relPath    = 'songs/$songFolder/$diffName.json';
 
 		trace('[Song] loadFromJson: folder=$folder, diff=$jsonInput');
 
 		var rawJson:String = null;
 
 		#if sys
-		// 1. Mod activo
-		final modPath = mods.ModManager.resolveInMod(relPath);
-		if (modPath != null && FileSystem.exists(modPath))
+		final resolvedPath = findChart(songFolder, diffName);
+		if (resolvedPath != null)
 		{
-			rawJson = File.getContent(modPath).trim();
-			trace('[Song] Cargado desde mod: $modPath');
-		}
-
-		// 2. Assets base
-		if (rawJson == null)
-		{
-			final assetPath = 'assets/$relPath';
-			if (FileSystem.exists(assetPath))
-			{
-				rawJson = File.getContent(assetPath).trim();
-				trace('[Song] Cargado desde assets: $assetPath');
-			}
+			rawJson = File.getContent(resolvedPath).trim();
+			trace('[Song] Cargado desde: $resolvedPath');
 		}
 		#else
 		final assetPath = Paths.jsonSong('$songFolder/$diffName');
@@ -149,11 +205,10 @@ class Song
 
 		if (rawJson == null)
 		{
-			trace('[Song] ERROR: Chart no encontrado: $relPath');
-			throw 'Chart no encontrado: $relPath';
+			trace('[Song] ERROR: Chart no encontrado: $songFolder/$diffName');
+			throw 'Chart no encontrado: $songFolder/$diffName';
 		}
 
-		// Limpiar JSON malformado (trailing garbage)
 		while (rawJson.length > 0 && rawJson.charAt(rawJson.length - 1) != '}')
 			rawJson = rawJson.substr(0, rawJson.length - 1);
 
@@ -163,7 +218,9 @@ class Song
 	public static function parseJSONshit(rawJson:String):SwagSong
 	{
 		trace('[Song] === parseJSONshit LLAMADO ===');
-		var swagShit:SwagSong = cast Json.parse(rawJson).song;
+		
+		var swagShit:SwagSong = cast mods.compat.ModCompatLayer.loadChart(rawJson);
+		
 		swagShit.validScore = true;
 		
 		trace('[Song] characters antes de migración: ' + (swagShit.characters != null ? swagShit.characters.length + ' personajes' : 'NULL'));

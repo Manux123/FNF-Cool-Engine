@@ -587,13 +587,37 @@ class ModListItem extends FlxSprite
 		_bg = new FlxSprite(0, 0);
 		_bg.scrollFactor.set();
 
+		// Icono del mod (icon.png) — si no existe queda null y se omite en draw()
+		_icon = new FlxSprite(6, (H - 40) * 0.5);
+		_icon.scrollFactor.set();
+		#if sys
+		final iconP = mods.ModManager.iconPath(mod.id);
+		if (iconP != null)
+		{
+			final bmp = openfl.display.BitmapData.fromFile(iconP);
+			if (bmp != null)
+			{
+				_icon.loadGraphic(flixel.graphics.FlxGraphic.fromBitmapData(bmp));
+				_icon.setGraphicSize(40, 40);
+				_icon.updateHitbox();
+			}
+			else _icon = null;
+		}
+		else _icon = null;
+		#else
+		_icon = null;
+		#end
+
+		// Offset de texto si hay icono
+		final textOffX:Int = (_icon != null) ? 52 : 10;
+
 		// Nombre
-		_nameText = new FlxText(10, 10, W - 20, mod.name);
+		_nameText = new FlxText(textOffX, 10, W - textOffX - 20, mod.name);
 		_nameText.setFormat(null, 16, FlxColor.WHITE, LEFT, OUTLINE, 0xFF000000);
 		_nameText.scrollFactor.set();
 
 		// Autor
-		_authorText = new FlxText(10, 32, W - 20, mod.author.length > 0 ? 'By ' + mod.author : '');
+		_authorText = new FlxText(textOffX, 32, W - textOffX - 20, mod.author.length > 0 ? 'By ' + mod.author : '');
 		_authorText.setFormat(null, 11, 0xFF888899, LEFT);
 		_authorText.scrollFactor.set();
 
@@ -608,6 +632,28 @@ class ModListItem extends FlxSprite
 		_activeBadge.scrollFactor.set();
 
 		_refresh(false);
+	}
+
+	override public function draw():Void
+	{
+		// Dibuja los hijos desplazados por la posición del ítem
+		_drawChild(_bg);
+		if (_icon != null) _drawChild(_icon);
+		_drawChild(_nameText);
+		_drawChild(_authorText);
+		_drawChild(_enabledDot);
+		_drawChild(_activeBadge);
+	}
+
+	inline function _drawChild(s:flixel.FlxBasic):Void
+	{
+		if (s == null || !s.alive || !s.visible) return;
+		final spr = cast(s, flixel.FlxObject);
+		final ox = spr.x; final oy = spr.y;
+		spr.x += x; spr.y += y;
+		spr.cameras = cameras;
+		s.draw();
+		spr.x = ox; spr.y = oy;
 	}
 
 	public function setSelected(selected:Bool):Void

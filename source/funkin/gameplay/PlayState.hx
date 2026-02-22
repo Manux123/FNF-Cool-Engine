@@ -60,6 +60,7 @@ import data.Discord.DiscordClient;
 // Cutscenes
 import funkin.cutscenes.dialogue.DialogueBoxImproved;
 import funkin.cutscenes.dialogue.DialogueData;
+import funkin.cutscenes.VideoManager;
 import funkin.data.MetaData;
 import funkin.gameplay.UIScriptedManager;
 // ModChart
@@ -97,16 +98,16 @@ class PlayState extends funkin.states.MusicBeatState
 	public static var campaignScore:Int = 0;
 
 	// === CORE SYSTEMS ===
-	private var gameState:GameState;
+	public var gameState:GameState;
 	private var noteManager:NoteManager;
 	private var inputHandler:InputHandler;
 
 	public var cameraController:CameraController;
 
-	private var uiManager:UIScriptedManager;
+	public var uiManager:UIScriptedManager;
 	private var characterController:CharacterController;
 
-	private var metaData:MetaData;
+	public var metaData:MetaData;
 
 	public var scriptsEnabled:Bool = true;
 
@@ -150,11 +151,11 @@ class PlayState extends funkin.states.MusicBeatState
 
 	public static var startingSong:Bool = false;
 
-	private var inCutscene:Bool = false;
+	public var inCutscene:Bool = false;
 
 	public static var isPlaying:Bool = false;
 
-	var canPause:Bool = true;
+	public var canPause:Bool = true;
 
 	public var paused:Bool = false;
 
@@ -768,6 +769,25 @@ class PlayState extends funkin.states.MusicBeatState
 			return;
 		}
 
+		// ── Intro video (meta.json: "introVideo": "my-video") ─────────────────
+		// If there is a defined introduction video, it plays BEFORE the dialogue/countdown.
+		if (metaData != null && metaData.introVideo != null)
+		{
+			final vidKey = metaData.introVideo;
+			metaData.introVideo = null; // avoid loop if called again
+
+			if (VideoManager._resolvePath(vidKey) != null)
+			{
+				inCutscene = true;
+				VideoManager.playCutscene(vidKey, function()
+				{
+					inCutscene = false;
+					startCountdown(); // continuar flujo normal
+				});
+				return;
+			}
+		}
+
 		if (checkForDialogue('intro') && isStoryMode)
 		{
 			inCutscene = true;
@@ -1034,16 +1054,16 @@ class PlayState extends funkin.states.MusicBeatState
 		// ── ENTRADA: alpha + scale punch rápidos ──────────────────────────────
 		final inDur = dur * 0.20;
 		FlxTween.tween(spr, {alpha: 1.0}, inDur, {ease: FlxEase.quadOut});
-		FlxTween.tween(spr.scale, {x: 1.0, y: 1.0}, inDur * 1.8, {ease: FlxEase.elasticOut});
+		FlxTween.tween(spr.scale, {x: spr.scale.x + 0.3, y: spr.scale.y + 0.3}, inDur * 1.8, {ease: FlxEase.elasticOut});
 
 		// Micro-pulse a mitad del beat (scale 1.0 → 1.05 → 1.0)
-		FlxTween.tween(spr.scale, {x: 1.06, y: 1.06}, dur * 0.12, {
+		FlxTween.tween(spr.scale, {x: spr.scale.x + 0.06, y: spr.scale.y + 0.06}, dur * 0.12, {
 			ease: FlxEase.sineOut,
 			startDelay: dur * 0.3,
 			onComplete: function(_)
 			{
 				if (spr.alive)
-					FlxTween.tween(spr.scale, {x: 1.0, y: 1.0}, dur * 0.08, {ease: FlxEase.sineIn});
+					FlxTween.tween(spr.scale, {x: spr.scale.x - 0.06, y: spr.scale.y - 0.06}, dur * 0.08, {ease: FlxEase.sineIn});
 			}
 		});
 
@@ -2084,6 +2104,25 @@ class PlayState extends funkin.states.MusicBeatState
 		if (SONG.validScore)
 		{
 			Highscore.saveScore(SONG.song, songScore, storyDifficulty);
+		}
+
+		// ── Outro video (meta.json: "outroVideo": "mi-video") ─────────────────
+		if (metaData != null && metaData.outroVideo != null)
+		{
+			final vidKey = metaData.outroVideo;
+			metaData.outroVideo = null; // evitar doble reproducción
+
+			if (VideoManager._resolvePath(vidKey) != null)
+			{
+				isCutscene = true;
+				VideoManager.playCutscene(vidKey, function()
+				{
+					isCutscene = false;
+					if (showOutroDialogue() && isStoryMode) return;
+					continueAfterSong();
+				});
+				return;
+			}
 		}
 
 		if (showOutroDialogue() && isStoryMode)

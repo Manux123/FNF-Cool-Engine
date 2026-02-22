@@ -97,6 +97,12 @@ class ModPaths
 	public static function previewVideo(modId:String, key:String):String
 		return '${ModManager.MODS_FOLDER}/previewVids/$modId/$key.mp4';
 
+	// ─── Shaders ──────────────────────────────────────────────────────────────
+
+	/** Resuelve un shader .frag del mod especificado (o el activo). */
+	public static inline function shader(key:String, ?mod:String):String
+		return resolve('shaders/$key.frag', mod);
+
 	// ─── Audio ────────────────────────────────────────────────────────────────
 
 	public static function sound(key:String, ?mod:String):String

@@ -59,12 +59,34 @@ class StateScriptHandler
 
 	/**
 	 * Limpia y carga todos los scripts para `stateName`.
-	 * Busca en `assets/states/{statename}/`.
+	 * Busca primero en el mod activo, luego en assets/states/{statename}/.
+	 *
+	 * Estructura esperada en mods:
+	 *   mods/{mod}/states/{statename}/        ← Cool Engine layout
+	 *   mods/{mod}/assets/states/{statename}/ ← Psych layout
 	 */
 	public static function loadStateScripts(stateName:String, state:FlxState):Array<HScriptInstance>
 	{
 		clearStateScripts();
-		final loaded = loadScriptsFromFolder('assets/states/${stateName.toLowerCase()}', state);
+
+		var loaded:Array<HScriptInstance> = [];
+
+		#if sys
+		if (mods.ModManager.isActive())
+		{
+			final modRoot = mods.ModManager.modRoot();
+			final sn = stateName.toLowerCase();
+			for (folder in ['$modRoot/states/$sn', '$modRoot/assets/states/$sn'])
+			{
+				for (s in loadScriptsFromFolder(folder, state))
+					loaded.push(s);
+			}
+		}
+		#end
+
+		for (s in loadScriptsFromFolder('assets/states/${stateName.toLowerCase()}', state))
+			loaded.push(s);
+
 		trace('[StateScriptHandler] ${loaded.length} scripts cargados para $stateName.');
 		return loaded;
 	}

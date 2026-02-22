@@ -181,6 +181,8 @@ class Main extends Sprite
 		mods.ModManager.onModChanged = function(newMod:Null<String>)
 		{
 			Paths.forceClearCache();
+			// Recargar lista de personajes/stages para incluir los del nuevo mod
+			funkin.gameplay.objects.character.CharacterList.reload();
 			#if cpp cpp.vm.Gc.run(true); #end
 			#if hl  hl.Gc.major();       #end
 			trace('[Main] Cache limpiado por cambio de mod → ${newMod ?? "base"}');

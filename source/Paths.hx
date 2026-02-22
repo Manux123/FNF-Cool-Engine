@@ -204,16 +204,57 @@ class Paths
 	/** Imagen del stage actual. */
 	public static function imageStage(key:String):Bitmap
 	{
-		final path = resolveAny([
-			ModManager.resolveInMod('stages/$currentStage/images/$key.png') ?? '',
-			'assets/stages/$currentStage/images/$key.png'
-		].filter(s -> s != ''));
+		// Candidatos en orden: Cool layout → Psych layout → base assets
+		final candidates = [
+			ModManager.resolveInMod('stages/$currentStage/images/$key.png'), // Cool
+			ModManager.resolveInMod('images/stages/$key.png'),                // Psych
+			ModManager.resolveInMod('images/$key.png'),                       // Psych flat
+		].filter(p -> p != null);
 
+		// ── 1. Rutas de mod — usar Lime directamente, NUNCA OpenFlAssets ───
+		// lime.graphics.Image.fromFile() carga del disco nativo sin pasar por
+		// el sistema de assets de OpenFL (que solo conoce los assets compilados).
+		// BitmapData.fromBytes() falla porque espera openfl.utils.ByteArray,
+		// no haxe.io.Bytes. BitmapData.fromImage() es la API correcta.
 		#if sys
-		if (FileSystem.exists(path))
-			return Bitmap.fromFile(path);
+		for (modPath in candidates)
+		{
+			try
+			{
+				final limeImage = lime.graphics.Image.fromFile(modPath);
+				if (limeImage != null)
+				{
+					final bmp = Bitmap.fromImage(limeImage);
+					if (bmp != null) return bmp;
+				}
+			}
+			catch (e:Dynamic)
+			{
+				trace('[Paths] imageStage: error cargando "$modPath": $e');
+			}
+		}
 		#end
-		return OpenFlAssets.getBitmapData(path);
+
+		// ── 2. Asset base ─────────────────────────────────────────────────
+		final basePath = 'assets/stages/$currentStage/images/$key.png';
+		#if sys
+		if (FileSystem.exists(basePath))
+		{
+			try
+			{
+				final limeImage = lime.graphics.Image.fromFile(basePath);
+				if (limeImage != null) return Bitmap.fromImage(limeImage);
+			}
+			catch (e:Dynamic) {}
+		}
+		#end
+
+		// Último recurso: assets embebidos en el binario
+		if (OpenFlAssets.exists(basePath, IMAGE))
+			return OpenFlAssets.getBitmapData(basePath);
+
+		trace('[Paths] imageStage: no encontrado "$key" (stage=$currentStage, mod=${ModManager.activeMod})');
+		return null;
 	}
 
 	// Sonidos
@@ -230,27 +271,85 @@ class Paths
 		return resolve('music/$key.$SOUND_EXT', MUSIC);
 
 	// Canciones — audio
+	/**
+	 * Genera variantes normalizadas de un nombre de carpeta para mods
+	 * que usan espacios o guiones de forma distinta al nombre en el JSON.
+	 * Ej: "Break It Down!" → ["break it down!", "break-it-down!", "break-it-down", ...]
+	 */
+	static function _songFolderVariants(name:String):Array<String>
+	{
+		final s = name.toLowerCase();
+		final variants:Array<String> = [];
+		function add(v:String) { v = v.trim(); if (v != '' && variants.indexOf(v) == -1) variants.push(v); }
+		add(s);
+		add(s.replace(' ', '-'));
+		add(s.replace('-', ' '));
+		add(s.replace('!', ''));
+		add(s.replace(' ', '-').replace('!', ''));
+		add(s.replace('-', ' ').replace('!', ''));
+		return variants;
+	}
+
+	/** Resuelve la carpeta real de una canción en el mod activo o en assets/. */
+	static function _resolveSongFolder(song:String):String
+	{
+		#if sys
+		if (ModManager.isActive())
+		{
+			final modRoot = ModManager.modRoot();
+			for (v in _songFolderVariants(song))
+				for (base in ['$modRoot/songs', '$modRoot/assets/songs'])
+					if (sys.FileSystem.isDirectory('$base/$v'))
+						return '$base/$v';
+		}
+		// Fallback: assets/
+		for (v in _songFolderVariants(song))
+			if (sys.FileSystem.isDirectory('assets/songs/$v'))
+				return 'assets/songs/$v';
+		// Devuelve el path canónico aunque no exista (fallback final)
+		return 'assets/songs/${song.toLowerCase()}';
+		#else
+		return 'assets/songs/${song.toLowerCase()}';
+		#end
+	}
+
 	public static function inst(song:String):String
 	{
-		final s = song.toLowerCase();
-		return resolveAny([
-			ModManager.resolveInMod('songs/$s/song/Inst.$SOUND_EXT') ?? '',
-			'assets/songs/$s/song/Inst.$SOUND_EXT'
-		].filter(p -> p != ''));
+		final folder = _resolveSongFolder(song);
+		// Cool Engine layout: songs/name/song/Inst.ogg
+		final withSubfolder = '$folder/song/Inst.$SOUND_EXT';
+		#if sys
+		if (sys.FileSystem.exists(withSubfolder)) return withSubfolder;
+		// Psych Engine layout: songs/name/Inst.ogg (no /song/ subfolder)
+		final flat = '$folder/Inst.$SOUND_EXT';
+		if (sys.FileSystem.exists(flat)) return flat;
+		#end
+		return withSubfolder; // fallback for embedded assets
 	}
 
 	public static function voices(song:String):String
 	{
-		final s = song.toLowerCase();
-		return resolveAny([
-			ModManager.resolveInMod('songs/$s/song/Voices.$SOUND_EXT') ?? '',
-			'assets/songs/$s/song/Voices.$SOUND_EXT'
-		].filter(p -> p != ''));
+		final folder = _resolveSongFolder(song);
+		final withSubfolder = '$folder/song/Voices.$SOUND_EXT';
+		#if sys
+		if (sys.FileSystem.exists(withSubfolder)) return withSubfolder;
+		final flat = '$folder/Voices.$SOUND_EXT';
+		if (sys.FileSystem.exists(flat)) return flat;
+		#end
+		return withSubfolder;
 	}
 
-	// Vídeo
-	public static inline function video(key:String):String
-		return resolve('cutscenes/videos/$key.mp4', BINARY);
+	// Vídeo — busca en mods/mod/videos/, mods/mod/cutscenes/videos/, assets/videos/, assets/cutscenes/videos/
+	public static function video(key:String):String
+	{
+		final k = key.endsWith('.mp4') ? key.substr(0, key.length - 4) : key;
+		return resolveAny([
+			ModManager.resolveInMod('videos/$k.mp4')           ?? '',
+			ModManager.resolveInMod('cutscenes/videos/$k.mp4') ?? '',
+			'assets/videos/$k.mp4',
+			'assets/cutscenes/videos/$k.mp4'
+		].filter(s -> s != ''));
+	}
 
 	// Fuentes
 	public static inline function font(key:String):String
@@ -341,9 +440,12 @@ class Paths
 		{
 			#if sys
 			if (FileSystem.exists(path))
-				bitmap = Bitmap.fromFile(path);
+			{
+				final limeImage = lime.graphics.Image.fromFile(path);
+				if (limeImage != null) bitmap = Bitmap.fromImage(limeImage);
+			}
 			#end
-			if (bitmap == null && OpenFlAssets.exists(path, IMAGE))
+			if (bitmap == null && !path.startsWith('mods/') && OpenFlAssets.exists(path, IMAGE))
 				bitmap = OpenFlAssets.getBitmapData(path);
 		}
 		catch (e:Dynamic)
@@ -365,15 +467,52 @@ class Paths
 	public static function getSparrowAtlas(key:String):FlxAtlasFrames
 		return _cachedAtlas(key, () -> _sparrow(image(key), resolve('images/$key.xml')));
 
+	/**
+	 * Resolves a character PNG path trying both engine layouts:
+	 *   Cool Engine:  mods/mod/characters/images/NAME.png
+	 *   Psych Engine: mods/mod/images/characters/NAME.png
+	 */
+	static function _resolveCharacterPng(key:String):String
+		return resolveAny([
+			ModManager.resolveInMod('characters/images/$key.png') ?? '',  // Cool
+			ModManager.resolveInMod('images/characters/$key.png') ?? '',  // Psych
+			'assets/characters/images/$key.png'
+		].filter(s -> s != ''));
+
+	static function _resolveCharacterXml(key:String):String
+		return resolveAny([
+			ModManager.resolveInMod('characters/images/$key.xml') ?? '',
+			ModManager.resolveInMod('images/characters/$key.xml') ?? '',
+			'assets/characters/images/$key.xml'
+		].filter(s -> s != ''));
+
+	static function _resolveCharacterTxt(key:String):String
+		return resolveAny([
+			ModManager.resolveInMod('characters/images/$key.txt') ?? '',
+			ModManager.resolveInMod('images/characters/$key.txt') ?? '',
+			'assets/characters/images/$key.txt'
+		].filter(s -> s != ''));
+
 	public static function characterSprite(key:String):FlxAtlasFrames
-		return _cachedAtlas('char_$key', () -> _sparrow(resolve('characters/images/$key.png', IMAGE), resolve('characters/images/$key.xml', TEXT)));
+		return _cachedAtlas('char_$key', () -> _sparrow(_resolveCharacterPng(key), _resolveCharacterXml(key)));
 
 	public static function stageSprite(key:String):FlxAtlasFrames
 	{
 		return _cachedAtlas('stage_$key', () ->
 		{
-			final pngPath = resolve('stages/$currentStage/images/$key.png', IMAGE);
-			final xmlPath = resolve('stages/$currentStage/images/$key.xml', TEXT);
+			// Try Cool layout first, then Psych layout
+			final pngPath = resolveAny([
+				ModManager.resolveInMod('stages/$currentStage/images/$key.png') ?? '', // Cool
+				ModManager.resolveInMod('images/stages/$key.png')                ?? '', // Psych
+				ModManager.resolveInMod('images/$key.png')                       ?? '', // Psych flat
+				'assets/stages/$currentStage/images/$key.png'
+			].filter(s -> s != ''));
+			final xmlPath = resolveAny([
+				ModManager.resolveInMod('stages/$currentStage/images/$key.xml') ?? '',
+				ModManager.resolveInMod('images/stages/$key.xml')                ?? '',
+				ModManager.resolveInMod('images/$key.xml')                       ?? '',
+				'assets/stages/$currentStage/images/$key.xml'
+			].filter(s -> s != ''));
 			final bmp = imageStage(key);
 			return bmp != null ? _sparrowFromBitmap(bmp, xmlPath) : null;
 		});
@@ -394,11 +533,25 @@ class Paths
 		return _cachedAtlas('packer_$key', () -> _packer(image(key), resolve('images/$key.txt')));
 
 	public static function characterSpriteTxt(key:String):FlxAtlasFrames
-		return _cachedAtlas('char_txt_$key', () -> _packer(resolve('characters/images/$key.png', IMAGE), resolve('characters/images/$key.txt', TEXT)));
+		return _cachedAtlas('char_txt_$key', () -> _packer(_resolveCharacterPng(key), _resolveCharacterTxt(key)));
 
 	public static function stageSpriteTxt(key:String):FlxAtlasFrames
-		return _cachedAtlas('stage_txt_$key',
-			() -> _packer(resolve('stages/$currentStage/images/$key.png', IMAGE), resolve('stages/$currentStage/images/$key.txt', TEXT)));
+		return _cachedAtlas('stage_txt_$key', () ->
+		{
+			final pngPath = resolveAny([
+				ModManager.resolveInMod('stages/$currentStage/images/$key.png') ?? '',
+				ModManager.resolveInMod('images/stages/$key.png')                ?? '',
+				ModManager.resolveInMod('images/$key.png')                       ?? '',
+				'assets/stages/$currentStage/images/$key.png'
+			].filter(s -> s != ''));
+			final txtPath = resolveAny([
+				ModManager.resolveInMod('stages/$currentStage/images/$key.txt') ?? '',
+				ModManager.resolveInMod('images/stages/$key.txt')                ?? '',
+				ModManager.resolveInMod('images/$key.txt')                       ?? '',
+				'assets/stages/$currentStage/images/$key.txt'
+			].filter(s -> s != ''));
+			return _packer(pngPath, txtPath);
+		});
 
 	public static function skinSpriteTxt(key:String):FlxAtlasFrames
 		return _cachedAtlas('skin_txt_$key', () -> _packer(resolve('skins/$key.png', IMAGE), resolve('skins/$key.txt', TEXT)));
@@ -511,7 +664,14 @@ class Paths
 		{
 			#if sys
 			if (FileSystem.exists(pngPath) && FileSystem.exists(xmlPath))
-				return FlxAtlasFrames.fromSparrow(Bitmap.fromFile(pngPath), File.getContent(xmlPath));
+			{
+				final limeImage = lime.graphics.Image.fromFile(pngPath);
+				if (limeImage != null)
+				{
+					final bmp = Bitmap.fromImage(limeImage);
+					return FlxAtlasFrames.fromSparrow(bmp, File.getContent(xmlPath));
+				}
+			}
 			#end
 			return FlxAtlasFrames.fromSparrow(pngPath, xmlPath);
 		}
@@ -547,7 +707,14 @@ class Paths
 		{
 			#if sys
 			if (FileSystem.exists(pngPath) && FileSystem.exists(txtPath))
-				return FlxAtlasFrames.fromSpriteSheetPacker(Bitmap.fromFile(pngPath), File.getContent(txtPath));
+			{
+				final limeImage = lime.graphics.Image.fromFile(pngPath);
+				if (limeImage != null)
+				{
+					final bmp = Bitmap.fromImage(limeImage);
+					return FlxAtlasFrames.fromSpriteSheetPacker(bmp, File.getContent(txtPath));
+				}
+			}
 			#end
 			return FlxAtlasFrames.fromSpriteSheetPacker(pngPath, txtPath);
 		}

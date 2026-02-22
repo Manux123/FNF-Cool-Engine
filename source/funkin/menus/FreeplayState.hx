@@ -143,7 +143,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 		// Degradado overlay para dar profundidad
 		bgGradient = new FlxSprite();
 		bgGradient.makeGraphic(FlxG.width, FlxG.height, FlxColor.TRANSPARENT, true);
-		var gradientColors:Array<Int> = [0x00000000, 0x88000000];
+		bgGradient.pixels.lock();   // requerido en native cpp antes de operaciones pixel
 		for (i in 0...FlxG.height)
 		{
 			var ratio:Float = i / FlxG.height;
@@ -299,17 +299,100 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 	function loadSongsData():Void
 	{
-		var file:String = Assets.getText(Paths.jsonSong('songList'));
+		// ── Leer el songList: del mod activo primero, luego el base ──────────
+		var songListPath:String = Paths.jsonSong('songList');
+		var file:String = null;
+		#if sys
+		if (sys.FileSystem.exists(songListPath))
+			file = sys.io.File.getContent(songListPath);
+		#end
+		if (file == null)
+		{
+			try { file = lime.utils.Assets.getText(songListPath); } catch (_:Dynamic) {}
+		}
+
 		try
 		{
-			songInfo = cast Json.parse(file);
+			if (file != null && file.trim() != '')
+				songInfo = cast haxe.Json.parse(file);
 		}
 		catch (e:Dynamic)
 		{
-			trace("Error loading song data for " + file + ": " + e);
+			trace("Error loading song data for " + songListPath + ": " + e);
 			songInfo = null;
 		}
+
+		// ── Inyectar canciones del mod activo según formato ──────────────────
+		#if sys
+		if (mods.ModManager.isActive())
+		{
+			final fmt = mods.compat.ModCompatLayer.getActiveModFormat();
+
+			if (fmt == mods.compat.ModFormat.PSYCH_ENGINE)
+			{
+				// Psych: obtener semanas desde weekList + datos propios del mod
+				if (songInfo == null) songInfo = { songsWeeks: [] };
+				for (modWeek in mods.compat.ModCompatLayer.getModSongsInfo())
+				{
+					var hideFP:Bool = Reflect.field(modWeek, 'hideFreeplay') == true;
+					if (!hideFP)
+						songInfo.songsWeeks.push(cast modWeek);
+				}
+				trace('[FreeplayState] Mod Psych activo "${mods.ModManager.activeMod}" — semanas inyectadas: ${songInfo.songsWeeks.length}');
+			}
+			else if (songInfo == null)
+			{
+				// Cool Engine mod o formato desconocido sin songList: auto-descubrir
+				// canciones desde la carpeta songs/ del mod
+				songInfo = _autoDiscoverModSongs();
+				if (songInfo != null)
+					trace('[FreeplayState] Mod "${mods.ModManager.activeMod}" — canciones auto-descubiertas: ${songInfo.songsWeeks.length} semanas');
+			}
+		}
+		#end
 	}
+
+	#if sys
+	/** Auto-descubre canciones desde la carpeta songs/ del mod activo como una semana única. */
+	function _autoDiscoverModSongs():StoryMenuState.Songs
+	{
+		final modId   = mods.ModManager.activeMod;
+		if (modId == null) return null;
+		final songsDir = '${mods.ModManager.MODS_FOLDER}/$modId/songs';
+		if (!sys.FileSystem.exists(songsDir)) return null;
+
+		var songNames:Array<String> = [];
+		var songIcons:Array<String> = [];
+		var bpms:Array<Float>       = [];
+		for (entry in sys.FileSystem.readDirectory(songsDir))
+		{
+			final ep = '$songsDir/$entry';
+			if (!sys.FileSystem.isDirectory(ep)) continue;
+			// Check that a chart file exists
+			var hasChart = false;
+			for (diff in ['hard', 'normal', 'easy', 'chart'])
+				if (sys.FileSystem.exists('$ep/$diff.json')) { hasChart = true; break; }
+			if (!hasChart) continue;
+			songNames.push(entry);
+			songIcons.push('icon-$entry');
+			bpms.push(120.0);
+		}
+		if (songNames.length == 0) return null;
+
+		final modInfo = mods.ModManager.getInfo(modId);
+		final colorHex = modInfo != null ? StringTools.hex(modInfo.color & 0xFFFFFF, 6) : 'FF9900';
+		return {
+			songsWeeks: [{
+				weekName:       modInfo != null ? modInfo.name : modId,
+				weekSongs:      songNames,
+				songIcons:      songIcons,
+				color:          [colorHex],
+				bpm:            bpms,
+				weekCharacters: ['bf', 'gf', 'dad']
+			}]
+		};
+	}
+	#end
 
 	override function closeSubState()
 	{
@@ -424,14 +507,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 				var poop:String = Highscore.formatSong(songLowercase, curDifficulty);
 
 				// Verify if JSON exists before trying to preview
-				var jsonPath:String = 'assets/songs/$songLowercase/$poop.json';
-				var jsonExists:Bool = false;
-
-				#if sys
-				jsonExists = FileSystem.exists(jsonPath);
-				#else
-				jsonExists = Assets.exists(Paths.json('songs/$songLowercase/$poop'));
-				#end
+				var jsonExists:Bool = Song.findChart(songLowercase, poop) != null;
 
 				if (!jsonExists)
 				{
@@ -563,18 +639,8 @@ class FreeplayState extends funkin.states.MusicBeatState
 			trace('[FreeplayState] Current difficulty: $curDifficulty');
 
 			// Verify if JSON exists
-			var jsonPath:String = 'assets/songs/$songLowercase/$poop.json';
-			trace('[FreeplayState] Looking for JSON at: $jsonPath');
-
-			var jsonExists:Bool = false;
-
-			#if sys
-			jsonExists = FileSystem.exists(jsonPath);
-			trace('[FreeplayState] FileSystem.exists() = $jsonExists');
-			#else
-			jsonExists = Assets.exists(Paths.json('songs/$songLowercase/$poop'));
-			trace('[FreeplayState] Assets.exists() = $jsonExists');
-			#end
+			var jsonExists:Bool = Song.findChart(songLowercase, poop) != null;
+			trace('[FreeplayState] findChart($songLowercase, $poop) = $jsonExists');
 
 			if (!jsonExists)
 			{

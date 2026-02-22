@@ -2,6 +2,9 @@ package funkin.gameplay.objects.character;
 
 import flixel.FlxG;
 import lime.utils.Assets;
+#if sys
+import sys.FileSystem;
+#end
 import flixel.FlxSprite;
 import flixel.graphics.FlxGraphic;
 
@@ -20,11 +23,39 @@ class HealthIcon extends FlxSprite
 	}
 
 	public function updateIcon(char:String = 'bf', isPlayer:Bool = false)
-	{	
+	{
+		// Construir path resolviendo mod activo
 		var path = Paths.image('icons/icon-' + char);
-		if(!Assets.exists(path)) path = Paths.image('icons/icon-face');
 
-		var graphic:FlxGraphic = FlxG.bitmap.add(path);
+		// Assets.exists() falla con rutas de filesystem de mods en native cpp.
+		// Usamos FileSystem.exists() en sys y Assets.exists() solo como fallback.
+		var iconExists:Bool = false;
+		#if sys
+		iconExists = sys.FileSystem.exists(path);
+		if (!iconExists)
+		{
+			// Psych mods guardan iconos en images/icons/ sin prefijo "icon-"
+			final altPath = Paths.image('icons/' + char);
+			if (sys.FileSystem.exists(altPath)) { path = altPath; iconExists = true; }
+		}
+		#else
+		iconExists = Assets.exists(path);
+		#end
+
+		if (!iconExists) path = Paths.image('icons/icon-face');
+
+		// Cargar BitmapData con fromFile en sys (soporta rutas de mod en disco)
+		var graphic:FlxGraphic = null;
+		#if sys
+		if (sys.FileSystem.exists(path))
+		{
+			final bmp = openfl.display.BitmapData.fromFile(path);
+			if (bmp != null)
+				graphic = flixel.graphics.FlxGraphic.fromBitmapData(bmp, false, path);
+		}
+		#end
+		if (graphic == null)
+			graphic = FlxG.bitmap.add(path);
 		
 		antialiasing = true;
 		loadGraphic(graphic, true, 150, 150);

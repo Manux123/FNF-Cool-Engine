@@ -4,6 +4,7 @@ import flixel.FlxG;
 import funkin.gameplay.PlayState;
 import funkin.data.Song.SwagSong;
 import funkin.data.Section.SwagSection;
+import Paths;
 
 using StringTools;
 
@@ -177,7 +178,7 @@ class EventManager
 
 	public static function triggerEvent(event:EventData):Void
 	{
-		trace('[EventManager] → "${event.name}" | v1="${event.value1}" v2="${event.value2}" t=${event.time}ms');
+		trace('[EventManager] -> "${event.name}" | v1="${event.value1}" v2="${event.value2}" t=${event.time}ms');
 
 		// Los scripts pueden cancelar el evento devolviendo true en `onEvent`.
 		if (ScriptHandler.callOnScriptsReturn('onEvent',
@@ -187,16 +188,225 @@ class EventManager
 			return;
 		}
 
-		final handler = customHandlers.get(event.name);
-		if (handler != null)
+		// Handler custom registrado por script (prioridad sobre built-in)
+		final customHandler = customHandlers.get(event.name);
+		if (customHandler != null)
 		{
-			if (handler([event]))
-				trace('[EventManager] Cancelado por handler custom.');
+			if (customHandler([event]))
+			{
+				trace('[EventManager] Manejado por handler custom.');
+				return;
+			}
 		}
-		else
+
+		// Built-in handlers del engine
+		_handleBuiltin(event);
+	}
+
+	/**
+	 * Handlers built-in para todos los eventos nativos.
+	 * Los scripts pueden cancelarlos con `onEvent` devolviendo true.
+	 *
+	 * ── Eventos soportados ──────────────────────────────────────────────────
+	 *   Camera Follow / Camera : v1=target(bf/dad/gf), v2=lerp
+	 *   Camera Zoom            : v1=zoom, v2=speed
+	 *   Camera Shake           : v1=intensity, v2=duration
+	 *   Camera Flash / Flash   : v1=color(hex), v2=duration
+	 *   Camera Fade / Fade     : v1=color(hex), v2=duration
+	 *   BPM Change             : v1=newBPM
+	 *   Play Anim              : v1=target ou "target:anim", v2=anim
+	 *   Alt Anim               : v1=target, v2=true/false
+	 *   Change Character       : v1=slot, v2=newCharName
+	 *   HUD Visible            : v1=true/false
+	 *   Health Change          : v1=amount
+	 *   Add Health             : v1=amount
+	 *   Play Sound             : v1=key, v2=volume
+	 *   Music Change           : v1=key
+	 *   Play Video             : v1=videoKey, v2=midSong(true/false)
+	 *   Stop Video
+	 *   Run Script             : v1=functionName, v2=arg
+	 *   Set Var                : v1=varPath, v2=value
+	 *   End Song
+	 */
+	static function _handleBuiltin(e:EventData):Void
+	{
+		final game = PlayState.instance;
+		final v1   = e.value1 != null ? e.value1 : '';
+		final v2   = e.value2 != null ? e.value2 : '';
+
+		switch (e.name.toLowerCase())
 		{
-			trace('[EventManager] Sin handler para "${event.name}" — añade uno en assets/data/scripts/events/');
+			// -- Camera ---------------------------------------------------
+			case 'camera follow', 'camera':
+				if (game != null && game.cameraController != null)
+				{
+					game.cameraController.setTarget(v1);
+					if (v2 != '')
+					{
+						final lerp = Std.parseFloat(v2);
+						if (!Math.isNaN(lerp)) game.cameraController.setFollowLerp(lerp);
+					}
+				}
+
+			case 'camera zoom', 'zoom camera':
+				if (game != null && game.cameraController != null)
+				{
+					final zoom = Std.parseFloat(v1);
+					if (!Math.isNaN(zoom)) game.cameraController.defaultZoom = zoom;
+					game.cameraController.zoomEnabled = true;
+				}
+
+			case 'camera shake', 'shake camera':
+				final intensity = v1 != '' ? (Std.parseFloat(v1)) : 0.005;
+				final dur       = v2 != '' ? (Std.parseFloat(v2)) : 0.25;
+				flixel.FlxG.cameras.shake(
+					Math.isNaN(intensity) ? 0.005 : intensity,
+					Math.isNaN(dur) ? 0.25 : dur);
+
+			case 'camera flash', 'flash camera', 'flash':
+				final col = _parseColor(v1 != '' ? v1 : 'FFFFFF');
+				final dur = v2 != '' ? Std.parseFloat(v2) : 0.5;
+				flixel.FlxG.camera.flash(col, Math.isNaN(dur) ? 0.5 : dur);
+
+			case 'camera fade', 'fade camera', 'fade':
+				final col = _parseColor(v1 != '' ? v1 : '000000');
+				final dur = v2 != '' ? Std.parseFloat(v2) : 0.5;
+				flixel.FlxG.camera.fade(col, Math.isNaN(dur) ? 0.5 : dur);
+
+			// -- BPM ------------------------------------------------------
+			case 'bpm change', 'change bpm':
+				final bpm = Std.parseFloat(v1);
+				if (!Math.isNaN(bpm) && bpm > 0)
+				{
+					funkin.data.Conductor.changeBPM(bpm);
+					trace('[EventManager] BPM -> $bpm');
+				}
+
+			// -- Characters -----------------------------------------------
+			case 'play anim', 'play animation':
+				var tgt  = v1;
+				var anim = v2;
+				if (v1.contains(':')) { final p = v1.split(':'); tgt = p[0].trim(); anim = p[1].trim(); }
+				if (game != null)
+				{
+					final ch = _resolveChar(game, tgt);
+					if (ch != null && anim != '') ch.playAnim(anim, true);
+				}
+
+			case 'alt anim', 'alt idle animation':
+				// isPlayingSpecialAnim() is a read-only method that reflects current anim state.
+				// Toggling alt-anim mode requires script-side handling via onEvent.
+				if (game != null)
+					ScriptHandler.callOnScripts('onAltAnim', [v1, v2]);
+
+			case 'change character', 'swap character':
+				// Scripts handle the actual swap via onCharacterChange callback
+				if (game != null && v1 != '' && v2 != '')
+					ScriptHandler.callOnScripts('onCharacterChange', [v1, v2]);
+
+			// -- HUD / Score ----------------------------------------------
+			case 'hud visible', 'toggle hud':
+				if (game != null && game.uiManager != null)
+					game.uiManager.visible = (v1.toLowerCase() != 'false' && v1 != '0');
+
+			case 'health change', 'set health':
+				if (game?.gameState != null)
+				{
+					final amt = Std.parseFloat(v1);
+					if (!Math.isNaN(amt)) game.gameState.health = Math.max(0.0, Math.min(2.0, amt));
+				}
+
+			case 'add health', 'heal':
+				if (game?.gameState != null)
+				{
+					final amt = Std.parseFloat(v1);
+					if (!Math.isNaN(amt)) game.gameState.modifyHealth(amt);
+				}
+
+			// -- Audio ----------------------------------------------------
+			case 'play sound', 'sound':
+				if (v1 != '')
+				{
+					final vol = v2 != '' ? Std.parseFloat(v2) : 1.0;
+					flixel.FlxG.sound.play(Paths.sound(v1), Math.isNaN(vol) ? 1.0 : vol);
+				}
+
+			case 'music change', 'change music':
+				if (v1 != '') flixel.FlxG.sound.playMusic(Paths.music(v1), 1, true);
+
+			// -- Video ----------------------------------------------------
+			case 'play video', 'video':
+				// v1=videoKey, v2="true" para mid-song (pausa la cancion)
+				if (v1 != '')
+				{
+					final midSong = (v2.toLowerCase() == 'true' || v2 == '1')
+					             || (game?.metaData?.midSongVideo == true);
+					if (midSong && game != null)
+					{
+						funkin.cutscenes.VideoManager.playMidSong(v1, game, function()
+						{
+							if (flixel.FlxG.sound.music != null) flixel.FlxG.sound.music.resume();
+							if (game != null) game.paused = false;
+						});
+					}
+					else
+					{
+						funkin.cutscenes.VideoManager.playCutscene(v1);
+					}
+				}
+
+			case 'stop video', 'kill video':
+				funkin.cutscenes.VideoManager.stop();
+
+			// -- Flow -----------------------------------------------------
+			case 'end song':
+				if (game != null) game.endSong();
+
+			case 'run script', 'call script':
+				if (v1 != '') ScriptHandler.callOnScripts(v1, v2 != '' ? [v2] : []);
+
+			case 'set var', 'set variable':
+				_setScriptVar(v1, v2);
+
+			default:
+				trace('[EventManager] Sin handler para "${e.name}" -- registra uno con registerCustomEvent() o en scripts.');
 		}
+	}
+
+	// -- Helpers ---------------------------------------------------------------
+
+	static function _resolveChar(game:PlayState,
+	                             slot:String):Null<funkin.gameplay.objects.character.Character>
+	{
+		return switch (slot.toLowerCase())
+		{
+			case 'bf', 'boyfriend', 'player': game.boyfriend;
+			case 'dad', 'opponent':           game.dad;
+			case 'gf', 'girlfriend':          game.gf;
+			default: null;
+		};
+	}
+
+	static function _parseColor(s:String):flixel.util.FlxColor
+	{
+		final c = s.startsWith('#') ? s.substr(1) : s;
+		try
+		{
+			final v = Std.parseInt('0x$c');
+			return c.length <= 6
+				? flixel.util.FlxColor.fromRGB((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF)
+				: new flixel.util.FlxColor(v);
+		}
+		catch (_:Dynamic) { return flixel.util.FlxColor.WHITE; }
+	}
+
+	static function _setScriptVar(path:String, value:String):Void
+	{
+		if (!path.contains('.')) { ScriptHandler.setOnScripts(path, value); return; }
+		final parts = path.split('.');
+		final obj   = ScriptHandler.getFromScripts(parts[0]);
+		if (obj != null && parts.length > 1)
+			Reflect.setField(obj, parts[1], value);
 	}
 
 	// ─── API pública ──────────────────────────────────────────────────────────

@@ -88,9 +88,34 @@ class UIScriptedManager extends FlxGroup
 
 	private function loadUIScript(name:String):Void
 	{
-		var path = 'assets/data/ui/${name}/script.hx';
+		// Buscar en el mod activo primero, luego en assets/.
+		// Estructura soportada:
+		//   mods/{mod}/data/ui/{name}/script.hx   ← Cool Engine layout
+		//   mods/{mod}/assets/data/ui/{name}/script.hx ← Psych layout
+		//   assets/data/ui/{name}/script.hx        ← base
+		var path:String = null;
 
-		if (!FileSystem.exists(path))
+		#if sys
+		if (mods.ModManager.isActive())
+		{
+			final modRoot = mods.ModManager.modRoot();
+			for (candidate in [
+				'$modRoot/data/ui/$name/script.hx',
+				'$modRoot/assets/data/ui/$name/script.hx'
+			])
+			{
+				if (FileSystem.exists(candidate)) { path = candidate; break; }
+			}
+		}
+		#end
+
+		if (path == null)
+		{
+			final assetPath = 'assets/data/ui/$name/script.hx';
+			if (FileSystem.exists(assetPath)) path = assetPath;
+		}
+
+		if (path == null)
 		{
 			if (name != 'default')
 			{
@@ -99,11 +124,12 @@ class UIScriptedManager extends FlxGroup
 			}
 			else
 			{
-				trace('[UIScriptedManager] ERROR: assets/data/ui/default/script.hx no existe. HUD vacío.');
+				trace('[UIScriptedManager] ERROR: UI script "default" no existe. HUD vacío.');
 			}
 			return;
 		}
 
+		trace('[UIScriptedManager] Cargando UI script desde: $path');
 		uiScript = ScriptHandler.loadScript(path, 'ui');
 
 		if (uiScript == null)
@@ -116,7 +142,7 @@ class UIScriptedManager extends FlxGroup
 
 		exposeUIAPI();
 		uiScript.call('onCreate', []);
-		trace('[UIScriptedManager] Script de UI activo: "$name"');
+		trace('[UIScriptedManager] Script de UI activo: "$name" (desde $path)');
 	}
 
 	// ─── API expuesta al script ──────────────────────────────────────────────

@@ -123,6 +123,8 @@ class ScriptAPI
 		interp.variables.set('ModPaths',   mods.ModPaths);
 		interp.variables.set('Alphabet',        ui.Alphabet);
 		interp.variables.set('save',            FlxG.save.data);
+		// ── Video ──────────────────────────────────────────────────────────────
+		interp.variables.set('VideoManager',    funkin.cutscenes.VideoManager);
 
 		// ── Transiciones ──────────────────────────────────────────────────────
 		// StateTransition: transiciones suaves entre states (fade, slide, etc.)

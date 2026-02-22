@@ -36,7 +36,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 
 	var canSnap:Array<Float> = [];
 
-	public static var musicFreakyisPlaying:Bool = true;
+	public static var musicFreakyisPlaying:Bool = false;
 
 	var camFollow:FlxObject;
 	var newInput:Bool = true;
@@ -66,11 +66,13 @@ class MainMenuState extends funkin.states.MusicBeatState
 		transOut = FlxTransitionableState.defaultTransOut;
 
 		#if !MAINMENU
-		if (!musicFreakyisPlaying && FreeplayState.vocals == null)
+		// TitleState already started freakyMenu - only play it here if somehow missing
+		if (FlxG.sound.music == null || !FlxG.sound.music.playing)
 		{
-			FlxG.sound.playMusic(Paths.music('freakyMenu'));
-			musicFreakyisPlaying = true;
+			if (FreeplayState.vocals == null)
+				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7);
 		}
+		musicFreakyisPlaying = true;
 		#end
 
 		persistentUpdate = persistentDraw = true;
@@ -124,7 +126,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 			menuItem.updateHitbox();
 		}
 
-		var modShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Shift+Alt Menu Mods", 12);
+		var modShit:FlxText = new FlxText(5, FlxG.height - 19, 0, "Press Shift - Menu Mods", 12);
 		modShit.scrollFactor.set();
 		modShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		modShit.y -= 40;
@@ -140,6 +142,23 @@ class MainMenuState extends funkin.states.MusicBeatState
 		versionShit2.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		versionShit2.y -= 20;
 		add(versionShit2);
+
+		// Etiqueta del mod activo — solo visible si hay uno cargado
+		final _activeMod = mods.ModManager.activeMod;
+		if (_activeMod != null)
+		{
+			final _modInfo  = mods.ModManager.getInfo(_activeMod);
+			final _modLabel = _modInfo != null ? _modInfo.name : _activeMod;
+			final _modVer   = _modInfo != null ? ' v${_modInfo.version}' : '';
+			final _modColor:flixel.util.FlxColor = _modInfo != null
+				? new flixel.util.FlxColor(_modInfo.color | 0xFF000000)
+				: FlxColor.fromRGB(255, 170, 0);
+
+			var modActiveText:FlxText = new FlxText(FlxG.width - 270, FlxG.height - 19, 0, '\u25B6 MOD: $_modLabel$_modVer', 16);
+			modActiveText.scrollFactor.set();
+			modActiveText.setFormat("VCR OSD Mono", 16, _modColor, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			add(modActiveText);
+		}
 
 		changeItem();
 
@@ -165,7 +184,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 		#end
 
 		#if !MAINMENU
-		if (FlxG.sound.music.volume < 0.8)
+		if (FlxG.sound.music != null && FlxG.sound.music.volume < 0.8)
 		{
 			FlxG.sound.music.volume += 0.5 * FlxG.elapsed;
 		}
@@ -177,7 +196,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 			if (FlxG.keys.justPressed.TWO)
 				StateTransition.switchState(new StageEditor()); */
 
-		if (FlxG.keys.justPressed.SHIFT && FlxG.keys.justPressed.ALT)
+		if (FlxG.keys.justPressed.SHIFT)
 			StateTransition.switchState(new ModSelectorState());
 
 		if (!selectedSomethin)

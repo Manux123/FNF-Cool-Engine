@@ -33,6 +33,7 @@ import openfl.utils.ByteArray;
 import funkin.states.LoadingState;
 import funkin.gameplay.PlayState;
 import funkin.gameplay.notes.Note;
+import funkin.gameplay.notes.NoteTypeManager;
 import funkin.gameplay.objects.character.CharacterList;
 import flixel.util.FlxSpriteUtil;
 #if desktop
@@ -142,6 +143,9 @@ class ChartingState extends funkin.states.MusicBeatState
 	// NOTAS
 	var curRenderedNotes:FlxTypedGroup<Note>;
 	var curRenderedSustains:FlxTypedGroup<FlxSprite>;
+	var curRenderedTypeLabels:FlxTypedGroup<FlxText>;
+	var noteTypeDropdown:FlxUIDropDownMenu;
+	var _noteTypesList:Array<String> = ['normal'];
 	var dummyArrow:FlxSprite;
 
 	// INDICADORES DE SECCIÓN
@@ -726,7 +730,13 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		addSongUI();
 		addSectionUI();
+		// Build noteTypes list for dropdown
+		_noteTypesList = ['normal'];
+		for (t in NoteTypeManager.getTypes()) _noteTypesList.push(t);
+
 		addNoteUI();
+		curRenderedTypeLabels = new FlxTypedGroup<FlxText>();
+		add(curRenderedTypeLabels);
 		addSettingsUI();
 		// ↑ El tab de Characters fue reemplazado por la fila de iconos encima del grid
 
@@ -848,13 +858,35 @@ class ChartingState extends funkin.states.MusicBeatState
 		stepperSusLength.name = 'note_susLength';
 		tab_group_note.add(stepperSusLength);
 
+		// Note Type dropdown
+		var typeLabel = new FlxText(10, 55, 0, 'Note Type:', 10);
+		tab_group_note.add(typeLabel);
+
+		var ddItems:Array<String> = [];
+		for (i in 0..._noteTypesList.length)
+			ddItems.push('$i: ${_noteTypesList[i]}');
+
+		noteTypeDropdown = new FlxUIDropDownMenu(10, 68, FlxUIDropDownMenu.makeStrIdLabelArray(ddItems, true), function(chosen:String)
+		{
+			if (curSelectedNote == null) return;
+			var colonIdx = chosen.indexOf(':');
+			var idx = colonIdx > 0 ? Std.parseInt(chosen.substr(0, colonIdx).trim()) : 0;
+			if (idx == null || idx < 0 || idx >= _noteTypesList.length) idx = 0;
+			var typeName:String = _noteTypesList[idx];
+			curSelectedNote[3] = (typeName == 'normal' || typeName == '') ? null : typeName;
+			updateGrid();
+		});
+		noteTypeDropdown.selectedLabel = '0: normal';
+
 		// Snap
-		var snapLabel = new FlxText(10, 60, 0, 'Note Snap:', 10);
+		var snapLabel = new FlxText(10, 135, 0, 'Note Snap:', 10);
 		tab_group_note.add(snapLabel);
 
-		var snapText = new FlxText(10, 75, 0, 'Current: 1/4 (Q/E to change)', 10);
+		var snapText = new FlxText(10, 150, 0, 'Current: 1/4 (Q/E to change)', 10);
 		snapText.color = ACCENT_CYAN;
 		tab_group_note.add(snapText);
+
+		tab_group_note.add(noteTypeDropdown);
 
 		UI_box.addGroup(tab_group_note);
 	}
@@ -1080,7 +1112,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		try
 		{
-			FlxG.sound.playMusic(Paths.inst(daSong), 0.6);
+			FlxG.sound.music = Paths.loadInst(daSong);
 			FlxG.sound.music.pause();
 			FlxG.sound.music.onComplete = function()
 			{
@@ -1099,7 +1131,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		{
 			try
 			{
-				vocals = new FlxSound().loadEmbedded(Paths.voices(daSong));
+				vocals = Paths.loadVoices(daSong);
 				vocals.volume = 0.6; // Mismo volumen que la música
 				vocals.looped = false;
 				vocals.pause();
@@ -1943,6 +1975,7 @@ class ChartingState extends funkin.states.MusicBeatState
 	{
 		curRenderedNotes.clear();
 		curRenderedSustains.clear();
+		if (curRenderedTypeLabels != null) curRenderedTypeLabels.clear();
 
 		var currentStep:Float = 0;
 
@@ -2007,6 +2040,19 @@ class ChartingState extends funkin.states.MusicBeatState
 				note.scrollFactor.set();
 
 				curRenderedNotes.add(note);
+
+				// NoteType: etiqueta sobre la nota
+				var _ntLabel:String = (noteData.length > 3 && noteData[3] != null) ? Std.string(noteData[3]) : '';
+				if (_ntLabel != '' && _ntLabel != 'normal' && curRenderedTypeLabels != null)
+				{
+					var tl = new FlxText(note.x, note.y - 8, GRID_SIZE, _ntLabel, 7);
+					tl.color = 0xFFFFFFFF;
+					tl.borderStyle = OUTLINE;
+					tl.borderColor = 0xFF000000;
+					tl.borderSize = 1;
+					tl.scrollFactor.set();
+					curRenderedTypeLabels.add(tl);
+				}
 
 				// Sustain
 				if (daSus > 0)
@@ -2261,6 +2307,16 @@ class ChartingState extends funkin.states.MusicBeatState
 		{
 			stepperSusLength.value = curSelectedNote[2];
 		}
+
+		// Sync noteType dropdown
+		if (noteTypeDropdown != null)
+		{
+			var typeName:String = (curSelectedNote != null && curSelectedNote.length > 3 && curSelectedNote[3] != null)
+				? Std.string(curSelectedNote[3]) : 'normal';
+			var idx = _noteTypesList.indexOf(typeName);
+			if (idx < 0) idx = 0;
+			noteTypeDropdown.selectedLabel = '$idx: ${_noteTypesList[idx]}';
+		}
 	}
 
 	override function getEvent(id:String, sender:Dynamic, data:Dynamic, ?params:Array<Dynamic>)
@@ -2317,7 +2373,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		clipboard = [];
 		for (note in _song.notes[curSection].sectionNotes)
 		{
-			clipboard.push([note[0], note[1], note[2]]);
+			clipboard.push([note[0], note[1], note[2], note.length > 3 ? note[3] : null]);
 		}
 
 		showMessage('📋 Copied ${clipboard.length} notes', ACCENT_SUCCESS);

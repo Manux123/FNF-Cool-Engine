@@ -1595,35 +1595,32 @@ class PlayState extends funkin.states.MusicBeatState
 				return;
 		}
 
+		// NoteType: onPlayerHit — true cancela la lógica normal
+		var _ntCancelled:Bool = funkin.gameplay.notes.NoteTypeManager.onPlayerHit(note, this);
+
 		if (!note.wasGoodHit)
 		{
-			if (!note.isSustainNote)
+			if (!_ntCancelled)
 			{
-				var health = getHealthForRating(rating);
-				gameState.modifyHealth(health);
-				// También notificar al UIScript para compatibilidad con HUDs personalizados
-				uiManager.showRatingPopup(rating, gameState.combo);
-				// Hitsound
-				if (FlxG.save.data.hitsounds && rating == 'sick')
-					playHitSound();
-			}
-			else
-			{
-				// Sustain note
-				gameState.modifyHealth(0.023);
-			}
+				if (!note.isSustainNote)
+				{
+					var health = getHealthForRating(rating);
+					gameState.modifyHealth(health);
+					uiManager.showRatingPopup(rating, gameState.combo);
+					if (FlxG.save.data.hitsounds && rating == 'sick')
+						playHitSound();
+				}
+				else
+				{
+					gameState.modifyHealth(0.023);
+				}
+			} // end !_ntCancelled
 
 			// Animate character - USAR ÍNDICE FIJO DEL JUGADOR
-			// El jugador SIEMPRE es el slot 2 (boyfriend) en el array de characterSlots
-			// Esto mantiene el sistema de múltiples personajes funcionando
-			var playerCharIndex:Int = 2; // Índice fijo del jugador
-
-			// Intentar usar el sistema de múltiples personajes
+			var playerCharIndex:Int = 2;
 			if (characterSlots.length > playerCharIndex)
 			{
 				characterController.singByIndex(playerCharIndex, note.noteData);
-
-				// Camera offset - usar el personaje del slot del jugador
 				var playerChar = characterController.getCharacter(playerCharIndex);
 				if (playerChar != null)
 					cameraController.applyNoteOffset(playerChar, note.noteData);
@@ -1632,21 +1629,19 @@ class PlayState extends funkin.states.MusicBeatState
 			}
 			else if (boyfriend != null)
 			{
-				// Fallback al sistema legacy si no hay slots
 				characterController.sing(boyfriend, note.noteData);
 				cameraController.applyNoteOffset(boyfriend, note.noteData);
 			}
 
-			// Animate strum
 			noteManager.hitNote(note, rating);
-
-			// Vocals
 			vocals.volume = 1;
 
-			// Hooks
 			for (hook in _noteHitHookArr)
 				hook(note);
 		}
+
+		// NoteType: onPlayerHitPost (siempre)
+		funkin.gameplay.notes.NoteTypeManager.onPlayerHitPost(note, this);
 
 		if (scriptsEnabled)
 			ScriptHandler.callOnScripts('onPlayerNoteHitPost', [note, rating]);
@@ -1655,60 +1650,52 @@ class PlayState extends funkin.states.MusicBeatState
 	/**
 	 * Callback: Player miss note
 	 */
-	private function onPlayerNoteMiss(direction:Int):Void
+	private function onPlayerNoteMiss(missedNote:funkin.gameplay.notes.Note):Void
 	{
 		if (scriptsEnabled)
 		{
-			var cancel = ScriptHandler.callOnScriptsReturn('onPlayerNoteMiss', [direction], false);
+			var cancel = ScriptHandler.callOnScriptsReturn('onPlayerNoteMiss', [missedNote], false);
 			if (cancel == true)
 			{
 				return;
 			}
 		}
-		// Process miss
-		gameState.processMiss();
-		gameState.modifyHealth(PlayStateConfig.MISS_HEALTH);
+		// Extraer dirección
+		var direction:Int = missedNote != null ? missedNote.noteData : 0;
 
-		// Sound
-		FlxG.sound.play(Paths.soundRandom('missnote', 1, 3), FlxG.random.float(0.1, 0.2));
+		// NoteType: onMiss — true cancela la lógica normal de miss
+		var _ntMissCancelled:Bool = missedNote != null
+			? funkin.gameplay.notes.NoteTypeManager.onMiss(missedNote, this)
+			: false;
+
+		if (!_ntMissCancelled)
+		{
+			// Process miss
+			gameState.processMiss();
+			gameState.modifyHealth(PlayStateConfig.MISS_HEALTH);
+			FlxG.sound.play(Paths.soundRandom('missnote', 1, 3), FlxG.random.float(0.1, 0.2));
+		}
 
 		// Animate - USAR ÍNDICE FIJO DEL JUGADOR
-		// El jugador SIEMPRE es el slot 2 (boyfriend) en el array de characterSlots
-		var playerCharIndex:Int = 2; // Índice fijo del jugador
-
-		// Intentar usar el sistema de múltiples personajes
+		var playerCharIndex:Int = 2;
 		if (characterSlots.length > playerCharIndex)
 		{
 			var slot = characterSlots[playerCharIndex];
 			if (slot != null)
-			{
 				characterController.missByIndex(playerCharIndex, direction);
-			}
-			else
-			{
-			}
 		}
 		else if (boyfriend != null)
 		{
-			// Fallback al sistema legacy si no hay slots
-
 			var anims = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
-			var animName = 'sing' + anims[direction] + 'miss';
-
-			boyfriend.playAnim(animName, true);
-		}
-		else
-		{
+			boyfriend.playAnim('sing' + anims[direction] + 'miss', true);
 		}
 
-		// Hacer sad a GF si existe
 		if (gf != null && gf.animOffsets.exists('sad'))
 			gf.playAnim('sad', true);
 
-		// Popup
-		uiManager.showMissPopup();
+		if (!_ntMissCancelled)
+			uiManager.showMissPopup();
 
-		// Vocals
 		vocals.volume = 0;
 
 		if (scriptsEnabled)
@@ -1725,6 +1712,9 @@ class PlayState extends funkin.states.MusicBeatState
 			ScriptHandler.callOnScripts('onOpponentNoteHit', [note]);
 			ScriptHandler.callOnScripts('onCharacterSing', ['dad', note.noteData]);
 		}
+
+		// NoteType: onCPUHit
+		funkin.gameplay.notes.NoteTypeManager.onCPUHit(note, this);
 
 		// ✅ FIX: Splashes del CPU ahora las maneja NoteManager
 		// Código de hold splashes DESACTIVADO para evitar duplicación

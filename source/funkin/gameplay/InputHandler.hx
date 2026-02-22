@@ -29,7 +29,7 @@ class InputHandler
 
 	// === CALLBACKS ===
 	public var onNoteHit:Note->Void = null;
-	public var onNoteMiss:Int->Void = null;
+	public var onNoteMiss:funkin.gameplay.notes.Note->Void = null;
 	public var onKeyRelease:Int->Void = null; // NUEVO: Callback cuando se suelta una tecla (para hold notes)
 
 	// === CONFIG ===
@@ -215,7 +215,7 @@ class InputHandler
 			{
 				// Miss por ghost tap
 				if (onNoteMiss != null)
-					onNoteMiss(dir);
+					onNoteMiss(null); // ghost tap — no hay nota concreta
 				inputProcessed[dir] = true;
 			}
 		}
@@ -238,7 +238,7 @@ class InputHandler
 				if (onNoteMiss != null)
 				{
 					trace('[InputHandler] Llamando onNoteMiss para noteData=${note.noteData}');
-					onNoteMiss(note.noteData);
+					onNoteMiss(note);
 				}
 				else
 				{

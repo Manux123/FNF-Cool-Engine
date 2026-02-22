@@ -27,6 +27,9 @@ class Note extends FlxSprite
 	// Índice del StrumsGroup al que pertenece esta nota (0 = grupo 0, 1 = grupo 1, etc.)
 	public var strumsGroupIndex:Int = 0;
 
+	/** Tipo de nota personalizado. "" / "normal" = normal. Guardado en chart como noteData[3]. */
+	public var noteType:String = '';
+
 	public static var swagWidth:Float = 160 * 0.7;
 	public static var PURP_NOTE:Int = 0;
 	public static var BLUE_NOTE:Int = 1;
@@ -101,8 +104,47 @@ class Note extends FlxSprite
 		// OPTIMIZATION: Precalcular hit window
 		var hitWindowMultiplier = isSustainNote ? 1.05 : 1.0;
 		_hitWindowCache = Conductor.safeZoneOffset * hitWindowMultiplier;
+
+		// NoteType: aplicar textura/script después de cargar la nota
+		if (NoteTypeManager.isCustomType(noteType))
+			NoteTypeManager.onNoteSpawn(this);
 	}
-	
+
+	/**
+	 * Reconfigura animaciones cuando NoteTypeManager asigna sus propios frames.
+	 * Llamado desde NoteTypeManager.onNoteSpawn().
+	 */
+	public function setupTypeAnimations():Void
+	{
+		var dirs = ['purple', 'blue', 'green', 'red'];
+		if (!isSustainNote)
+		{
+			for (i in 0...dirs.length)
+			{
+				try { animation.addByPrefix(dirs[i] + 'Scroll', dirs[i] + '0'); } catch(_:Dynamic) {}
+				try { animation.addByPrefix(dirs[i] + 'Scroll', dirs[i]); }       catch(_:Dynamic) {}
+			}
+			for (i in 0...dirs.length)
+				if (noteData == i && animation.exists(dirs[i] + 'Scroll'))
+					{ animation.play(dirs[i] + 'Scroll'); break; }
+		}
+		else
+		{
+			for (i in 0...dirs.length)
+			{
+				try { animation.addByPrefix(dirs[i] + 'holdend', dirs[i] + ' hold end');   } catch(_:Dynamic) {}
+				try { animation.addByPrefix(dirs[i] + 'holdend', dirs[i] + 'holdend');     } catch(_:Dynamic) {}
+				try { animation.addByPrefix(dirs[i] + 'hold',    dirs[i] + ' hold piece'); } catch(_:Dynamic) {}
+				try { animation.addByPrefix(dirs[i] + 'hold',    dirs[i] + 'hold');        } catch(_:Dynamic) {}
+			}
+			for (i in 0...dirs.length)
+				if (noteData == i && animation.exists(dirs[i] + 'holdend'))
+					{ animation.play(dirs[i] + 'holdend'); break; }
+		}
+		setGraphicSize(Std.int(width * 0.7));
+		updateHitbox();
+	}
+
 	// OPTIMIZATION: Método para reciclar/resetear nota (Object Pooling)
 	public function recycle(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?mustHitNote:Bool = false):Void
 	{
@@ -118,6 +160,7 @@ class Note extends FlxSprite
 		this.noteScore = 1;
 		this.noteRating = 'sick';
 		this.strumsGroupIndex = 0;
+		this.noteType = '';
 		this.alpha = sustainNote ? 0.6 : 1.0;
 		this.visible = true;
 		

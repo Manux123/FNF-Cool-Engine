@@ -115,6 +115,9 @@ class NoteManager
 						gottaHitNote = !section.mustHitSection;
 				}
 
+				// NoteType: índice 3 del array de datos (null = normal)
+				var noteType:String = (songNotes.length > 3 && songNotes[3] != null) ? Std.string(songNotes[3]) : '';
+
 				var oldNote:Note = null;
 				if (unspawnNotes.length > 0)
 					oldNote = unspawnNotes[unspawnNotes.length - 1];
@@ -122,6 +125,8 @@ class NoteManager
 				var swagNote:Note = renderer.getNote(daStrumTime, daNoteData, oldNote, false, gottaHitNote);
 				// ✅ FIXED: Asignar el índice de grupo correcto
 				swagNote.strumsGroupIndex = groupIdx;
+				// NoteType
+				swagNote.noteType = noteType;
 
 				notesCount++;
 
@@ -140,6 +145,8 @@ class NoteManager
 							true, gottaHitNote);
 						// ✅ FIXED: Las notas sustain también necesitan el índice de grupo
 						sustainNote.strumsGroupIndex = groupIdx;
+						// NoteType: sustains heredan el tipo de la nota principal
+						sustainNote.noteType = noteType;
 						unspawnNotes.push(sustainNote);
 						notesCount++;
 					}

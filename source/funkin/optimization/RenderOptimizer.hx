@@ -7,6 +7,8 @@ import openfl.filters.BitmapFilter;
 import flixel.FlxG;
 import flixel.FlxCamera;
 import flixel.FlxSprite;
+import funkin.data.CameraUtil;
+import funkin.audio.AudioConfig;
 
 /**
  * RenderOptimizer — configura el pipeline de renderizado de OpenFL/HaxeFlixel
@@ -80,6 +82,7 @@ class RenderOptimizer
 		catch (_:Dynamic) {}
 
 		trace('[RenderOptimizer] Inicializado.');
+		trace('[RenderOptimizer] Audio → ${AudioConfig.debugString()}');
 	}
 
 	/**
@@ -111,21 +114,15 @@ class RenderOptimizer
 
 	/**
 	 * Configura las FlxCameras para renderizado óptimo.
-	 * - gameCam: cámara del escenario (con bgColor transparent para evitar clear)
-	 * - hudCam : cámara del HUD (necesita clear cada frame)
+	 * Usa CameraUtil para acceder a _filters correctamente — centraliza el
+	 * único punto de acceso privado en vez de `@:privateAccess` disperso.
+	 * - gameCam: cámara del escenario
+	 * - hudCam : cámara del HUD (puede ser null)
 	 */
 	public static function optimizeCameras(gameCam:FlxCamera, ?hudCam:FlxCamera):Void
 	{
-		if (gameCam == null) return;
-
-		// Eliminar filtros vacíos (cada filtro fuerza un render pass off-screen)
-		@:privateAccess
-		{
-			if (gameCam._filters != null && gameCam._filters.length == 0)
-				gameCam._filters = null;
-			if (hudCam != null && hudCam._filters != null && hudCam._filters.length == 0)
-				hudCam._filters = null;
-		}
+		if (gameCam != null) CameraUtil.pruneEmptyFilters(gameCam);
+		if (hudCam  != null) CameraUtil.pruneEmptyFilters(hudCam);
 	}
 
 	/**

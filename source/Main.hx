@@ -15,7 +15,6 @@ import ui.DataInfoUI;
 import ui.SoundTray;
 import funkin.menus.TitleState;
 import data.PlayerSettings;
-
 import CrashHandler;
 
 #if debug
@@ -23,358 +22,341 @@ import funkin.debug.DebugConsole;
 #end
 
 import funkin.transitions.StickerTransition;
-
 import openfl.system.System;
+
+// ── Sistema / ventana ─────────────────────────────────────────────────────────
+import funkin.audio.AudioConfig;
+import funkin.data.CameraUtil;
+import funkin.system.MemoryUtil;
+import funkin.system.SystemInfo;
+import funkin.system.WindowManager;
+import funkin.system.WindowManager.ScaleMode;
+import funkin.cache.PathsCache;
+
+// ── API nativa ────────────────────────────────────────────────────────────────
+import extensions.CppAPI;
+import extensions.InitAPI;
 
 #if (desktop && cpp)
 import data.Discord.DiscordClient;
 import sys.thread.Thread;
 #end
 
-// Initialization modules
+// ── Módulos de arranque ───────────────────────────────────────────────────────
 import funkin.data.KeyBinds;
 import funkin.gameplay.notes.NoteSkinSystem;
-import extensions.CppAPI;
 
 using StringTools;
 
 /**
- * Main entry point for Cool Engine
- * Handles game initialization, configuration, and core setup
- * 
+ * Main — punto de entrada de Cool Engine.
+ *
+ * ─── Orden de inicialización ─────────────────────────────────────────────────
+ *  1. DPI-awareness + dark mode (antes de cualquier ventana)
+ *  2. GC tuning (antes de cargar nada)
+ *  3. Stage config
+ *  4. AudioConfig.load() (antes de createGame → antes de que OpenAL se init)
+ *  5. CrashHandler, DebugConsole
+ *  6. createGame() → FlxG disponible
+ *  7. AudioConfig.applyToFlixel()
+ *  8. WindowManager.init() → suscripción a resize, scale mode
+ *  9. Sistemas que dependen de FlxG (save, keybinds, nota skins…)
+ * 10. UI overlays
+ * 11. SystemInfo.init() (necesita context3D → después del primer frame)
+ *
  * @author Cool Engine Team
- * @version 0.4.1B
+ * @version 0.5.1
  */
 class Main extends Sprite
 {
-	// ==================== GAME CONFIGURATION ====================
-	
-	/** Game window dimensions */
-	private var gameWidth:Int = 1280;
-	private var gameHeight:Int = 720;
-	
-	/** Initial game state */
+	// ── Configuración del juego ────────────────────────────────────────────────
+
+	private static inline var GAME_WIDTH:Int  = 1280;
+	private static inline var GAME_HEIGHT:Int = 720;
+	private static inline var BASE_FPS:Int    = 120;
+
+	private var gameWidth:Int  = GAME_WIDTH;
+	private var gameHeight:Int = GAME_HEIGHT;
+	private var zoom:Float     = -1;
+	private var framerate:Int  = BASE_FPS;
+	private var skipSplash:Bool       = true;
+	private var startFullscreen:Bool  = false;
+
 	private var initialState:Class<FlxState> = CacheState;
-	
-	/** Zoom level (-1 for automatic calculation) */
-	private var zoom:Float = -1;
-	
-	/** Target framerate */
-	private var framerate:Int = 120;
-	
-	/** Skip HaxeFlixel splash screen */
-	private var skipSplash:Bool = true;
-	
-	/** Start in fullscreen mode */
-	private var startFullscreen:Bool = false;
-	
-	// ==================== UI COMPONENTS ====================
-	
-	/** Data/FPS overlay */
+
+	// ── UI ────────────────────────────────────────────────────────────────────
+
 	public final data:DataInfoUI = new DataInfoUI(10, 3);
-	
-	// ==================== STATIC ENTRY POINT ====================
-	
+
+	// ── Versiones ─────────────────────────────────────────────────────────────
+
+	public static inline var ENGINE_VERSION:String = "0.5.0";
+
+	// ── Entry point ───────────────────────────────────────────────────────────
+
 	/**
-	 * Application entry point
-	 * Called by OpenFL runtime
+	 * Primer código que ejecuta Haxe antes de instanciar Main.
+	 * Usado para DPI-awareness que debe registrarse antes de cualquier ventana.
 	 */
+	@:keep
+	static function __init__():Void
+	{
+		// Registrar DPI-awareness en Windows antes de que se cree la ventana.
+		// Debe hacerse en __init__ porque new Main() ya puede implicar crear ventanas.
+		#if (windows && cpp)
+		InitAPI.setDPIAware();
+		#end
+	}
+
 	public static function main():Void
 	{
 		Lib.current.addChild(new Main());
 	}
-	
-	// ==================== CONSTRUCTOR ====================
-	
+
+	// ── Constructor ───────────────────────────────────────────────────────────
+
 	public function new()
 	{
 		super();
-		
+
 		if (stage != null)
-		{
 			init();
-		}
 		else
-		{
 			addEventListener(Event.ADDED_TO_STAGE, init);
-		}
 	}
-	
-	// ==================== INITIALIZATION ====================
-	
-	/**
-	 * Initialize the application
-	 * Called when added to stage
-	 */
-	private function init(?E:Event):Void
+
+	// ── Init ─────────────────────────────────────────────────────────────────
+
+	private function init(?e:Event):Void
 	{
 		if (hasEventListener(Event.ADDED_TO_STAGE))
-		{
 			removeEventListener(Event.ADDED_TO_STAGE, init);
-		}
-		
+
 		setupStage();
 		setupGame();
 	}
-	
+
 	/**
-	 * Configure stage properties
-	 * Sets up scaling, alignment, and quality
+	 * Configura el stage de OpenFL.
+	 * Establece: escala, alineación, calidad vectorial, GC tuning.
 	 */
 	private function setupStage():Void
 	{
 		stage.scaleMode = StageScaleMode.NO_SCALE;
 		stage.align     = StageAlign.TOP_LEFT;
-		// LOW = sin antialiasing de líneas vectoriales → menos trabajo del rasterizador.
-		// Las notas y personajes usan texturas rasterizadas propias, no primitivas vectoriales.
+
+		// LOW = sin antialiasing vectorial. Los sprites usan sus propias texturas.
+		// La calidad vectorial sólo afecta a primitivas Graphics (healthbar bg, etc.)
 		stage.quality   = openfl.display.StageQuality.LOW;
 
-		// ── GC tuning (Haxe/hxcpp) ───────────────────────────────────────────
-		// Objetivo: evitar pausas de GC durante el gameplay.
-		//
-		// setMinimumFreeSpace: cuánta RAM libre antes de que el GC haga major-GC.
-		//   Más espacio libre → el GC actúa menos frecuentemente → menos stutters.
-		//   Contrapartida: el proceso puede tener más RAM "reservada" entre GCs.
-		//
-		// setTargetHeapSize: reservar un heap fijo de ~192 MB de entrada.
-		//   Sin esto el GC hace un major-GC cada vez que el heap crece más allá
-		//   del objetivo, lo cual coincide con la carga de personajes/stage.
-		//
-		// threadPool: aumentar el pool de threads del GC concurrente para
-		//   mover trabajo de GC fuera del thread principal.
+		// ── GC tuning (hxcpp) ─────────────────────────────────────────────────
+		// 32 MB de espacio libre mínimo antes de un major-GC cycle.
+		// Reduce los stutters causados por el GC durante carga de personajes/stage.
 		#if cpp
-		// 32 MB de espacio libre antes de que el GC haga un major-cycle.
-		// Codename Engine tiene objetos mas ligeros, asi que con 16 MB bastaba.
-		// Con el lazy spawning de notas ya eliminamos la mayor presion al GC,
-		// pero subir el threshold a 32 MB evita los picos durante carga de personajes.
 		cpp.vm.Gc.setMinimumFreeSpace(32 * 1024 * 1024);
 		cpp.vm.Gc.enable(true);
 		#end
 
-		// OpenFL uses hardware rendering automatically when available.
-		// No manual renderer override needed — forcing __renderer = null
-		// destroys the renderer entirely and causes a black screen.
+		// ── Frame oscuro (Windows 10 1809+ / Windows 11) ──────────────────────
+		// Se activa aquí (después de que el stage existe) para que HWND sea válido.
+		#if (windows && cpp)
+		InitAPI.setDarkMode(true);
+		CppAPI.changeColor(0, 0, 0);
+		#end
 	}
-	
+
 	/**
-	 * Main game setup
-	 * Initializes all game systems and subsystems
+	 * Inicialización principal del juego.
+	 * Ver comentario de orden al inicio de la clase.
 	 */
 	private function setupGame():Void
 	{
-		// Calculate optimal zoom level
 		calculateZoom();
-		
-		// Setup crash handler — activo en todas las builds de escritorio
+
+		// ── Audio (ANTES de createGame → antes de que OpenAL init el device) ──
+		AudioConfig.load();
+
+		// ── CrashHandler + debug tools ────────────────────────────────────────
 		CrashHandler.init();
-		
-		// Initialize debugging tools
 		#if debug
 		DebugConsole.init();
 		#end
-		
-		// Set window background color (black)
-		CppAPI.changeColor(0, 0, 0);
-		
-		// Create the FlxGame instance FIRST (required for FlxG to be initialized)
-		createGame();
 
+		// ── Juego ─────────────────────────────────────────────────────────────
+		createGame();
+		AudioConfig.applyToFlixel();
 		StickerTransition.init();
-		
-		// Now initialize systems that depend on FlxG
+
+		// ── WindowManager (después de createGame, necesita FlxG.signals) ──────
+		WindowManager.init(
+			/* mode    */ LETTERBOX,
+			/* minW    */ 640,
+			/* minH    */ 360,
+			/* baseW   */ GAME_WIDTH,
+			/* baseH   */ GAME_HEIGHT
+		);
+
+		// ── Sistemas que dependen de FlxG ─────────────────────────────────────
 		initializeSaveSystem();
 		initializeGameSystems();
 		initializeFramerate();
-		
-		// Add UI overlays
+		initializeCameras();
+
+		// ── UI overlays ───────────────────────────────────────────────────────
 		addChild(data);
-		
-		// Initialize global SoundTray (will be added to each state automatically)
 		FlxG.plugins.add(new SoundTray());
-		
-		// Disable default FlxG sound tray (using custom SoundTray)
 		disableDefaultSoundTray();
 
+		// ── Mods ──────────────────────────────────────────────────────────────
 		mods.ModManager.init();
-		
-		// ── Callback de cambio de mod: limpiar caches ─────────────────────────
-		// Cuando el usuario activa otro mod, liberamos los assets del anterior
-		// para que no ocupen memoria innecesariamente.
 		mods.ModManager.onModChanged = function(newMod:Null<String>)
 		{
 			Paths.forceClearCache();
-			// Recargar lista de personajes/stages para incluir los del nuevo mod
 			funkin.gameplay.objects.character.CharacterList.reload();
-			#if cpp cpp.vm.Gc.run(true); #end
-			#if hl  hl.Gc.major();       #end
-			trace('[Main] Cache limpiado por cambio de mod → ${newMod ?? "base"}');
+			MemoryUtil.collectMajor();
+			trace('[Main] Cache limpiado. Mod activo → ${newMod ?? "base"}');
 		};
-		
-		// Initialize Discord Rich Presence
+
+		// ── Discord ───────────────────────────────────────────────────────────
 		#if (desktop && cpp)
 		DiscordClient.initialize();
 		#end
+
+		// ── SystemInfo (se completa en un frame posterior al arranque) ─────────
+		// Requiere context3D para los datos de GPU, disponible sólo después del
+		// primer frame de rendering. Llamamos en el siguiente ENTER_FRAME.
+		stage.addEventListener(openfl.events.Event.ENTER_FRAME, _initSystemInfoDeferred);
 	}
-	
-	// ==================== SYSTEM INITIALIZATION ====================
-	
+
+	// ── ENTER_FRAME deferred ──────────────────────────────────────────────────
+
 	/**
-	 * Calculate and set optimal zoom level
-	 * Adjusts game dimensions to fit window
+	 * Inicializa SystemInfo en el primer frame después del arranque.
+	 * Garantiza que context3D esté disponible para leer info de GPU.
 	 */
+	private function _initSystemInfoDeferred(_:openfl.events.Event):Void
+	{
+		stage.removeEventListener(openfl.events.Event.ENTER_FRAME, _initSystemInfoDeferred);
+		SystemInfo.init();
+	}
+
+	// ── Helpers de inicialización ─────────────────────────────────────────────
+
 	private function calculateZoom():Void
 	{
 		if (zoom == -1)
 		{
-			var stageWidth:Int = Lib.current.stage.stageWidth;
-			var stageHeight:Int = Lib.current.stage.stageHeight;
-			
-			zoom = Math.min(stageWidth / gameWidth, stageHeight / gameHeight);
-			gameWidth = Math.ceil(stageWidth / zoom);
-			gameHeight = Math.ceil(stageHeight / zoom);
+			var stageW:Int = Lib.current.stage.stageWidth;
+			var stageH:Int = Lib.current.stage.stageHeight;
+			zoom       = Math.min(stageW / gameWidth, stageH / gameHeight);
+			gameWidth  = Math.ceil(stageW / zoom);
+			gameHeight = Math.ceil(stageH / zoom);
 		}
 	}
-	
-	/**
-	 * Initialize save data system
-	 * Binds save file and loads persistent data
-	 */
+
+	private function createGame():Void
+	{
+		addChild(new FlxGame(
+			gameWidth, gameHeight, initialState,
+			#if (flixel < "5.0.0") zoom, #end
+			framerate, framerate, skipSplash, startFullscreen
+		));
+
+		// Draw framerate separado del update permite hacer lógica a 120 Hz
+		// pero renderizar a menos si el hardware no aguanta.
+		FlxG.drawFramerate   = framerate;
+		FlxG.updateFramerate = framerate;
+
+		// Sin antialiasing global — cada sprite lo activa si lo necesita.
+		FlxSprite.defaultAntialiasing = false;
+	}
+
 	private function initializeSaveSystem():Void
 	{
-		// Bind save file (company: manux, project: coolengine)
 		FlxG.save.bind('coolengine', 'manux');
-		
-		// Initialize options data (creates default settings if needed)
 		funkin.menus.OptionsMenuState.OptionsData.initSave();
-		
-		// Load high scores
 		funkin.gameplay.objects.hud.Highscore.load();
 	}
-	
-	/**
-	 * Initialize game-specific systems
-	 * Sets up keybinds, note skins, player settings, etc.
-	 */
+
 	private function initializeGameSystems():Void
 	{
-		// Initialize note skin system
 		NoteSkinSystem.init();
-		
-		// Load and verify key bindings
 		KeyBinds.keyCheck();
-		
-		// Initialize player settings
 		PlayerSettings.init();
 		PlayerSettings.player1.controls.loadKeyBinds();
 
 		FlxG.mouse.useSystemCursor = false;
 		FlxG.mouse.load(Paths.image('menu/cursor/cursor-default'));
+
+		// ── PathsCache: configuración inicial ─────────────────────────────────
+		// Restaurar preferencia de GPU caching guardada.
+		// Por defecto true en desktop; false en web/mobile.
+		if (FlxG.save.data.gpuCaching != null)
+			PathsCache.gpuCaching = FlxG.save.data.gpuCaching;
+
+		// Exclusiones permanentes: assets siempre en memoria.
+		// Paths.addExclusion los registra en PathsCache.dumpExclusions.
+		Paths.addExclusion(Paths.music('freakyMenu'));
+		Paths.addExclusion(Paths.image('menu/cursor/cursor-default'));
 	}
-	
-	/**
-	 * Set target framerate based on platform
-	 * Uses lower framerate on web/mobile for better performance
-	 */
+
 	private function initializeFramerate():Void
 	{
 		#if (!html5 && !androidC)
-		// Desktop/powerful platforms: 120 FPS
 		framerate = 120;
 		#else
-		// Web/mobile: 60 FPS
 		framerate = 60;
 		#end
-		
-		// Aplicar FPS cap guardado (fpsTarget = Int, FPSCap = Bool legacy).
-		// Si fpsTarget existe lo usamos; si no, migramos el flag binario viejo.
+
 		if (FlxG.save.data.fpsTarget != null)
 		{
 			setMaxFps(Std.int(FlxG.save.data.fpsTarget));
 		}
 		else if (FlxG.save.data.FPSCap != null && FlxG.save.data.FPSCap)
 		{
-			// Migrar flag viejo: FPSCap=true era 120, false era 240
 			FlxG.save.data.fpsTarget = 120;
 			setMaxFps(120);
 		}
 		else
 		{
-			// Default 60 FPS (antes era 240, que consumia CPU sin beneficio visible)
 			FlxG.save.data.fpsTarget = 60;
 			setMaxFps(60);
 		}
 	}
-	
-	/**
-	 * Create the main FlxGame instance
-	 * Initializes HaxeFlixel game engine
-	 */
-	private function createGame():Void
+
+	private function initializeCameras():Void
 	{
-		addChild(new FlxGame(
-			gameWidth, 
-			gameHeight, 
-			initialState, 
-			#if (flixel < "5.0.0") zoom, #end
-			framerate, 
-			framerate, 
-			skipSplash, 
-			startFullscreen
-		));
-
-		// ── Draw frame rate separado del update ────────────────────────────────
-		// Permite actualizar lógica a 120hz pero renderizar a 60hz si el hardware
-		// no puede sostener 120 FPS — evita stuttering en máquinas lentas.
-		// Se ajusta automáticamente en initializeFramerate().
-		FlxG.drawFramerate = framerate;
-		FlxG.updateFramerate = framerate;
-
-		// ── Desactivar el antialiasing global por defecto ──────────────────────
-		// Cada sprite puede activarlo individualmente. A nivel global consume GPU.
-		FlxSprite.defaultAntialiasing = false;
+		// Limpiar filtros vacíos de la cámara principal para evitar el
+		// off-screen render pass innecesario que los arrays vacíos provocan.
+		CameraUtil.pruneEmptyFilters(FlxG.camera);
 	}
-	
-	/**
-	 * Disable HaxeFlixel's default sound tray
-	 * We use a custom SoundTray implementation
-	 */
+
 	private function disableDefaultSoundTray():Void
 	{
-		// Disable default volume key bindings
-		FlxG.sound.volumeUpKeys = null;
+		FlxG.sound.volumeUpKeys   = null;
 		FlxG.sound.volumeDownKeys = null;
-		FlxG.sound.muteKeys = null;
-		
-		// Hide and disable the built-in sound tray UI
+		FlxG.sound.muteKeys       = null;
 		#if FLX_SOUND_SYSTEM
 		@:privateAccess
 		{
 			if (FlxG.game.soundTray != null)
 			{
 				FlxG.game.soundTray.visible = false;
-				FlxG.game.soundTray.active = false;
+				FlxG.game.soundTray.active  = false;
 			}
 		}
 		#end
 	}
-	
-	// ==================== PUBLIC API ====================
-	
-	/**
-	 * Set maximum framerate
-	 * @param fps Target frames per second
-	 */
+
+	// ── Public API ────────────────────────────────────────────────────────────
+
 	public function setMaxFps(fps:Int):Void
 	{
 		openfl.Lib.current.stage.frameRate = fps;
+		FlxG.drawFramerate   = fps;
+		FlxG.updateFramerate = fps;
 	}
-	
-	/**
-	 * Get current game instance
-	 * @return FlxGame instance
-	 */
+
 	public static function getGame():FlxGame
-	{
 		return cast(Lib.current.getChildAt(0), FlxGame);
-	}
 }

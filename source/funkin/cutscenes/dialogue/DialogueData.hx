@@ -146,7 +146,7 @@ class DialogueData {
      * @param dialogueType Tipo de diálogo: 'intro' o 'outro' (default: 'intro')
      */
     public static function getSongDialoguePath(songName:String, ?dialogueType:String = 'intro'):String {
-        return 'assets/songs/${songName.toLowerCase()}/${dialogueType}.json';
+        return Paths.resolve('songs/${songName.toLowerCase()}/${dialogueType}.json');
     }
     
     /**
@@ -358,7 +358,8 @@ class DialogueData {
             var path = getSongDialoguePath(songName, dialogueType);
             
             // Crear directorio de la canción si no existe
-            var songDir = 'assets/songs/${songName.toLowerCase()}/';
+            
+            var songDir = Paths.resolve('songs/${songName.toLowerCase()}/');
             if (!FileSystem.exists(songDir))
                 FileSystem.createDirectory(songDir);
             

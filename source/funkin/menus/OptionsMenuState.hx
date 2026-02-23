@@ -40,22 +40,24 @@ class OptionsMenuState extends MusicBeatSubstate
 	{
 		var target:Int = FlxG.save.data.fpsTarget != null ? Std.int(FlxG.save.data.fpsTarget) : 60;
 		for (i in 0...FPS_OPTIONS.length)
-			if (FPS_OPTIONS[i] == target) return i;
+			if (FPS_OPTIONS[i] == target)
+				return i;
 		return 1; // default 60
 	}
+
 	var curCategory:Int = 0;
-	
+
 	// UI Elements
 	var menuBG:FlxSprite;
 	var categoryTexts:FlxTypedGroup<FlxText>;
 	var contentPanel:FlxTypedGroup<FlxSprite>;
-	
+
 	// Current tab content
 	var optionNames:FlxTypedGroup<FlxText>;
 	var optionValues:FlxTypedGroup<FlxText>;
 	var curSelected:Int = 0;
 	var currentOptions:Array<Dynamic> = [];
-	
+
 	// Keybind state
 	var bindingState:String = "select"; // "select", "binding"
 	var tempKey:String = "";
@@ -63,11 +65,12 @@ class OptionsMenuState extends MusicBeatSubstate
 	var defaultKeys:Array<String> = ["A", "S", "W", "D", "R"];
 	var blacklistKeys:Array<String> = ["ESCAPE", "ENTER", "BACKSPACE", "SPACE"];
 	var keys:Array<String> = [];
-	
+
 	var warningText:FlxText;
 	var bindingIndicator:FlxText;
-	
+
 	public static var fromPause:Bool = false;
+
 	/** Si se cambia una opción que requiere restart mientras en pausa, este flag
 	 *  le indica a PauseSubState que dispare el rewind al volver. */
 	public static var pendingRewind:Bool = false;
@@ -77,13 +80,13 @@ class OptionsMenuState extends MusicBeatSubstate
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.init();
 		StateScriptHandler.loadStateScripts('OptionsMenuState', this);
-		
+
 		// Cargar categorías custom desde scripts
 		loadCustomCategoriesFromScripts();
-		
+
 		StateScriptHandler.callOnScripts('onCreate', []);
 		#end
-		
+
 		#if desktop
 		DiscordClient.changePresence("Options Menu", null);
 		#end
@@ -99,11 +102,11 @@ class OptionsMenuState extends MusicBeatSubstate
 
 		// Borde del panel (agregar primero para que esté detrás)
 		var borderThickness = 3;
-		var panelBorder = new FlxSprite(50 - borderThickness, 80 - borderThickness)
-			.makeGraphic(Std.int(FlxG.width - 100 + borderThickness * 2), Std.int(FlxG.height - 160 + borderThickness * 2), 0xFF2a2a2a);
+		var panelBorder = new FlxSprite(50 - borderThickness,
+			80 - borderThickness).makeGraphic(Std.int(FlxG.width - 100 + borderThickness * 2), Std.int(FlxG.height - 160 + borderThickness * 2), 0xFF2a2a2a);
 		panelBorder.scrollFactor.set();
 		add(panelBorder);
-		
+
 		// Panel principal con borde
 		menuBG = new FlxSprite(50, 80).makeGraphic(FlxG.width - 100, FlxG.height - 160, 0xFF0a0a0a);
 		menuBG.scrollFactor.set();
@@ -127,7 +130,7 @@ class OptionsMenuState extends MusicBeatSubstate
 		var categoryWidth = (FlxG.width - 120) / categories.length;
 		var tabHeight = 40;
 		var tabY = 85;
-		
+
 		for (i in 0...categories.length)
 		{
 			// Background de la pestaña (inicialmente inactiva)
@@ -135,13 +138,13 @@ class OptionsMenuState extends MusicBeatSubstate
 			tabBG.scrollFactor.set();
 			tabBG.ID = i;
 			contentPanel.add(tabBG);
-			
+
 			// Borde superior de la pestaña
 			var tabBorder = new FlxSprite(tabBG.x, tabBG.y - 2).makeGraphic(Std.int(tabBG.width), 2, 0xFF444444);
 			tabBorder.scrollFactor.set();
 			tabBorder.ID = i;
 			contentPanel.add(tabBorder);
-			
+
 			var categoryText:FlxText = new FlxText(60 + (i * categoryWidth), tabY + 8, categoryWidth, categories[i], 24);
 			categoryText.setFormat(Paths.font("Funkin.otf"), 22, 0xFF888888, CENTER, OUTLINE, FlxColor.BLACK);
 			categoryText.borderSize = 2;
@@ -149,12 +152,12 @@ class OptionsMenuState extends MusicBeatSubstate
 			categoryText.scrollFactor.set();
 			categoryTexts.add(categoryText);
 		}
-		
+
 		// Separador horizontal entre pestañas y contenido
 		var separator = new FlxSprite(menuBG.x, tabY + tabHeight).makeGraphic(Std.int(menuBG.width), 3, 0xFF444444);
 		separator.scrollFactor.set();
 		add(separator);
-		
+
 		// Indicador de pestaña activa (barra inferior)
 		var activeIndicator = new FlxSprite(0, tabY + tabHeight - 3).makeGraphic(Std.int(categoryWidth - 4), 3, FlxColor.CYAN);
 		activeIndicator.scrollFactor.set();
@@ -187,12 +190,12 @@ class OptionsMenuState extends MusicBeatSubstate
 		var footerBG = new FlxSprite(menuBG.x, FlxG.height - 100).makeGraphic(Std.int(menuBG.width), 50, 0xFF1a1a1a);
 		footerBG.scrollFactor.set();
 		add(footerBG);
-		
+
 		var footerBorder = new FlxSprite(footerBG.x, footerBG.y).makeGraphic(Std.int(footerBG.width), 2, 0xFF444444);
 		footerBorder.scrollFactor.set();
 		add(footerBorder);
-		
-		var helpText = new FlxText(footerBG.x + 20, footerBG.y + 12, footerBG.width - 40, 
+
+		var helpText = new FlxText(footerBG.x + 20, footerBG.y + 12, footerBG.width - 40,
 			"← → : Change Tab  |  ↑ ↓ : Navigate  |  ENTER : Toggle  |  A/D : Adjust  |  ESC : Back", 18);
 		helpText.setFormat(Paths.font("Funkin.otf"), 18, 0xFFAAAAAA, CENTER, OUTLINE, FlxColor.BLACK);
 		helpText.borderSize = 1.5;
@@ -230,11 +233,16 @@ class OptionsMenuState extends MusicBeatSubstate
 	function loadKeyBinds()
 	{
 		// Verificar que existan los keybinds
-		if (FlxG.save.data.leftBind == null) FlxG.save.data.leftBind = "A";
-		if (FlxG.save.data.downBind == null) FlxG.save.data.downBind = "S";
-		if (FlxG.save.data.upBind == null) FlxG.save.data.upBind = "W";
-		if (FlxG.save.data.rightBind == null) FlxG.save.data.rightBind = "D";
-		if (FlxG.save.data.killBind == null) FlxG.save.data.killBind = "R";
+		if (FlxG.save.data.leftBind == null)
+			FlxG.save.data.leftBind = "A";
+		if (FlxG.save.data.downBind == null)
+			FlxG.save.data.downBind = "S";
+		if (FlxG.save.data.upBind == null)
+			FlxG.save.data.upBind = "W";
+		if (FlxG.save.data.rightBind == null)
+			FlxG.save.data.rightBind = "D";
+		if (FlxG.save.data.killBind == null)
+			FlxG.save.data.killBind = "R";
 
 		keys = [
 			FlxG.save.data.leftBind,
@@ -307,7 +315,7 @@ class OptionsMenuState extends MusicBeatSubstate
 	{
 		// Llamar a los scripts para obtener opciones de esta categoría
 		var customOptions = StateScriptHandler.callOnScriptsReturn('getOptionsForCategory', [categoryName]);
-		
+
 		if (customOptions != null && Std.isOfType(customOptions, Array))
 		{
 			var optionsArray:Array<Dynamic> = cast customOptions;
@@ -316,7 +324,7 @@ class OptionsMenuState extends MusicBeatSubstate
 				currentOptions.push(opt);
 			}
 		}
-		
+
 		createOptionTexts();
 	}
 
@@ -327,7 +335,7 @@ class OptionsMenuState extends MusicBeatSubstate
 	{
 		// Llamar a los scripts para obtener opciones adicionales para esta categoría
 		var additionalOptions = StateScriptHandler.callOnScriptsReturn('getAdditionalOptionsForCategory', [categoryName]);
-		
+
 		if (additionalOptions != null && Std.isOfType(additionalOptions, Array))
 		{
 			var optionsArray:Array<Dynamic> = cast additionalOptions;
@@ -335,7 +343,7 @@ class OptionsMenuState extends MusicBeatSubstate
 			{
 				currentOptions.push(opt);
 			}
-			
+
 			// Recrear los textos con las opciones adicionales
 			optionNames.clear();
 			optionValues.clear();
@@ -350,25 +358,36 @@ class OptionsMenuState extends MusicBeatSubstate
 			{
 				name: "Flashing Lights",
 				get: function() return FlxG.save.data.flashing ? "ON" : "OFF",
-				toggle: function() { FlxG.save.data.flashing = !FlxG.save.data.flashing; }
+				toggle: function()
+				{
+					FlxG.save.data.flashing = !FlxG.save.data.flashing;
+				}
 			},
 			{
 				name: "Camera Zoom",
 				get: function() return FlxG.save.data.camZoom ? "ON" : "OFF",
-				toggle: function() { FlxG.save.data.camZoom = !FlxG.save.data.camZoom; }
+				toggle: function()
+				{
+					FlxG.save.data.camZoom = !FlxG.save.data.camZoom;
+				}
 			},
 			{
 				name: "Show HUD",
 				get: function() return FlxG.save.data.HUD ? "OFF" : "ON",
-				toggle: function() { FlxG.save.data.HUD = !FlxG.save.data.HUD; }
+				toggle: function()
+				{
+					FlxG.save.data.HUD = !FlxG.save.data.HUD;
+				}
 			},
 			{
 				name: "FPS Counter",
-				get: function() {
+				get: function()
+				{
 					var mainInstance = cast(openfl.Lib.current.getChildAt(0), Main);
 					return mainInstance.data.visible ? "ON" : "OFF";
 				},
-				toggle: function() {
+				toggle: function()
+				{
 					var mainInstance = cast(openfl.Lib.current.getChildAt(0), Main);
 					mainInstance.data.visible = !mainInstance.data.visible;
 				}
@@ -378,19 +397,23 @@ class OptionsMenuState extends MusicBeatSubstate
 				// Cicla por los valores con ENTER o LEFT/RIGHT.
 				// Se guarda en FlxG.save.data.fpsTarget y se aplica de inmediato.
 				name: "FPS Cap",
-				get: function() {
+				get: function()
+				{
 					var t:Int = FlxG.save.data.fpsTarget != null ? Std.int(FlxG.save.data.fpsTarget) : 60;
 					return t + " FPS";
 				},
-				toggle: function() {
+				toggle: function()
+				{
 					var idx = getFPSIndex();
 					applyFPSCap(FPS_OPTIONS[(idx + 1) % FPS_OPTIONS.length]);
 				},
-				left: function() {
+				left: function()
+				{
 					var idx = getFPSIndex();
 					applyFPSCap(FPS_OPTIONS[(idx - 1 + FPS_OPTIONS.length) % FPS_OPTIONS.length]);
 				},
-				right: function() {
+				right: function()
+				{
 					var idx = getFPSIndex();
 					applyFPSCap(FPS_OPTIONS[(idx + 1) % FPS_OPTIONS.length]);
 				}
@@ -415,22 +438,34 @@ class OptionsMenuState extends MusicBeatSubstate
 			{
 				name: "Anti-Aliasing",
 				get: function() return FlxG.save.data.antialiasing ? "ON" : "OFF",
-				toggle: function() { FlxG.save.data.antialiasing = !FlxG.save.data.antialiasing; }
+				toggle: function()
+				{
+					FlxG.save.data.antialiasing = !FlxG.save.data.antialiasing;
+				}
 			},
 			{
 				name: "Note Splashes",
 				get: function() return FlxG.save.data.notesplashes ? "ON" : "OFF",
-				toggle: function() { FlxG.save.data.notesplashes = !FlxG.save.data.notesplashes; }
+				toggle: function()
+				{
+					FlxG.save.data.notesplashes = !FlxG.save.data.notesplashes;
+				}
 			},
 			{
 				name: "Visual Effects",
 				get: function() return FlxG.save.data.specialVisualEffects ? "ON" : "OFF",
-				toggle: function() { FlxG.save.data.specialVisualEffects = !FlxG.save.data.specialVisualEffects; }
+				toggle: function()
+				{
+					FlxG.save.data.specialVisualEffects = !FlxG.save.data.specialVisualEffects;
+				}
 			},
 			{
 				name: "Static Stage",
 				get: function() return FlxG.save.data.staticstage ? "ON" : "OFF",
-				toggle: function() { FlxG.save.data.staticstage = !FlxG.save.data.staticstage; }
+				toggle: function()
+				{
+					FlxG.save.data.staticstage = !FlxG.save.data.staticstage;
+				}
 			}
 		];
 
@@ -443,32 +478,50 @@ class OptionsMenuState extends MusicBeatSubstate
 			{
 				name: "Downscroll",
 				get: function() return FlxG.save.data.downscroll ? "ON" : "OFF",
-				toggle: function() { FlxG.save.data.downscroll = !FlxG.save.data.downscroll; }
+				toggle: function()
+				{
+					FlxG.save.data.downscroll = !FlxG.save.data.downscroll;
+				}
 			},
 			{
 				name: "Middlescroll",
 				get: function() return FlxG.save.data.middlescroll ? "ON" : "OFF",
-				toggle: function() { FlxG.save.data.middlescroll = !FlxG.save.data.middlescroll; }
+				toggle: function()
+				{
+					FlxG.save.data.middlescroll = !FlxG.save.data.middlescroll;
+				}
 			},
 			{
 				name: "Ghost Tapping",
 				get: function() return FlxG.save.data.ghosttap ? "ON" : "OFF",
-				toggle: function() { FlxG.save.data.ghosttap = !FlxG.save.data.ghosttap; }
+				toggle: function()
+				{
+					FlxG.save.data.ghosttap = !FlxG.save.data.ghosttap;
+				}
 			},
 			{
 				name: "Accuracy Display",
 				get: function() return FlxG.save.data.accuracyDisplay ? "ON" : "OFF",
-				toggle: function() { FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay; }
+				toggle: function()
+				{
+					FlxG.save.data.accuracyDisplay = !FlxG.save.data.accuracyDisplay;
+				}
 			},
 			{
 				name: "Sick Mode",
 				get: function() return FlxG.save.data.sickmode ? "ON" : "OFF",
-				toggle: function() { FlxG.save.data.sickmode = !FlxG.save.data.sickmode; }
+				toggle: function()
+				{
+					FlxG.save.data.sickmode = !FlxG.save.data.sickmode;
+				}
 			},
 			{
 				name: "Hit Sounds",
 				get: function() return FlxG.save.data.hitsounds ? "ON" : "OFF",
-				toggle: function() { FlxG.save.data.hitsounds = !FlxG.save.data.hitsounds; }
+				toggle: function()
+				{
+					FlxG.save.data.hitsounds = !FlxG.save.data.hitsounds;
+				}
 			}
 		];
 
@@ -486,7 +539,10 @@ class OptionsMenuState extends MusicBeatSubstate
 			currentOptions.push({
 				name: keyBindNames[i],
 				get: function() return keys[keyIndex],
-				toggle: function() { startBinding(keyIndex); },
+				toggle: function()
+				{
+					startBinding(keyIndex);
+				},
 				isKeybind: true
 			});
 		}
@@ -495,7 +551,10 @@ class OptionsMenuState extends MusicBeatSubstate
 		currentOptions.push({
 			name: "Reset to Default",
 			get: function() return "BACKSPACE",
-			toggle: function() { resetKeybinds(); },
+			toggle: function()
+			{
+				resetKeybinds();
+			},
 			isKeybind: false
 		});
 
@@ -508,7 +567,8 @@ class OptionsMenuState extends MusicBeatSubstate
 			{
 				name: "Note Skin Settings",
 				get: function() return "PRESS ENTER",
-				toggle: function() { 
+				toggle: function()
+				{
 					StateTransition.switchState(new NoteSkinOptions());
 				}
 			}
@@ -523,7 +583,8 @@ class OptionsMenuState extends MusicBeatSubstate
 			{
 				name: "Audio Offset",
 				get: function() return FlxG.save.data.offset + " ms",
-				toggle: function() { 
+				toggle: function()
+				{
 					openSubState(new OffsetCalibrationState());
 				}
 			}
@@ -558,7 +619,7 @@ class OptionsMenuState extends MusicBeatSubstate
 	function updateCategoryDisplay()
 	{
 		var categoryWidth = (FlxG.width - 120) / categories.length;
-		
+
 		// Actualizar textos de categorías
 		categoryTexts.forEach(function(txt:FlxText)
 		{
@@ -566,7 +627,7 @@ class OptionsMenuState extends MusicBeatSubstate
 			{
 				txt.color = FlxColor.WHITE;
 				txt.setFormat(Paths.font("Funkin.otf"), 24, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
-				
+
 				// Animar el texto
 				FlxTween.cancelTweensOf(txt.scale);
 				FlxTween.tween(txt.scale, {x: 1.05, y: 1.05}, 0.2, {ease: FlxEase.quadOut});
@@ -575,12 +636,12 @@ class OptionsMenuState extends MusicBeatSubstate
 			{
 				txt.color = 0xFF888888;
 				txt.setFormat(Paths.font("Funkin.otf"), 22, 0xFF888888, CENTER, OUTLINE, FlxColor.BLACK);
-				
+
 				FlxTween.cancelTweensOf(txt.scale);
 				FlxTween.tween(txt.scale, {x: 1, y: 1}, 0.2, {ease: FlxEase.quadOut});
 			}
 		});
-		
+
 		// Actualizar backgrounds de pestañas
 		contentPanel.forEach(function(sprite:FlxSprite)
 		{
@@ -599,7 +660,7 @@ class OptionsMenuState extends MusicBeatSubstate
 					sprite.alpha = 0.7;
 				}
 			}
-			
+
 			// Mover el indicador de pestaña activa
 			if (sprite.ID == -1) // El indicador tiene ID -1
 			{
@@ -618,7 +679,7 @@ class OptionsMenuState extends MusicBeatSubstate
 			{
 				txt.color = FlxColor.CYAN;
 				txt.alpha = 1;
-				
+
 				// Animar el texto seleccionado
 				FlxTween.cancelTweensOf(txt.scale);
 				FlxTween.tween(txt.scale, {x: 1.08, y: 1.08}, 0.15, {ease: FlxEase.quadOut});
@@ -627,7 +688,7 @@ class OptionsMenuState extends MusicBeatSubstate
 			{
 				txt.color = FlxColor.WHITE;
 				txt.alpha = 0.6;
-				
+
 				FlxTween.cancelTweensOf(txt.scale);
 				FlxTween.tween(txt.scale, {x: 1, y: 1}, 0.15, {ease: FlxEase.quadOut});
 			}
@@ -639,7 +700,7 @@ class OptionsMenuState extends MusicBeatSubstate
 			{
 				txt.alpha = 1;
 				txt.color = FlxColor.YELLOW;
-				
+
 				// Animar el valor seleccionado
 				FlxTween.cancelTweensOf(txt.scale);
 				FlxTween.tween(txt.scale, {x: 1.08, y: 1.08}, 0.15, {ease: FlxEase.quadOut});
@@ -648,11 +709,11 @@ class OptionsMenuState extends MusicBeatSubstate
 			{
 				txt.alpha = 0.6;
 				txt.color = FlxColor.CYAN;
-				
+
 				FlxTween.cancelTweensOf(txt.scale);
 				FlxTween.tween(txt.scale, {x: 1, y: 1}, 0.15, {ease: FlxEase.quadOut});
 			}
-			
+
 			txt.text = currentOptions[txt.ID].get();
 		});
 	}
@@ -700,11 +761,21 @@ class OptionsMenuState extends MusicBeatSubstate
 			final opt = currentOptions[curSelected];
 			if (FlxG.keys.justPressed.A || FlxG.keys.justPressed.LEFT)
 			{
-				if (opt.left != null) { FlxG.sound.play(Paths.sound('menus/scrollMenu')); opt.left(); updateOptionDisplay(); }
+				if (opt.left != null)
+				{
+					FlxG.sound.play(Paths.sound('menus/scrollMenu'));
+					opt.left();
+					updateOptionDisplay();
+				}
 			}
 			if (FlxG.keys.justPressed.D || FlxG.keys.justPressed.RIGHT)
 			{
-				if (opt.right != null) { FlxG.sound.play(Paths.sound('menus/scrollMenu')); opt.right(); updateOptionDisplay(); }
+				if (opt.right != null)
+				{
+					FlxG.sound.play(Paths.sound('menus/scrollMenu'));
+					opt.right();
+					updateOptionDisplay();
+				}
 			}
 		}
 
@@ -716,7 +787,7 @@ class OptionsMenuState extends MusicBeatSubstate
 			currentOptions[curSelected].toggle();
 			updateOptionDisplay();
 			FlxG.save.flush();
-			
+
 			// Si estamos en pause menu
 			if (fromPause)
 			{
@@ -752,7 +823,7 @@ class OptionsMenuState extends MusicBeatSubstate
 		if (controls.BACK)
 		{
 			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
-			
+
 			if (fromPause)
 			{
 				fromPause = false;
@@ -784,7 +855,8 @@ class OptionsMenuState extends MusicBeatSubstate
 
 	function changeSelection(change:Int)
 	{
-		if (currentOptions.length == 0) return;
+		if (currentOptions.length == 0)
+			return;
 
 		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 		curSelected += change;
@@ -803,10 +875,10 @@ class OptionsMenuState extends MusicBeatSubstate
 	{
 		bindingState = "binding";
 		tempKey = keys[keyIndex];
-		
+
 		bindingIndicator.text = "Press any key for " + keyBindNames[keyIndex] + "...\nESC to cancel";
 		bindingIndicator.visible = true;
-		
+
 		// Cambiar el valor mostrado a "?"
 		optionValues.members[curSelected].text = "?";
 	}
@@ -828,7 +900,7 @@ class OptionsMenuState extends MusicBeatSubstate
 		if (FlxG.keys.justPressed.ANY)
 		{
 			var pressedKey = FlxG.keys.getIsDown()[0].ID.toString();
-			
+
 			if (isKeyValid(pressedKey, curSelected))
 			{
 				keys[curSelected] = pressedKey;
@@ -837,7 +909,7 @@ class OptionsMenuState extends MusicBeatSubstate
 				bindingIndicator.visible = false;
 				updateOptionDisplay();
 				FlxG.sound.play(Paths.sound('menus/scrollMenu'));
-				
+
 				// Advertir si hay duplicados (pero permitirlos)
 				if (hasDuplicateKeys())
 				{
@@ -903,15 +975,15 @@ class OptionsMenuState extends MusicBeatSubstate
 	function resetKeybinds()
 	{
 		FlxG.sound.play(Paths.sound('menus/confirmMenu'));
-		
+
 		for (i in 0...5)
 		{
 			keys[i] = defaultKeys[i];
 		}
-		
+
 		saveKeyBinds();
 		loadCategory(curCategory); // Recargar para actualizar valores
-		
+
 		showWarning("Keybinds reset to default!");
 	}
 
@@ -919,7 +991,7 @@ class OptionsMenuState extends MusicBeatSubstate
 	{
 		warningText.text = text;
 		warningText.alpha = 1;
-		
+
 		FlxTween.tween(warningText, {alpha: 0}, 0.5, {
 			ease: FlxEase.circOut,
 			startDelay: 2
@@ -933,19 +1005,19 @@ class OptionsMenuState extends MusicBeatSubstate
 	function isGameplaySetting(optionName:String):Bool
 	{
 		var safeGameplaySettings = [
-			"Ghost Tapping",      // Seguro: solo afecta siguiente input
-			"Show HUD",           // Seguro: solo visual
-			"Note Splashes",      // Seguro: solo visual
-			"Accuracy Display",   // Seguro: solo visual
-			"Anti-Aliasing"       // Seguro: solo visual
+			"Ghost Tapping", // Seguro: solo afecta siguiente input
+			"Show HUD", // Seguro: solo visual
+			"Note Splashes", // Seguro: solo visual
+			"Accuracy Display", // Seguro: solo visual
+			"Anti-Aliasing" // Seguro: solo visual
 		];
-		
+
 		// Configuraciones que REQUIEREN REINICIO (NO en tiempo real):
 		// - Downscroll: requiere reposicionar strums y notas en vuelo
 		// - Middlescroll: requiere reorganizar layout completo
 		// - Perfect Mode/Sick Mode: cambian lógica de scoring
 		// - Static Stage: puede causar memory leaks
-		
+
 		return safeGameplaySettings.contains(optionName);
 	}
 
@@ -964,7 +1036,7 @@ class OptionsMenuState extends MusicBeatSubstate
 			"GF Bye",
 			"Background Bye"
 		];
-		
+
 		return restartRequired.contains(optionName);
 	}
 
@@ -981,7 +1053,7 @@ class OptionsMenuState extends MusicBeatSubstate
 	}
 
 	// === CLASE DE COMPATIBILIDAD PARA Main.hx ===
-	
+
 	/**
 	 * Inicializa los valores por defecto de las opciones
 	 * Llamado desde Main.hx
@@ -1011,35 +1083,45 @@ class OptionsData
 		if (FlxG.save.data.middlescroll == null)
 			FlxG.save.data.middlescroll = false;
 
-		if(FlxG.save.data.HUD == null)
+		if (FlxG.save.data.HUD == null)
 			FlxG.save.data.HUD = false;
 
-		if(FlxG.save.data.camZoom == null)
+		if (FlxG.save.data.camZoom == null)
 			FlxG.save.data.camZoom = false;
 
-		if(FlxG.save.data.flashing == null)
+		if (FlxG.save.data.flashing == null)
 			FlxG.save.data.flashing = false;
 
 		if (FlxG.save.data.offset == null)
 			FlxG.save.data.offset = 0;
 
-		if(FlxG.save.data.sickmode == null)
+		if (FlxG.save.data.sickmode == null)
 			FlxG.save.data.sickmode = false;
 
-		if(FlxG.save.data.staticstage == null)
+		if (FlxG.save.data.staticstage == null)
 			FlxG.save.data.staticstage = false;
 
-		if(FlxG.save.data.specialVisualEffects == null)
+		if (FlxG.save.data.specialVisualEffects == null)
 			FlxG.save.data.specialVisualEffects = true;
 
 		if (FlxG.save.data.ghosttap == null)
 			FlxG.save.data.ghosttap = false;
 
-		if(FlxG.save.data.hitsounds == null)
+		if (FlxG.save.data.hitsounds == null)
 			FlxG.save.data.hitsounds = false;
-		
-		if(FlxG.save.data.antialiasing == null)
+
+		if (FlxG.save.data.antialiasing == null)
 			FlxG.save.data.antialiasing = true;
+
+		// ── PathsCache: GPU texture caching ──────────────────────────────────
+		// Por defecto activo en desktop (false en web/mobile sin context3D fiable).
+		// Cuando está activo, los bitmaps se suben a VRAM y la copia en RAM se
+		// libera → ahorro de ~4 MB por textura 1024×1024.
+		if (FlxG.save.data.gpuCaching == null)
+			FlxG.save.data.gpuCaching = #if (desktop && !hl) true #else false #end;
+
+		// Sincronizar con PathsCache al arrancar
+		funkin.cache.PathsCache.gpuCaching = FlxG.save.data.gpuCaching;
 	}
 }
 
@@ -1052,16 +1134,16 @@ class OffsetCalibrationState extends MusicBeatSubstate
 	var bpm:Float = 100;
 	var beatTime:Float = 0;
 	var currentBeat:Int = 0;
-	
+
 	var instructions:FlxText;
 	var offsetDisplay:FlxText;
 	var beatIndicator:FlxSprite;
 	var visualMetronome:FlxSprite;
 	var tapCounter:FlxText;
-	
+
 	var taps:Array<Float> = [];
 	var maxTaps:Int = 8;
-	
+
 	var countdownText:FlxText;
 	var isCountingDown:Bool = true;
 	var countdownTimer:Float = 3;
@@ -1087,10 +1169,11 @@ class OffsetCalibrationState extends MusicBeatSubstate
 		add(title);
 
 		// Instrucciones
-		instructions = new FlxText(0, panel.y + 100, FlxG.width, 
-			"Press SPACE in sync with the beat!\n\n" +
-			"The metronome will play at 100 BPM\n" +
-			"Press 8 times to calculate your offset", 24);
+		instructions = new FlxText(0, panel.y
+			+ 100, FlxG.width,
+			"Press SPACE in sync with the beat!\n\n"
+			+ "The metronome will play at 100 BPM\n"
+			+ "Press 8 times to calculate your offset", 24);
 		instructions.setFormat(Paths.font("Funkin.otf"), 24, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
 		instructions.borderSize = 2;
 		add(instructions);
@@ -1128,8 +1211,7 @@ class OffsetCalibrationState extends MusicBeatSubstate
 		add(countdownText);
 
 		// Controles en la parte inferior
-		var controlsText:FlxText = new FlxText(0, panel.y + 530, FlxG.width, 
-			"SPACE: Tap | R: Reset | +/-: Adjust manually | ESC: Back", 18);
+		var controlsText:FlxText = new FlxText(0, panel.y + 530, FlxG.width, "SPACE: Tap | R: Reset | +/-: Adjust manually | ESC: Back", 18);
 		controlsText.setFormat(Paths.font("Funkin.otf"), 18, FlxColor.GRAY, CENTER, OUTLINE, FlxColor.BLACK);
 		controlsText.borderSize = 1.5;
 		add(controlsText);
@@ -1148,7 +1230,7 @@ class OffsetCalibrationState extends MusicBeatSubstate
 		{
 			countdownTimer -= elapsed;
 			countdownText.text = Std.string(Math.ceil(countdownTimer));
-			
+
 			if (countdownTimer <= 0)
 			{
 				isCountingDown = false;
@@ -1194,6 +1276,8 @@ class OffsetCalibrationState extends MusicBeatSubstate
 		// Reset
 		if (FlxG.keys.justPressed.R)
 		{
+			FlxG.save.data.offset = 0;
+			updateOffsetDisplay();
 			taps = [];
 			updateTapCounter();
 			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
@@ -1209,13 +1293,12 @@ class OffsetCalibrationState extends MusicBeatSubstate
 
 		// Animación del indicador visual
 		beatIndicator.alpha = FlxMath.lerp(beatIndicator.alpha, 0, elapsed * 5);
-		beatIndicator.scale.set(FlxMath.lerp(beatIndicator.scale.x, 1, elapsed * 8), 
-								FlxMath.lerp(beatIndicator.scale.y, 1, elapsed * 8));
+		beatIndicator.scale.set(FlxMath.lerp(beatIndicator.scale.x, 1, elapsed * 8), FlxMath.lerp(beatIndicator.scale.y, 1, elapsed * 8));
 	}
 
 	function playMetronome()
 	{
-		FlxG.sound.play(Paths.soundRandom(metronomeSound,1,2), 0.5);
+		FlxG.sound.play(Paths.soundRandom(metronomeSound, 1, 2), 0.5);
 	}
 
 	function flashBeatIndicator()
@@ -1253,22 +1336,22 @@ class OffsetCalibrationState extends MusicBeatSubstate
 		{
 			sum += tap;
 		}
-		
+
 		var average = sum / taps.length;
 		var beatDurationMs = (60 / bpm) * 1000;
-		
+
 		// Calcular el offset real (cuánto antes o después está presionando)
 		var offset = Std.int(average - (beatDurationMs / 2));
-		
+
 		FlxG.save.data.offset = offset;
 		updateOffsetDisplay();
-		
+
 		// Reset taps
 		taps = [];
 		updateTapCounter();
-		
+
 		FlxG.sound.play(Paths.sound('menus/confirmMenu'));
-		
+
 		// Feedback visual
 		beatIndicator.color = FlxColor.LIME;
 		flashBeatIndicator();

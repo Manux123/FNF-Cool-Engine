@@ -111,6 +111,13 @@ class FreeplayState extends funkin.states.MusicBeatState
 		if (vocals == null)
 			FlxG.sound.playMusic(Paths.music('girlfriendsRingtone/girlfriendsRingtone'), 0.7);
 
+		// Error message text
+		errorText = new FlxText(0, FlxG.height * 0.5 - 50, FlxG.width, "", 32);
+		errorText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.RED, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		errorText.setBorderStyle(OUTLINE, FlxColor.BLACK, 4);
+		errorText.scrollFactor.set();
+		errorText.alpha = 0;
+
 		loadSongsData();
 		if (songInfo != null)
 		{
@@ -118,7 +125,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 		}
 		else
 		{
-			trace("Error loading song data");
+			songInfo = null;
 		}
 
 		#if desktop
@@ -265,14 +272,13 @@ class FreeplayState extends funkin.states.MusicBeatState
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.CYAN, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 
-		// Error message text
-		errorText = new FlxText(0, FlxG.height * 0.5 - 50, FlxG.width, "", 32);
-		errorText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.RED, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		errorText.setBorderStyle(OUTLINE, FlxColor.BLACK, 4);
-		errorText.scrollFactor.set();
-		errorText.alpha = 0;
 		errorText.visible = false;
 		add(errorText);
+
+		if (songs.length == 0)
+		{
+			showError("No songs found!\nPlease add songs to your songList.json");
+		}
 
 		// Animación de entrada
 		FlxTween.tween(bg, {alpha: 1, "scale.x": 1, "scale.y": 1}, 0.6, {ease: FlxEase.expoOut});
@@ -318,7 +324,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 			}
 			else
 			{
-				var modSongListPath = '${mods.ModManager.modRoot()}/data/songList.json';
+				var modSongListPath = '${mods.ModManager.modRoot()}/songs/songList.json';
 				var file:String = null;
 				if (sys.FileSystem.exists(modSongListPath))
 					file = sys.io.File.getContent(modSongListPath);
@@ -473,6 +479,12 @@ class FreeplayState extends funkin.states.MusicBeatState
 		var rightP = controls.RIGHT_P;
 		var accepted = FlxG.keys.justPressed.ENTER;
 		var space = FlxG.keys.justPressed.SPACE;
+
+		if (songs.length == 0)
+		{
+			accepted = false;
+			space = false;
+		}
 
 		#if HSCRIPT_ALLOWED
 		if (upP && !StateScriptHandler.callOnScripts('interceptNav', [-1, 0]))
@@ -802,6 +814,8 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 	function changeDiff(change:Int = 0)
 	{
+		if (songs.length == 0) return;
+
 		curDifficulty += change;
 
 		if (curDifficulty < 0)
@@ -825,6 +839,8 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 	function changeSelection(change:Int = 0)
 	{
+		if (songs.length == 0) return;
+
 		FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 
 		curSelected += change;

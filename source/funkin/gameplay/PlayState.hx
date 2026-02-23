@@ -246,6 +246,11 @@ class PlayState extends funkin.states.MusicBeatState
 
 	override public function create()
 	{
+		// Iniciar sesión de caché: resetea localTrackedAssets sin borrar nada.
+		// Todos los assets cargados durante create() se marcarán como "en uso"
+		// automáticamente. clearStoredMemory() en destroy() liberará el resto.
+		Paths.beginSession();
+
 		if (StickerTransition.enabled)
 		{
 			transIn = null;
@@ -2647,33 +2652,28 @@ class PlayState extends funkin.states.MusicBeatState
 		// en el mismo frame que el bitmap se disponía.
 		super.destroy();
 
-		// Limpiar caché de assets: todos los sprites ya están destruidos (arriba).
-		Paths.forceClearCache();
-		Paths.clearFlxBitmapCache();
+		// ── Liberar caché de assets ─────────────────────────────────────────────
+		//
+		// Orden:
+		//  1. clearStoredMemory() — sonidos fuera de uso + desmarcar gráficos
+		//     (llama internamente a _pruneInvalidAtlases para limpiar atlas
+		//      cuyo FlxGraphic ya fue dispuesto)
+		//  2. clearUnusedMemory() — destruir FlxGraphics + GC mayor
+		//
+		// Esto es más preciso que forceClearCache(): los assets de menú
+		// (freakyMenu, cursor, UI) que están en dumpExclusions se conservan,
+		// evitando recargas innecesarias al volver al menú principal.
+		Paths.clearStoredMemory();
+		Paths.clearUnusedMemory();
 
-		// Limpiar batches del GPURenderer de texturas que ya no existen.
-		// Importante: sin esto, los GPUBatch de texturas de personajes/stage anteriores
-		// permanecen en memoria y sus buffers pre-alojados nunca se liberan.
+		// Limpiar batches del GPURenderer para texturas que ya no existen.
 		if (optimizationManager != null && optimizationManager.gpuRenderer != null)
 			optimizationManager.gpuRenderer.clearUnusedBatches();
 
-		// openfl.utils.Assets.cache es un tercer cache independiente de FlxG.bitmap.
-		// Sin limpiar esto, texturas de personajes y stage permanecen en RAM entre canciones.
-		try { openfl.utils.Assets.cache.clear(); } catch (_:Dynamic) {}
-
-		// FlxG.bitmap.clearUnused() libera texturas con useCount = 0 que
-		// no fueron capturadas por clearCache() arriba.
+		// clearUnusedMemory() ya llama a FlxG.bitmap.clearCache() + GC,
+		// pero limpiamos explícitamente los assets sin usar en FlxG.bitmap
+		// por si algún sprite los marcó con destroyOnNoUse=true después.
 		try { FlxG.bitmap.clearUnused(); } catch (_:Dynamic) {}
-
-		// Forzar GC con todo ya limpiado - triple paso para máxima liberación
-		#if cpp
-		cpp.vm.Gc.run(true);
-		cpp.vm.Gc.compact();
-		cpp.vm.Gc.run(true);
-		#end
-		#if hl
-		hl.Gc.major();
-		#end
 	}
 
 	// ====================================

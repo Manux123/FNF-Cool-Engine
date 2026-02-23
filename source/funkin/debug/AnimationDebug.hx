@@ -1154,7 +1154,7 @@ class AnimationDebug extends MusicBeatState
 
 			// Destino: assets/characters/images/<daAnim>/
 			// Coincide con Paths.characterFolder(daAnim)
-			var destFolder = 'assets/characters/images/$daAnim/';
+			var destFolder = Paths.resolve('characters/images/$daAnim/');
 			if (!FileSystem.exists(destFolder))
 				FileSystem.createDirectory(destFolder);
 
@@ -1539,10 +1539,10 @@ class AnimationDebug extends MusicBeatState
 		#if sys
 		try
 		{
-			if (!FileSystem.exists('assets/characters/'))
-				FileSystem.createDirectory('assets/characters/');
+			if (!FileSystem.exists(Paths.resolve('characters/')))
+				FileSystem.createDirectory(Paths.resolve('characters/'));
 
-			File.saveContent('assets/characters/' + daAnim + '.json', jsonString);
+			File.saveContent(Paths.resolve('characters/' + daAnim + '.json'), jsonString);
 			displayCharacter(daAnim);
 			loadCharacterData();
 		}

@@ -231,14 +231,14 @@ class LoadingState extends funkin.states.MusicBeatState
 	static function getLibraryDir(library:String):String
 	{
 		var candidates = [
-			'assets/$library/',
-			'assets/data/$library/',
-			'assets/images/$library/',
+			Paths.resolve('$library/'),
+			Paths.resolve('data/$library/'),
+			Paths.resolve('images/$library/'),
 		];
 		for (c in candidates)
 			if (FileSystem.exists(c) && FileSystem.isDirectory(c))
 				return c;
-		return 'assets/$library/'; // fallback aunque no exista
+		return Paths.resolve('$library/'); // fallback aunque no exista
 	}
 
 	/**

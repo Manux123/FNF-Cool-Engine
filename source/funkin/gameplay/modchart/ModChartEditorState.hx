@@ -1262,8 +1262,8 @@ class ModChartEditorState extends FlxState
 	{
 		#if sys
 		try {
-			var p = 'assets/modcharts/${manager.data.song.toLowerCase()}.json';
-			sys.FileSystem.createDirectory('assets/modcharts');
+			var p = Paths.resolve('modcharts/${manager.data.song.toLowerCase()}.json');
+			sys.FileSystem.createDirectory(Paths.resolve('modcharts'));
 			sys.io.File.saveContent(p, manager.toJson());
 			setStatus('✓ Guardado: $p');
 		} catch (e:Dynamic) { setStatus("Error: " + e); }
@@ -1277,7 +1277,7 @@ class ModChartEditorState extends FlxState
 	function onClickLoad():Void
 	{
 		#if sys
-		var p = 'assets/modcharts/${manager.data.song.toLowerCase()}.json';
+		var p = Paths.resolve('modcharts/${manager.data.song.toLowerCase()}.json');
 		if (sys.FileSystem.exists(p)) {
 			try { manager.loadFromJson(sys.io.File.getContent(p)); refreshTimeline(); setStatus('✓ ${manager.data.events.length} eventos'); }
 			catch (e:Dynamic) { setStatus("Error: " + e); }

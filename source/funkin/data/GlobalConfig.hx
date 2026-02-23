@@ -105,7 +105,7 @@ class GlobalConfig
 	/** Guarda la configuración actual a disco */
 	public function save():Void
 	{
-		var path = 'assets/data/config/global.json';
+		var path = Paths.resolve('data/config/global.json');
 		try
 		{
 			var data = {

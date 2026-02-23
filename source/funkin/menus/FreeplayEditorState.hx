@@ -112,13 +112,14 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 		FlxG.sound.playMusic(Paths.music('chartEditorLoop/chartEditorLoop'), 0.7);
 
 		loadSongsData();
+
 		if (songInfo != null)
 		{
 			songsSystem();
 		}
 		else
 		{
-			trace("Error loading song data");
+			songInfo = null;
 		}
 
 		#if desktop
@@ -325,7 +326,7 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 			}
 			else
 			{
-				var modSongListPath = '${mods.ModManager.modRoot()}/data/songList.json';
+				var modSongListPath = '${mods.ModManager.modRoot()}/songs/songList.json';
 				var file:String = null;
 				if (sys.FileSystem.exists(modSongListPath))
 					file = sys.io.File.getContent(modSongListPath);

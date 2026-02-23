@@ -175,7 +175,7 @@ class FileManagerDialog extends FlxTypedGroup<FlxSprite>
 	{
 		#if sys
 		var fileName = sourcePath.split("/").pop().split("\\").pop();
-		var destFolder = 'assets/stages/${stageName}/${fileType}s';
+		var destFolder = Paths.resolve('stages/${stageName}/${fileType}s');
 		var destPath = '$destFolder/$fileName';
 		
 		// Crear carpeta si no existe

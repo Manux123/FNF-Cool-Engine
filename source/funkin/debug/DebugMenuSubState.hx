@@ -231,7 +231,7 @@ class DebugMenuSubState extends FlxSubState
 	 */
 	function loadSongFromDisk(songName:String):SwagSong
 	{
-		var base:String = 'assets/songs/$songName/';
+		var base:String = Paths.resolve('songs/$songName/');
 		var paths:Array<String> = [
 			base + '$songName.json',
 			base + '$songName-easy.json',

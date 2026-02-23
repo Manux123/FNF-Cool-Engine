@@ -184,7 +184,7 @@ class ModChartManager
     /** Carga el modchart de una canción desde assets/modcharts/<song>.json */
     public function loadFromFile(songName:String):Bool
     {
-        var path = 'assets/modcharts/${songName.toLowerCase()}.json';
+        var path = Paths.resolve('modcharts/${songName.toLowerCase()}.json');
 
         if (!openfl.Assets.exists(path))
         {

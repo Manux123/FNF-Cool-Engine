@@ -2686,7 +2686,7 @@ class PlayState extends funkin.states.MusicBeatState
 	private function checkForDialogue(type:String = 'intro'):Bool
 	{
 		var songName = SONG.song.toLowerCase();
-		var dialoguePath = 'assets/songs/${songName}/${type}.json';
+		var dialoguePath = Paths.resolve('songs/${songName}/${type}.json');
 
 		#if sys
 		return sys.FileSystem.exists(dialoguePath);

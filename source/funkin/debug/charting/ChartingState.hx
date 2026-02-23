@@ -2561,7 +2561,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		#if sys
 		try
 		{
-			var path = 'assets/data/${_song.song.toLowerCase()}/autosave-${_song.song.toLowerCase()}.json';
+			var path = Paths.resolve('data/${_song.song.toLowerCase()}/autosave-${_song.song.toLowerCase()}.json');
 			sys.io.File.saveContent(path, data);
 			showMessage('💾 Autosaved!', ACCENT_SUCCESS);
 		}

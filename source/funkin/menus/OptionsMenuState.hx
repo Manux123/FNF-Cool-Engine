@@ -68,6 +68,9 @@ class OptionsMenuState extends MusicBeatSubstate
 	var bindingIndicator:FlxText;
 	
 	public static var fromPause:Bool = false;
+	/** Si se cambia una opción que requiere restart mientras en pausa, este flag
+	 *  le indica a PauseSubState que dispare el rewind al volver. */
+	public static var pendingRewind:Bool = false;
 
 	override function create()
 	{
@@ -722,10 +725,19 @@ class OptionsMenuState extends MusicBeatSubstate
 				{
 					applyGameplaySettingsRealtime();
 				}
-				// Advertir si requiere reinicio
+				// Si requiere reinicio y estamos en pausa dentro del PlayState → señalar rewind
 				else if (requiresRestart(optionName))
 				{
-					showWarning("Restart song to apply changes");
+					if (fromPause && PlayState.instance != null)
+					{
+						FlxG.save.flush();
+						pendingRewind = true;
+						close(); // vuelve a PauseSubState que detectará pendingRewind
+					}
+					else
+					{
+						showWarning("Restart song to apply changes");
+					}
 				}
 			}
 		}

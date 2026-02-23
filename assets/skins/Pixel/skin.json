@@ -1,0 +1,164 @@
+{
+    "name": "Pixel",
+    "author": "ninjamuffin99",
+    "description": "Default pixel/week 6 note skin",
+    "folder": "Pixel",
+    "isPixel": true,
+    "confirmOffset": false,
+    "sustainOffset": 30.0,
+    "holdStretch": 1.19,
+    "texture": {
+        "path": "arrows-pixels",
+        "type": "image",
+        "frameWidth": 17,
+        "frameHeight": 17,
+        "scale": 6.0,
+        "antialiasing": false
+    },
+    "holdTexture": {
+        "path": "arrowEnds",
+        "type": "image",
+        "frameWidth": 9,
+        "frameHeight": 6,
+        "scale": 6.0,
+        "antialiasing": false
+    },
+    "animations": {
+        "left": {
+            "indices": [
+                4
+            ]
+        },
+        "down": {
+            "indices": [
+                5
+            ]
+        },
+        "up": {
+            "indices": [
+                6
+            ]
+        },
+        "right": {
+            "indices": [
+                7
+            ]
+        },
+        "leftHold": {
+            "indices": [
+                0
+            ]
+        },
+        "downHold": {
+            "indices": [
+                2
+            ]
+        },
+        "upHold": {
+            "indices": [
+                4
+            ]
+        },
+        "rightHold": {
+            "indices": [
+                6
+            ]
+        },
+        "leftHoldEnd": {
+            "indices": [
+                1
+            ]
+        },
+        "downHoldEnd": {
+            "indices": [
+                3
+            ]
+        },
+        "upHoldEnd": {
+            "indices": [
+                5
+            ]
+        },
+        "rightHoldEnd": {
+            "indices": [
+                7
+            ]
+        },
+        "strumLeft": {
+            "indices": [
+                0
+            ]
+        },
+        "strumDown": {
+            "indices": [
+                1
+            ]
+        },
+        "strumUp": {
+            "indices": [
+                2
+            ]
+        },
+        "strumRight": {
+            "indices": [
+                3
+            ]
+        },
+        "strumLeftPress": {
+            "indices": [
+                4,
+                8
+            ],
+            "framerate": 12
+        },
+        "strumDownPress": {
+            "indices": [
+                5,
+                9
+            ],
+            "framerate": 12
+        },
+        "strumUpPress": {
+            "indices": [
+                6,
+                10
+            ],
+            "framerate": 12
+        },
+        "strumRightPress": {
+            "indices": [
+                7,
+                11
+            ],
+            "framerate": 12
+        },
+        "strumLeftConfirm": {
+            "indices": [
+                12,
+                16
+            ],
+            "framerate": 24
+        },
+        "strumDownConfirm": {
+            "indices": [
+                13,
+                17
+            ],
+            "framerate": 24
+        },
+        "strumUpConfirm": {
+            "indices": [
+                14,
+                18
+            ],
+            "framerate": 24
+        },
+        "strumRightConfirm": {
+            "indices": [
+                15,
+                19
+            ],
+            "framerate": 24
+        }
+    }
+}

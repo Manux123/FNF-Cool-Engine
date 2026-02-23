@@ -1,0 +1,9 @@
+{
+    "ui": "default",
+    "noteSkin": "Pixel",
+    "noteSplash": "PixelSplash",
+    "hideCombo": false,
+    "hideRatings": false,
+    "hudVisible": true,
+    "midSongVideo": false
+}

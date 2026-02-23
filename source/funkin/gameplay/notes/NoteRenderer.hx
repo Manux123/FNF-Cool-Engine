@@ -33,7 +33,12 @@ class NoteRenderer
     public var noteSpeed:Float = 1.0;
     
     // OPTIMIZATION: Object Pooling para notas
-    private var notePool:Array<Note> = [];
+    // BUGFIX: pools separados para sustain vs normal — mezclarlos causaba que
+    // note.recycle() cambiara isSustainNote sin recargar las animaciones de skin,
+    // disparando WARNING "No animation called 'purpleScroll'" etc. y hold notes
+    // visualmente corruptos.
+    private var notePool:Array<Note>    = [];   // notas normales (cabeza)
+    private var sustainPool:Array<Note> = [];   // hold pieces + tails
     private var maxPoolSize:Int = 50;
     
     // OPTIMIZATION: Object Pooling para splashes
@@ -78,10 +83,14 @@ class NoteRenderer
     public function getNote(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?mustHitNote:Bool = false):Note
     {
         var note:Note = null;
-        
-        if (notePool.length > 0)
+
+        // Usar el pool correcto según tipo — evita reciclar una nota sustain
+        // como nota normal (y viceversa) con animaciones de skin incorrectas.
+        final pool = sustainNote ? sustainPool : notePool;
+
+        if (pool.length > 0)
         {
-            note = notePool.pop();
+            note = pool.pop();
             note.recycle(strumTime, noteData, prevNote, sustainNote, mustHitNote);
             pooledNotes++;
         }
@@ -127,12 +136,14 @@ class NoteRenderer
         
         try
         {
-            if (notePool.length < maxPoolSize)
+            // Devolver al pool correcto según el tipo de nota
+            final pool = note.isSustainNote ? sustainPool : notePool;
+            if (pool.length < maxPoolSize)
             {
                 note.kill();
                 note.visible = false;
                 note.active = false;
-                notePool.push(note);
+                pool.push(note);
             }
             else
             {
@@ -312,11 +323,15 @@ class NoteRenderer
         // Limpiar note pool
         for (note in notePool)
         {
-            if (note != null)
-                note.destroy();
+            if (note != null) note.destroy();
         }
         notePool = [];
-        
+        for (note in sustainPool)
+        {
+            if (note != null) note.destroy();
+        }
+        sustainPool = [];
+
         // Limpiar splash pool
         for (splash in splashPool)
         {
@@ -344,7 +359,8 @@ class NoteRenderer
      */
     public function getPoolStats():String
     {
-        var stats = 'Notes: ${notePool.length}/$maxPoolSize (pooled: $pooledNotes, created: $createdNotes)\n';
+        var stats = 'Notes: ${notePool.length + sustainPool.length}/$maxPoolSize (normal: ${notePool.length} sustain: ${sustainPool.length} pooled: $pooledNotes, created: $createdNotes)
+';
         stats += 'Splashes: ${splashPool.length}/$maxSplashPoolSize (pooled: $pooledSplashes, created: $createdSplashes)\n';
         stats += 'Active Hold Splashes: ${Lambda.count(activeHoldSplashes)}\n';
         

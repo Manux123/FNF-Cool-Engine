@@ -382,16 +382,18 @@ class CharacterController
 		for (slot in characterSlots)
 		{
 			if (slot != null && slot.character != null)
-				slot.character.dance();
+			{
+				// Resetear holdTimer para que update() no vuelva a forzar sing en el próximo frame
+				slot.character.holdTimer = 0;
+				// returnToIdle() fuerza el idle SIN el guard de sing* que tiene dance()
+				slot.character.returnToIdle();
+			}
 		}
 		
-		// Legacy
-		if (boyfriend != null)
-			boyfriend.dance();
-		if (dad != null)
-			dad.dance();
-		if (gf != null)
-			gf.dance();
+		// Legacy (para compatibilidad con código que usa referencias directas)
+		if (boyfriend != null) { boyfriend.holdTimer = 0; boyfriend.returnToIdle(); }
+		if (dad != null)       { dad.holdTimer       = 0; dad.returnToIdle();       }
+		if (gf != null)        { gf.holdTimer        = 0; gf.returnToIdle();        }
 	}
 	
 	/**

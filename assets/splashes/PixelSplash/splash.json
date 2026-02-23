@@ -1,0 +1,20 @@
+{
+  "name": "PixelSplash",
+  "author": "FNF Team",
+  "description": "Classic Friday Night Funkin' note splash effects",
+  "assets": {
+    "path": "pixelNoteSplash",
+    "type": "sparrow",
+    "scale": 4.0,
+    "antialiasing": false,
+    "offset": [100, 100]
+  },
+  "animations": {
+    "left": ["purple1", "purple2","purple3"],
+    "down": ["blue1", "blue2","blue3"],
+    "up": ["green1", "green2","green3"],
+    "right": ["orange1", "orange2","orange3"],
+    "framerate": 24,
+    "randomFramerateRange": 3
+  }
+}

@@ -24,10 +24,9 @@ class Note extends FlxSprite
 	public var noteScore:Float = 1;
 	public var noteRating:String = 'sick';
 
-	// Índice del StrumsGroup al que pertenece esta nota (0 = grupo 0, 1 = grupo 1, etc.)
 	public var strumsGroupIndex:Int = 0;
 
-	/** Tipo de nota personalizado. "" / "normal" = normal. Guardado en chart como noteData[3]. */
+	/** Tipo de nota personalizado. "" / "normal" = normal. */
 	public var noteType:String = '';
 
 	public static var swagWidth:Float = 160 * 0.7;
@@ -37,283 +36,202 @@ class Note extends FlxSprite
 	public static var RED_NOTE:Int = 3;
 
 	var animArrows:Array<String> = ['purple', 'blue', 'green', 'red'];
-	
-	// OPTIMIZATION: Cache para evitar recalcular
+
+	// ── Estado de skin ────────────────────────────────────────────────────
+	/** Nombre de la skin actualmente cargada. Usado para detectar cambios en recycle(). */
+	private var _loadedSkinName:String = '';
+	/** Tipo con el que se cargó la skin: true=sustain, false=normal. Si cambia hay que recargar animaciones. */
+	private var _loadedAsSustain:Bool = false;
+	/** true si la skin cargada tiene isPixel:true. */
+	private var isPixelNote:Bool = false;
+	/** Escala aplicada al sprite, leída del JSON de skin. */
+	private var _noteScale:Float = 1.0;
+	/** Offset X extra para notas sustain, leído del JSON de skin. */
+	private var _skinSustainOffset:Float = 0.0;
+	/** Multiplicador de scale.y para hold chain, leído del JSON de skin. */
+	private var _skinHoldStretch:Float = 1.0;
+
+	// ── Cache de hit window ───────────────────────────────────────────────
 	private var _lastSongPos:Float = -1;
-	private var _cachedCanHit:Bool = false;
 	private var _hitWindowCache:Float = 0;
 
-	public function new(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?mustHitNote:Bool = false)
+	public function new(strumTime:Float, noteData:Int, ?prevNote:Note,
+	                    ?sustainNote:Bool = false, ?mustHitNote:Bool = false)
 	{
 		super();
 
-		if (prevNote == null)
-			prevNote = this;
+		if (prevNote == null) prevNote = this;
+		this.prevNote    = prevNote;
+		isSustainNote    = sustainNote;
+		this.mustPress   = mustHitNote;
 
-		this.prevNote = prevNote;
-		isSustainNote = sustainNote;
-		this.mustPress = mustHitNote; // CORREGIDO: Asignar mustPress desde el inicio
-
-		// CORREGIDO: Calcular posición X según mustPress y middlescroll
-		var baseX:Float = 100;
-		
-		if (FlxG.save.data.middlescroll)
-		{
-			// En middlescroll, las notas del jugador están centradas
-			if (mustHitNote)
-				baseX = FlxG.width / 2 - (swagWidth * 2); // Centrado
-			else
-				baseX = -275; // CPU fuera de pantalla (invisible)
-		}
-		else
-		{
-			// En modo normal, CPU a la izquierda, jugador a la derecha
-			if (mustHitNote)
-				baseX = FlxG.width / 2 + 100; // Lado derecho para jugador
-			else
-				baseX = 100; // Lado izquierdo para CPU
-		}
-		
-		x = baseX;
+		// BUGFIX: aplicar el offset de dirección aquí mismo — setupNoteDirection
+		// ya no hace x += swagWidth*i para notas sustain (causaba WARNING),
+		// así que calculamos la X final directamente igual que en recycle().
+		x = _calcBaseX(mustHitNote) + (swagWidth * noteData);
 		y = -2000;
 		this.strumTime = strumTime + FlxG.save.data.offset;
-		this.noteData = noteData;
+		this.noteData  = noteData;
 
-		// Inicializar sistema
 		NoteSkinSystem.init();
+		loadSkin(NoteSkinSystem.getCurrentSkinData());
 
-		var daStage:String = PlayState.curStage;
-
-		switch (daStage)
-		{
-			case 'school' | 'schoolEvil':
-				loadPixelNotes();
-			default:
-				loadNormalNotes();
-		}
-
-		// Posicionar y animar según dirección
 		setupNoteDirection();
 
-		// Configurar sustains
 		if (isSustainNote && prevNote != null)
-		{
 			setupSustainNote();
-		}
-		
-		// OPTIMIZATION: Precalcular hit window
+
 		var hitWindowMultiplier = isSustainNote ? 1.05 : 1.0;
 		_hitWindowCache = Conductor.safeZoneOffset * hitWindowMultiplier;
 
-		// NoteType: aplicar textura/script después de cargar la nota
 		if (NoteTypeManager.isCustomType(noteType))
 			NoteTypeManager.onNoteSpawn(this);
 	}
 
+	// ==================== CARGA DE SKIN ====================
+
 	/**
-	 * Reconfigura animaciones cuando NoteTypeManager asigna sus propios frames.
-	 * Llamado desde NoteTypeManager.onNoteSpawn().
+	 * Carga la textura y las animaciones desde un NoteSkinData.
+	 *
+	 * No hay ninguna referencia a PlayState.curStage aquí.
+	 * El caller (constructor / recycle) pasa el skinData ya resuelto
+	 * por NoteSkinSystem (que sabe qué skin corresponde al stage actual).
 	 */
-	public function setupTypeAnimations():Void
+	function loadSkin(skinData:NoteSkinSystem.NoteSkinData):Void
 	{
-		var dirs = ['purple', 'blue', 'green', 'red'];
+		if (skinData == null) return;
+
+		_loadedSkinName      = skinData.name;
+		_loadedAsSustain     = isSustainNote; // rastrear tipo para detectar cambio en recycle
+		isPixelNote          = skinData.isPixel == true;
+		_skinSustainOffset   = skinData.sustainOffset != null ? skinData.sustainOffset : 0.0;
+		_skinHoldStretch     = skinData.holdStretch   != null ? skinData.holdStretch   : 1.0;
+
+		// ── Elegir textura ────────────────────────────────────────────────
+		// Notas cabeza y strums → texture principal
+		// Sustain pieces + tails → holdTexture (si existe) o fallback a texture
+		var tex = (isSustainNote && skinData.holdTexture != null)
+			? skinData.holdTexture
+			: skinData.texture;
+
+		// ── Cargar frames ─────────────────────────────────────────────────
+		frames = NoteSkinSystem.loadSkinFrames(tex, skinData.folder);
+
+		// ── Escala ────────────────────────────────────────────────────────
+		// BUGFIX: NO usar `width * _noteScale` porque `width` es el hitbox del
+		// ciclo anterior (stale) hasta que se llame updateHitbox(). Usar
+		// scale.set() directamente para evitar que el scale se multiplique
+		// acumulativamente en cada recycle (_noteScale^N en la N-ésima reutilización).
+		_noteScale = tex.scale != null ? tex.scale : 1.0;
+		scale.set(_noteScale, _noteScale);
+		updateHitbox();
+
+		// ── Antialiasing ──────────────────────────────────────────────────
+		antialiasing = tex.antialiasing != null ? tex.antialiasing : !isPixelNote;
+
+		// ── Animaciones ───────────────────────────────────────────────────
+		var anims = skinData.animations;
+		if (anims == null) return;
+
 		if (!isSustainNote)
 		{
-			for (i in 0...dirs.length)
-			{
-				try { animation.addByPrefix(dirs[i] + 'Scroll', dirs[i] + '0'); } catch(_:Dynamic) {}
-				try { animation.addByPrefix(dirs[i] + 'Scroll', dirs[i]); }       catch(_:Dynamic) {}
-			}
-			for (i in 0...dirs.length)
-				if (noteData == i && animation.exists(dirs[i] + 'Scroll'))
-					{ animation.play(dirs[i] + 'Scroll'); break; }
+			// Animaciones de notas (las que bajan por la pantalla)
+			var defs = [anims.left, anims.down, anims.up, anims.right];
+			for (i in 0...animArrows.length)
+				NoteSkinSystem.addAnimToSprite(this, animArrows[i] + 'Scroll', defs[i]);
 		}
 		else
 		{
-			for (i in 0...dirs.length)
+			// Hold pieces
+			var holdDefs    = [anims.leftHold,    anims.downHold,    anims.upHold,    anims.rightHold];
+			// Hold tails/ends
+			var holdEndDefs = [anims.leftHoldEnd, anims.downHoldEnd, anims.upHoldEnd, anims.rightHoldEnd];
+
+			for (i in 0...animArrows.length)
 			{
-				try { animation.addByPrefix(dirs[i] + 'holdend', dirs[i] + ' hold end');   } catch(_:Dynamic) {}
-				try { animation.addByPrefix(dirs[i] + 'holdend', dirs[i] + 'holdend');     } catch(_:Dynamic) {}
-				try { animation.addByPrefix(dirs[i] + 'hold',    dirs[i] + ' hold piece'); } catch(_:Dynamic) {}
-				try { animation.addByPrefix(dirs[i] + 'hold',    dirs[i] + 'hold');        } catch(_:Dynamic) {}
+				NoteSkinSystem.addAnimToSprite(this, animArrows[i] + 'hold',    holdDefs[i]);
+				NoteSkinSystem.addAnimToSprite(this, animArrows[i] + 'holdend', holdEndDefs[i]);
 			}
-			for (i in 0...dirs.length)
-				if (noteData == i && animation.exists(dirs[i] + 'holdend'))
-					{ animation.play(dirs[i] + 'holdend'); break; }
 		}
-		setGraphicSize(Std.int(width * 0.7));
-		updateHitbox();
 	}
 
-	// OPTIMIZATION: Método para reciclar/resetear nota (Object Pooling)
-	public function recycle(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?mustHitNote:Bool = false):Void
+	// ==================== RECYCLE (Object Pooling) ====================
+
+	public function recycle(strumTime:Float, noteData:Int, ?prevNote:Note,
+	                         ?sustainNote:Bool = false, ?mustHitNote:Bool = false):Void
 	{
-		// Resetear propiedades
-		this.strumTime = strumTime + FlxG.save.data.offset;
-		this.noteData = noteData;
-		this.prevNote = prevNote != null ? prevNote : this;
-		this.isSustainNote = sustainNote;
-		this.mustPress = mustHitNote; // CORREGIDO
-		this.canBeHit = false;
-		this.tooLate = false;
-		this.wasGoodHit = false;
-		this.noteScore = 1;
-		this.noteRating = 'sick';
+		this.strumTime       = strumTime + FlxG.save.data.offset;
+		this.noteData        = noteData;
+		this.prevNote        = prevNote != null ? prevNote : this;
+		this.isSustainNote   = sustainNote;
+		this.mustPress       = mustHitNote;
+		this.canBeHit        = false;
+		this.tooLate         = false;
+		this.wasGoodHit      = false;
+		this.noteScore       = 1;
+		this.noteRating      = 'sick';
 		this.strumsGroupIndex = 0;
-		this.noteType = '';
-		this.alpha = sustainNote ? 0.6 : 1.0;
-		this.visible = true;
-		
-		// CORREGIDO: Recalcular posición X según mustPress
-		var baseX:Float = 100;
-		
-		if (FlxG.save.data.middlescroll)
-		{
-			if (mustHitNote)
-				baseX = FlxG.width / 2 - (swagWidth * 2);
-			else
-				baseX = -275;
-		}
-		else
-		{
-			if (mustHitNote)
-				baseX = FlxG.width / 2 + 100;
-			else
-				baseX = 100;
-		}
-		
-		x = baseX + (swagWidth * noteData); // Agregar offset por dirección
+		this.noteType        = '';
+		this.alpha           = sustainNote ? 0.6 : 1.0;
+		this.visible         = true;
+
+		x = _calcBaseX(mustHitNote) + (swagWidth * noteData);
 		y = -2000;
-		
-		// Recalcular hit window
+
 		var hitWindowMultiplier = isSustainNote ? 1.05 : 1.0;
 		_hitWindowCache = Conductor.safeZoneOffset * hitWindowMultiplier;
-		_lastSongPos = -1;
-		
-		// Revivir sprite
+		_lastSongPos    = -1;
+
 		revive();
 
-		// CORREGIDO: Restaurar animación y setup según tipo de nota.
-		// Sin esto, notas recicladas del pool conservan la animación anterior
-		// (ej. una nota normal reciclada como sustain sigue mostrando 'purpleScroll').
+		// ── Recargar skin si cambió nombre O si cambió el tipo (sustain↔normal) ────
+		// BUGFIX: el tipo de nota puede cambiar si el pool de NoteRenderer mezcla
+		// sustain y normales. loadSkin registra animaciones distintas según isSustainNote,
+		// así que hay que recargar también cuando cambia el tipo aunque la skin sea igual.
+		var skinData = NoteSkinSystem.getCurrentSkinData();
+		if (skinData.name != _loadedSkinName || isSustainNote != _loadedAsSustain)
+			loadSkin(skinData);
+
+		// ── Restaurar animación y escala ──────────────────────────────────
 		if (!isSustainNote)
 		{
-			// Nota normal: reproducir la animación de dirección correcta
+			// Resetear escala — puede haber quedado corrupta si esta nota fue
+			// usada como prevNote en una cadena de holds.
+			// BUGFIX: usar scale.set() directamente en lugar de
+			// scale.set(1,1) + setGraphicSize(width*_noteScale), que acumulaba
+			// _noteScale^N porque `width` era el hitbox stale del ciclo anterior.
+			scale.set(_noteScale, _noteScale);
+			updateHitbox();
+
 			if (animation.exists(animArrows[noteData] + 'Scroll'))
 				animation.play(animArrows[noteData] + 'Scroll');
 		}
 		else
 		{
-			// Nota sustain: resetear escala, aplicar flip y reproducir 'holdend'
-			scale.set(1, 1);
+			// Re-aplicar escala antes de setupSustainNote para que el stretch
+			// del hold sea proporcional al tamaño real de frame.
+			// BUGFIX: misma corrección que para notas normales — scale.set()
+			// directo en lugar de setGraphicSize(width*_noteScale) stale.
+			scale.set(_noteScale, _noteScale);
+			updateHitbox();
 			flipY = false;
 			flipX = false;
 			setupSustainNote();
 		}
 	}
 
-	function loadPixelNotes():Void
-	{
-		// CORREGIDO: Cargar diferentes texturas según si es sustain o no
-		if (isSustainNote)
-		{
-			var pixelEndsTex = NoteSkinSystem.getPixelNoteEnds();
-
-			if (pixelEndsTex != null)
-				frames = pixelEndsTex;
-			else
-				loadGraphic('assets/skins/Default/arrowEnds.png');
-
-			// ANIMATIONS for hold ends
-			for (i in 0...animArrows.length)
-			{
-				animation.add(animArrows[i] + 'holdend', [i + 4]);
-				animation.add(animArrows[i] + 'hold', [i]);
-			}
-		}
-		else
-		{
-			var pixelTex = NoteSkinSystem.getPixelNoteSkin();
-			if (pixelTex != null)
-				frames = pixelTex;
-			else
-				loadGraphic('assets/skins/Default/arrows-pixels.png');
-
-			// Animations pixel (statics)
-			for (i in 0...animArrows.length)
-			{
-				animation.add(animArrows[i] + 'Scroll', [i + 4]);
-			}
-		}
-
-		setGraphicSize(Std.int(width * PlayStateConfig.PIXEL_ZOOM));
-		updateHitbox();
-		antialiasing = false;
-	}
-
-	function loadNormalNotes():Void
-	{
-		// Obtener frames y animaciones de la skin actual
-		frames = NoteSkinSystem.getNoteSkin();
-		var anims = NoteSkinSystem.getSkinAnimations();
-
-		if (anims != null)
-		{
-			var animTypes = [
-				{key: 'Scroll', anims: [anims.left, anims.down, anims.up, anims.right]},
-				{key: 'holdend', anims: [anims.leftHoldEnd, anims.downHoldEnd, anims.upHoldEnd, anims.rightHoldEnd]},
-				{key: 'hold', anims: [anims.leftHold, anims.downHold, anims.upHold, anims.rightHold]}
-			];
-
-			for (animType in animTypes)
-			{
-				for (i in 0...animArrows.length)
-				{
-					if (animType.anims[i] != null)
-						animation.addByPrefix(animArrows[i] + animType.key, animType.anims[i]);
-				}
-			}
-		}
-		else
-		{
-			// Fallback a animaciones default
-			loadDefaultAnimations();
-		}
-
-		setGraphicSize(Std.int(width * 0.7));
-		updateHitbox();
-		antialiasing = true;
-	}
-
-	function loadDefaultAnimations():Void
-	{
-		// Animaciones por defecto de FNF
-		var animPrefixes = [
-			{key: 'Scroll', prefixes: ['purple0', 'blue0', 'green0', 'red0']},
-			{key: 'holdend', prefixes: ['pruple end hold', 'blue hold end', 'green hold end', 'red hold end']},
-			{key: 'hold', prefixes: ['purple hold piece', 'blue hold piece', 'green hold piece', 'red hold piece']}
-		];
-
-		for (animType in animPrefixes)
-		{
-			for (i in 0...animArrows.length)
-			{
-				animation.addByPrefix(animArrows[i] + animType.key, animType.prefixes[i]);
-			}
-		}
-	}
+	// ==================== SETUP HELPERS ====================
 
 	function setupNoteDirection():Void
 	{
-		for (i in 0...animArrows.length)
-		{
-			if (noteData == i)
-			{
-				x += swagWidth * i; // CORREGIDO: Ahora solo suma el offset de dirección
-				animation.play(animArrows[i] + 'Scroll');
-				break;
-			}
-		}
+		// BUGFIX: las notas sustain NO tienen animación 'purpleScroll' registrada.
+		// Además, la X ya fue calculada en el constructor con swagWidth*noteData,
+		// así que no necesitamos x += aquí.
+		if (isSustainNote) return;
+
+		// Solo reproducir la animación de scroll (X ya calculada en constructor)
+		if (animation.exists(animArrows[noteData] + 'Scroll'))
+			animation.play(animArrows[noteData] + 'Scroll');
 	}
 
 	function setupSustainNote():Void
@@ -329,12 +247,14 @@ class Note extends FlxSprite
 
 		x += width / 2;
 
-		// Animar hold end según dirección
 		for (i in 0...animArrows.length)
 		{
 			if (noteData == i)
 			{
-				animation.play(animArrows[i] + 'holdend');
+				// BUGFIX: check existence para no disparar WARNING si la skin
+				// aún no tiene esta animación registrada
+				if (animation.exists(animArrows[i] + 'holdend'))
+					animation.play(animArrows[i] + 'holdend');
 				break;
 			}
 		}
@@ -342,12 +262,8 @@ class Note extends FlxSprite
 		updateHitbox();
 		x -= width / 2;
 
-		if (PlayState.curStage.startsWith('school'))
-		{
-			x += 30;
-		}
-
-		// Configurar previous note hold
+		// Offset X extra (leído del JSON de skin — e.g. 30 para pixel, 0 para normal)
+		x += _skinSustainOffset;
 
 		if (prevNote.isSustainNote)
 		{
@@ -355,28 +271,73 @@ class Note extends FlxSprite
 			{
 				if (prevNote.noteData == i)
 				{
-					prevNote.animation.play(animArrows[i] + 'hold');
+					if (prevNote.animation.exists(animArrows[i] + 'hold'))
+						prevNote.animation.play(animArrows[i] + 'hold');
 					break;
 				}
 			}
-			
+
 			prevNote.scale.y *= Conductor.stepCrochet / 100 * 1.5 * PlayState.SONG.speed;
-
-			if (PlayState.curStage.startsWith('school'))
-				prevNote.scale.y *= 1.19;
-
+			// Multiplicador extra de hold (leído del JSON — 1.19 para pixel, 1.0 para normal)
+			prevNote.scale.y *= _skinHoldStretch;
 			prevNote.updateHitbox();
 		}
 	}
+
+	// ==================== SETUP DE ANIMACIONES DE TIPO ====================
+
+	/**
+	 * Reconfigura animaciones cuando NoteTypeManager asigna sus propios frames.
+	 * Llamado desde NoteTypeManager.onNoteSpawn().
+	 */
+	public function setupTypeAnimations():Void
+	{
+		var dirs = ['purple', 'blue', 'green', 'red'];
+		if (!isSustainNote)
+		{
+			for (i in 0...dirs.length)
+			{
+				try { animation.addByPrefix(dirs[i] + 'Scroll', dirs[i] + '0'); } catch (_:Dynamic) {}
+				try { animation.addByPrefix(dirs[i] + 'Scroll', dirs[i]);       } catch (_:Dynamic) {}
+			}
+			for (i in 0...dirs.length)
+				if (noteData == i && animation.exists(dirs[i] + 'Scroll'))
+					{ animation.play(dirs[i] + 'Scroll'); break; }
+		}
+		else
+		{
+			for (i in 0...dirs.length)
+			{
+				try { animation.addByPrefix(dirs[i] + 'holdend', dirs[i] + ' hold end');   } catch (_:Dynamic) {}
+				try { animation.addByPrefix(dirs[i] + 'holdend', dirs[i] + 'holdend');     } catch (_:Dynamic) {}
+				try { animation.addByPrefix(dirs[i] + 'hold',    dirs[i] + ' hold piece'); } catch (_:Dynamic) {}
+				try { animation.addByPrefix(dirs[i] + 'hold',    dirs[i] + 'hold');        } catch (_:Dynamic) {}
+			}
+			for (i in 0...dirs.length)
+				if (noteData == i && animation.exists(dirs[i] + 'holdend'))
+					{ animation.play(dirs[i] + 'holdend'); break; }
+		}
+		setGraphicSize(Std.int(width * _noteScale));
+		updateHitbox();
+	}
+
+	// ==================== UTILIDADES ====================
+
+	/** Calcula la posición X base según mustPress y middlescroll. */
+	inline function _calcBaseX(mustHitNote:Bool):Float
+	{
+		if (FlxG.save.data.middlescroll)
+			return mustHitNote ? (FlxG.width / 2 - swagWidth * 2) : -275;
+		else
+			return mustHitNote ? (FlxG.width / 2 + 100) : 100;
+	}
+
+	// ==================== UPDATE ====================
 
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
 
-		// canBeHit se recalcula solo cada ~10ms de cambio en songPosition (cache).
-		// tooLate lo gestiona NoteManager exclusivamente para evitar duplicados
-		// (antes se seteaba aqui Y en NoteManager, causando que missNote() nunca
-		// se llamara porque el manager asumia que ya estaba gestionado).
 		if (Math.abs(Conductor.songPosition - _lastSongPos) > 10)
 		{
 			_lastSongPos = Conductor.songPosition;
@@ -394,7 +355,6 @@ class Note extends FlxSprite
 			}
 		}
 
-		// Visual feedback cuando NoteManager marca la nota como tooLate
 		if (tooLate && alpha > 0.3)
 			alpha = 0.3;
 	}

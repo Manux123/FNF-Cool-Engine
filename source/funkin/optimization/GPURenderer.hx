@@ -133,6 +133,30 @@ class GPURenderer
         for (batch in batches) batch.clear();
     }
 
+    /**
+     * Limpia y destruye batches de texturas que ya no se usan.
+     * Llamar entre canciones para liberar memoria de texturas antiguas.
+     */
+    public function clearUnusedBatches():Void
+    {
+        var keysToRemove:Array<BitmapData> = [];
+        for (key in batches.keys())
+        {
+            var batch = batches.get(key);
+            if (batch != null && batch.spriteCount == 0)
+                keysToRemove.push(key);
+        }
+        for (key in keysToRemove)
+        {
+            var batch = batches.get(key);
+            if (batch != null) batch.destroy();
+            batches.remove(key);
+        }
+        // Reconstruir sortedBatches desde el Map actualizado
+        sortedBatches.resize(0);
+        for (batch in batches) sortedBatches.push(batch);
+    }
+
     public function getStats():String
     {
         if (!enabled) return 'GPURenderer: DESHABILITADO';
@@ -204,7 +228,7 @@ class GPUBatch
     private var totalZIndex:Float = 0;
 
     // Capacidades
-    private static inline var MAX_SPRITES      :Int = 64;  // FNF nunca supera ~32 notas simultáneas; 512 desperdiciaba 700 KB en buffers vacíos
+    private static inline var MAX_SPRITES      :Int = 32;  // FNF muestra ~20 notas max simultáneas; 64+ desperdicia buffers
     private static inline var VERTS_PER_SPRITE :Int = 32; // 4 verts × 8 floats
     private static inline var INDICES_PER_SPRITE:Int = 6;
 

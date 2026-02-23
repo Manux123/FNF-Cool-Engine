@@ -1,8 +1,10 @@
 package funkin.gameplay.objects;
 
+import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import funkin.data.Song.StrumsGroupData;
+import funkin.gameplay.notes.NoteSkinSystem;
 import funkin.gameplay.notes.StrumNote;
 
 /**
@@ -108,6 +110,48 @@ class StrumsGroup
 		}
 	}
 	
+	/**
+	 * Aplica configuraciones de downscroll/middlescroll al grupo.
+	 * Usar en rewind restart en lugar de calcular posiciones manualmente.
+	 */
+	public function applyScrollSettings(downscroll:Bool, middlescroll:Bool, upscrollY:Float):Void
+	{
+		var finalY:Float = downscroll ? (flixel.FlxG.height - 150) : upscrollY;
+		var members = strums.members;
+		for (j in 0...members.length)
+		{
+			var s = members[j];
+			if (s == null) continue;
+			s.y = finalY;
+			if (!isCPU)
+			{
+				// Para el player: ajustar X si middlescroll cambia
+				if (middlescroll)
+					s.x = (data.x - (flixel.FlxG.width / 4)) + (j * spacing);
+				else
+					s.x = data.x + (j * spacing);
+			}
+			else
+			{
+				// CPU: solo ajustar alpha para middlescroll
+				if (isVisible)
+					s.alpha = middlescroll ? 0.0 : 1.0;
+			}
+		}
+	}
+
+	/**
+	 * Recarga la skin en todos los StrumNotes del grupo.
+	 * Usar tras cambiar la skin activa (p.ej. en rewind de canciones pixel).
+	 */
+	public function reloadAllStrumSkins(skinData:funkin.gameplay.notes.NoteSkinSystem.NoteSkinData):Void
+	{
+		strums.forEach(function(s:FlxSprite) {
+			if (Std.isOfType(s, StrumNote))
+				cast(s, StrumNote).reloadSkin(skinData);
+		});
+	}
+
 	/**
 	 * Tocar animación de confirm en un strum
 	 */

@@ -1,7 +1,5 @@
 {
-    "_comment": "Configuración global — assets/config/global.json",
-
     "ui": "default",
-    "noteSkin": "arrows",
-    "healthColors": ["#FF0000", "#66FF33"]
+    "noteSkin": "Default",
+    "noteSplash": "Default"
 }

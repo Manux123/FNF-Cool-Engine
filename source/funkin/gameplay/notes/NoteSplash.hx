@@ -198,7 +198,8 @@ class NoteSplash extends FlxSprite
 		// Aplicar offset si está configurado
 		if (splashData.assets.offset != null && splashData.assets.offset.length >= 2)
 		{
-			offset.set(splashData.assets.offset[0], splashData.assets.offset[1]);
+			x += splashData.assets.offset[0];
+			y += splashData.assets.offset[1];
 		}
 
 		// Configurar animaciones
@@ -240,8 +241,31 @@ class NoteSplash extends FlxSprite
 			}
 		}
 
-		// Reproducir la animación correcta según la dirección
-		playAnimation(noteData);
+		// Reproducir la animación correcta según la dirección.
+		// BUGFIX: NO llamar a playAnimation() que hace un getSplashData()
+		// independiente — puede devolver datos distintos (otra skin/splash) con
+		// diferente número de variantes, causando que el random pida e.g.
+		// "down_2" cuando solo están registradas "down_0" y "down_1" → WARNING.
+		// Usamos directamente los datos locales con los que se registraron las anims.
+		var dirs:Array<String> = ["left", "down", "up", "right"];
+		var dirName:String = dirs[noteData];
+		var playList:Array<String> = null;
+		switch (noteData)
+		{
+			case 0: playList = anims.left;
+			case 1: playList = anims.down;
+			case 2: playList = anims.up;
+			case 3: playList = anims.right;
+		}
+		if (playList != null && playList.length > 0)
+		{
+			var rndIdx:Int = FlxG.random.int(0, playList.length - 1);
+			var animName:String = '${dirName}_$rndIdx';
+			if (animation.exists(animName))
+				animation.play(animName, true);
+			else
+				trace('[NoteSplash] WARNING: animation "$animName" not found after registration!');
+		}
 
 		// Auto-destruirse cuando termine la animación
 		animation.finishCallback = function(name:String)
@@ -348,7 +372,7 @@ class NoteSplash extends FlxSprite
 	function loadDefaultSplash(noteData:Int, ?type:SplashType = NORMAL):Void
 	{
 		// Cargar splash por defecto de FNF
-		frames = Paths.getSparrowAtlas('splashes/Default/noteSplashes');
+		frames = Paths.splashSprite('Default/noteSplashes');
 
 		antialiasing = true;
 

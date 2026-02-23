@@ -12,185 +12,151 @@ class StrumNote extends FlxSprite
 {
 	public var noteID:Int = 0;
 
-	var animArrow:Array<String> = ['LEFT','DOWN','UP','RIGHT'];
+	var animArrow:Array<String> = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
 
-	var animColor:Array<String> = ['purple','blue','green','red'];
+	// ── Estado de skin ────────────────────────────────────────────────────
+
+	/** true si la skin tiene isPixel:true. */
+	private var _isPixelSkin:Bool = false;
+
+	/** Si la skin aplica el offset -13,-13 al confirm. */
+	private var _skinConfirmOffset:Bool = true;
 
 	public function new(x:Float, y:Float, noteID:Int = 0)
 	{
 		super(x, y);
-		
+
 		this.noteID = noteID;
-		
-		// Inicializar sistema
+
 		NoteSkinSystem.init();
-		
-		var daStage:String = PlayState.curStage;
-		
-		switch (daStage)
-		{
-			case 'school' | 'schoolEvil':
-				loadPixelStrum();
-			default:
-				loadNormalStrum();
-		}
-		
+		loadSkin(NoteSkinSystem.getCurrentSkinData());
+
 		updateHitbox();
 		scrollFactor.set();
-		
-		// ✅ REPRODUCIR animación inicial
 		animation.play('static');
 		centerOffsets();
 	}
 
-	function loadPixelStrum():Void
-	{
-		var pixelTex = NoteSkinSystem.getPixelNoteSkin();
-		
-		if (pixelTex != null)
-			frames = pixelTex;
-		else
-			loadGraphic('assets/skins/arrows-pixels.png');
-		// Animaciones base pixel
+	// ==================== CARGA DE SKIN ====================
 
-		for (i in 0...animColor.length){
-			animation.add(animColor[i],[i+4]);
-		}
-		
-		setGraphicSize(Std.int(width * PlayStateConfig.PIXEL_ZOOM));
+	/**
+	 * Carga la textura y las animaciones de strum desde un NoteSkinData.
+	 *
+	 * Sin ninguna referencia a PlayState.curStage.
+	 * El índice noteID determina qué animaciones cargar (left/down/up/right).
+	 */
+	function loadSkin(skinData:NoteSkinSystem.NoteSkinData):Void
+	{
+		if (skinData == null)
+			return;
+
+		_isPixelSkin = skinData.isPixel == true;
+
+		// confirmOffset: leer del JSON; si no está, true para normal, false para pixel
+		_skinConfirmOffset = skinData.confirmOffset != null ? skinData.confirmOffset : (skinData.offsetDefault != null ? skinData.offsetDefault : !_isPixelSkin);
+
+		// ── Cargar textura principal (strums siempre usan texture, nunca holdTexture) ──
+		var tex = skinData.texture;
+		frames = NoteSkinSystem.loadSkinFrames(tex, skinData.folder);
+
+		var noteScale = tex.scale != null ? tex.scale : 1.0;
+		// BUGFIX: usar scale.set() directo en lugar de setGraphicSize(width*scale)
+		// que usaría el hitbox stale si loadSkin() se llamara de nuevo (recarga de skin).
+		scale.set(noteScale, noteScale);
 		updateHitbox();
-		antialiasing = false;
-		
-		for (i in 0...4)
-		{
-			if (Math.abs(noteID) == i) 
-    		{
-				// La posición X ya está establecida por StrumsGroup
-				animation.add('static', [i]);
-				animation.add('pressed', [4+i, 8+i], 12, false);
-				animation.add('confirm', [12+i, 16+i], 24, false);
-			}
-		}
-	}
 
-	function loadNormalStrum():Void
-	{
-		// Obtener frames y animaciones de la skin actual
-		var tex = NoteSkinSystem.getNoteSkin();
-		frames = tex;
-		
-		var anims = NoteSkinSystem.getSkinAnimations();
-		
-		if (anims != null)
+		antialiasing = tex.antialiasing != null ? tex.antialiasing : !_isPixelSkin;
+
+		// ── Cargar animaciones ────────────────────────────────────────────
+		var anims = skinData.animations;
+		if (anims == null)
 		{
-			// Cargar animaciones configurables
-			loadConfigurableAnimations(anims);
-		}
-		else
-		{
-			// Fallback a animaciones default
 			loadDefaultStrumAnimations();
+			return;
 		}
-		
-		antialiasing = true;
-		setGraphicSize(Std.int(width * 0.7));
-	}
 
-	function loadConfigurableAnimations(anims:NoteSkinSystem.NoteAnimations):Void
-	{
-		switch (Math.abs(noteID))
-		{
-			case 0: // Left
-				// La posición X ya está establecida por StrumsGroup
-				if (anims.strumLeft != null)
-					animation.addByPrefix('static', anims.strumLeft);
-				if (anims.strumLeftPress != null)
-					animation.addByPrefix('pressed', anims.strumLeftPress, 24, false);
-				if (anims.strumLeftConfirm != null)
-					animation.addByPrefix('confirm', anims.strumLeftConfirm, 24, false);
-					
-			case 1: // Down
-				// La posición X ya está establecida por StrumsGroup
-				if (anims.strumDown != null)
-					animation.addByPrefix('static', anims.strumDown);
-				if (anims.strumDownPress != null)
-					animation.addByPrefix('pressed', anims.strumDownPress, 24, false);
-				if (anims.strumDownConfirm != null)
-					animation.addByPrefix('confirm', anims.strumDownConfirm, 24, false);
-					
-			case 2: // Up
-				// La posición X ya está establecida por StrumsGroup
-				if (anims.strumUp != null)
-					animation.addByPrefix('static', anims.strumUp);
-				if (anims.strumUpPress != null)
-					animation.addByPrefix('pressed', anims.strumUpPress, 24, false);
-				if (anims.strumUpConfirm != null)
-					animation.addByPrefix('confirm', anims.strumUpConfirm, 24, false);
-					
-			case 3: // Right
-				// La posición X ya está establecida por StrumsGroup
-				if (anims.strumRight != null)
-					animation.addByPrefix('static', anims.strumRight);
-				if (anims.strumRightPress != null)
-					animation.addByPrefix('pressed', anims.strumRightPress, 24, false);
-				if (anims.strumRightConfirm != null)
-					animation.addByPrefix('confirm', anims.strumRightConfirm, 24, false);
-		}
-		
-		// Verificar que al menos static existe, si no, cargar default
+		var i = Std.int(Math.abs(noteID));
+
+		var strumDefs = [anims.strumLeft, anims.strumDown, anims.strumUp, anims.strumRight];
+		var pressDefs = [
+			anims.strumLeftPress,
+			anims.strumDownPress,
+			anims.strumUpPress,
+			anims.strumRightPress
+		];
+		var confirmDefs = [
+			anims.strumLeftConfirm,
+			anims.strumDownConfirm,
+			anims.strumUpConfirm,
+			anims.strumRightConfirm
+		];
+
+		// 'static' may loop freely; 'pressed' and 'confirm' must NOT loop so that
+		// animation.curAnim.finished becomes true and the auto-reset to 'static'
+		// fires correctly.  We pass overrideLoop=false for those two.
+		// Previously the code tried to set FlxAnimation.looped after registration,
+		// but that field is read-only in HaxeFlixel — this is the correct fix.
+		NoteSkinSystem.addAnimToSprite(this, 'static', strumDefs[i]);
+		NoteSkinSystem.addAnimToSprite(this, 'pressed', pressDefs[i], false);
+		NoteSkinSystem.addAnimToSprite(this, 'confirm', confirmDefs[i], false);
+
+		// Fallback si no se definió animación estática
 		if (!animation.exists('static'))
 		{
-			trace('Warning: Static animation not found for strum ${noteID}, loading defaults');
+			trace('[StrumNote] "static" no encontrada en skin "${skinData.name}" para noteID $noteID — cargando defaults');
 			loadDefaultStrumAnimations();
 		}
 	}
-	
+
+	/** Recarga la skin en un strum existente (útil en rewind para corregir scale). */
+	public function reloadSkin(skinData:NoteSkinSystem.NoteSkinData):Void
+	{
+		loadSkin(skinData);
+		animation.play('static');
+		centerOffsets();
+	}
+
 	function loadDefaultStrumAnimations():Void
 	{
-		// Animaciones default de FNF
-		// La posición X ya está establecida por StrumsGroup, solo cargar animaciones
-		
 		var i = Std.int(Math.abs(noteID));
-		animation.addByPrefix('static', 'arrow'+animArrow[i]);
-		animation.addByPrefix('pressed', animArrow[i].toLowerCase() + ' press',24,false);
-		animation.addByPrefix('confirm', animArrow[i].toLowerCase() + ' confirm',24,false);
+		animation.addByPrefix('static', 'arrow' + animArrow[i]);
+		animation.addByPrefix('pressed', animArrow[i].toLowerCase() + ' press', 24, false);
+		animation.addByPrefix('confirm', animArrow[i].toLowerCase() + ' confirm', 24, false);
 	}
-	
+
+	// ==================== ANIMACIÓN ====================
+
 	/**
-	 * Reproducir animación de forma segura
+	 * Reproduce una animación de forma segura.
+	 * Aplica el offset -13,-13 al confirm si la skin lo requiere (confirmOffset:true).
+	 * centerOffsets() siempre resetea el offset, por lo que el ajuste se re-aplica
+	 * en cada llamada a confirm para mantener la posición correcta.
 	 */
 	public function playAnim(animName:String, force:Bool = false):Void
 	{
-		if (animation == null) return;
-		
+		if (animation == null)
+			return;
+
 		animation.play(animName, force);
 		centerOffsets();
-		
-		// Ajuste de offset para confirm (solo si no es pixel)
-		if (animName == 'confirm' && !PlayState.curStage.startsWith('school'))
+
+		// centerOffsets() resetea el offset a 0, así que re-aplicar -13,-13
+		// siempre que la animación sea 'confirm' para mantener la posición correcta.
+		if (animName == 'confirm' && _skinConfirmOffset)
 		{
-			if (NoteSkinSystem.offsetDefault)
-			{
-				offset.x -= 13;
-				offset.y -= 13;
-			}
+			offset.x -= 13;
+			offset.y -= 13;
 		}
 	}
-	
-	/**
-	 * Update para auto-reset de animaciones
-	 */
+
 	override function update(elapsed:Float):Void
 	{
 		super.update(elapsed);
-		
-		// Auto-reset de confirm a static cuando termina la animación
-		if (animation.curAnim != null)
+
+		// Auto-reset confirm → static cuando termina la animación
+		if (animation.curAnim != null && animation.curAnim.name == 'confirm' && animation.curAnim.finished)
 		{
-			if (animation.curAnim.name == 'confirm' && animation.curAnim.finished)
-			{
-				playAnim('static');
-			}
+			playAnim('static');
 		}
 	}
 }

@@ -67,6 +67,7 @@ import funkin.gameplay.UIScriptedManager;
 import funkin.gameplay.modchart.ModChartEvent;
 import funkin.gameplay.modchart.ModChartManager;
 import funkin.gameplay.modchart.ModChartEditorState;
+import funkin.gameplay.notes.NoteSkinSystem.NoteSkinData;
 
 using StringTools;
 
@@ -210,6 +211,15 @@ class PlayState extends funkin.states.MusicBeatState
 	private var showDebugStats:Bool = false;
 	private var debugText:FlxText;
 
+	// ─── Rewind Restart (V-Slice style) ──────────────────────────────────────
+	/** true mientras la animación de rewind está en curso */
+	private var isRewinding:Bool   = false;
+	private var _rewindTimer:Float = 0;
+	private var _rewindDuration:Float = 1.0;
+	private var _rewindFromPos:Float  = 0;
+	/** Posición objetivo: inicio del countdown (-crochet * 5) */
+	private var _rewindToPos:Float    = 0;
+
 	// ─── Countdown pre-loaded sprites (evita lag en el primer frame) ──────────
 	private var _cntdwnSprites:Array<FlxSprite> = [];
 	private var _cntdwnLoaded:Bool = false;
@@ -224,6 +234,8 @@ class PlayState extends funkin.states.MusicBeatState
 	// ✅ Referencias directas a los grupos de strums
 	private var playerStrumsGroup:StrumsGroup = null;
 	private var cpuStrumsGroup:StrumsGroup = null;
+
+	var skinSystem:NoteSkinData;
 
 	#if desktop
 	var storyDifficultyText:String = "";
@@ -282,7 +294,44 @@ class PlayState extends funkin.states.MusicBeatState
 
 		metaData = MetaData.load(SONG.song);
 		NoteSkinSystem.init();
-		NoteSkinSystem.setTemporarySkin(metaData.noteSkin);
+
+		// ── Aplicar skin de notas con jerarquía de prioridad ─────────────────
+		// Prioridad: meta.noteSkin > meta.stageSkins[stage] > stage-default > global player
+		//
+		// 1. Si el meta.json tiene "noteSkin" → override total para toda la canción.
+		// 2. Si tiene "stageSkins" → registrar los overrides por stage en el sistema.
+		//    El stage actual se resuelve via applySkinForStage().
+		// 3. Si no hay nada en meta → applySkinForStage() usa el mapping global
+		//    (los defaults "school"→"DefaultPixel" etc. o lo que haya en NoteSkinSystem).
+		if (metaData.noteSkin != null && metaData.noteSkin != 'default' && metaData.noteSkin != '')
+		{
+			// Override total: toda la canción usa esta skin sin importar el stage
+			NoteSkinSystem.setTemporarySkin(metaData.noteSkin);
+			trace('[PlayState] Skin override from meta.json: "${metaData.noteSkin}"');
+		}
+		else
+		{
+			// Sin override global → registrar stageSkins del meta si los hay,
+			// luego resolver la skin según el stage actual
+			if (metaData.stageSkins != null)
+			{
+				for (stageName in metaData.stageSkins.keys())
+					NoteSkinSystem.registerStageSkin(stageName, metaData.stageSkins.get(stageName));
+				trace('[PlayState] stageSkins from meta.json applied');
+			}
+			NoteSkinSystem.applySkinForStage(curStage);
+		}
+
+		// ── Aplicar splash de notas ───────────────────────────────────────────
+		// meta.noteSplash > global player preference (NoteSkinSystem ya cargo la global)
+		// BUGFIX: usar setTemporarySplash() en lugar de setSplash() para NO guardar
+		// permanentemente en disco. setSplash() hacia flush() y contaminaba la
+		// preferencia global del jugador — cualquier cancion de school cambiaba el
+		// splash a "PixelSplash" para TODAS las canciones siguientes.
+		if (metaData.noteSplash != null && metaData.noteSplash != '')
+			NoteSkinSystem.setTemporarySplash(metaData.noteSplash);
+		else
+			NoteSkinSystem.applySplashForStage(curStage);
 
 		StickerTransition.clearStickers();
 
@@ -1101,7 +1150,30 @@ class PlayState extends funkin.states.MusicBeatState
 		if (optimizationManager != null)
 			optimizationManager.update(elapsed);
 
-		// === CRÍTICO: ACTUALIZAR CONDUCTOR.SONGPOSITION ===
+		// ═══ REWIND RESTART — actualizar cada frame mientras se rebobina ════
+		if (isRewinding)
+		{
+			_rewindTimer += elapsed;
+			var t:Float = Math.min(1.0, _rewindTimer / _rewindDuration);
+
+			// Ease: rápido al inicio, desacelera al final (efecto cassette)
+			var eased:Float = flixel.tweens.FlxEase.quadIn(t);
+			Conductor.songPosition = _rewindFromPos + (_rewindToPos - _rewindFromPos) * eased;
+
+			// Actualizar posiciones de notas para el efecto visual de retroceso
+			if (noteManager != null)
+				noteManager.updatePositionsForRewind(Conductor.songPosition);
+
+			// Mantener cámara y HUD activos durante el rewind
+			if (cameraController != null) cameraController.update(elapsed);
+			if (uiManager != null)        uiManager.update(elapsed);
+
+			// Cuando termina el rewind, resetear y arrancar el countdown
+			if (t >= 1.0) _finishRestart();
+
+			return; // saltar toda la lógica de gameplay normal
+		}
+		// ════════════════════════════════════════════════════════════════════
 		if (!paused && !inCutscene)
 		{
 			if (startingSong && startedCountdown)
@@ -1132,6 +1204,14 @@ class PlayState extends funkin.states.MusicBeatState
 			// Update note manager
 			if (generatedMusic)
 			{
+				// Sincronizar teclas al noteManager para deteccion de hold-miss
+				if (inputHandler != null && noteManager != null)
+				{
+					noteManager.playerHeld[0] = inputHandler.held[0];
+					noteManager.playerHeld[1] = inputHandler.held[1];
+					noteManager.playerHeld[2] = inputHandler.held[2];
+					noteManager.playerHeld[3] = inputHandler.held[3];
+				}
 				noteManager.update(Conductor.songPosition);
 			}
 
@@ -2246,6 +2326,202 @@ class PlayState extends funkin.states.MusicBeatState
 	// OptimizationManager sigue activo para: adaptive quality, FPS tracking,
 	// y NotePool. El GPURenderer se mantiene pero no interfiere con el draw.
 
+	// ═══════════════════════════════════════════════════════════════
+	// REWIND RESTART — V-Slice style
+	// ═══════════════════════════════════════════════════════════════
+
+	/**
+	 * Inicia la animación de rewind.
+	 * Llamar desde PauseSubState en lugar de FlxG.resetState().
+	 * Las notas se deslizan visualmente hacia atrás durante ~0.5-1.5s,
+	 * luego todo se resetea y el countdown arranca sin recargar el state.
+	 */
+	public function startRewindRestart():Void
+	{
+		if (isRewinding) return;
+
+		// Cancelar timer del countdown si estaba activo
+		if (startTimer != null) { startTimer.cancel(); }
+
+		// Parar audio inmediatamente
+		if (FlxG.sound.music != null) FlxG.sound.music.pause();
+		if (vocals != null) vocals.pause();
+
+		// Configurar parámetros del rewind
+		_rewindFromPos  = Conductor.songPosition;
+		_rewindToPos    = -(Conductor.crochet * 5); // posición de inicio del countdown
+
+		// Duración proporcional a qué tan avanzada estaba la canción (0.5s–1.5s)
+		var songProgress:Float = Math.max(0, Conductor.songPosition);
+		_rewindDuration = Math.max(0.5, Math.min(1.5, songProgress / 8000.0));
+
+		// Si apenas empezó (<500ms), rewind instantáneo
+		if (songProgress < 500) _rewindDuration = 0.1;
+
+		_rewindTimer = 0;
+		isRewinding  = true;
+		paused       = false;
+		canPause     = false;
+		inCutscene   = false;
+
+		// Limpiar buffer de inputs y estado de teclas presionadas
+		if (inputHandler != null)
+		{
+			inputHandler.resetMash();
+			inputHandler.clearBuffer();
+			// Resetear held[] para que los strums no queden en animación 'pressed'
+			for (i in 0...4)
+				inputHandler.held[i] = false;
+		}
+
+		trace('[PlayState] Rewind restart iniciado — desde ${_rewindFromPos}ms, duración ${_rewindDuration}s');
+	}
+
+	/**
+	 * Llamado cuando la animación de rewind termina.
+	 * Resetea todo el estado del juego y arranca el countdown de nuevo.
+	 */
+	private function _finishRestart():Void
+	{
+		isRewinding = false;
+
+		// ── 1. Flash de pantalla para señalar el reset ──────────────────────
+
+		// ── 2. Resetear GameState (score, health, combo, etc.) ──────────────
+		gameState.reset();
+		PlayState.misses   = 0;
+		PlayState.shits    = 0;
+		PlayState.bads     = 0;
+		PlayState.goods    = 0;
+		PlayState.sicks    = 0;
+		PlayState.songScore = 0;
+		PlayState.accuracy  = 0;
+
+		// ── 3. Resetear Conductor al BPM original ────────────────────────────
+		Conductor.changeBPM(SONG.bpm);
+		Conductor.mapBPMChanges(SONG);
+		Conductor.songPosition = _rewindToPos;
+
+		// ── 3b. Re-aplicar skin y splash ─────────────────────────────────────
+		// BUGFIX: durante el rewind el currentSkin puede haberse corrompido.
+		// Forzar la re-aplicación garantiza que los notes del pool y los strums
+		// usen la skin correcta (Pixel scale 6.0, no Default scale 0.7).
+		if (metaData != null && metaData.noteSkin != null && metaData.noteSkin != 'default' && metaData.noteSkin != '')
+			NoteSkinSystem.setTemporarySkin(metaData.noteSkin);
+		else
+			NoteSkinSystem.applySkinForStage(curStage);
+
+		if (metaData != null && metaData.noteSplash != null && metaData.noteSplash != '')
+			NoteSkinSystem.setTemporarySplash(metaData.noteSplash);
+		else
+			NoteSkinSystem.applySplashForStage(curStage);
+
+		// BUGFIX escala pixel: recargar skin en TODOS los strum groups para que
+		// los strums tengan el scale correcto (pixel=6.0, default=0.7) ANTES de
+		// que las notas los hereden via updateNotePosition. Iteramos strumsGroups
+		// directamente (cubre todos los grupos, no solo playerStrums/cpuStrums).
+		var _skinDataForReload = NoteSkinSystem.getCurrentSkinData();
+		for (group in strumsGroups)
+			group.reloadAllStrumSkins(_skinDataForReload);
+
+		// ── 4. Rebobinar notas (matar activas + resetear índice de spawn) ────
+		if (noteManager != null)
+			noteManager.rewindTo(_rewindToPos);
+
+		// ── 5. Rebobinar eventos ─────────────────────────────────────────────
+		if (scriptsEnabled)
+			EventManager.rewindToStart();
+
+		// ── 6. Resetear personajes a idle ─────────────────────────────────────
+		if (characterController != null)
+			characterController.forceIdleAll();
+
+		// ── 7. Resetear ModChart ──────────────────────────────────────────────
+		if (modChartManager != null)
+			modChartManager.resetToStart();
+
+		// ── 8. Resetear audio ────────────────────────────────────────────────
+		// CRÍTICO: pauseMenu() llamó FlxG.sound.pause() que pone el SoundManager
+		// global en estado "paused". Ningún sonido puede reproducirse hasta que se
+		// llame FlxG.sound.resume(). Sin esto, los sonidos del countdown y la música
+		// quedan bloqueados por el flag global, causando el "traba" antes del restart.
+		FlxG.sound.resume();
+
+		if (vocals != null)
+		{
+			vocals.time   = 0;
+			vocals.volume = 0;
+			vocals.stop();
+		}
+		if (FlxG.sound.music != null)
+		{
+			FlxG.sound.music.time   = 0;
+			FlxG.sound.music.volume = 0;
+			FlxG.sound.music.pause();
+		}
+
+		// ── 9. Resetear flags de gameplay ────────────────────────────────────
+		startedCountdown = false;
+		startingSong     = false;
+		generatedMusic   = true; // las notas ya están generadas
+		canPause         = true;
+		inCutscene       = false;
+		startFromTime    = null;
+
+		// Limpiar hold splashes residuales
+		heldNotes.clear();
+		holdSplashes.clear();
+		if (grpNoteSplashes != null)
+			grpNoteSplashes.forEachAlive(function(s) { s.kill(); });
+
+		// ── 10. Resetear animaciones de strums a 'static' y re-aplicar posiciones ─
+		// Aplica downscroll/middlescroll usando los datos originales del StrumsGroup
+		// (respetando data.x y spacing) — más correcto que recalcular manualmente.
+		var _isDownscroll  = FlxG.save.data.downscroll;
+		var _isMiddlescroll = FlxG.save.data.middlescroll;
+		var _strumY:Float  = _isDownscroll ? FlxG.height - 150 : PlayStateConfig.STRUM_LINE_Y;
+		strumLiney = _strumY;
+		if (noteManager != null)
+		{
+			noteManager.strumLineY   = _strumY;
+			noteManager.downscroll   = _isDownscroll;
+			noteManager.middlescroll = _isMiddlescroll;
+		}
+
+		// Repositionar todos los grupos y resetear animaciones a 'static'
+		for (group in strumsGroups)
+		{
+			group.applyScrollSettings(_isDownscroll, _isMiddlescroll, PlayStateConfig.STRUM_LINE_Y);
+			group.strums.forEach(function(s:FlxSprite) {
+				if (Std.isOfType(s, funkin.gameplay.notes.StrumNote))
+					cast(s, funkin.gameplay.notes.StrumNote).playAnim('static', true);
+			});
+		}
+		// Fallback para el caso (improbable) de strums fuera de strumsGroups
+		if (playerStrums != null && strumsGroups.length == 0)
+			playerStrums.forEach(function(s:FlxSprite) {
+				if (Std.isOfType(s, funkin.gameplay.notes.StrumNote))
+					cast(s, funkin.gameplay.notes.StrumNote).playAnim('static', true);
+			});
+		if (cpuStrums != null && strumsGroups.length == 0)
+			cpuStrums.forEach(function(s:FlxSprite) {
+				if (Std.isOfType(s, funkin.gameplay.notes.StrumNote))
+					cast(s, funkin.gameplay.notes.StrumNote).playAnim('static', true);
+			});
+
+		// ── 11. Scripts ───────────────────────────────────────────────────────
+		if (scriptsEnabled)
+			ScriptHandler.callOnScripts('onRestart', []);
+
+		// ── 12. Pequeño delay antes del countdown (espera el flash) ──────────
+		new flixel.util.FlxTimer().start(0.15, function(_)
+		{
+			startCountdown();
+		});
+
+		trace('[PlayState] Rewind restart completado.');
+	}
+
 	/**
 	 * Destroy
 	 */
@@ -2327,6 +2603,7 @@ class PlayState extends funkin.states.MusicBeatState
 
 		// ── 9. Limpiar estructuras internas
 		NoteSkinSystem.restoreGlobalSkin();
+		NoteSkinSystem.restoreGlobalSplash();
 		heldNotes.clear();
 		holdSplashes.clear();
 		characterSlots = [];
@@ -2373,16 +2650,29 @@ class PlayState extends funkin.states.MusicBeatState
 		// Limpiar caché de assets: todos los sprites ya están destruidos (arriba).
 		Paths.forceClearCache();
 		Paths.clearFlxBitmapCache();
-		// openfl.utils.Assets.cache es un tercer cache independiente de FlxG.bitmap
-		// y del LRU de Paths. Sin esto, texturas de personajes y stage se quedan
-		// en RAM hasta la siguiente cancion. Codename no lo tiene porque usa assets
-		// distintos, pero el efecto es el mismo.
+
+		// Limpiar batches del GPURenderer de texturas que ya no existen.
+		// Importante: sin esto, los GPUBatch de texturas de personajes/stage anteriores
+		// permanecen en memoria y sus buffers pre-alojados nunca se liberan.
+		if (optimizationManager != null && optimizationManager.gpuRenderer != null)
+			optimizationManager.gpuRenderer.clearUnusedBatches();
+
+		// openfl.utils.Assets.cache es un tercer cache independiente de FlxG.bitmap.
+		// Sin limpiar esto, texturas de personajes y stage permanecen en RAM entre canciones.
 		try { openfl.utils.Assets.cache.clear(); } catch (_:Dynamic) {}
 
-		// Forzar GC con todo ya limpiado
+		// FlxG.bitmap.clearUnused() libera texturas con useCount = 0 que
+		// no fueron capturadas por clearCache() arriba.
+		try { FlxG.bitmap.clearUnused(); } catch (_:Dynamic) {}
+
+		// Forzar GC con todo ya limpiado - triple paso para máxima liberación
 		#if cpp
 		cpp.vm.Gc.run(true);
 		cpp.vm.Gc.compact();
+		cpp.vm.Gc.run(true);
+		#end
+		#if hl
+		hl.Gc.major();
 		#end
 	}
 
@@ -2558,6 +2848,9 @@ class PlayState extends funkin.states.MusicBeatState
 	private function updateAntialiasing():Void
 	{
 		if (currentStage == null)
+			return;
+
+		if (skinSystem.isPixel)
 			return;
 
 		// Actualizar antialiasing del stage

@@ -437,6 +437,19 @@ class EventManager
 		_nextIndex = 0;
 	}
 
+	/**
+	 * Rebobina todos los eventos al estado "no disparado" y reinicia el puntero
+	 * al inicio del timeline. Llamar al hacer rewind restart.
+	 * Los eventos se re-dispararán naturalmente conforme la canción avance de nuevo.
+	 */
+	public static function rewindToStart():Void
+	{
+		_nextIndex = 0;
+		for (e in events)
+			e.triggered = false;
+		trace('[EventManager] Rewind: ${events.length} eventos marcados como no disparados.');
+	}
+
 	// ─── Util ─────────────────────────────────────────────────────────────────
 
 	/** 1 beat = 60 000 / bpm ms  |  1 step = 1 beat / 4 */

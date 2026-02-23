@@ -1,5 +1,5 @@
 {
-  "name": "Classic",
+  "name": "Default",
   "author": "FNF Team",
   "description": "Classic Friday Night Funkin' note splash effects",
   "assets": {
@@ -15,6 +15,6 @@
     "up": ["note impact 1 green", "note impact 2 green"],
     "right": ["note impact 1 red", "note impact 2 red"],
     "framerate": 24,
-    "randomFramerateRange": 3
+    "randomFramerateRange": 2
   }
 }

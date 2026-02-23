@@ -189,7 +189,10 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 					if (PlayState.instance != null)
 						PlayState.instance.paused = false;
 				case "Restart Song":
-					FlxG.resetState();
+					// Rewind restart — no destruye el state, lo reutiliza (V-Slice style)
+					if (PlayState.instance != null)
+						PlayState.instance.startRewindRestart();
+					close(); // cerrar pause DESPUÉS de iniciar el rewind
 				case "Skip Song":
 					if (PlayState.instance != null)
 						PlayState.instance.endSong();
@@ -208,6 +211,19 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
 		#end
+	}
+
+	/** Cuando OptionsMenuState cierra con pendingRewind=true, disparar el rewind
+	 *  y cerrar el pause en lugar de quedarse abierto esperando al jugador. */
+	override function closeSubState():Void
+	{
+		super.closeSubState();
+		if (funkin.menus.OptionsMenuState.pendingRewind)
+		{
+			funkin.menus.OptionsMenuState.pendingRewind = false;
+			if (PlayState.instance != null)
+				FlxG.resetState();
+		}
 	}
 
 	override function destroy()

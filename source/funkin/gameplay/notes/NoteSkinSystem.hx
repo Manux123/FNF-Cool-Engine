@@ -4,6 +4,7 @@ import extensions.FlxAtlasFramesExt;
 import lime.utils.Assets;
 import funkin.gameplay.PlayState;
 import flixel.FlxG;
+import flixel.FlxSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
 import haxe.Json;
 #if sys
@@ -15,65 +16,129 @@ using StringTools;
 
 // ==================== TYPEDEFS ====================
 
-typedef NoteSkinData = {
-	var name:String;
-	var author:String;
-	var ?description:String;
-	var ?folder:String; // CORREGIDO: Folder específico de esta skin
-	var normal:NoteSkinAssets;
-	var ?pixel:NoteSkinAssets;
-	var ?pixelEnds:NoteSkinAssets; // NUEVO: Para los holds de las notas pixel
-	var ?animations:NoteAnimations;
-	var ?offsetDefault:Bool;
-}
-
-typedef NoteSkinAssets = {
+/**
+ * Definición de textura de skin.
+ *
+ * Para type "sparrow": usa path.xml (Sparrow Atlas).
+ * Para type "packer":  usa path.txt (TexturePacker).
+ * Para type "image":   usa path.png dividido en frames de frameWidth×frameHeight píxeles.
+ *                      El número de filas/columnas se calcula automáticamente.
+ */
+typedef NoteSkinTexture =
+{
 	var path:String;
-	var ?type:String; // "sparrow", "packer", "image"
-	var ?scale:Float;
-	var ?antialiasing:Bool;
+	var ?type:String; // "sparrow" | "packer" | "image"  (default: "sparrow")
+	var ?frameWidth:Int; // solo para type "image" — ancho de cada frame en píxeles
+	var ?frameHeight:Int; // solo para type "image" — alto  de cada frame en píxeles
+	var ?scale:Float; // escala aplicada al sprite (default: 1.0)
+	var ?antialiasing:Bool; // default: true para normal, false para pixel
 }
 
-typedef NoteAnimations = {
-	// Notas individuales
-	var ?left:String;
-	var ?down:String;
-	var ?up:String;
-	var ?right:String;
-	
-	// Holds (sustains)
-	var ?leftHold:String;
-	var ?downHold:String;
-	var ?upHold:String;
-	var ?rightHold:String;
-	
-	// Hold ends
-	var ?leftHoldEnd:String;
-	var ?downHoldEnd:String;
-	var ?upHoldEnd:String;
-	var ?rightHoldEnd:String;
-	
-	// Strums (flechas estáticas)
-	var ?strumLeft:String;
-	var ?strumDown:String;
-	var ?strumUp:String;
-	var ?strumRight:String;
-	
-	// Strums pressed
-	var ?strumLeftPress:String;
-	var ?strumDownPress:String;
-	var ?strumUpPress:String;
-	var ?strumRightPress:String;
-	
-	// Strums confirm
-	var ?strumLeftConfirm:String;
-	var ?strumDownConfirm:String;
-	var ?strumUpConfirm:String;
-	var ?strumRightConfirm:String;
+/**
+ * Definición de una animación individual.
+ *
+ * Formatos aceptados en el JSON:
+ *   String shorthand:   "purple0"
+ *   Objeto prefix:      {"prefix": "purple0"}
+ *   Objeto prefix+fps:  {"prefix": "purple0", "framerate": 12}
+ *   Objeto indices:     {"indices": [4]}
+ *   Objeto multi-frame: {"indices": [12, 16], "framerate": 24}
+ *   Objeto con loop:    {"indices": [0, 1, 2], "framerate": 12, "loop": true}
+ */
+typedef NoteAnimDef =
+{
+	var ?prefix:String;
+	var ?indices:Array<Int>;
+	var ?framerate:Int;
+	var ?loop:Bool;
 }
 
-// Splash separado del sistema de notas
-typedef NoteSplashData = {
+/**
+ * Todas las animaciones de una skin.
+ *
+ * Los campos son Dynamic para aceptar tanto el String shorthand como el
+ * objeto NoteAnimDef completo. El helper addAnimToSprite() maneja ambos.
+ *
+ * Separación lógica:
+ *   Notas (Scroll): left, down, up, right
+ *   Hold pieces:    leftHold, downHold, upHold, rightHold
+ *   Hold tails:     leftHoldEnd, downHoldEnd, upHoldEnd, rightHoldEnd
+ *   Strum static:   strumLeft/Down/Up/Right
+ *   Strum pressed:  strumLeft/Down/Up/RightPress
+ *   Strum confirm:  strumLeft/Down/Up/RightConfirm
+ */
+typedef NoteSkinAnims =
+{
+	var ?left:Dynamic;
+	var ?down:Dynamic;
+	var ?up:Dynamic;
+	var ?right:Dynamic;
+	var ?leftHold:Dynamic;
+	var ?downHold:Dynamic;
+	var ?upHold:Dynamic;
+	var ?rightHold:Dynamic;
+	var ?leftHoldEnd:Dynamic;
+	var ?downHoldEnd:Dynamic;
+	var ?upHoldEnd:Dynamic;
+	var ?rightHoldEnd:Dynamic;
+	var ?strumLeft:Dynamic;
+	var ?strumDown:Dynamic;
+	var ?strumUp:Dynamic;
+	var ?strumRight:Dynamic;
+	var ?strumLeftPress:Dynamic;
+	var ?strumDownPress:Dynamic;
+	var ?strumUpPress:Dynamic;
+	var ?strumRightPress:Dynamic;
+	var ?strumLeftConfirm:Dynamic;
+	var ?strumDownConfirm:Dynamic;
+	var ?strumUpConfirm:Dynamic;
+	var ?strumRightConfirm:Dynamic;
+}
+
+// Alias de compatibilidad — código que usaba NoteAnimations sigue compilando
+typedef NoteAnimations = NoteSkinAnims;
+
+/**
+ * Datos completos de una skin de notas.
+ *
+ * La skin pixel y la skin normal son ENTIDADES COMPLETAMENTE INDEPENDIENTES.
+ * No hay ninguna lógica hardcodeada de "school → pixel". En su lugar:
+ *   - Crea una skin con isPixel:true y sus texturas/animaciones propias
+ *   - Registra qué stage la usa con NoteSkinSystem.registerStageSkin(stage, skinName)
+ *   - O llama NoteSkinSystem.setTemporarySkin(skinName) desde tu PlayState/Stage
+ *
+ * Campos clave:
+ *   texture:      textura de notas (cabeza) y strums
+ *   holdTexture:  textura de sustain pieces + tails (null → usa texture)
+ *   isPixel:      activa modo pixel (antialiasing false por defecto)
+ *   confirmOffset: aplica offset -13,-13 al strum confirm (default: true)
+ *   sustainOffset: offset X extra para notas sustain (default: 0; pixel usa 30)
+ *   holdStretch:  multiplicador de scale.y en hold chain (default: 1.0; pixel usa 1.19)
+ *   animations:   todas las anims de notas + strums, usando NoteAnimDef
+ */
+typedef NoteSkinData =
+{
+	var name:String;
+	var ?author:String;
+	var ?description:String;
+	var ?folder:String;
+	// ── Texturas ──────────────────────────────────────────────────────────
+	var texture:NoteSkinTexture;
+	var ?holdTexture:NoteSkinTexture; // sustain pieces + tails (null → usa texture)
+	// ── Flags y ajustes ───────────────────────────────────────────────────
+	var ?isPixel:Bool;
+	var ?confirmOffset:Bool; // default: true
+	var ?offsetDefault:Bool; // alias legacy de confirmOffset
+	var ?sustainOffset:Float; // default: 0.0
+	var ?holdStretch:Float; // default: 1.0
+	// ── Animaciones ───────────────────────────────────────────────────────
+	var animations:NoteSkinAnims;
+}
+
+// ── Splash (sistema independiente, no cambia) ─────────────────────────────────
+
+typedef NoteSplashData =
+{
 	var name:String;
 	var author:String;
 	var ?description:String;
@@ -82,328 +147,412 @@ typedef NoteSplashData = {
 	var animations:SplashAnimations;
 }
 
-typedef NoteSplashAssets = {
+typedef NoteSplashAssets =
+{
 	var path:String;
 	var ?type:String;
 	var ?scale:Float;
 	var ?antialiasing:Bool;
-	var ?offset:Array<Float>; // [x, y]
+	var ?offset:Array<Float>;
 }
 
-typedef SplashAnimations = {
-	// Prefijos de animación para cada dirección
+typedef SplashAnimations =
+{
 	var left:Array<String>;
 	var down:Array<String>;
 	var up:Array<String>;
 	var right:Array<String>;
-	
-	// Configuración adicional
 	var ?framerate:Int;
-	var ?randomFramerateRange:Int; // ±random range
+	var ?randomFramerateRange:Int;
 }
 
 // ==================== SISTEMA PRINCIPAL ====================
 
 class NoteSkinSystem
 {
-	// Skins de notas
 	public static var currentSkin:String = "Default";
-	public static var availableSkins:Map<String, NoteSkinData> = new Map<String, NoteSkinData>();
-	
-	// Splashes (independiente)
 	public static var currentSplash:String = "Default";
-	public static var availableSplashes:Map<String, NoteSplashData> = new Map<String, NoteSplashData>();
-	
+
+	/**
+	 * Splash elegido permanentemente por el jugador.
+	 * Solo se modifica con setSplash() (que guarda en disco).
+	 * setTemporarySplash() y applySplashForStage() modifican currentSplash
+	 * pero NO _globalSplash, por lo que restoreGlobalSplash() siempre
+	 * vuelve al valor real del jugador — sin importar si el save.data
+	 * fue corrompido por el bug anterior que llamaba setSplash() en cada cancion.
+	 */
+	private static var _globalSplash:String = "Default";
+
+	public static var availableSkins:Map<String, NoteSkinData> = new Map();
+	public static var availableSplashes:Map<String, NoteSplashData> = new Map();
+
+	/**
+	 * Mapa stage-name → skin-name.
+	 * Defaults registrados en init(). Editable vía registerStageSkin().
+	 */
+	private static var stageSkinMap:Map<String, String> = new Map();
+
+	private static var stageSplashMap:Map<String, String> = new Map();
+
 	private static var initialized:Bool = false;
 
+	/** Último mod activo durante el init — si cambia, forzamos re-init. */
+	private static var _lastInitMod:Null<String> = null;
+
+	/** Si la skin actual aplica el offset -13,-13 estándar en confirm. */
 	public static var offsetDefault:Bool = true;
 
-	// Rutas
-	private static var SKINS_PATH:String = Paths.resolve("skins");
-	private static var SPLASHES_PATH:String = Paths.resolve("splashes");
-	private static inline var DEFAULT_NORMAL:String = "Default/NOTE_assets";
-	private static inline var DEFAULT_PIXEL:String = "Default/arrows-pixels";
-	private static inline var DEFAULT_PIXEL_ENDS:String = "Default/arrowEnds";
-	private static inline var DEFAULT_SPLASH:String = "Default/noteSplashes";
+	// Paths calculados en init() según el mod activo
+	private static var SKINS_PATH:String = "assets/skins";
+	private static var SPLASHES_PATH:String = "assets/splashes";
+
+	// ==================== INIT ====================
 
 	public static function init():Void
 	{
-		if (initialized) return;
+		// Si el mod activo cambió desde el último init, forzar re-inicialización
+		// para que se descubran las skins del nuevo mod.
+		final currentMod:Null<String> = mods.ModManager.activeMod;
+		if (initialized && currentMod == _lastInitMod)
+			return;
 
-		trace("Initializing Note Skin System...");
-		
-		// Descubrir skins y splashes
+		if (initialized)
+		{
+			// Reiniciar estado para el nuevo mod
+			availableSkins = new Map();
+			availableSplashes = new Map();
+			stageSkinMap = new Map();
+			stageSplashMap = new Map();
+			_globalSplash = "Default";
+			initialized = false;
+		}
+
+		trace("[NoteSkinSystem] Initializing...");
+
+		// Calcular paths en runtime según el mod activo
+		// SIEMPRE apuntamos a assets/ como base (los skins de mod se descubren
+		// adicionalmente en discoverSkins / discoverSplashes).
+		SKINS_PATH = "assets/skins";
+		SPLASHES_PATH = "assets/splashes";
+
+		_lastInitMod = currentMod;
+
+		// Skins built-in
+		availableSkins.set("Default", getDefaultSkin());
+		availableSkins.set("Pixel", getDefaultPixelSkin());
+
+		// Defaults de stage → skin (editables con registerStageSkin)
+		stageSkinMap.set("school", "Pixel");
+		stageSkinMap.set("schoolEvil", "Pixel");
+
+		// Defaults de stage → splash (editables con registerStageSplash)
+		// Se aplican con applySplashForStage() — sin guardar en disco (temporal).
+		stageSplashMap.set("school", "PixelSplash");
+		stageSplashMap.set("schoolEvil", "PixelSplash");
+
 		discoverSkins();
 		discoverSplashes();
-		
-		// Cargar configuraciones guardadas
 		loadSavedSkin();
 		loadSavedSplash();
-		
+
 		initialized = true;
-		trace('Note Skin System initialized.');
-		trace('  - Found ${Lambda.count(availableSkins)} note skins');
-		trace('  - Found ${Lambda.count(availableSplashes)} splash styles');
+		trace('[NoteSkinSystem] Ready — ${Lambda.count(availableSkins)} skins, ${Lambda.count(availableSplashes)} splashes');
 	}
 
-	// ==================== DESCUBRIMIENTO DE SKINS ====================
+	// ==================== STAGE → SKIN MAPPING ====================
+
+	/**
+	 * Registra la skin a usar para un stage concreto.
+	 * Llama esto desde tu Stage.hx o PlayState al cargar el stage.
+	 *
+	 *   NoteSkinSystem.registerStageSkin("schoolEvil", "DefaultPixel");
+	 *   NoteSkinSystem.registerStageSkin("myCustomStage", "MyFancySkin");
+	 */
+	public static function registerStageSkin(stageName:String, skinName:String):Void
+	{
+		stageSkinMap.set(stageName, skinName);
+		trace('[NoteSkinSystem] Stage "$stageName" → skin "$skinName"');
+	}
+
+	/**
+	 * Devuelve el nombre de skin configurado para un stage, o null si no hay override.
+	 */
+	public static function getSkinNameForStage(stageName:String):String
+	{
+		return stageSkinMap.exists(stageName) ? stageSkinMap.get(stageName) : null;
+	}
+
+	/**
+	 * Aplica temporalmente la skin asignada al stage.
+	 * Si el stage no tiene skin propia, restaura la skin global del jugador.
+	 *
+	 * Úsalo en PlayState al cargar el stage:
+	 *   NoteSkinSystem.applySkinForStage(PlayState.curStage);
+	 */
+	public static function applySkinForStage(stageName:String):Void
+	{
+		var skinForStage = getSkinNameForStage(stageName);
+		if (skinForStage != null)
+			setTemporarySkin(skinForStage);
+		else
+			restoreGlobalSkin();
+	}
+
+	/** Registra el splash a usar para un stage concreto (temporal, sin guardar). */
+	public static function registerStageSplash(stageName:String, splashName:String):Void
+	{
+		stageSplashMap.set(stageName, splashName);
+		trace('[NoteSkinSystem] Stage "$stageName" → splash "$splashName"');
+	}
+
+	/** Devuelve el nombre de splash configurado para un stage, o null si no hay override. */
+	public static function getSplashNameForStage(stageName:String):String
+	{
+		return stageSplashMap.exists(stageName) ? stageSplashMap.get(stageName) : null;
+	}
+
+	/**
+	 * Aplica temporalmente el splash asignado al stage.
+	 * Si el stage no tiene splash propio, restaura el splash global del jugador.
+	 * Llama esto justo despues de applySkinForStage() en PlayState.
+	 */
+	public static function applySplashForStage(stageName:String):Void
+	{
+		var splashForStage = getSplashNameForStage(stageName);
+		if (splashForStage != null)
+			setTemporarySplash(splashForStage);
+		else
+			restoreGlobalSplash();
+	}
+
+	// ==================== DESCUBRIMIENTO ====================
 
 	private static function discoverSkins():Void
 	{
-		availableSkins.set("Default", getDefaultSkin());
-
 		#if sys
-		if (FileSystem.exists(SKINS_PATH) && FileSystem.isDirectory(SKINS_PATH))
+		// Descubrir siempre desde assets/skins (base)
+		_discoverSkinsInPath(SKINS_PATH);
+		// Adicionalmente desde el mod activo (overrides y añadidos)
+		final modRoot = mods.ModManager.modRoot();
+		if (modRoot != null)
 		{
-			for (skinFolder in FileSystem.readDirectory(SKINS_PATH))
-			{
-				var skinPath:String = '$SKINS_PATH/$skinFolder';
-				
-				if (FileSystem.isDirectory(skinPath))
-				{
-					var configPath:String = '$skinPath/skin.json';
-					
-					if (FileSystem.exists(configPath))
-					{
-						try
-						{
-							var jsonData:String = File.getContent(configPath);
-							var skinData:NoteSkinData = Json.parse(jsonData);
-							// CORREGIDO: Guardar el folder en la skin data
-							skinData.folder = skinFolder;
-							availableSkins.set(skinData.name, skinData);
-							trace('Loaded note skin: ${skinData.name} from folder: $skinFolder');
-							offsetDefault = skinData.offsetDefault;
-						}
-						catch (e:Dynamic)
-						{
-							trace('Error loading skin at $configPath: $e');
-						}
-					}
-					else
-					{
-						var autoSkin:NoteSkinData = autoDetectSkin(skinPath, skinFolder);
-						if (autoSkin != null)
-						{
-							availableSkins.set(autoSkin.name, autoSkin);
-							trace('Auto-detected note skin: ${autoSkin.name} from folder: $skinFolder');
-						}
-					}
-				}
-			}
+			final modSkinsPath = '$modRoot/skins';
+			if (modSkinsPath != SKINS_PATH)
+				_discoverSkinsInPath(modSkinsPath);
 		}
 		#else
-		var skinsList:Array<String> = Assets.list().filter(path -> path.contains("skins/") && path.endsWith("skin.json"));
-		
-		for (skinPath in skinsList)
+		for (skinPath in Assets.list().filter(p -> p.contains("skins/") && p.endsWith("skin.json")))
 		{
 			try
 			{
-				var jsonData:String = Assets.getText(skinPath);
-				var skinData:NoteSkinData = Json.parse(jsonData);
-				// Extraer folder del path
-				var folderMatch = ~/skins\/([^\/]+)\//;
-				if (folderMatch.match(skinPath))
-				{
-					skinData.folder = folderMatch.matched(1);
-				}
-				availableSkins.set(skinData.name, skinData);
-				trace('Loaded note skin: ${skinData.name}');
+				var data:NoteSkinData = Json.parse(Assets.getText(skinPath));
+				var m = ~/skins\/([^\/]+)\//;
+				if (m.match(skinPath))
+					data.folder = m.matched(1);
+				availableSkins.set(data.name, data);
 			}
 			catch (e:Dynamic)
 			{
-				trace('Error loading skin at $skinPath: $e');
+				trace('[NoteSkinSystem] Error loading $skinPath: $e');
 			}
 		}
 		#end
 	}
 
-	// ==================== DESCUBRIMIENTO DE SPLASHES ====================
+	#if sys
+	private static function _discoverSkinsInPath(basePath:String):Void
+	{
+		if (!FileSystem.exists(basePath) || !FileSystem.isDirectory(basePath))
+			return;
+		for (skinFolder in FileSystem.readDirectory(basePath))
+		{
+			var skinPath = '$basePath/$skinFolder';
+			if (!FileSystem.isDirectory(skinPath))
+				continue;
+			var configPath = '$skinPath/skin.json';
+			if (FileSystem.exists(configPath))
+			{
+				try
+				{
+					var data:NoteSkinData = Json.parse(File.getContent(configPath));
+					data.folder = skinFolder;
+					availableSkins.set(data.name, data);
+					trace('[NoteSkinSystem] Loaded skin "${data.name}" from $basePath/$skinFolder');
+				}
+				catch (e:Dynamic)
+				{
+					trace('[NoteSkinSystem] Error loading $configPath: $e');
+				}
+			}
+			else
+			{
+				var auto = autoDetectSkin(skinPath, skinFolder);
+				if (auto != null)
+				{
+					availableSkins.set(auto.name, auto);
+					trace('[NoteSkinSystem] Auto-detected skin "${auto.name}"');
+				}
+			}
+		}
+	}
+	#end
 
 	private static function discoverSplashes():Void
 	{
 		availableSplashes.set("Default", getDefaultSplash());
-
 		#if sys
-		if (FileSystem.exists(SPLASHES_PATH) && FileSystem.isDirectory(SPLASHES_PATH))
+		_discoverSplashesInPath(SPLASHES_PATH);
+		// Adicionalmente desde el mod activo
+		final modRoot = mods.ModManager.modRoot();
+		if (modRoot != null)
 		{
-			for (splashFolder in FileSystem.readDirectory(SPLASHES_PATH))
-			{
-				var splashPath:String = '$SPLASHES_PATH/$splashFolder';
-				
-				if (FileSystem.isDirectory(splashPath))
-				{
-					var configPath:String = '$splashPath/splash.json';
-					
-					if (FileSystem.exists(configPath))
-					{
-						try
-						{
-							var jsonData:String = File.getContent(configPath);
-							var splashData:NoteSplashData = Json.parse(jsonData);
-							// CORREGIDO: Guardar el folder en la splash data
-							splashData.folder = splashFolder;
-							availableSplashes.set(splashData.name, splashData);
-							trace('Loaded splash style: ${splashData.name} from folder: $splashFolder');
-						}
-						catch (e:Dynamic)
-						{
-							trace('Error loading splash at $configPath: $e');
-						}
-					}
-					else
-					{
-						var autoSplash:NoteSplashData = autoDetectSplash(splashPath, splashFolder);
-						if (autoSplash != null)
-						{
-							availableSplashes.set(autoSplash.name, autoSplash);
-							trace('Auto-detected splash: ${autoSplash.name} from folder: $splashFolder');
-						}
-					}
-				}
-			}
+			final modSplashesPath = '$modRoot/splashes';
+			if (modSplashesPath != SPLASHES_PATH)
+				_discoverSplashesInPath(modSplashesPath);
 		}
 		#else
-		var splashList:Array<String> = Assets.list().filter(path -> path.contains("splashes/") && path.endsWith("splash.json"));
-		
-		for (splashPath in splashList)
+		for (splashPath in Assets.list().filter(p -> p.contains("splashes/") && p.endsWith("splash.json")))
 		{
 			try
 			{
-				var jsonData:String = Assets.getText(splashPath);
-				var splashData:NoteSplashData = Json.parse(jsonData);
-				// Extraer folder del path
-				var folderMatch = ~/splashes\/([^\/]+)\//;
-				if (folderMatch.match(splashPath))
-				{
-					splashData.folder = folderMatch.matched(1);
-				}
-				availableSplashes.set(splashData.name, splashData);
-				trace('Loaded splash style: ${splashData.name}');
+				var data:NoteSplashData = Json.parse(Assets.getText(splashPath));
+				var m = ~/splashes\/([^\/]+)\//;
+				if (m.match(splashPath))
+					data.folder = m.matched(1);
+				availableSplashes.set(data.name, data);
 			}
 			catch (e:Dynamic)
 			{
-				trace('Error loading splash at $splashPath: $e');
+				trace('[NoteSkinSystem] Error loading $splashPath: $e');
 			}
 		}
 		#end
 	}
 
-	// ==================== AUTO-DETECCIÓN ====================
+	#if sys
+	private static function _discoverSplashesInPath(basePath:String):Void
+	{
+		if (!FileSystem.exists(basePath) || !FileSystem.isDirectory(basePath))
+			return;
+		for (splashFolder in FileSystem.readDirectory(basePath))
+		{
+			var splashPath = '$basePath/$splashFolder';
+			if (!FileSystem.isDirectory(splashPath))
+				continue;
+			var configPath = '$splashPath/splash.json';
+			if (FileSystem.exists(configPath))
+			{
+				try
+				{
+					var data:NoteSplashData = Json.parse(File.getContent(configPath));
+					data.folder = splashFolder;
+					availableSplashes.set(data.name, data);
+				}
+				catch (e:Dynamic)
+				{
+					trace('[NoteSkinSystem] Error loading $configPath: $e');
+				}
+			}
+			else
+			{
+				var auto = autoDetectSplash(splashPath, splashFolder);
+				if (auto != null)
+					availableSplashes.set(auto.name, auto);
+			}
+		}
+	}
+	#end
 
+	// ==================== AUTO-DETECCIÓN ====================
 	#if sys
 	private static function autoDetectSkin(skinPath:String, folderName:String):NoteSkinData
 	{
-		var files:Array<String> = FileSystem.readDirectory(skinPath);
-		var skinData:NoteSkinData = {
-			name: folderName,
-			author: "Unknown",
-			folder: folderName, // CORREGIDO: Guardar folder
-			normal: {
-				path: "",
-				type: "sparrow"
-			}
-		};
+		var files = FileSystem.readDirectory(skinPath);
+		var mainPath = "";
+		var mainType = "sparrow";
+		var holdPath = "";
 
 		for (file in files)
 		{
-			var lowerFile:String = file.toLowerCase();
-			
-			if (lowerFile.contains("note") && !lowerFile.contains("pixel") && lowerFile.endsWith(".png"))
+			var lower = file.toLowerCase();
+			if (!lower.endsWith(".png"))
+				continue;
+			var base = file.substr(0, file.length - 4);
+			var hasXml = files.indexOf(base + ".xml") != -1;
+			var hasTxt = files.indexOf(base + ".txt") != -1;
+			var isHold = lower.contains("hold") || lower.contains("end");
+
+			if (isHold && holdPath == "")
+				holdPath = base;
+			else if (!isHold && mainPath == "")
 			{
-				skinData.normal.path = '${file.substr(0, file.length - 4)}';
-				
-				if (files.indexOf(file.substr(0, file.length - 4) + ".xml") != -1)
-					skinData.normal.type = "sparrow";
-				else
-					skinData.normal.type = "image";
-			}
-			
-			// Detectar notas pixel principales
-			if (lowerFile.contains("pixel") && !lowerFile.contains("end") && lowerFile.endsWith(".png"))
-			{
-				skinData.pixel = {
-					path: '${file.substr(0, file.length - 4)}',
-					type: "image"
-				};
-			}
-			
-			// Detectar holds de notas pixel (arrowEnds, holdEnds, etc.)
-			if ((lowerFile.contains("end") || lowerFile.contains("hold")) && lowerFile.contains("pixel") && lowerFile.endsWith(".png"))
-			{
-				skinData.pixelEnds = {
-					path: '${file.substr(0, file.length - 4)}',
-					type: "image"
-				};
+				mainPath = base;
+				mainType = hasXml ? "sparrow" : (hasTxt ? "packer" : "image");
 			}
 		}
 
-		return skinData.normal.path != "" ? skinData : null;
+		if (mainPath == "")
+			return null;
+
+		var skin:NoteSkinData = {
+			name: folderName,
+			author: "Unknown",
+			folder: folderName,
+			texture: {path: mainPath, type: mainType},
+			animations: {}
+		};
+		if (holdPath != "")
+			skin.holdTexture = {path: holdPath, type: "image"};
+
+		return skin;
 	}
 
 	private static function autoDetectSplash(splashPath:String, folderName:String):NoteSplashData
 	{
-		var files:Array<String> = FileSystem.readDirectory(splashPath);
-		var splashData:NoteSplashData = null;
-
+		var files = FileSystem.readDirectory(splashPath);
 		for (file in files)
 		{
-			var lowerFile:String = file.toLowerCase();
-			
-			if (lowerFile.contains("splash") && lowerFile.endsWith(".png"))
-			{
-				var baseName:String = file.substr(0, file.length - 4);
-				var hasXml:Bool = files.indexOf(baseName + ".xml") != -1;
-				
-				splashData = {
-					name: folderName,
-					author: "Unknown",
-					folder: folderName, // CORREGIDO: Guardar folder
-					assets: {
-						path: '$baseName',
-						type: hasXml ? "sparrow" : "image"
-					},
-					animations: {
-						left: ["note impact 1 purple", "note impact 2 purple"],
-						down: ["note impact 1 blue", "note impact 2 blue"],
-						up: ["note impact 1 green", "note impact 2 green"],
-						right: ["note impact 1 red", "note impact 2 red"],
-						framerate: 24
-					}
-				};
-				break;
-			}
+			if (!file.toLowerCase().contains("splash") || !file.toLowerCase().endsWith(".png"))
+				continue;
+			var base = file.substr(0, file.length - 4);
+			var hasXml = files.indexOf(base + ".xml") != -1;
+			return {
+				name: folderName,
+				author: "Unknown",
+				folder: folderName,
+				assets: {path: base, type: hasXml ? "sparrow" : "image"},
+				animations: {
+					left: ["note impact 1 purple", "note impact 2 purple"],
+					down: ["note impact 1 blue", "note impact 2 blue"],
+					up: ["note impact 1 green", "note impact 2 green"],
+					right: ["note impact 1 red", "note impact 2 red"],
+					framerate: 24
+				}
+			};
 		}
-
-		return splashData;
+		return null;
 	}
 	#end
 
 	// ==================== DEFAULTS ====================
 
+	/**
+	 * Skin normal por defecto — NOTE_assets.xml, animaciones sparrow estándar FNF.
+	 */
 	private static function getDefaultSkin():NoteSkinData
 	{
 		return {
 			name: "Default",
 			author: "ninjamuffin99",
 			description: "Default Friday Night Funkin' notes",
-			folder: "Default", // CORREGIDO: Folder Default
-			normal: {
+			folder: "Default",
+			texture: {
 				path: "NOTE_assets",
 				type: "sparrow",
 				scale: 0.7,
 				antialiasing: true
 			},
-			pixel: {
-				path: "arrows-pixels",
-				type: "image",
-				antialiasing: false
-			},
-			pixelEnds: {
-				path: "arrowEnds",
-				type: "image",
-				antialiasing: false
-			},
+			confirmOffset: true,
 			animations: {
 				left: "purple0",
 				down: "blue0",
@@ -417,10 +566,10 @@ class NoteSkinSystem
 				downHoldEnd: "blue hold end",
 				upHoldEnd: "green hold end",
 				rightHoldEnd: "red hold end",
-				strumLeft: "left arrow",
-				strumDown: "down arrow",
-				strumUp: "up arrow",
-				strumRight: "right arrow",
+				strumLeft: "arrowLEFT",
+				strumDown: "arrowDOWN",
+				strumUp: "arrowUP",
+				strumRight: "arrowRIGHT",
 				strumLeftPress: "left press",
 				strumDownPress: "down press",
 				strumUpPress: "up press",
@@ -433,13 +582,89 @@ class NoteSkinSystem
 		};
 	}
 
+	/**
+	 * Skin PIXEL por defecto — arrows-pixels.png + arrowEnds.png, animaciones por índice.
+	 *
+	 * Layout arrows-pixels.png (frameWidth=17, frameHeight=17):
+	 *   fila 0 (frames  0-3):  strums static
+	 *   fila 1 (frames  4-7):  notas scroll
+	 *   fila 2 (frames  8-11): strums pressed
+	 *   fila 3 (frames 12-15): confirm frame 1
+	 *   fila 4 (frames 16-19): confirm frame 2
+	 *
+	 * Layout arrowEnds.png (frameWidth=7, frameHeight=6):
+	 *   fila 0 (frames  0-3):  hold pieces
+	 *   fila 1 (frames  4-7):  hold tails
+	 */
+	private static function getDefaultPixelSkin():NoteSkinData
+	{
+		return {
+			name: "Pixel",
+			author: "ninjamuffin99",
+			description: "Default pixel/week 6 note skin",
+			folder: "Default",
+			isPixel: true,
+			confirmOffset: false,
+			sustainOffset: 30.0,
+			holdStretch: 1.19,
+			texture: {
+				path: "arrows-pixels",
+				type: "image",
+				frameWidth: 17,
+				frameHeight: 17,
+				scale: 6.0,
+				antialiasing: false
+			},
+			holdTexture: {
+				path: "arrowEnds",
+				type: "image",
+				frameWidth: 7,
+				frameHeight: 6,
+				scale: 6.0,
+				antialiasing: false
+			},
+			animations: {
+				// Notas scroll — fila 1 (frames 4-7)
+				left: {indices: [4]},
+				down: {indices: [5]},
+				up: {indices: [6]},
+				right: {indices: [7]},
+				// Hold pieces — fila 0 de arrowEnds (frames 0-3)
+				leftHold: {indices: [0]},
+				downHold: {indices: [1]},
+				upHold: {indices: [2]},
+				rightHold: {indices: [3]},
+				// Hold tails — fila 1 de arrowEnds (frames 4-7)
+				leftHoldEnd: {indices: [4]},
+				downHoldEnd: {indices: [5]},
+				upHoldEnd: {indices: [6]},
+				rightHoldEnd: {indices: [7]},
+				// Strums static — fila 0 (frames 0-3)
+				strumLeft: {indices: [0]},
+				strumDown: {indices: [1]},
+				strumUp: {indices: [2]},
+				strumRight: {indices: [3]},
+				// Strums pressed — filas 1+2 (fps 12)
+				strumLeftPress: {indices: [4, 8], framerate: 12},
+				strumDownPress: {indices: [5, 9], framerate: 12},
+				strumUpPress: {indices: [6, 10], framerate: 12},
+				strumRightPress: {indices: [7, 11], framerate: 12},
+				// Strums confirm — filas 3+4 (fps 24)
+				strumLeftConfirm: {indices: [12, 16], framerate: 24},
+				strumDownConfirm: {indices: [13, 17], framerate: 24},
+				strumUpConfirm: {indices: [14, 18], framerate: 24},
+				strumRightConfirm: {indices: [15, 19], framerate: 24}
+			}
+		};
+	}
+
 	private static function getDefaultSplash():NoteSplashData
 	{
 		return {
 			name: "Default",
 			author: "FNF Team",
 			description: "Default note splash effects",
-			folder: "Default", // CORREGIDO: Folder Default
+			folder: "Default",
 			assets: {
 				path: "noteSplashes",
 				type: "sparrow",
@@ -458,7 +683,7 @@ class NoteSkinSystem
 		};
 	}
 
-	// ==================== CARGA/GUARDADO ====================
+	// ==================== CARGA / GUARDADO ====================
 
 	private static function loadSavedSkin():Void
 	{
@@ -469,341 +694,472 @@ class NoteSkinSystem
 		else
 		{
 			currentSkin = "Default";
-			FlxG.save.data.noteSkin = "Default";
+			if (FlxG.save.data.noteSkin != "Default")
+			{
+				FlxG.save.data.noteSkin = "Default";
+				FlxG.save.flush(); // solo flush cuando realmente cambia algo
+			}
 		}
-		
-		FlxG.save.flush();
 	}
 
 	private static function loadSavedSplash():Void
 	{
-		if (FlxG.save.data.noteSplash != null && availableSplashes.exists(FlxG.save.data.noteSplash))
+		// Determinar el splash global del jugador a partir del save.
+		// SANITIZACIÓN: si el save tiene un splash que es específico de pixel
+		// (e.g. "PixelSplash") almacenado por el bug antiguo que llamaba setSplash()
+		// desde PlayState en cada cancion — lo reseteamos a "Default".
+		// Un jugador que QUIERA PixelSplash global lo tiene que elegir manualmente
+		// en el menú de opciones (que llama setSplash() explícitamente).
+		// La heurística: si el save tiene "PixelSplash" pero no hay skin Pixel activa
+		// global, revertir. Mas simple: los splash que contengan "pixel" en el nombre
+		// (case-insensitive) no deben ser el splash global por defecto.
+		var savedSplash:String = FlxG.save.data.noteSplash;
+		var isValidGlobal:Bool = (savedSplash != null
+			&& availableSplashes.exists(savedSplash)
+			&& savedSplash.toLowerCase().indexOf('pixel') < 0); // no pixel-only splashes as global default
+
+		if (isValidGlobal)
 		{
-			currentSplash = FlxG.save.data.noteSplash;
+			_globalSplash = savedSplash;
+			currentSplash = savedSplash;
 		}
 		else
 		{
+			_globalSplash = "Default";
 			currentSplash = "Default";
-			FlxG.save.data.noteSplash = "Default";
+			// Reparar el save si estaba corrompido
+			if (FlxG.save.data.noteSplash != "Default")
+			{
+				FlxG.save.data.noteSplash = "Default";
+				FlxG.save.flush();
+			}
 		}
-		
-		FlxG.save.flush();
 	}
 
 	// ==================== SETTERS ====================
 
 	public static function setSkin(skinName:String):Bool
 	{
-		if (availableSkins.exists(skinName))
-		{
-			currentSkin = skinName;
-			FlxG.save.data.noteSkin = skinName;
-			FlxG.save.flush();
-			trace('Changed note skin to: $skinName');
-			return true;
-		}
-		else
+		if (!availableSkins.exists(skinName))
 		{
 			trace('Note skin "$skinName" not found!');
 			return false;
 		}
+		currentSkin = skinName;
+		FlxG.save.data.noteSkin = skinName;
+		FlxG.save.flush();
+		return true;
 	}
 
-	/**
-	 * Aplica una skin SOLO para esta sesión sin tocar FlxG.save.
-	 * Úsalo desde PlayState con el noteSkin del meta.json.
-	 * Al salir de la canción llama restoreGlobalSkin() para volver
-	 * a la preferencia global del jugador.
-	 */
 	public static function setTemporarySkin(skinName:String):Void
 	{
-		if (!initialized) init();
-
-		// "default" y "" se resuelven a la skin global guardada
+		if (!initialized)
+			init();
 		if (skinName == null || skinName == '' || skinName == 'default')
 		{
 			currentSkin = FlxG.save.data.noteSkin != null ? FlxG.save.data.noteSkin : 'Default';
-			trace('[NoteSkinSystem] setTemporarySkin → usando global: $currentSkin');
 			return;
 		}
-
-		// Buscar la skin por nombre exacto o case-insensitive
 		if (availableSkins.exists(skinName))
 		{
 			currentSkin = skinName;
-			trace('[NoteSkinSystem] setTemporarySkin → "$skinName"');
+			return;
 		}
-		else
+		for (key in availableSkins.keys())
 		{
-			// Intento case-insensitive
-			for (key in availableSkins.keys())
+			if (key.toLowerCase() == skinName.toLowerCase())
 			{
-				if (key.toLowerCase() == skinName.toLowerCase())
-				{
-					currentSkin = key;
-					trace('[NoteSkinSystem] setTemporarySkin → "$key" (matched "$skinName")');
-					return;
-				}
+				currentSkin = key;
+				return;
 			}
-			// No encontrada: usa la global
-			currentSkin = FlxG.save.data.noteSkin != null ? FlxG.save.data.noteSkin : 'Default';
-			trace('[NoteSkinSystem] setTemporarySkin → skin "$skinName" no encontrada, usando global: $currentSkin');
 		}
+		currentSkin = FlxG.save.data.noteSkin != null ? FlxG.save.data.noteSkin : 'Default';
+		trace('[NoteSkinSystem] Skin "$skinName" no encontrada, usando global: $currentSkin');
 	}
 
-	/**
-	 * Restaura la skin que el jugador tiene guardada globalmente.
-	 * Llámalo en PlayState.destroy() para que al volver al menú
-	 * todo siga con la preferencia del jugador.
-	 */
 	public static function restoreGlobalSkin():Void
 	{
 		currentSkin = FlxG.save.data.noteSkin != null ? FlxG.save.data.noteSkin : 'Default';
-		trace('[NoteSkinSystem] restoreGlobalSkin → $currentSkin');
 	}
 
 	public static function setSplash(splashName:String):Bool
 	{
+		if (!availableSplashes.exists(splashName))
+		{
+			trace('Splash "$splashName" not found!');
+			return false;
+		}
+		// BUGFIX: actualizar _globalSplash ademas de currentSplash y save.data
+		// para que restoreGlobalSplash() use siempre el valor correcto.
+		_globalSplash = splashName;
+		currentSplash = splashName;
+		FlxG.save.data.noteSplash = splashName;
+		FlxG.save.flush();
+		return true;
+	}
+
+	/**
+	 * Cambia el splash TEMPORALMENTE sin guardar en disco ni tocar _globalSplash.
+	 * Usa esto desde PlayState / Stage para sobreescribir el splash por cancion
+	 * sin contaminar la preferencia global del jugador.
+	 * Llama restoreGlobalSplash() al salir del PlayState.
+	 */
+	public static function setTemporarySplash(splashName:String):Void
+	{
+		if (!initialized)
+			init();
+		if (splashName == null || splashName == '' || splashName == 'default')
+		{
+			// Splash vacío en meta = usar el global del jugador
+			currentSplash = _globalSplash;
+			return;
+		}
 		if (availableSplashes.exists(splashName))
 		{
 			currentSplash = splashName;
-			FlxG.save.data.noteSplash = splashName;
-			FlxG.save.flush();
-			trace('Changed splash style to: $splashName');
-			return true;
+			return;
 		}
-		else
+		for (key in availableSplashes.keys())
 		{
-			trace('Splash style "$splashName" not found!');
-			return false;
+			if (key.toLowerCase() == splashName.toLowerCase())
+			{
+				currentSplash = key;
+				return;
+			}
 		}
+		// Fallback al global (sin tocar _globalSplash)
+		currentSplash = _globalSplash;
+		trace('[NoteSkinSystem] Splash "$splashName" no encontrado, usando global: $currentSplash');
 	}
 
-	// ==================== GETTERS - SKINS ====================
+	/**
+	 * Restaura currentSplash al valor elegido por el jugador (_globalSplash).
+	 * BUGFIX: ya no usa FlxG.save.data.noteSplash directamente — el save puede
+	 * estar corrompido con "PixelSplash" por el bug anterior que llamaba setSplash()
+	 * en cada cancion de school. _globalSplash solo lo toca loadSavedSplash() y setSplash().
+	 */
+	public static function restoreGlobalSplash():Void
+	{
+		currentSplash = _globalSplash;
+	}
+
+	// ==================== GETTERS DE SKIN ====================
+
+	/**
+	 * Devuelve el NoteSkinData completo de la skin actual.
+	 * Úsalo en Note.hx / StrumNote.hx — contiene textura, escala, anims, flags, todo.
+	 */
+	public static function getCurrentSkinData(?skinName:String):NoteSkinData
+	{
+		if (!initialized)
+			init();
+		var skin = skinName != null ? skinName : currentSkin;
+		var data = availableSkins.get(skin);
+		if (data == null)
+			data = availableSkins.get("Default");
+		return data;
+	}
+
+	/**
+	 * Carga y devuelve el FlxAtlasFrames de una NoteSkinTexture.
+	 * Usa folder de la skin como prefijo de assets.
+	 */
+	public static function loadSkinFrames(tex:NoteSkinTexture, ?folder:String):FlxAtlasFrames
+	{
+		return loadAtlas(tex, folder != null ? folder : "Default");
+	}
+
+	// ── Helpers de escala convenientes ───────────────────────────────────
+
+	public static function getNoteScale(?skinName:String):Float
+	{
+		var d = getCurrentSkinData(skinName);
+		return (d != null && d.texture != null && d.texture.scale != null) ? d.texture.scale : 0.7;
+	}
+
+	public static function getPixelNoteScale(?skinName:String):Float
+	{
+		var d = getCurrentSkinData(skinName);
+		return (d != null && d.texture != null && d.texture.scale != null) ? d.texture.scale : funkin.gameplay.PlayStateConfig.PIXEL_ZOOM;
+	}
+
+	public static function getPixelEndsScale(?skinName:String):Float
+	{
+		var d = getCurrentSkinData(skinName);
+		if (d == null)
+			return funkin.gameplay.PlayStateConfig.PIXEL_ZOOM;
+		var tex = d.holdTexture != null ? d.holdTexture : d.texture;
+		return (tex != null && tex.scale != null) ? tex.scale : funkin.gameplay.PlayStateConfig.PIXEL_ZOOM;
+	}
+
+	// ── Getters legacy (siguen funcionando para código externo) ──────────
 
 	public static function getNoteSkin(?skinName:String):FlxAtlasFrames
 	{
-		if (!initialized) init();
-
-		var skin:String = skinName != null ? skinName : currentSkin;
-		var skinData:NoteSkinData = availableSkins.get(skin);
-
-		if (skinData == null)
-		{
-			trace('Skin "$skin" not found, using Default');
-			skinData = availableSkins.get("Default");
-		}
-
-		return loadAtlas(skinData.normal, skinData.folder);
+		var d = getCurrentSkinData(skinName);
+		return loadAtlas(d.texture, d.folder);
 	}
 
 	public static function getPixelNoteSkin(?skinName:String):FlxAtlasFrames
 	{
-		if (!initialized) init();
-
-		var skin:String = skinName != null ? skinName : currentSkin;
-		var skinData:NoteSkinData = availableSkins.get(skin);
-
-		if (skinData == null || skinData.pixel == null)
-		{
-			trace('Pixel skin not found for "$skin", using Default');
-			skinData = availableSkins.get("Default");
-		}
-
-		return loadAtlas(skinData.pixel != null ? skinData.pixel : skinData.normal, skinData.folder);
+		var d = getCurrentSkinData(skinName);
+		return loadAtlas(d.texture, d.folder);
 	}
 
-	// NUEVO: Getter para los holds de notas pixel
 	public static function getPixelNoteEnds(?skinName:String):FlxAtlasFrames
 	{
-		if (!initialized) init();
-
-		var skin:String = skinName != null ? skinName : currentSkin;
-		var skinData:NoteSkinData = availableSkins.get(skin);
-
-		if (skinData == null || skinData.pixelEnds == null)
-		{
-			trace('Pixel ends not found for "$skin", using Default');
-			skinData = availableSkins.get("Default");
-		}
-
-		return loadAtlas(skinData.pixelEnds != null ? skinData.pixelEnds : skinData.pixel, skinData.folder);
+		var d = getCurrentSkinData(skinName);
+		var tex = d.holdTexture != null ? d.holdTexture : d.texture;
+		return loadAtlas(tex, d.folder);
 	}
 
-	public static function getSkinAnimations(?skinName:String):NoteAnimations
+	public static function getSkinAnimations(?skinName:String):NoteSkinAnims
 	{
-		if (!initialized) init();
-
-		var skin:String = skinName != null ? skinName : currentSkin;
-		var skinData:NoteSkinData = availableSkins.get(skin);
-
-		if (skinData == null || skinData.animations == null)
-		{
-			skinData = availableSkins.get("Default");
-		}
-
-		return skinData.animations;
+		var d = getCurrentSkinData(skinName);
+		return d != null ? d.animations : null;
 	}
 
-	// ==================== GETTERS - SPLASHES ====================
+	// ==================== HELPER: AÑADIR ANIMACIÓN ====================
+
+	/**
+	 * Añade una animación a un FlxSprite desde un campo de animación del JSON.
+	 *
+	 * Acepta:
+	 *   String:         "purple0"                     → addByPrefix("purple0")
+	 *   Objeto prefix:  {"prefix":"purple0"}           → addByPrefix("purple0")
+	 *   Objeto indices: {"indices":[4],"framerate":24} → animation.add([4], 24)
+	 *
+	 * Si def es null no hace nada — la animación simplemente no se registra.
+	 *
+	 * @param overrideLoop  When non-null, forces the loop flag regardless of what
+	 *                      the JSON definition says.  Pass `false` for strum
+	 *                      animations (pressed / confirm) so that
+	 *                      animation.curAnim.finished works correctly and the
+	 *                      auto-reset to 'static' fires as expected.
+	 *                      Passing `null` (default) preserves the original
+	 *                      behaviour: loop comes from the def object, or defaults
+	 *                      to false for indices/prefix objects and false for plain
+	 *                      strings (previously defaulted to Flixel's loop=true).
+	 */
+	public static function addAnimToSprite(sprite:FlxSprite, animName:String, def:Dynamic, ?overrideLoop:Bool):Void
+	{
+		if (sprite == null || def == null)
+			return;
+
+		if (Std.isOfType(def, String))
+		{
+			// Plain string shorthand — no framerate or loop info in the def.
+			// Default to loop=false so strum confirm/pressed finish correctly.
+			// overrideLoop takes precedence when explicitly supplied.
+			var loop:Bool = overrideLoop != null ? overrideLoop : false;
+			sprite.animation.addByPrefix(animName, cast(def, String), 24, loop);
+			return;
+		}
+
+		var prefix:String = def.prefix;
+		var indices:Dynamic = def.indices;
+		var fps:Int = def.framerate != null ? Std.int(def.framerate) : 24;
+		// overrideLoop wins; fall back to the def's loop field; then false.
+		var loop:Bool = overrideLoop != null ? overrideLoop : (def.loop != null ? (def.loop == true) : false);
+
+		if (indices != null)
+		{
+			var arr:Array<Int> = [];
+			for (v in (indices : Array<Dynamic>))
+				arr.push(Std.int(v));
+			sprite.animation.add(animName, arr, fps, loop);
+		}
+		else if (prefix != null)
+		{
+			sprite.animation.addByPrefix(animName, prefix, fps, loop);
+		}
+		else
+		{
+			trace('[NoteSkinSystem] addAnimToSprite: "$animName" no tiene prefix ni indices — ignorado');
+		}
+	}
+
+	// ==================== GETTERS DE SPLASH ====================
 
 	public static function getSplashTexture(?splashName:String):FlxAtlasFrames
 	{
-		if (!initialized) init();
-
-		var splash:String = splashName != null ? splashName : currentSplash;
-		var splashData:NoteSplashData = availableSplashes.get(splash);
-
-		if (splashData == null)
-		{
-			trace('Splash "$splash" not found, using Default');
-			splashData = availableSplashes.get("Default");
-		}
-
-		// Para splashes, el folder está en assets/splashes/ no en assets/skins/
-		return loadAtlasSplash(splashData.assets, splashData.folder);
+		if (!initialized)
+			init();
+		var d = availableSplashes.get(splashName != null ? splashName : currentSplash);
+		if (d == null)
+			d = availableSplashes.get("Default");
+		return loadAtlasSplash(d.assets, d.folder);
 	}
 
 	public static function getSplashAnimations(?splashName:String):SplashAnimations
 	{
-		if (!initialized) init();
-
-		var splash:String = splashName != null ? splashName : currentSplash;
-		var splashData:NoteSplashData = availableSplashes.get(splash);
-
-		if (splashData == null)
-		{
-			trace('Splash "$splash" not found, using Default');
-			splashData = availableSplashes.get("Default");
-		}
-
-		return splashData.animations;
+		if (!initialized)
+			init();
+		var d = availableSplashes.get(splashName != null ? splashName : currentSplash);
+		if (d == null)
+			d = availableSplashes.get("Default");
+		return d.animations;
 	}
 
 	public static function getSplashData(?splashName:String):NoteSplashData
 	{
-		if (!initialized) init();
-
-		var splash:String = splashName != null ? splashName : currentSplash;
-		var splashData:NoteSplashData = availableSplashes.get(splash);
-
-		if (splashData == null)
-		{
-			splashData = availableSplashes.get("Default");
-		}
-
-		return splashData;
+		if (!initialized)
+			init();
+		var d = availableSplashes.get(splashName != null ? splashName : currentSplash);
+		if (d == null)
+			d = availableSplashes.get("Default");
+		return d;
 	}
 
-	// ==================== UTILIDADES ====================
+	// ==================== HOLD COVERS ====================
 
-	private static function loadAtlas(assets:Dynamic, ?folderName:String):FlxAtlasFrames
+	public static function holdCoverExists(color:String, ?splashName:String):Bool
 	{
-		if (assets == null || assets.path == null)
+		if (!initialized)
+			init();
+		var d = availableSplashes.get(splashName != null ? splashName : currentSplash);
+		if (d == null)
+			d = availableSplashes.get("Default");
+		return splashAssetExists('holdCover$color', d.folder != null ? d.folder : "Default");
+	}
+
+	public static function getHoldCoverTexture(color:String, ?splashName:String):FlxAtlasFrames
+	{
+		if (!initialized)
+			init();
+		var d = availableSplashes.get(splashName != null ? splashName : currentSplash);
+		if (d == null)
+			d = availableSplashes.get("Default");
+		var folder = d.folder != null ? d.folder : "Default";
+		var path = 'holdCover$color';
+		if (!splashAssetExists(path, folder))
+			return null;
+		try
 		{
-			trace('Invalid assets, loading default');
+			return Paths.splashSprite('$folder/$path');
+		}
+		catch (e:Dynamic)
+		{
+			return Paths.splashSprite('Default/$path');
+		}
+	}
+
+	public static function getCurrentSplashFolder():String
+	{
+		if (!initialized)
+			init();
+		var d = availableSplashes.get(currentSplash);
+		if (d == null)
+			d = availableSplashes.get("Default");
+		return d.folder != null ? d.folder : "Default";
+	}
+
+	// ==================== LISTAS ====================
+
+	public static function getSkinList():Array<String>
+	{
+		if (!initialized)
+			init();
+		return [for (k in availableSkins.keys()) k];
+	}
+
+	public static function getSplashList():Array<String>
+	{
+		if (!initialized)
+			init();
+		return [for (k in availableSplashes.keys()) k];
+	}
+
+	public static function getSkinInfo(n:String):NoteSkinData
+	{
+		if (!initialized)
+			init();
+		return availableSkins.get(n);
+	}
+
+	public static function getSplashInfo(n:String):NoteSplashData
+	{
+		if (!initialized)
+			init();
+		return availableSplashes.get(n);
+	}
+
+	// ==================== CARGA INTERNA DE ATLAS ====================
+
+	private static function loadAtlas(tex:Dynamic, ?folderName:String):FlxAtlasFrames
+	{
+		if (tex == null || tex.path == null)
+		{
+			trace('[NoteSkinSystem] loadAtlas: textura inválida, usando Default');
 			return Paths.skinSprite('Default/NOTE_assets');
 		}
 
-		var path:String = assets.path;
-		var type:String = assets.type != null ? assets.type : "sparrow";
+		var path:String = tex.path;
+		var type:String = tex.type != null ? tex.type : "sparrow";
 		var folder:String = folderName != null ? folderName : "Default";
 
 		if (!assetExists(path, folder))
 		{
-			trace('Asset not found at $folder/$path, loading default');
+			trace('[NoteSkinSystem] loadAtlas: "$folder/$path" no encontrado, usando Default');
 			return Paths.skinSprite('Default/NOTE_assets');
 		}
 
 		try
 		{
-			trace('Loading atlas: $folder/$path (type: $type)');
 			switch (type.toLowerCase())
 			{
 				case "sparrow":
 					return Paths.skinSprite('$folder/$path');
-				
+
 				case "packer":
 					return Paths.skinSpriteTxt('$folder/$path');
-				
+
 				case "image":
 					var graphic = FlxG.bitmap.add('assets/skins/$folder/$path.png');
-					
-					// Detect the type of image pixel
-					var cols:Int = 17;
-					var rows:Int = 17;
-					
-					// arrows-pixels.png is 7x7, arrowEnds.png is 8x2
-					var pathLower:String = path.toLowerCase();
-					if (pathLower.contains("end") || pathLower.contains("hold"))
-					{
-						cols = 7;
-						rows = 6;
-						trace('Detected pixel holds/ends: $cols×$rows');
-					}
-					else
-					{
-						trace('Detected pixel notes: $cols×$rows');
-					}
-					
-					return FlxAtlasFramesExt.fromGraphic(graphic, cols, rows);
+					// Dimensiones de frame leídas del JSON — sin hardcodeo por nombre de archivo
+					var fw:Int = tex.frameWidth != null ? Std.int(tex.frameWidth) : 17;
+					var fh:Int = tex.frameHeight != null ? Std.int(tex.frameHeight) : 17;
+					trace('[NoteSkinSystem] image atlas $folder/$path — frame: ${fw}×${fh}px');
+					return FlxAtlasFramesExt.fromGraphic(graphic, fw, fh);
+
 				default:
-					trace('Unknown atlas type: $type, using sparrow');
+					trace('[NoteSkinSystem] tipo desconocido "$type" en $folder/$path, usando sparrow');
 					return Paths.skinSprite('$folder/$path');
 			}
 		}
 		catch (e:Dynamic)
 		{
-			trace('Error loading atlas at $folder/$path: $e');
+			trace('[NoteSkinSystem] Error cargando $folder/$path: $e');
 			return Paths.skinSprite('Default/NOTE_assets');
 		}
 	}
 
-	// NUEVO: Método específico para cargar splashes (que están en assets/splashes/)
 	private static function loadAtlasSplash(assets:Dynamic, ?folderName:String):FlxAtlasFrames
 	{
 		if (assets == null || assets.path == null)
-		{
-			trace('Invalid splash assets, loading default');
 			return Paths.splashSprite('Default/noteSplashes');
-		}
-
-		var path:String = assets.path;
-		var type:String = assets.type != null ? assets.type : "sparrow";
-		var folder:String = folderName != null ? folderName : "Default";
-
+		var path = (assets.path : String);
+		var type = assets.type != null ? (assets.type : String) : "sparrow";
+		var folder = folderName != null ? folderName : "Default";
 		if (!splashAssetExists(path, folder))
-		{
-			trace('Splash asset not found at $folder/$path, loading default');
 			return Paths.splashSprite('Default/noteSplashes');
-		}
-
 		try
 		{
-			trace('Loading splash atlas: $folder/$path (type: $type)');
 			switch (type.toLowerCase())
 			{
 				case "sparrow":
 					return Paths.splashSprite('$folder/$path');
-				
 				case "packer":
-					return FlxAtlasFrames.fromSpriteSheetPacker(
-						FlxG.bitmap.add('assets/splashes/$folder/$path.png'),
-						'assets/splashes/$folder/$path.txt'
-					);
-				
+					return FlxAtlasFrames.fromSpriteSheetPacker(FlxG.bitmap.add('assets/splashes/$folder/$path.png'), 'assets/splashes/$folder/$path.txt');
 				case "image":
-					var graphic = FlxG.bitmap.add('assets/splashes/$folder/$path.png');
-					return FlxAtlasFramesExt.fromGraphic(graphic, graphic.width, graphic.height);
-				
+					var g = FlxG.bitmap.add('assets/splashes/$folder/$path.png');
+					return FlxAtlasFramesExt.fromGraphic(g, g.width, g.height);
 				default:
-					trace('Unknown atlas type: $type, using sparrow');
 					return Paths.splashSprite('$folder/$path');
 			}
 		}
 		catch (e:Dynamic)
 		{
-			trace('Error loading splash atlas at $folder/$path: $e');
 			return Paths.splashSprite('Default/noteSplashes');
 		}
 	}
@@ -826,159 +1182,42 @@ class NoteSkinSystem
 		#end
 	}
 
-	// ==================== HOLD COVERS ====================
-	
-	/**
-	 * NUEVO: Verificar si existe holdCover para un color específico en el splash actual
-	 */
-	public static function holdCoverExists(color:String, ?splashName:String):Bool
-	{
-		if (!initialized) init();
-		
-		var splash:String = splashName != null ? splashName : currentSplash;
-		var splashData:NoteSplashData = availableSplashes.get(splash);
-		
-		if (splashData == null)
-			splashData = availableSplashes.get("Default");
-		
-		var folder:String = splashData.folder != null ? splashData.folder : "Default";
-		var path:String = 'holdCover$color';
-		
-		return splashAssetExists(path, folder);
-	}
-	
-	/**
-	 * NUEVO: Obtener texture de holdCover para un color específico
-	 */
-	public static function getHoldCoverTexture(color:String, ?splashName:String):FlxAtlasFrames
-	{
-		if (!initialized) init();
-		
-		var splash:String = splashName != null ? splashName : currentSplash;
-		var splashData:NoteSplashData = availableSplashes.get(splash);
-		
-		if (splashData == null)
-		{
-			trace('Splash "$splash" not found, using Default');
-			splashData = availableSplashes.get("Default");
-		}
-		
-		var folder:String = splashData.folder != null ? splashData.folder : "Default";
-		var path:String = 'holdCover$color';
-		
-		// Verificar si existe
-		if (!splashAssetExists(path, folder))
-		{
-			trace('HoldCover not found for color $color in folder $folder');
-			return null;
-		}
-		
-		try
-		{
-			trace('Loading holdCover: $folder/$path');
-			return Paths.splashSprite('$folder/$path');
-		}
-		catch (e:Dynamic)
-		{
-			return Paths.splashSprite('Default/'+path);
-			trace('Error loading holdCover at $folder/$path: $e');
-		}
-	}
-	
-	/**
-	 * NUEVO: Obtener el folder del splash actual (para debug)
-	 */
-	public static function getCurrentSplashFolder():String
-	{
-		if (!initialized) init();
-		
-		var splashData:NoteSplashData = availableSplashes.get(currentSplash);
-		
-		if (splashData == null)
-			splashData = availableSplashes.get("Default");
-		
-		return splashData.folder != null ? splashData.folder : "Default";
-	}
-
-	// ==================== LISTAS ====================
-
-	public static function getSkinList():Array<String>
-	{
-		if (!initialized) init();
-		
-		var skins:Array<String> = [];
-		for (key in availableSkins.keys())
-		{
-			skins.push(key);
-		}
-		return skins;
-	}
-
-	public static function getSplashList():Array<String>
-	{
-		if (!initialized) init();
-		
-		var splashes:Array<String> = [];
-		for (key in availableSplashes.keys())
-		{
-			splashes.push(key);
-		}
-		return splashes;
-	}
-
-	public static function getSkinInfo(skinName:String):NoteSkinData
-	{
-		if (!initialized) init();
-		return availableSkins.get(skinName);
-	}
-
-	public static function getSplashInfo(splashName:String):NoteSplashData
-	{
-		if (!initialized) init();
-		return availableSplashes.get(splashName);
-	}
-
 	// ==================== EXPORT EXAMPLES ====================
 
+	/**
+	 * Genera un JSON de ejemplo para una skin normal.
+	 * Colócalo en:  assets/skins/MiSkin/skin.json
+	 */
 	public static function exportSkinExample():String
 	{
-		var example:NoteSkinData = {
+		return Json.stringify({
 			name: "Custom Skin",
 			author: "Your Name",
 			description: "My custom note skin",
-			normal: {
-				path: "skins/custom/notes",
+			texture: {
+				path: "NOTE_assets",
 				type: "sparrow",
 				scale: 0.7,
 				antialiasing: true
 			},
-			pixel: {
-				path: "skins/custom/notes-pixel",
-				type: "image",
-				antialiasing: false
-			},
-			pixelEnds: {
-				path: "skins/custom/notes-pixel-ends",
-				type: "image",
-				antialiasing: false
-			},
+			confirmOffset: true,
 			animations: {
-				left: "purple note",
-				down: "blue note",
-				up: "green note",
-				right: "red note",
-				leftHold: "purple hold",
-				downHold: "blue hold",
-				upHold: "green hold",
-				rightHold: "red hold",
-				leftHoldEnd: "purple tail",
-				downHoldEnd: "blue tail",
-				upHoldEnd: "green tail",
-				rightHoldEnd: "red tail",
-				strumLeft: "left arrow",
-				strumDown: "down arrow",
-				strumUp: "up arrow",
-				strumRight: "right arrow",
+				left: "purple0",
+				down: "blue0",
+				up: "green0",
+				right: "red0",
+				leftHold: "purple hold piece",
+				downHold: "blue hold piece",
+				upHold: "green hold piece",
+				rightHold: "red hold piece",
+				leftHoldEnd: "pruple end hold",
+				downHoldEnd: "blue hold end",
+				upHoldEnd: "green hold end",
+				rightHoldEnd: "red hold end",
+				strumLeft: "arrowLEFT",
+				strumDown: "arrowDOWN",
+				strumUp: "arrowUP",
+				strumRight: "arrowRIGHT",
 				strumLeftPress: "left press",
 				strumDownPress: "down press",
 				strumUpPress: "up press",
@@ -988,19 +1227,81 @@ class NoteSkinSystem
 				strumUpConfirm: "up confirm",
 				strumRightConfirm: "right confirm"
 			}
-		};
+		}, null, "  ");
+	}
 
-		return Json.stringify(example, null, "  ");
+	/**
+	 * Genera un JSON de ejemplo para una skin PIXEL.
+	 * Colócalo en:  assets/skins/MiSkinPixel/skin.json
+	 *
+	 * Para asociarlo a un stage:
+	 *   NoteSkinSystem.registerStageSkin("miStage", "MiSkinPixel");
+	 * O desde PlayState:
+	 *   NoteSkinSystem.applySkinForStage(PlayState.curStage);
+	 */
+	public static function exportPixelSkinExample():String
+	{
+		return Json.stringify({
+			name: "Custom Pixel Skin",
+			author: "Your Name",
+			description: "My pixel note skin",
+			isPixel: true,
+			confirmOffset: false,
+			sustainOffset: 30,
+			holdStretch: 1.19,
+			texture: {
+				path: "arrows-pixels",
+				type: "image",
+				frameWidth: 17,
+				frameHeight: 17,
+				scale: 6.0,
+				antialiasing: false
+			},
+			holdTexture: {
+				path: "arrowEnds",
+				type: "image",
+				frameWidth: 7,
+				frameHeight: 6,
+				scale: 6.0,
+				antialiasing: false
+			},
+			animations: {
+				left: {indices: [4]},
+				down: {indices: [5]},
+				up: {indices: [6]},
+				right: {indices: [7]},
+				leftHold: {indices: [0]},
+				downHold: {indices: [1]},
+				upHold: {indices: [2]},
+				rightHold: {indices: [3]},
+				leftHoldEnd: {indices: [4]},
+				downHoldEnd: {indices: [5]},
+				upHoldEnd: {indices: [6]},
+				rightHoldEnd: {indices: [7]},
+				strumLeft: {indices: [0]},
+				strumDown: {indices: [1]},
+				strumUp: {indices: [2]},
+				strumRight: {indices: [3]},
+				strumLeftPress: {indices: [4, 8], framerate: 12},
+				strumDownPress: {indices: [5, 9], framerate: 12},
+				strumUpPress: {indices: [6, 10], framerate: 12},
+				strumRightPress: {indices: [7, 11], framerate: 12},
+				strumLeftConfirm: {indices: [12, 16], framerate: 24},
+				strumDownConfirm: {indices: [13, 17], framerate: 24},
+				strumUpConfirm: {indices: [14, 18], framerate: 24},
+				strumRightConfirm: {indices: [15, 19], framerate: 24}
+			}
+		}, null, "  ");
 	}
 
 	public static function exportSplashExample():String
 	{
-		var example:NoteSplashData = {
+		return Json.stringify({
 			name: "Custom Splash",
 			author: "Your Name",
-			description: "My custom splash effect",
+			description: "My custom splash",
 			assets: {
-				path: "splashes/custom/splash",
+				path: "noteSplashes",
 				type: "sparrow",
 				scale: 1.0,
 				antialiasing: true,
@@ -1014,8 +1315,6 @@ class NoteSkinSystem
 				framerate: 24,
 				randomFramerateRange: 3
 			}
-		};
-
-		return Json.stringify(example, null, "  ");
+		}, null, "  ");
 	}
 }

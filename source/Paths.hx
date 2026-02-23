@@ -77,9 +77,10 @@ class Paths
 
 	/**
 	 * Tamaño máximo de cada caché (atlas + bitmaps por separado).
-	 * 50 es suficiente para evitar re-cargar assets frecuentes sin acumular demasiada RAM.
+	 * 60 cubre personajes + stage + skins + UI sin acumular excesiva RAM.
+	 * Con 25 era demasiado agresivo y provocaba evictions/reloads frecuentes.
 	 */
-	public static var maxCacheSize:Int = 25; // Reducido: 25 atlas/bitmaps es suficiente para FNF sin acumular RAM
+	public static var maxCacheSize:Int = 60;
 
 	/** Desactivar para depuración — todos los accesos van a disco. */
 	public static var cacheEnabled:Bool = true;

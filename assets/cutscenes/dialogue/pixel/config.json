@@ -6,23 +6,23 @@
   "portraits": {
     "senpai_normal": {
       "name": "senpai_normal",
-      "fileName": "senpaiPortrait",
+      "fileName": "portrait-senpai",
       "x": -20,
       "y": 40,
       "scaleX": 5.4,
       "scaleY": 5.4,
       "flipX": false,
-      "animation": "Senpai Portrait Enter"
+      "animation": "portraitEnter"
     },
     "bf_normal": {
       "name": "bf_normal",
-      "fileName": "bfPortrait",
+      "fileName": "portrait-boyfriend",
       "x": 0,
       "y": 40,
       "scaleX": 5.4,
       "scaleY": 5.4,
       "flipX": false,
-      "animation": "Boyfriend portrait enter"
+      "animation": "portraitEnter"
     }
   },
   "boxes": {

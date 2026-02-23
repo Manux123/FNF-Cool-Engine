@@ -10,7 +10,6 @@ import flixel.FlxG;
 class DataInfoUI extends Sprite
 {
     public var fps:FPSCount;
-    public var dataText:FPSCount.DataText;
     public var gpuStats:GPUStatsText;
 
     public static var saveData:Dynamic = '';
@@ -24,27 +23,25 @@ class DataInfoUI extends Sprite
         saveData = GPUStatsText.getSaveData();
         gpuEnabled = (saveData != null && saveData.gpuRendering != null) ? saveData.gpuRendering : true;
         
+        fps = new FPSCount(x, y, 0xFFFFFF);
+        
         // Fondo más grande para incluir GPU stats
         var bg:Shape = new Shape();
         bg.graphics.beginFill(0x000000, 0.6);
-        bg.graphics.drawRect(x, y, 150, 70); // Aumentado de 70 a 110
+        bg.graphics.drawRect(x, y, 210, 20); // Aumentado de 70 a 110
         bg.graphics.endFill();
         addChild(bg);
         /*
         if (gpuEnabled)
             bg.height = 110;*/
 
-        fps = new FPSCount(x, y, 0xFFFFFF);
-        dataText = new DataText(x, y + 15);
         gpuStats = new GPUStatsText(x, y + 45); // Nueva sección de GPU stats
 
         addChild(fps);
-        addChild(dataText);
         addChild(gpuStats);
 
         this.visible = true;
         fps.visible = true;
-        dataText.visible = true;
         
         // Acceso seguro a FlxG.save.data
         var showStats = false;

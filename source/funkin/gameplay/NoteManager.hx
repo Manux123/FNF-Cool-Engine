@@ -19,452 +19,631 @@ using StringTools;
  * Datos crudos de una nota — sin FlxSprite, sin texturas, sin DisplayObject.
  * Solo primitivas (~50 bytes/nota). Los FlxSprite se crean on-demand en spawnNotes().
  */
-typedef NoteRawData = {
-    var strumTime:Float;
-    var noteData:Int;
-    var isSustainNote:Bool;
-    var mustHitNote:Bool;
-    var strumsGroupIndex:Int;
-    var noteType:String;
-    var sustainLength:Float;
+typedef NoteRawData =
+{
+	var strumTime:Float;
+	var noteData:Int;
+	var isSustainNote:Bool;
+	var mustHitNote:Bool;
+	var strumsGroupIndex:Int;
+	var noteType:String;
+	var sustainLength:Float;
 }
 
 class NoteManager
 {
-    // === GROUPS ===
-    public var notes:FlxTypedGroup<Note>;
-    public var splashes:FlxTypedGroup<NoteSplash>;
+	// === GROUPS ===
+	public var notes:FlxTypedGroup<Note>;
+	public var splashes:FlxTypedGroup<NoteSplash>;
 
-    // Datos crudos — solo primitivas, cero FlxSprites hasta spawnNotes()
-    private var unspawnNotes:Array<NoteRawData> = [];
-    private var _unspawnIdx:Int = 0;
-    private var _prevSpawnedNote:Note = null;
+	// Datos crudos — solo primitivas, cero FlxSprites hasta spawnNotes()
+	private var unspawnNotes:Array<NoteRawData> = [];
+	private var _unspawnIdx:Int = 0;
+	private var _prevSpawnedNote:Note = null;
 
-    // === STRUMS ===
-    private var playerStrums:FlxTypedGroup<FlxSprite>;
-    private var cpuStrums:FlxTypedGroup<FlxSprite>;
-    private var playerStrumsGroup:StrumsGroup;
-    private var cpuStrumsGroup:StrumsGroup;
-    private var allStrumsGroups:Array<StrumsGroup>;
+	// === STRUMS ===
+	private var playerStrums:FlxTypedGroup<FlxSprite>;
+	private var cpuStrums:FlxTypedGroup<FlxSprite>;
+	private var playerStrumsGroup:StrumsGroup;
+	private var cpuStrumsGroup:StrumsGroup;
+	private var allStrumsGroups:Array<StrumsGroup>;
 
-    // OPTIMIZACIÓN: Caché de strums por dirección — evita forEach O(n) por nota por frame.
-    // Antes: 20 notas × 1 forEach × 4 iteraciones = 80 iteraciones+closures/frame.
-    // Ahora: lookup O(1) directo en el Map.
-    private var _playerStrumCache:Map<Int, FlxSprite> = [];
-    private var _cpuStrumCache:Map<Int, FlxSprite>    = [];
-    private var _strumGroupCache:Map<Int, Map<Int, FlxSprite>> = [];
+	// OPTIMIZACIÓN: Caché de strums por dirección — evita forEach O(n) por nota por frame.
+	// Antes: 20 notas × 1 forEach × 4 iteraciones = 80 iteraciones+closures/frame.
+	// Ahora: lookup O(1) directo en el Map.
+	private var _playerStrumCache:Map<Int, FlxSprite> = [];
+	private var _cpuStrumCache:Map<Int, FlxSprite> = [];
+	private var _strumGroupCache:Map<Int, Map<Int, FlxSprite>> = [];
 
-    // === RENDERER ===
-    private var renderer:NoteRenderer;
+	// === RENDERER ===
+	private var renderer:NoteRenderer;
 
-    // === CONFIG ===
-    public var strumLineY:Float = 50;
-    public var downscroll:Bool  = false;
-    public var middlescroll:Bool = false;
-    private var songSpeed:Float  = 1.0;
-    private static inline var CULL_DISTANCE:Float = 2000;
-    private var _scrollSpeed:Float = 0.45;
-    var downscrollOff:Float = 0;
+	// === CONFIG ===
+	public var strumLineY:Float = 50;
+	public var downscroll:Bool = false;
+	public var middlescroll:Bool = false;
 
-    // === CALLBACKS ===
-    public var onNoteMiss:Note->Void  = null;
-    public var onCPUNoteHit:Note->Void = null;
-    public var onNoteHit:Note->Void   = null;
+	private var songSpeed:Float = 1.0;
 
-    // Hold note tracking
-    private var heldNotes:Map<Int, Note>     = new Map();
-    private var holdStartTimes:Map<Int, Float> = new Map();
+	private static inline var CULL_DISTANCE:Float = 2000;
 
-    public function new(notes:FlxTypedGroup<Note>, playerStrums:FlxTypedGroup<FlxSprite>,
-            cpuStrums:FlxTypedGroup<FlxSprite>, splashes:FlxTypedGroup<NoteSplash>,
-            ?playerStrumsGroup:StrumsGroup, ?cpuStrumsGroup:StrumsGroup,
-            ?allStrumsGroups:Array<StrumsGroup>)
-    {
-        this.notes            = notes;
-        this.playerStrums     = playerStrums;
-        this.cpuStrums        = cpuStrums;
-        this.splashes         = splashes;
-        this.playerStrumsGroup = playerStrumsGroup;
-        this.cpuStrumsGroup   = cpuStrumsGroup;
-        this.allStrumsGroups  = allStrumsGroups;
-        renderer = new NoteRenderer(notes, playerStrums, cpuStrums);
+	private var _scrollSpeed:Float = 0.45;
+	var downscrollOff:Float = 0;
 
-        _rebuildStrumCache();
-    }
+	// === CALLBACKS ===
+	public var onNoteMiss:Note->Void = null;
+	public var onCPUNoteHit:Note->Void = null;
+	public var onNoteHit:Note->Void = null;
 
-    /**
-     * Reconstruye el caché de strums por dirección.
-     * Llamar después de cualquier cambio en los grupos de strums.
-     */
-    public function _rebuildStrumCache():Void
-    {
-        _playerStrumCache = [];
-        _cpuStrumCache    = [];
-        _strumGroupCache  = [];
+	// Hold note tracking
+	private var heldNotes:Map<Int, Note> = new Map();
+	private var holdStartTimes:Map<Int, Float> = new Map();
 
-        if (playerStrums != null)
-            playerStrums.forEach(function(s:FlxSprite) { _playerStrumCache.set(s.ID, s); });
-        if (cpuStrums != null)
-            cpuStrums.forEach(function(s:FlxSprite) { _cpuStrumCache.set(s.ID, s); });
+	/**
+	 * Estado de teclas presionadas — actualizado desde PlayState cada frame
+	 * (inputHandler.held[0..3]).  Usado para distinguir si un sustain está
+	 * siendo mantenido o fue soltado antes de tiempo.
+	 */
+	public var playerHeld:Array<Bool> = [false, false, false, false];
 
-        if (allStrumsGroups != null)
-        {
-            for (i in 0...allStrumsGroups.length)
-            {
-                var grp = allStrumsGroups[i];
-                if (grp == null) continue;
-                var map:Map<Int, FlxSprite> = [];
-                // StrumsGroup tiene getStrum(dir) — iteramos las 4 direcciones estándar
-                for (dir in 0...4)
-                {
-                    var s = grp.getStrum(dir);
-                    if (s != null) map.set(dir, s);
-                }
-                _strumGroupCache.set(i, map);
-            }
-        }
-    }
+	/**
+	 * Set de noteData (0-3) cuyos sustains ya contaron un miss este ciclo.
+	 * Evita sumar un miss por CADA pieza del hold; solo se cuenta UNA vez.
+	 */
+	private var _missedHoldDir:Map<Int, Bool> = new Map();
 
-    /**
-     * Genera SOLO datos crudos desde SONG data — cero FlxSprites instanciados.
-     */
-    public function generateNotes(SONG:SwagSong):Void
-    {
-        unspawnNotes     = [];
-        _unspawnIdx      = 0;
-        _prevSpawnedNote = null;
-        songSpeed        = SONG.speed;
-        _scrollSpeed     = 0.45 * FlxMath.roundDecimal(songSpeed, 2);
+	public function new(notes:FlxTypedGroup<Note>, playerStrums:FlxTypedGroup<FlxSprite>, cpuStrums:FlxTypedGroup<FlxSprite>,
+			splashes:FlxTypedGroup<NoteSplash>, ?playerStrumsGroup:StrumsGroup, ?cpuStrumsGroup:StrumsGroup, ?allStrumsGroups:Array<StrumsGroup>)
+	{
+		this.notes = notes;
+		this.playerStrums = playerStrums;
+		this.cpuStrums = cpuStrums;
+		this.splashes = splashes;
+		this.playerStrumsGroup = playerStrumsGroup;
+		this.cpuStrumsGroup = cpuStrumsGroup;
+		this.allStrumsGroups = allStrumsGroups;
+		renderer = new NoteRenderer(notes, playerStrums, cpuStrums);
 
-        for (section in SONG.notes)
-        {
-            for (songNotes in section.sectionNotes)
-            {
-                var daStrumTime:Float = songNotes[0];
-                var rawNoteData:Int   = Std.int(songNotes[1]);
-                var daNoteData:Int    = rawNoteData % 4;
-                var groupIdx:Int      = Math.floor(rawNoteData / 4);
+		_rebuildStrumCache();
+	}
 
-                var gottaHitNote:Bool;
-                if (allStrumsGroups != null && groupIdx < allStrumsGroups.length && groupIdx >= 2)
-                    gottaHitNote = !allStrumsGroups[groupIdx].isCPU;
-                else
-                {
-                    gottaHitNote = section.mustHitSection;
-                    if (groupIdx == 1) gottaHitNote = !section.mustHitSection;
-                }
+	/**
+	 * Reconstruye el caché de strums por dirección.
+	 * Llamar después de cualquier cambio en los grupos de strums.
+	 */
+	public function _rebuildStrumCache():Void
+	{
+		_playerStrumCache = [];
+		_cpuStrumCache = [];
+		_strumGroupCache = [];
 
-                var noteType:String = (songNotes.length > 3 && songNotes[3] != null) ? Std.string(songNotes[3]) : '';
-                var susLength:Float = songNotes[2];
+		if (playerStrums != null)
+			playerStrums.forEach(function(s:FlxSprite)
+			{
+				_playerStrumCache.set(s.ID, s);
+			});
+		if (cpuStrums != null)
+			cpuStrums.forEach(function(s:FlxSprite)
+			{
+				_cpuStrumCache.set(s.ID, s);
+			});
 
-                unspawnNotes.push({
-                    strumTime: daStrumTime, noteData: daNoteData,
-                    isSustainNote: false, mustHitNote: gottaHitNote,
-                    strumsGroupIndex: groupIdx, noteType: noteType,
-                    sustainLength: susLength
-                });
+		if (allStrumsGroups != null)
+		{
+			for (i in 0...allStrumsGroups.length)
+			{
+				var grp = allStrumsGroups[i];
+				if (grp == null)
+					continue;
+				var map:Map<Int, FlxSprite> = [];
+				// StrumsGroup tiene getStrum(dir) — iteramos las 4 direcciones estándar
+				for (dir in 0...4)
+				{
+					var s = grp.getStrum(dir);
+					if (s != null)
+						map.set(dir, s);
+				}
+				_strumGroupCache.set(i, map);
+			}
+		}
+	}
 
-                if (susLength > 0)
-                {
-                    var floorSus:Int = Math.floor(susLength / Conductor.stepCrochet);
-                    for (susNote in 0...floorSus)
-                    {
-                        unspawnNotes.push({
-                            strumTime: daStrumTime + (Conductor.stepCrochet * susNote) + Conductor.stepCrochet,
-                            noteData: daNoteData, isSustainNote: true,
-                            mustHitNote: gottaHitNote, strumsGroupIndex: groupIdx,
-                            noteType: noteType, sustainLength: 0
-                        });
-                    }
-                }
-            }
-        }
+	/**
+	 * Genera SOLO datos crudos desde SONG data — cero FlxSprites instanciados.
+	 */
+	public function generateNotes(SONG:SwagSong):Void
+	{
+		unspawnNotes = [];
+		_unspawnIdx = 0;
+		_prevSpawnedNote = null;
+		songSpeed = SONG.speed;
+		_scrollSpeed = 0.45 * FlxMath.roundDecimal(songSpeed, 2);
 
-        unspawnNotes.sort((a, b) -> Std.int(a.strumTime - b.strumTime));
-        trace('[NoteManager] ${unspawnNotes.length} notas en cola (datos crudos)');
-    }
+		for (section in SONG.notes)
+		{
+			for (songNotes in section.sectionNotes)
+			{
+				var daStrumTime:Float = songNotes[0];
+				var rawNoteData:Int = Std.int(songNotes[1]);
+				var daNoteData:Int = rawNoteData % 4;
+				var groupIdx:Int = Math.floor(rawNoteData / 4);
 
-    public function update(songPosition:Float):Void
-    {
-        spawnNotes(songPosition);
-        updateActiveNotes(songPosition);
-        updateStrumAnimations();
-        if (renderer != null) { renderer.updateBatcher(); renderer.updateHoldSplashes(); }
-    }
+				var gottaHitNote:Bool;
+				if (allStrumsGroups != null && groupIdx < allStrumsGroups.length && groupIdx >= 2)
+					gottaHitNote = !allStrumsGroups[groupIdx].isCPU;
+				else
+				{
+					gottaHitNote = section.mustHitSection;
+					if (groupIdx == 1)
+						gottaHitNote = !section.mustHitSection;
+				}
 
-    private function spawnNotes(songPosition:Float):Void
-    {
-        final spawnTime:Float = 1800 / songSpeed;
-        while (_unspawnIdx < unspawnNotes.length &&
-               unspawnNotes[_unspawnIdx].strumTime - songPosition < spawnTime)
-        {
-            final raw = unspawnNotes[_unspawnIdx++];
+				var noteType:String = (songNotes.length > 3 && songNotes[3] != null) ? Std.string(songNotes[3]) : '';
+				var susLength:Float = songNotes[2];
 
-            final note = renderer.getNote(raw.strumTime, raw.noteData, _prevSpawnedNote,
-                                          raw.isSustainNote, raw.mustHitNote);
-            note.strumsGroupIndex = raw.strumsGroupIndex;
-            note.noteType         = raw.noteType;
-            note.sustainLength    = raw.sustainLength;
-            note.visible = true;
-            note.active  = true;
-            note.alpha   = raw.isSustainNote ? 0.6 : 1.0;
+				unspawnNotes.push({
+					strumTime: daStrumTime,
+					noteData: daNoteData,
+					isSustainNote: false,
+					mustHitNote: gottaHitNote,
+					strumsGroupIndex: groupIdx,
+					noteType: noteType,
+					sustainLength: susLength
+				});
 
-            _prevSpawnedNote = note;
-            notes.add(note);
+				if (susLength > 0)
+				{
+					var floorSus:Int = Math.floor(susLength / Conductor.stepCrochet);
+					for (susNote in 0...floorSus)
+					{
+						unspawnNotes.push({
+							strumTime: daStrumTime + (Conductor.stepCrochet * susNote) + Conductor.stepCrochet,
+							noteData: daNoteData,
+							isSustainNote: true,
+							mustHitNote: gottaHitNote,
+							strumsGroupIndex: groupIdx,
+							noteType: noteType,
+							sustainLength: 0
+						});
+					}
+				}
+			}
+		}
 
-            // OPTIMIZACIÓN: compactar solo cuando el array sea grande Y el puntero
-            // supere el 75% — evita el splice O(n) frecuente de antes (era al 50%).
-            if (_unspawnIdx > 1024 && _unspawnIdx >= (unspawnNotes.length >> 1) + (unspawnNotes.length >> 2))
-            {
-                unspawnNotes.splice(0, _unspawnIdx);
-                _unspawnIdx = 0;
-            }
-        }
-    }
+		unspawnNotes.sort((a, b) -> Std.int(a.strumTime - b.strumTime));
+		trace('[NoteManager] ${unspawnNotes.length} notas en cola (datos crudos)');
+	}
 
-    private function updateActiveNotes(songPosition:Float):Void
-    {
-        final members = notes.members;
-        final len     = members.length;
-        // Precalcular hitWindow una vez por frame, no una vez por nota
-        final hitWindow:Float = Conductor.safeZoneOffset;
+	public function update(songPosition:Float):Void
+	{
+		spawnNotes(songPosition);
+		updateActiveNotes(songPosition);
+		updateStrumAnimations();
+		if (renderer != null)
+		{
+			renderer.updateBatcher();
+			renderer.updateHoldSplashes();
+		}
+	}
 
-        for (i in 0...len)
-        {
-            final note = members[i];
-            if (note == null || !note.alive) continue;
+	private function spawnNotes(songPosition:Float):Void
+	{
+		final spawnTime:Float = 1800 / songSpeed;
+		while (_unspawnIdx < unspawnNotes.length && unspawnNotes[_unspawnIdx].strumTime - songPosition < spawnTime)
+		{
+			final raw = unspawnNotes[_unspawnIdx++];
 
-            updateNotePosition(note, songPosition);
+			final note = renderer.getNote(raw.strumTime, raw.noteData, _prevSpawnedNote, raw.isSustainNote, raw.mustHitNote);
+			note.strumsGroupIndex = raw.strumsGroupIndex;
+			note.noteType = raw.noteType;
+			note.sustainLength = raw.sustainLength;
+			note.visible = true;
+			note.active = true;
+			note.alpha = raw.isSustainNote ? 0.6 : 1.0;
 
-            // ── CPU notes ──────────────────────────────────────────────────
-            if (!note.mustPress && note.strumTime <= songPosition)
-            {
-                handleCPUNote(note);
-                continue;
-            }
+			_prevSpawnedNote = note;
+			notes.add(note);
+			// Sin splice: el array NoteRawData es ~50 bytes/nota (trivial en RAM).
+			// El splice O(n) causaba un hiccup visible al 75% de la canción.
+		}
+	}
 
-            // ── MISS: nota del jugador que pasó la ventana ─────────────────
-            // BUG ANTERIOR: tooLate se marcaba pero nunca se llamaba missNote().
-            // La nota simplemente desaparecía al salirse de pantalla via
-            // shouldRemoveNote → removeNote, sin disparar onNoteMiss.
-            //
-            // FIX (inspirado en Codename): detectar tooLate inmediatamente
-            // y llamar missNote(), que dispara onNoteMiss, aplica penalización
-            // y recicla la nota al pool. Sin esperar a que salga de pantalla.
-            if (note.mustPress && !note.wasGoodHit)
-            {
-                // note.tooLate puede ser true por Note.update() (hitWindowCache)
-                // o por la comprobación de aquí abajo con safeZoneOffset
-                if (note.tooLate || songPosition > note.strumTime + hitWindow)
-                {
-                    note.tooLate = true; // asegurar que quede marcada
-                    missNote(note);
-                    continue;
-                }
-            }
+	private function updateActiveNotes(songPosition:Float):Void
+	{
+		final members = notes.members;
+		final len = members.length;
+		final hitWindow:Float = Conductor.safeZoneOffset;
 
-            // ── Visibilidad y culling ──────────────────────────────────────
-            if (note.y < -CULL_DISTANCE || note.y > FlxG.height + CULL_DISTANCE)
-                note.visible = false;
-            else
-            {
-                note.visible = true;
-                if (!note.mustPress && middlescroll) note.alpha = 0;
-            }
-        }
-    }
+		// Limpiar el set de miss-por-hold al inicio de cada frame
+		_missedHoldDir.clear();
 
-    private function handleCPUNote(note:Note):Void
-    {
-        note.wasGoodHit = true;
-        if (onCPUNoteHit != null) onCPUNoteHit(note);
-        handleStrumAnimation(note.noteData, note.strumsGroupIndex, false);
-        if (!note.isSustainNote && !FlxG.save.data.middlescroll && FlxG.save.data.notesplashes)
-            createNormalSplash(note, false);
-        removeNote(note);
-    }
+		for (i in 0...len)
+		{
+			final note = members[i];
+			if (note == null || !note.alive)
+				continue;
 
-    private function updateStrumAnimations():Void
-    {
-        _resetStrumsGroup(cpuStrums);
-        _resetStrumsGroup(playerStrums);
-    }
+			updateNotePosition(note, songPosition);
 
-    private static inline function _resetStrumsGroup(group:FlxTypedGroup<FlxSprite>):Void
-    {
-        if (group == null) return;
-        final members = group.members;
-        final len     = members.length;
-        for (i in 0...len)
-        {
-            final strum = members[i];
-            if (strum == null || !strum.alive) continue;
-            final strumNote = cast(strum, funkin.gameplay.notes.StrumNote);
-            if (strumNote != null
-                && strumNote.animation.curAnim != null
-                && strumNote.animation.curAnim.name.startsWith('confirm')
-                && strumNote.animation.curAnim.finished)
-                strumNote.playAnim('static');
-        }
-    }
+			// ── CPU notes ──────────────────────────────────────────────────
+			if (!note.mustPress && note.strumTime <= songPosition)
+			{
+				handleCPUNote(note);
+				continue;
+			}
 
-    private function handleStrumAnimation(noteData:Int, groupIndex:Int, isPlayer:Bool):Void
-    {
-        var strum = getStrumForDirection(noteData, groupIndex, isPlayer);
-        if (strum != null)
-        {
-            var strumNote = cast(strum, funkin.gameplay.notes.StrumNote);
-            if (strumNote != null) strumNote.playAnim('confirm', true);
-        }
-    }
+			// ── Notas del jugador ──────────────────────────────────────────
+			if (note.mustPress && !note.wasGoodHit)
+			{
+				// ── SUSTAIN NOTES: lógica especial ─────────────────────────
+				// Los sustains NO se eliminan por ventana de tiempo como las
+				// notas normales.  Solo se eliminan si:
+				//   a) La tecla está mantenida  → se procesan como hit en processSustains()
+				//   b) La tecla NO está mantenida Y el strumTime ya pasó → miss (fade)
+				//
+				// FIX del bug "notas largas se rompen al final":
+				//   El bug ocurría porque los sustains del jugador entraban en el
+				//   mismo bloque de miss que las notas normales y se eliminaban
+				//   pieza a pieza cuando el strumTime superaba hitWindow.
+				if (note.isSustainNote)
+				{
+					if (songPosition > note.strumTime + hitWindow)
+					{
+						var dir = note.noteData;
+						if (playerHeld[dir])
+						{
+							// Tecla mantenida: marcar como golpeada y eliminar limpiamente
+							note.wasGoodHit = true;
+							removeNote(note);
+						}
+						else
+						{
+							// Tecla soltada: fallar el sustain
+							// Desvanecer la nota en lugar de eliminarla (feedback visual)
+							note.alpha = 0.2;
+							note.tooLate = true;
 
-    private function updateNotePosition(note:Note, songPosition:Float):Void
-    {
-        var noteY:Float;
-        if (downscroll)
-            noteY = strumLineY + (songPosition - note.strumTime) * _scrollSpeed;
-        else
-            noteY = strumLineY - (songPosition - note.strumTime) * _scrollSpeed;
-        note.y = noteY;
+							// Contar UN miss por grupo de hold, no uno por pieza
+							if (!_missedHoldDir.exists(dir))
+							{
+								_missedHoldDir.set(dir, true);
+								if (onNoteMiss != null)
+									onNoteMiss(note);
+							}
+							// Eliminar la pieza desvanecida después de que pasa de pantalla
+							removeNote(note);
+						}
+					}
+					// Si strumTime todavía no pasó, no hacer nada — processSustains() lo maneja
+					continue;
+				}
 
-        var strum = getStrumForDirection(note.noteData, note.strumsGroupIndex, note.mustPress);
-        if (strum != null)
-        {
-            note.angle   = strum.angle;
-            note.scale.x = strum.scale.x;
-            if (!note.isSustainNote) note.scale.y = strum.scale.y;
-            note.updateHitbox();
-            if (!note.isSustainNote)
-                note.alpha = FlxMath.bound(strum.alpha, 0.05, 1.0);
-            else
-                note.alpha = FlxMath.bound(strum.alpha, 0.05, 0.7);
-            note.x = strum.x + (strum.width - note.width) / 2;
-        }
+				// ── NOTAS NORMALES: miss si pasan la ventana ───────────────
+				if (note.tooLate || songPosition > note.strumTime + hitWindow)
+				{
+					note.tooLate = true;
+					missNote(note);
+					continue;
+				}
+			}
 
-        if (note.isSustainNote && downscroll && !note.mustPress)
-        {
-            var strumLineThreshold = (strumLineY + Note.swagWidth / 2);
-            var noteEndPos = note.y - note.offset.y * note.scale.y + note.height;
-            if (noteEndPos >= strumLineThreshold)
-            {
-                var clipRect = note.clipRect;
-                if (clipRect == null) clipRect = new flixel.math.FlxRect();
-                clipRect.width  = note.frameWidth * 2;
-                clipRect.height = (strumLineThreshold - note.y) / note.scale.y;
-                if (FlxG.save.data.downscroll) downscrollOff = 10;
-                clipRect.y = note.frameHeight - clipRect.height + downscrollOff;
-                note.clipRect = clipRect;
-            }
-        }
-    }
+			// ── Visibilidad y culling ──────────────────────────────────────
+			if (note.y < -CULL_DISTANCE || note.y > FlxG.height + CULL_DISTANCE)
+				note.visible = false;
+			else
+			{
+				note.visible = true;
+				if (!note.mustPress && middlescroll)
+					note.alpha = 0;
+			}
+		}
+	}
 
-    private function removeNote(note:Note):Void
-    {
-        note.kill();
-        notes.remove(note, true);
-        if (renderer != null) renderer.recycleNote(note);
-    }
+	private function handleCPUNote(note:Note):Void
+	{
+		note.wasGoodHit = true;
+		if (onCPUNoteHit != null)
+			onCPUNoteHit(note);
+		// Solo animar el strum en la nota cabeza, NO en las piezas de sustain.
+		// Las piezas de sustain se procesan una por una y si llamaran playAnim('confirm')
+		// en cada una reiniciarían la animación antes de que termine, causando loop infinito.
+		if (!note.isSustainNote)
+			handleStrumAnimation(note.noteData, note.strumsGroupIndex, false);
+		if (!note.isSustainNote && !FlxG.save.data.middlescroll && FlxG.save.data.notesplashes)
+			createNormalSplash(note, false);
 
-    public function hitNote(note:Note, rating:String):Void
-    {
-        if (note.wasGoodHit) return;
-        note.wasGoodHit = true;
-        handleStrumAnimation(note.noteData, note.strumsGroupIndex, true);
-        if (rating == "sick")
-        {
-            if (note.isSustainNote) handleSustainNoteHit(note);
-            else createNormalSplash(note, true);
-        }
-        removeNote(note);
-        if (onNoteHit != null) onNoteHit(note);
-    }
+		removeNote(note);
+	}
 
-    private function handleSustainNoteHit(note:Note):Void
-    {
-        var direction = note.noteData;
-        if (!heldNotes.exists(direction))
-        {
-            heldNotes.set(direction, note);
-            holdStartTimes.set(direction, Conductor.songPosition);
-            var strum = getStrumForDirection(direction, note.strumsGroupIndex, true);
-            if (strum != null && renderer != null)
-            {
-                var splash = renderer.createHoldStartSplash(note, strum.x, strum.y);
-                if (splash != null) splashes.add(splash);
-                var cont = renderer.startHoldContinuousSplash(note, strum.x, strum.y);
-                if (cont != null) splashes.add(cont);
-            }
-        }
-        // No llamar removeNote aquí — hitNote() ya lo hace después
-    }
+	private function updateStrumAnimations():Void
+	{
+		_resetStrumsGroup(cpuStrums);
+		_resetStrumsGroup(playerStrums);
+	}
 
-    public function releaseHoldNote(direction:Int):Void
-    {
-        if (!heldNotes.exists(direction)) return;
-        var note  = heldNotes.get(direction);
-        var strum = getStrumForDirection(direction, note.strumsGroupIndex, true);
-        if (strum != null && renderer != null) renderer.stopHoldSplash(note, strum.x, strum.y);
-        heldNotes.remove(direction);
-        holdStartTimes.remove(direction);
-    }
+	private static inline function _resetStrumsGroup(group:FlxTypedGroup<FlxSprite>):Void
+	{
+		if (group == null)
+			return;
+		final members = group.members;
+		final len = members.length;
+		for (i in 0...len)
+		{
+			final strum = members[i];
+			if (strum == null || !strum.alive)
+				continue;
+			final strumNote = cast(strum, funkin.gameplay.notes.StrumNote);
+			if (strumNote != null
+				&& strumNote.animation.curAnim != null
+				&& strumNote.animation.curAnim.name.startsWith('confirm')
+				&& strumNote.animation.curAnim.finished)
+				strumNote.playAnim('static');
+		}
+	}
 
-    private function createNormalSplash(note:Note, isPlayer:Bool):Void
-    {
-        if (renderer == null) return;
-        var strum = getStrumForDirection(note.noteData, note.strumsGroupIndex, isPlayer);
-        if (strum != null)
-        {
-            var splash = renderer.getSplash(strum.x, strum.y, note.noteData);
-            if (splash != null) splashes.add(splash);
-        }
-    }
+	private function handleStrumAnimation(noteData:Int, groupIndex:Int, isPlayer:Bool):Void
+	{
+		var strum = getStrumForDirection(noteData, groupIndex, isPlayer);
+		if (strum != null)
+		{
+			var strumNote = cast(strum, funkin.gameplay.notes.StrumNote);
+			if (strumNote != null)
+				strumNote.playAnim('confirm', true);
+		}
+	}
 
-    /**
-     * Obtiene el strum para una dirección dada.
-     * OPTIMIZADO: usa caché Map<Int, FlxSprite> para O(1) en vez de forEach O(n).
-     * El forEach anterior creaba una closure nueva cada llamada — ahora es solo
-     * un Map lookup. Con 20 notas en pantalla esto elimina ~80 closures por frame.
-     */
-    private function getStrumForDirection(direction:Int, strumsGroupIndex:Int, isPlayer:Bool):FlxSprite
-    {
-        // Grupos adicionales (strumsGroupIndex >= 2) — caché por grupo
-        if (allStrumsGroups != null && allStrumsGroups.length > 0 && strumsGroupIndex >= 2)
-        {
-            var groupMap = _strumGroupCache.get(strumsGroupIndex);
-            if (groupMap != null) return groupMap.get(direction);
-        }
+	private function updateNotePosition(note:Note, songPosition:Float):Void
+	{
+		var noteY:Float;
+		if (downscroll)
+			noteY = strumLineY + (songPosition - note.strumTime) * _scrollSpeed;
+		else
+			noteY = strumLineY - (songPosition - note.strumTime) * _scrollSpeed;
+		note.y = noteY;
 
-        // Grupos 0 y 1 — caché por dirección
-        return isPlayer ? _playerStrumCache.get(direction) : _cpuStrumCache.get(direction);
-    }
+		var strum = getStrumForDirection(note.noteData, note.strumsGroupIndex, note.mustPress);
+		if (strum != null)
+		{
+			note.angle = strum.angle;
+			// updateHitbox() solo cuando la escala realmente cambió (evita
+			// recalcular dimensiones en cada frame para cada nota activa).
+			final newSX = strum.scale.x;
+			final newSY = note.isSustainNote ? note.scale.y : strum.scale.y;
+			final scaleChanged = note.scale.x != newSX || note.scale.y != newSY;
+			note.scale.x = newSX;
+			if (!note.isSustainNote)
+				note.scale.y = newSY;
+			if (scaleChanged)
+				note.updateHitbox();
+			if (!note.isSustainNote)
+				note.alpha = FlxMath.bound(strum.alpha, 0.05, 1.0);
+			else
+				note.alpha = FlxMath.bound(strum.alpha, 0.05, 0.7);
+			note.x = strum.x + (strum.width - note.width) / 2;
+		}
 
-    public function missNote(note:Note):Void
-    {
-        if (note == null || note.wasGoodHit) return;
-        if (heldNotes.exists(note.noteData)) releaseHoldNote(note.noteData);
-        if (onNoteMiss != null) onNoteMiss(note);
-        removeNote(note);
-    }
+		if (note.isSustainNote && downscroll && !note.mustPress)
+		{
+			var strumLineThreshold = (strumLineY + Note.swagWidth / 2);
+			var noteEndPos = note.y - note.offset.y * note.scale.y + note.height;
+			if (noteEndPos >= strumLineThreshold)
+			{
+				var clipRect = note.clipRect;
+				if (clipRect == null)
+					clipRect = new flixel.math.FlxRect();
+				clipRect.width = note.frameWidth * 2;
+				clipRect.height = (strumLineThreshold - note.y) / note.scale.y;
+				if (FlxG.save.data.downscroll)
+					downscrollOff = 10;
+				clipRect.y = note.frameHeight - clipRect.height + downscrollOff;
+				note.clipRect = clipRect;
+			}
+		}
+	}
 
-    public function destroy():Void
-    {
-        unspawnNotes     = [];
-        _unspawnIdx      = 0;
-        _prevSpawnedNote = null;
-        heldNotes.clear();
-        holdStartTimes.clear();
-        _playerStrumCache = [];
-        _cpuStrumCache    = [];
-        _strumGroupCache  = [];
-        if (renderer != null) { renderer.clearPools(); renderer.destroy(); }
-    }
+	private function removeNote(note:Note):Void
+	{
+		note.kill();
+		notes.remove(note, true);
+		if (renderer != null)
+			renderer.recycleNote(note);
+	}
 
-    public function getPoolStats():String
-        return renderer != null ? renderer.getPoolStats() : "No renderer";
+	public function hitNote(note:Note, rating:String):Void
+	{
+		if (note.wasGoodHit)
+			return;
+		note.wasGoodHit = true;
+		handleStrumAnimation(note.noteData, note.strumsGroupIndex, true);
+		if (rating == "sick")
+		{
+			if (note.isSustainNote)
+				handleSustainNoteHit(note);
+			else
+				createNormalSplash(note, true);
+		}
+		removeNote(note);
+		if (onNoteHit != null)
+			onNoteHit(note);
+	}
 
-    public function toggleBatching():Void
-        if (renderer != null) renderer.toggleBatching();
+	private function handleSustainNoteHit(note:Note):Void
+	{
+		var direction = note.noteData;
+		if (!heldNotes.exists(direction))
+		{
+			heldNotes.set(direction, note);
+			holdStartTimes.set(direction, Conductor.songPosition);
+			var strum = getStrumForDirection(direction, note.strumsGroupIndex, true);
+			if (strum != null && renderer != null)
+			{
+				var splash = renderer.createHoldStartSplash(note, strum.x, strum.y);
+				if (splash != null)
+					splashes.add(splash);
+				var cont = renderer.startHoldContinuousSplash(note, strum.x, strum.y);
+				if (cont != null)
+					splashes.add(cont);
+			}
+		}
+		// No llamar removeNote aquí — hitNote() ya lo hace después
+	}
 
-    public function toggleHoldSplashes():Void
-        if (renderer != null) renderer.toggleHoldSplashes();
+	public function releaseHoldNote(direction:Int):Void
+	{
+		if (!heldNotes.exists(direction))
+			return;
+		var note = heldNotes.get(direction);
+		var strum = getStrumForDirection(direction, note.strumsGroupIndex, true);
+		if (strum != null && renderer != null)
+			renderer.stopHoldSplash(note, strum.x, strum.y);
+		heldNotes.remove(direction);
+		holdStartTimes.remove(direction);
+	}
+
+	private function createNormalSplash(note:Note, isPlayer:Bool):Void
+	{
+		if (renderer == null)
+			return;
+		var strum = getStrumForDirection(note.noteData, note.strumsGroupIndex, isPlayer);
+		if (strum != null)
+		{
+			var splash = renderer.getSplash(strum.x, strum.y, note.noteData);
+			if (splash != null)
+				splashes.add(splash);
+		}
+	}
+
+	/**
+	 * Obtiene el strum para una dirección dada.
+	 * OPTIMIZADO: usa caché Map<Int, FlxSprite> para O(1) en vez de forEach O(n).
+	 * El forEach anterior creaba una closure nueva cada llamada — ahora es solo
+	 * un Map lookup. Con 20 notas en pantalla esto elimina ~80 closures por frame.
+	 */
+	private function getStrumForDirection(direction:Int, strumsGroupIndex:Int, isPlayer:Bool):FlxSprite
+	{
+		// Grupos adicionales (strumsGroupIndex >= 2) — caché por grupo
+		if (allStrumsGroups != null && allStrumsGroups.length > 0 && strumsGroupIndex >= 2)
+		{
+			var groupMap = _strumGroupCache.get(strumsGroupIndex);
+			if (groupMap != null)
+				return groupMap.get(direction);
+		}
+
+		// Grupos 0 y 1 — caché por dirección
+		return isPlayer ? _playerStrumCache.get(direction) : _cpuStrumCache.get(direction);
+	}
+
+	public function missNote(note:Note):Void
+	{
+		if (note == null || note.wasGoodHit)
+			return;
+		// Para sustains: ya se contó el miss en updateActiveNotes, no volver a contar
+		if (heldNotes.exists(note.noteData))
+			releaseHoldNote(note.noteData);
+		if (onNoteMiss != null && !note.isSustainNote)
+			onNoteMiss(note);
+		removeNote(note);
+	}
+
+	// ─── Rewind Restart (V-Slice style) ──────────────────────────────────────
+
+	/**
+	 * Actualiza SOLO la posición visual de las notas activas — sin spawn ni kill.
+	 * Llamar durante la animación de rewind para que las notas deslicen hacia atrás.
+	 */
+	public function updatePositionsForRewind(songPosition:Float):Void
+	{
+		final members = notes.members;
+		final len = members.length;
+		for (i in 0...len)
+		{
+			final note = members[i];
+			if (note == null || !note.alive)
+				continue;
+			updateNotePosition(note, songPosition);
+
+			// Culling suave: ocultar si sale de pantalla, pero no matar
+			if (note.y < -CULL_DISTANCE || note.y > FlxG.height + CULL_DISTANCE)
+				note.visible = false;
+			else
+				note.visible = true;
+		}
+		if (renderer != null)
+			renderer.updateBatcher();
+	}
+
+	/**
+	 * Mata todas las notas activas y retrocede el índice de spawn
+	 * al punto correcto para `targetTime` (generalmente inicio del countdown).
+	 * Llamar al finalizar la animación de rewind.
+	 */
+	public function rewindTo(targetTime:Float):Void
+	{
+		// Matar todas las notas vivas
+		var i = notes.members.length - 1;
+		while (i >= 0)
+		{
+			var n = notes.members[i];
+			if (n != null && n.alive)
+				removeNote(n);
+			i--;
+		}
+
+		_prevSpawnedNote = null;
+		heldNotes.clear();
+		holdStartTimes.clear();
+		_missedHoldDir.clear();
+		playerHeld = [false, false, false, false];
+
+		// BUGFIX escala pixel: limpiar el pool de notas para que las nuevas se creen
+		// desde cero con la skin activa correcta. Sin esto, notas recicladas del pool
+		// pueden tener _noteScale = 0.7 (Default) si la skin se corrompió durante el juego,
+		// causando que las notas pixel (scale 6.0) aparezcan en tamaño de notas normales.
+		if (renderer != null)
+			renderer.clearPools();
+
+		// Retroceder el índice de spawn:
+		// queremos empezar a spawnear desde notas cuyo strumTime ≥ targetTime - spawnWindow
+		final spawnWindow:Float = 1800.0 / (songSpeed > 0 ? songSpeed : 1.0);
+		var cutoff:Float = targetTime - spawnWindow;
+
+		_unspawnIdx = 0;
+		// Si targetTime es negativo (countdown), cutoff también es negativo → _unspawnIdx = 0 (correcto)
+		if (cutoff > 0)
+		{
+			while (_unspawnIdx < unspawnNotes.length && unspawnNotes[_unspawnIdx].strumTime < cutoff)
+				_unspawnIdx++;
+		}
+
+		trace('[NoteManager] rewindTo($targetTime) → _unspawnIdx=$_unspawnIdx / ${unspawnNotes.length}');
+	}
+
+	public function destroy():Void
+	{
+		unspawnNotes = [];
+		_unspawnIdx = 0;
+		_prevSpawnedNote = null;
+		heldNotes.clear();
+		holdStartTimes.clear();
+		_missedHoldDir.clear();
+		_playerStrumCache = [];
+		_cpuStrumCache = [];
+		_strumGroupCache = [];
+		if (renderer != null)
+		{
+			renderer.clearPools();
+			renderer.destroy();
+		}
+	}
+
+	public function getPoolStats():String
+		return renderer != null ? renderer.getPoolStats() : "No renderer";
+
+	public function toggleBatching():Void
+		if (renderer != null)
+			renderer.toggleBatching();
+
+	public function toggleHoldSplashes():Void
+		if (renderer != null)
+			renderer.toggleHoldSplashes();
 }

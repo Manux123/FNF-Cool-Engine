@@ -15,8 +15,8 @@ package funkin.gameplay.notes;
  */
 class NotePool
 {
-	static inline var INITIAL_SIZE : Int = 32; // Reducido: se expande bajo demanda
-	static inline var MAX_SIZE     : Int = 128; // Reducido: más de 128 notas en pool es desperdicio
+	static inline var INITIAL_SIZE : Int = 16; // Reducido: NoteRenderer tiene su propio pool; esto es solo precarga mínima
+	static inline var MAX_SIZE     : Int = 64;  // Reducido: suficiente para cualquier canción FNF sin desperdiciar RAM
 
 	static var notePool    : Array<Note> = [];
 	static var sustainPool : Array<Note> = [];
@@ -119,12 +119,24 @@ class NotePool
 	/** Limpia el pool (entre canciones). */
 	public static function clear():Void
 	{
+		// FIX: Destruir notas explícitamente antes de limpiar el array.
+		// Sin esto, las notas se vuelven huérfanas sin decrementar graphic.useCount,
+		// impidiendo que FlxG.bitmap libere las texturas entre canciones.
+		for (n in notePool)    if (n != null) n.destroy();
+		for (n in sustainPool) if (n != null) n.destroy();
 		notePool.resize(0);    noteCount    = 0;
 		sustainPool.resize(0); sustainCount = 0;
 		inUse  = 0;
 		hits   = 0;
 		misses = 0;
-		prewarm(INITIAL_SIZE);
+		totalCreated = 0;
+		totalRecycled = 0;
+
+		// CRÍTICO: Marcar como no inicializado para que la próxima llamada a init()
+		// haga prewarm() con el curStage correcto de la nueva canción.
+		// NO llamar prewarm() aquí — el bitmap cache aún no está cargado para el
+		// nuevo stage, así que las notas creadas ahora tendrían texturas inválidas.
+		initialized = false;
 	}
 
 	/** Destruye completamente el pool (al salir del juego). */

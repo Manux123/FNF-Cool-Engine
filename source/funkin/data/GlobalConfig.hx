@@ -3,6 +3,7 @@ package funkin.data;
 import haxe.Json;
 import sys.FileSystem;
 import sys.io.File;
+import mods.ModManager;
 
 /**
  * GlobalConfig — Configuración global de UI y noteskin.
@@ -43,8 +44,11 @@ class GlobalConfig
 	/** Nombre del script de UI en assets/ui/{ui}/script.hx */
 	public var ui:String = 'default';
 
-	/** Nombre del noteskin en assets/noteskins/{noteSkin}/ */
+	/** Nombre del noteskin en assets/skins/{noteSkin}/skin.json */
 	public var noteSkin:String = 'default';
+
+	/** Nombre del splash en assets/splashes/{noteSplash}/splash.json */
+	public var noteSplash:String = 'Default';
 
 	/** Colores de la health bar [izq, der] en hex */
 	public var healthColors:Null<Array<String>> = null;
@@ -56,9 +60,22 @@ class GlobalConfig
 	static function load():GlobalConfig
 	{
 		var cfg = new GlobalConfig();
-		var path = 'assets/data/config/global.json';
 
-		if (!FileSystem.exists(path))
+		// Prioridad: mod activo → assets base
+		var path:String = null;
+		#if sys
+		final modPath = ModManager.resolveInMod('data/config/global.json');
+		if (modPath != null) path = modPath;
+		else
+		{
+			final basePath = 'assets/data/config/global.json';
+			if (FileSystem.exists(basePath)) path = basePath;
+		}
+		#else
+		path = 'assets/data/config/global.json';
+		#end
+
+		if (path == null)
 		{
 			trace('[GlobalConfig] No existe global.json, usando defaults');
 			return cfg;
@@ -69,10 +86,11 @@ class GlobalConfig
 			var raw:Dynamic = Json.parse(File.getContent(path));
 
 			if (raw.ui != null)          cfg.ui         = Std.string(raw.ui);
-			if (raw.noteSkin != null)     cfg.noteSkin   = Std.string(raw.noteSkin);
+			if (raw.noteSkin != null)    cfg.noteSkin   = Std.string(raw.noteSkin);
+			if (raw.noteSplash != null)  cfg.noteSplash = Std.string(raw.noteSplash);
 			if (raw.healthColors != null) cfg.healthColors = cast raw.healthColors;
 
-			trace('[GlobalConfig] Cargado — ui="${cfg.ui}" noteSkin="${cfg.noteSkin}"');
+			trace('[GlobalConfig] Cargado — ui="${cfg.ui}" noteSkin="${cfg.noteSkin}" noteSplash="${cfg.noteSplash}"');
 		}
 		catch (e)
 		{
@@ -93,6 +111,7 @@ class GlobalConfig
 			var data = {
 				ui:           ui,
 				noteSkin:     noteSkin,
+				noteSplash:   noteSplash,
 				healthColors: healthColors
 			};
 			File.saveContent(path, Json.stringify(data, null, '\t'));

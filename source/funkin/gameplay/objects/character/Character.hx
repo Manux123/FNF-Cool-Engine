@@ -328,8 +328,9 @@ class Character extends FunkinSprite
 	 * Vuelve al idle/dance forzadamente, sin pasar por los guards de dance().
 	 * Usado cuando update() decide que es hora de salir del sing (holdTimer expirado)
 	 * pero dance() lo bloquea porque getCurAnimName() todavia es sing*.
+	 * También llamado desde CharacterController.forceIdleAll() en el restart.
 	 */
-	function returnToIdle():Void
+	public function returnToIdle():Void
 	{
 		var hasDanceAnims = animOffsets.exists('danceLeft') && animOffsets.exists('danceRight');
 		if (hasDanceAnims)

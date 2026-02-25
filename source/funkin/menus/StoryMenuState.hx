@@ -761,7 +761,8 @@ class StoryMenuState extends funkin.states.MusicBeatState
 			if (stopspamming == false)
 			{
 				FlxG.sound.play(Paths.sound('menus/confirmMenu'));
-				FlxG.camera.flash(FlxColor.WHITE, 1);
+				if (FlxG.save.data.flashing)
+					FlxG.camera.flash(FlxColor.WHITE, 1);
 
 				if (grpWeekText != null
 					&& grpWeekText.members != null

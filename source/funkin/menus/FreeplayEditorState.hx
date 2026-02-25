@@ -651,7 +651,8 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 		reloadSongList();
 
 		FlxG.sound.play(Paths.sound('menus/cancelMenu'));
-		FlxG.camera.flash(FlxColor.RED, 0.3);
+		if (FlxG.save.data.flashing)
+			FlxG.camera.flash(FlxColor.RED, 0.3);
 	}
 
 	function saveJSON():Void

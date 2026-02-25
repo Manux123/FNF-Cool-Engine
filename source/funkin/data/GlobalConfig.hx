@@ -14,7 +14,6 @@ import mods.ModManager;
  * {
  *   "ui":          "default",    // script de UI por defecto
  *   "noteSkin":    "arrows",     // noteskin por defecto
- *   "healthColors": ["#FF0000", "#66FF33"]
  * }
  *
  * Jerarquía de prioridad al resolver:
@@ -49,9 +48,6 @@ class GlobalConfig
 
 	/** Nombre del splash en assets/splashes/{noteSplash}/splash.json */
 	public var noteSplash:String = 'Default';
-
-	/** Colores de la health bar [izq, der] en hex */
-	public var healthColors:Null<Array<String>> = null;
 
 	// ─── Carga ──────────────────────────────────────────────────────────────────
 
@@ -88,7 +84,6 @@ class GlobalConfig
 			if (raw.ui != null)          cfg.ui         = Std.string(raw.ui);
 			if (raw.noteSkin != null)    cfg.noteSkin   = Std.string(raw.noteSkin);
 			if (raw.noteSplash != null)  cfg.noteSplash = Std.string(raw.noteSplash);
-			if (raw.healthColors != null) cfg.healthColors = cast raw.healthColors;
 
 			trace('[GlobalConfig] Cargado — ui="${cfg.ui}" noteSkin="${cfg.noteSkin}" noteSplash="${cfg.noteSplash}"');
 		}
@@ -111,8 +106,7 @@ class GlobalConfig
 			var data = {
 				ui:           ui,
 				noteSkin:     noteSkin,
-				noteSplash:   noteSplash,
-				healthColors: healthColors
+				noteSplash:   noteSplash
 			};
 			File.saveContent(path, Json.stringify(data, null, '\t'));
 			trace('[GlobalConfig] Guardado en $path');

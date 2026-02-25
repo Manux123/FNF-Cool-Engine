@@ -7,16 +7,16 @@ import sys.io.File;
 import haxe.Json;
 
 /**
- * ModManager — Manages installed mods, activation, and previews.
+ * ModManager — Gestiona mods instalados, activación y previews.
  *
- * ─── Expected structure of a mod ───────────────────────────────────────────
+ * ─── Estructura esperada de un mod ─────────────────────────────────────────
  *
  *   mods/
  *   └── my-mod/
  *       ├── mod.json          ← metadatos (name, author, version, priority…)
- *       ├── preview.mp4       ← preview video in the selector  (opcional)
- *       ├── preview.png       ← preview image if there is no video (opcional)
- *       ├── icon.png          ← icon square of mod            (opcional)
+ *       ├── preview.mp4       ← preview video en el selector  (opcional)
+ *       ├── preview.png       ← preview imagen si no hay video (opcional)
+ *       ├── icon.png          ← icono cuadrado del mod         (opcional)
  *       ├── songs/
  *       ├── characters/
  *       ├── stages/
@@ -27,22 +27,29 @@ import haxe.Json;
  *       ├── scripts/
  *       └── videos/
  *
- * ─── mod.json fields extras ──────────────────────────────────────────────────
+ * ─── Campos de mod.json ──────────────────────────────────────────────────────
  *   {
- *     "name":        "My Mod",
- *     "description": "Description of mod",
- *     "author":      "NameAuthor",
- *     "version":     "1.0.0",
- *     "priority":    0,          ← order in the list (largest = first)
- *     "color":       "FF5599",   ← accent color RRGGBB (without #)
- *     "website":     "https://…",
- *     "enabled":     true        ← You can set it to false to disable it without deleting it
+ *     "name":           "My Mod",
+ *     "description":    "Descripción del mod",
+ *     "author":         "NombreAutor",
+ *     "version":        "1.0.0",
+ *     "priority":       0,
+ *     "color":          "FF5599",
+ *     "website":        "https://…",
+ *     "enabled":        true,
+ *     "startupDefault": false    ← true = arranca siempre con este mod
  *   }
  */
 class ModManager
 {
-	/** Mod actualmente cargado. `null` = modo base (solo assets/). */
+	/** Mod actualmente cargado. null = modo base. */
 	public static var activeMod(default, null):String = null;
+
+	/**
+	 * Mod que arranca por defecto aunque no haya sesión guardada.
+	 * Se detecta desde mod.json startupDefault:true (mayor priority gana).
+	 */
+	public static var startupMod(default, null):Null<String> = null;
 
 	/** Lista de mods instalados, ordenada por priority desc. */
 	public static var installedMods(default, null):Array<ModInfo> = [];
@@ -53,18 +60,21 @@ class ModManager
 	/** Carpeta raíz donde viven los mods. */
 	public static inline var MODS_FOLDER = 'mods';
 
-	// Cache de estado enabled/disabled (persiste entre llamadas a init)
+	/** Sub-carpetas estándar que se crean al crear un mod nuevo. */
+	static var STD_FOLDERS = [
+		'characters', 'cutscenes', 'data', 'fonts', 'images',
+		'music', 'noteType', 'shaders', 'skins', 'songs',
+		'sounds', 'splashes', 'stages', 'states'
+	];
+
 	private static var _enabledMap:Map<String, Bool> = new Map();
 
 	// ─── Init ─────────────────────────────────────────────────────────────────
 
-	/**
-	 * Escanea `mods/` y llena `installedMods`.
-	 * Llamar una vez al inicio. Es seguro llamarlo varias veces (recarga).
-	 */
 	public static function init():Void
 	{
 		installedMods = [];
+		startupMod    = null;
 
 		#if sys
 		if (!FileSystem.exists(MODS_FOLDER) || !FileSystem.isDirectory(MODS_FOLDER))
@@ -73,52 +83,47 @@ class ModManager
 			return;
 		}
 
-		// ── Extraer mods comprimidos (.zip / .rar) ANTES de escanear carpetas ──
-		// Permite cargar mods directamente desde archives sin descomprimirlos
-		// manualmente. Si ya fueron extraídos y el archivo no cambió, es un no-op.
 		final extracted = ModExtractor.extractAll();
 		if (extracted.length > 0)
 			trace('[ModManager] Mods extraídos de archivo: ' + extracted.join(', '));
 
-		// Leer lista de mods desactivados persistida
 		_loadEnabledState();
 
 		for (entry in FileSystem.readDirectory(MODS_FOLDER))
 		{
 			final modPath = '$MODS_FOLDER/$entry';
-			if (!FileSystem.isDirectory(modPath))
-				continue;
+			if (!FileSystem.isDirectory(modPath)) continue;
 
 			final info = _loadModInfo(entry, modPath);
 			if (info != null)
 			{
 				installedMods.push(info);
-				trace('[ModManager] Mod encontrado: ${info.id} (${info.name}) priority=${info.priority} enabled=${info.enabled}');
+				trace('[ModManager] Mod: ${info.id} (${info.name}) prio=${info.priority} enabled=${info.enabled} startup=${info.startupDefault}');
 			}
 		}
 
-		// Ordenar por priority descendente, luego alfabético
 		installedMods.sort((a, b) ->
 		{
-			if (b.priority != a.priority)
-				return b.priority - a.priority;
+			if (b.priority != a.priority) return b.priority - a.priority;
 			return a.name < b.name ? -1 : 1;
 		});
+
+		// Detectar startup mod (primer habilitado con startupDefault=true por priority)
+		for (m in installedMods)
+			if (m.startupDefault && m.enabled) { startupMod = m.id; break; }
+
+		if (startupMod != null)
+			trace('[ModManager] Startup mod: "$startupMod"');
 		#end
 
 		trace('[ModManager] ${installedMods.length} mods instalados.');
 		#if sys
-		loadActiveState(); // restaura el mod activo de la sesión anterior
+		loadActiveState();
 		#end
 	}
 
 	// ─── Activación ───────────────────────────────────────────────────────────
 
-	/**
-	 * Activa un mod por su ID. Pasa `null` para volver al modo base.
-	 * Si el mod está desactivado, se activa igual (el enabled es solo para
-	 * el selector; el override explícito siempre funciona).
-	 */
 	public static function setActive(modId:Null<String>):Void
 	{
 		if (modId == null)
@@ -126,212 +131,217 @@ class ModManager
 			activeMod = null;
 			trace('[ModManager] Mod desactivado — modo base.');
 			_saveActiveState();
-			if (onModChanged != null)
-				onModChanged(null);
+			if (onModChanged != null) onModChanged(null);
 			return;
 		}
-
 		#if sys
-		if (!isInstalled(modId))
-		{
-			trace('[ModManager] Mod "$modId" no encontrado. Se mantiene el mod actual.');
-			return;
-		}
+		if (!isInstalled(modId)) { trace('[ModManager] Mod "$modId" no encontrado.'); return; }
 		#end
-
 		activeMod = modId;
 		trace('[ModManager] Mod activo: "$activeMod"');
 		_saveActiveState();
-		if (onModChanged != null)
-			onModChanged(activeMod);
+		if (onModChanged != null) onModChanged(activeMod);
 	}
 
-	/** Desactiva el mod activo. */
-	public static inline function deactivate():Void
-		setActive(null);
+	public static inline function deactivate():Void setActive(null);
+	public static inline function isActive():Bool return activeMod != null;
 
-	/** ¿Hay algún mod activo? */
-	public static inline function isActive():Bool
-		return activeMod != null;
-
-	/** ¿Está instalado `modId`? */
 	public static function isInstalled(modId:String):Bool
 	{
 		#if sys
 		return FileSystem.exists('$MODS_FOLDER/$modId') && FileSystem.isDirectory('$MODS_FOLDER/$modId');
 		#else
-		for (m in installedMods)
-			if (m.id == modId)
-				return true;
+		for (m in installedMods) if (m.id == modId) return true;
 		return false;
 		#end
 	}
 
 	// ─── Enable / Disable ─────────────────────────────────────────────────────
 
-	/** Activa o desactiva un mod en el selector (no lo borra). */
 	public static function setEnabled(modId:String, enabled:Bool):Void
 	{
 		_enabledMap.set(modId, enabled);
-
-		// Actualizar el objeto ModInfo
-		for (m in installedMods)
-			if (m.id == modId)
-			{
-				m.enabled = enabled;
-				break;
-			}
-
-		// Si desactivamos el mod activo, desactivar también
-		if (!enabled && activeMod == modId)
-			deactivate();
-
+		for (m in installedMods) if (m.id == modId) { m.enabled = enabled; break; }
+		if (!enabled && activeMod == modId) deactivate();
 		_saveEnabledState();
 	}
 
-	/** Alterna el estado enabled del mod. */
 	public static function toggleEnabled(modId:String):Bool
 	{
-		final cur = isEnabled(modId);
-		setEnabled(modId, !cur);
-		return !cur;
+		final cur = isEnabled(modId); setEnabled(modId, !cur); return !cur;
 	}
 
-	/** ¿Está este mod habilitado en el selector? */
 	public static function isEnabled(modId:String):Bool
 	{
-		if (_enabledMap.exists(modId))
-			return _enabledMap.get(modId);
-		// Por defecto enabled
-		for (m in installedMods)
-			if (m.id == modId)
-				return m.enabled;
+		if (_enabledMap.exists(modId)) return _enabledMap.get(modId);
+		for (m in installedMods) if (m.id == modId) return m.enabled;
 		return true;
+	}
+
+	// ─── Startup Mod ──────────────────────────────────────────────────────────
+
+	/**
+	 * Establece `modId` como startup mod (arranca siempre con él).
+	 * Pasa null para limpiar el startup mod actual.
+	 * Persiste el cambio en el mod.json correspondiente.
+	 */
+	public static function setStartupMod(modId:Null<String>):Void
+	{
+		#if sys
+		// Quitar flag del anterior startup mod
+		if (startupMod != null && startupMod != modId)
+		{
+			final prev = getInfo(startupMod);
+			if (prev != null) { prev.startupDefault = false; _writeModJson(prev); }
+		}
+		startupMod = modId;
+		if (modId != null)
+		{
+			final info = getInfo(modId);
+			if (info != null)
+			{
+				info.startupDefault = true;
+				_writeModJson(info);
+				trace('[ModManager] Startup mod = "$modId"');
+			}
+		}
+		else trace('[ModManager] Startup mod limpiado.');
+		#end
+	}
+
+	/**
+	 * Aplica el startup mod si no hay sesión guardada.
+	 * Llamar tras init() en el arranque del juego.
+	 */
+	public static function applyStartupMod():Void
+	{
+		if (activeMod != null) return;
+		if (startupMod != null)
+		{
+			trace('[ModManager] Aplicando startup mod: "$startupMod"');
+			activeMod = startupMod;
+			if (onModChanged != null) onModChanged(activeMod);
+		}
+	}
+
+	// ─── Creación / Edición de mods ───────────────────────────────────────────
+
+	/**
+	 * Crea un nuevo mod con la estructura de carpetas estándar.
+	 * @param id    Identificador/carpeta (ej: "my-cool-mod")
+	 * @param info  Campos del mod.json
+	 * @return El ModInfo creado o null si hubo error
+	 */
+	public static function createMod(id:String, info:ModInfo):Null<ModInfo>
+	{
+		#if sys
+		final modPath = '$MODS_FOLDER/$id';
+		if (FileSystem.exists(modPath))
+		{
+			trace('[ModManager] createMod: la carpeta "$modPath" ya existe.');
+			return null;
+		}
+		try
+		{
+			FileSystem.createDirectory(modPath);
+			for (sub in STD_FOLDERS) FileSystem.createDirectory('$modPath/$sub');
+			info.id     = id;
+			info.folder = modPath;
+			_writeModJson(info);
+			installedMods.push(info);
+			installedMods.sort((a, b) ->
+			{
+				if (b.priority != a.priority) return b.priority - a.priority;
+				return a.name < b.name ? -1 : 1;
+			});
+			trace('[ModManager] Mod creado: "$id"');
+			return info;
+		}
+		catch (e:Dynamic) { trace('[ModManager] Error creando mod "$id": $e'); return null; }
+		#else
+		return null;
+		#end
+	}
+
+	/**
+	 * Guarda los cambios de un ModInfo existente en disco.
+	 */
+	public static function saveModInfo(info:ModInfo):Void
+	{
+		#if sys
+		for (i in 0...installedMods.length)
+			if (installedMods[i].id == info.id) { installedMods[i] = info; break; }
+		_writeModJson(info);
+		trace('[ModManager] mod.json actualizado: ${info.id}');
+		#end
 	}
 
 	// ─── Resolución de paths ──────────────────────────────────────────────────
 
-	/**
-	 * Intenta encontrar `file` en el mod activo.
-	 * Devuelve `null` si no existe o no hay mod activo.
-	 */
 	public static function resolveInMod(file:String):Null<String>
 	{
-		if (activeMod == null)
-			return null;
-		final base = '$MODS_FOLDER/$activeMod';
-		// Resolve file in the active mod's root folder
-		final path = '$base/$file';
-		#if sys
-		if (FileSystem.exists(path))
-			return path;
-		return null;
-		#else
-		if (openfl.utils.Assets.exists(path))
-			return path;
-		return null;
-		#end
+		if (activeMod == null) return null;
+		final path = '$MODS_FOLDER/$activeMod/$file';
+		#if sys return FileSystem.exists(path) ? path : null;
+		#else return openfl.utils.Assets.exists(path) ? path : null; #end
 	}
 
-	/**
-	 * Resuelve `file` en un mod específico sin cambiar el activo.
-	 */
 	public static function resolveInSpecific(modId:Null<String>, file:String):Null<String>
 	{
-		if (modId == null)
-			return null;
+		if (modId == null) return null;
 		final path = '$MODS_FOLDER/$modId/$file';
-		#if sys
-		return FileSystem.exists(path) ? path : null;
-		#else
-		return openfl.utils.Assets.exists(path) ? path : null;
-		#end
+		#if sys return FileSystem.exists(path) ? path : null;
+		#else return openfl.utils.Assets.exists(path) ? path : null; #end
 	}
 
-	/** Ruta a la carpeta del mod activo. `null` si no hay mod. */
 	public static inline function modRoot():Null<String>
 		return activeMod != null ? '$MODS_FOLDER/$activeMod' : null;
 
 	// ─── Preview ──────────────────────────────────────────────────────────────
 
-	/**
-	 * Devuelve la ruta al vídeo de preview del mod, o `null` si no existe.
-	 * Busca: `mods/{id}/preview.mp4`
-	 */
 	public static function previewVideo(modId:String):Null<String>
 	{
-		final path = '$MODS_FOLDER/$modId/preview.mp4';
-		#if sys
-		return FileSystem.exists(path) ? path : null;
-		#else
-		return null;
-		#end
+		final p = '$MODS_FOLDER/$modId/preview.mp4';
+		#if sys return FileSystem.exists(p) ? p : null; #else return null; #end
 	}
 
-	/**
-	 * Devuelve la ruta a la imagen de preview del mod, o `null` si no existe.
-	 * Busca: `mods/{id}/preview.png`, luego `preview.jpg`
-	 */
 	public static function previewImage(modId:String):Null<String>
 	{
 		#if sys
 		for (ext in ['png', 'jpg', 'jpeg'])
 		{
-			final path = '$MODS_FOLDER/$modId/preview.$ext';
-			if (FileSystem.exists(path))
-				return path;
+			final p = '$MODS_FOLDER/$modId/preview.$ext';
+			if (FileSystem.exists(p)) return p;
 		}
 		return null;
-		#else
-		return null;
-		#end
+		#else return null; #end
 	}
 
-	/**
-	 * Devuelve la ruta al icono del mod, o `null` si no existe.
-	 * Busca: `mods/{id}/icon.png`
-	 */
 	public static function iconPath(modId:String):Null<String>
 	{
-		final path = '$MODS_FOLDER/$modId/icon.png';
-		#if sys
-		return FileSystem.exists(path) ? path : null;
-		#else
-		return null;
-		#end
+		final p = '$MODS_FOLDER/$modId/icon.png';
+		#if sys return FileSystem.exists(p) ? p : null; #else return null; #end
 	}
 
-	/**
-	 * Tipo de preview disponible para un mod.
-	 */
 	public static function previewType(modId:String):ModPreviewType
 	{
-		if (previewVideo(modId) != null)
-			return VIDEO;
-		if (previewImage(modId) != null)
-			return IMAGE;
+		if (previewVideo(modId) != null) return VIDEO;
+		if (previewImage(modId) != null) return IMAGE;
 		return NONE;
 	}
 
 	// ─── Info del mod ─────────────────────────────────────────────────────────
 
-	/** Devuelve la info del mod activo, o `null` si no hay mod. */
 	public static function activeInfo():Null<ModInfo>
 	{
-		if (activeMod == null)
-			return null;
-		for (m in installedMods)
-			if (m.id == activeMod)
-				return m;
+		if (activeMod == null) return null;
+		for (m in installedMods) if (m.id == activeMod) return m;
 		return null;
 	}
 
-	/** Devuelve la info de un mod por ID. */
 	public static function getInfo(modId:String):Null<ModInfo>
 	{
-		for (m in installedMods)
-			if (m.id == modId)
-				return m;
+		for (m in installedMods) if (m.id == modId) return m;
 		return null;
 	}
 
@@ -340,87 +350,81 @@ class ModManager
 	static function _loadModInfo(id:String, path:String):Null<ModInfo>
 	{
 		final jsonPath = '$path/mod.json';
-		var name = id;
-		var desc = '';
-		var author = '';
-		var version = '1.0.0';
-		var priority = 0;
-		var color = 0xFF9900; // naranja por defecto
-		var website = '';
-		var enabledDefault = true;
+		var name           = id;
+		var desc           = '';
+		var author         = '';
+		var version        = '1.0.0';
+		var priority       = 0;
+		var color          = 0xFF9900;
+		var website        = '';
+		var enabledDef     = true;
+		var startupDef     = false;
 
 		if (FileSystem.exists(jsonPath))
 		{
 			try
 			{
-				final data:Dynamic = Json.parse(File.getContent(jsonPath));
-				name = data.name ?? id;
-				desc = data.description ?? '';
-				author = data.author ?? '';
-				version = data.version ?? '1.0.0';
-				priority = Std.int(data.priority ?? 0);
-				website = data.website ?? '';
-				enabledDefault = data.enabled ?? true;
-
-				// Parsear color hex (ej: "FF5599" → 0xFFFF5599)
-				if (data.color != null)
+				final d:Dynamic = Json.parse(File.getContent(jsonPath));
+				name       = d.name           ?? id;
+				desc       = d.description    ?? '';
+				author     = d.author         ?? '';
+				version    = d.version        ?? '1.0.0';
+				priority   = Std.int(d.priority ?? 0);
+				website    = d.website        ?? '';
+				enabledDef = d.enabled        ?? true;
+				startupDef = d.startupDefault ?? false;
+				if (d.color != null)
 				{
 					try
 					{
-						var hex:String = Std.string(data.color);
-						if (StringTools.startsWith(hex, '#'))
-							hex = hex.substr(1);
+						var hex:String = Std.string(d.color);
+						if (StringTools.startsWith(hex, '#')) hex = hex.substr(1);
 						color = 0xFF000000 | Std.parseInt('0x$hex');
 					}
-					catch (_)
-					{
-					}
+					catch (_) {}
 				}
 			}
-			catch (e:Dynamic)
-			{
-				trace('[ModManager] Error leyendo mod.json de "$id": $e');
-			}
+			catch (e:Dynamic) { trace('[ModManager] Error mod.json "$id": $e'); }
 		}
 
-		// El estado enabled del mapa tiene prioridad sobre mod.json
-		final enabled = _enabledMap.exists(id) ? _enabledMap.get(id) : enabledDefault;
-
+		final enabled = _enabledMap.exists(id) ? _enabledMap.get(id) : enabledDef;
 		return {
-			id: id,
-			name: name,
-			description: desc,
-			author: author,
-			version: version,
-			priority: priority,
-			color: color,
-			website: website,
-			enabled: enabled,
-			folder: path
+			id: id, name: name, description: desc, author: author,
+			version: version, priority: priority, color: color,
+			website: website, enabled: enabled, startupDefault: startupDef, folder: path
 		};
 	}
 
-	/** Persiste el estado enabled/disabled de los mods en un JSON. */
-	/** Persiste el mod activo entre sesiones. */
-	static function _saveActiveState():Void
+	static function _writeModJson(info:ModInfo):Void
 	{
 		try
 		{
-			final obj:Dynamic = {active: activeMod};
-			File.saveContent('$MODS_FOLDER/.active_mod.json', Json.stringify(obj));
+			final obj:Dynamic = {
+				name:           info.name,
+				description:    info.description,
+				author:         info.author,
+				version:        info.version,
+				priority:       info.priority,
+				color:          StringTools.hex(info.color & 0xFFFFFF, 6),
+				website:        info.website,
+				enabled:        info.enabled,
+				startupDefault: info.startupDefault
+			};
+			File.saveContent('${info.folder}/mod.json', Json.stringify(obj, null, '\t'));
 		}
-		catch (e:Dynamic)
-		{
-			trace('[ModManager] No se pudo guardar active mod: $e');
-		}
+		catch (e:Dynamic) { trace('[ModManager] Error escribiendo mod.json "${info.id}": $e'); }
 	}
 
-	/** Restaura el mod activo de la sesión anterior. Llamar tras init(). */
+	static function _saveActiveState():Void
+	{
+		try { File.saveContent('$MODS_FOLDER/.active_mod.json', Json.stringify({active: activeMod})); }
+		catch (e:Dynamic) { trace('[ModManager] No se pudo guardar active mod: $e'); }
+	}
+
 	public static function loadActiveState():Void
 	{
 		final path = '$MODS_FOLDER/.active_mod.json';
-		if (!FileSystem.exists(path))
-			return;
+		if (!FileSystem.exists(path)) return;
 		try
 		{
 			final data:Dynamic = Json.parse(File.getContent(path));
@@ -431,10 +435,7 @@ class ModManager
 				trace('[ModManager] Mod activo restaurado: "$activeMod"');
 			}
 		}
-		catch (e:Dynamic)
-		{
-			trace('[ModManager] Error restaurando active mod: $e');
-		}
+		catch (e:Dynamic) { trace('[ModManager] Error restaurando active mod: $e'); }
 	}
 
 	static function _saveEnabledState():Void
@@ -442,40 +443,28 @@ class ModManager
 		try
 		{
 			final obj:Dynamic = {};
-			for (id => val in _enabledMap)
-				Reflect.setField(obj, id, val);
+			for (id => val in _enabledMap) Reflect.setField(obj, id, val);
 			File.saveContent('$MODS_FOLDER/.enabled_state.json', Json.stringify(obj));
 		}
-		catch (e:Dynamic)
-		{
-			trace('[ModManager] No se pudo guardar enabled state: $e');
-		}
+		catch (e:Dynamic) { trace('[ModManager] No se pudo guardar enabled state: $e'); }
 	}
 
-	/** Carga el estado enabled/disabled persistido. */
 	static function _loadEnabledState():Void
 	{
 		final path = '$MODS_FOLDER/.enabled_state.json';
-		if (!FileSystem.exists(path))
-			return;
+		if (!FileSystem.exists(path)) return;
 		try
 		{
 			final data:Dynamic = Json.parse(File.getContent(path));
-			final fields = Reflect.fields(data);
-			for (f in fields)
-				_enabledMap.set(f, Reflect.field(data, f) == true);
+			for (f in Reflect.fields(data)) _enabledMap.set(f, Reflect.field(data, f) == true);
 		}
-		catch (e:Dynamic)
-		{
-			trace('[ModManager] Error cargando enabled state: $e');
-		}
+		catch (e:Dynamic) { trace('[ModManager] Error cargando enabled state: $e'); }
 	}
 	#end
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Metadatos completos de un mod. */
 typedef ModInfo =
 {
 	var id:String;
@@ -484,15 +473,11 @@ typedef ModInfo =
 	var author:String;
 	var version:String;
 	var priority:Int;
-	var color:Int; // ARGB
+	var color:Int;
 	var website:String;
 	var enabled:Bool;
+	var startupDefault:Bool;
 	var folder:String;
 }
 
-enum ModPreviewType
-{
-	VIDEO;
-	IMAGE;
-	NONE;
-}
+enum ModPreviewType { VIDEO; IMAGE; NONE; }

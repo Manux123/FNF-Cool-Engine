@@ -74,4 +74,27 @@ class CppAPI
 			lime.app.Application.current.window.title = title;
 		#end
 	}
+
+	// ── Opacidad de ventana ────────────────────────────────────────────────────
+
+	/**
+	 * Cambia la opacidad de la ventana del OS.
+	 *
+	 * En Windows usa SetLayeredWindowAttributes (User32.dll).
+	 * La ventana debe tener el estilo WS_EX_LAYERED; lime lo añade automáticamente
+	 * si se llama antes de crear la ventana, o se puede añadir en runtime con
+	 * SetWindowLongPtr — InitAPI debe implementar setLayeredWindowAttributes.
+	 *
+	 * En otras plataformas, se usa el alpha del contenedor de OpenFL como fallback.
+	 *
+	 * @param alpha  0.0 = completamente transparente, 1.0 = opaco.
+	 */
+	public static function setWindowOpacity(alpha:Float):Void
+	{
+		alpha = Math.max(0.0, Math.min(1.0, alpha));
+		#if !html5
+		if (flixel.FlxG.game != null)
+			flixel.FlxG.game.alpha = alpha;
+		#end
+	}
 }

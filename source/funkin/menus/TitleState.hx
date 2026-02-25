@@ -231,7 +231,8 @@ class TitleState extends funkin.states.MusicBeatState
 			if (titleText != null)
 				titleText.animation.play('press');
 
-			FlxG.camera.flash(FlxColor.WHITE, 1);
+			if (FlxG.save.data.flashing)
+				FlxG.camera.flash(FlxColor.WHITE, 1);
 			FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.7);
 
 			transitioning = true;
@@ -416,7 +417,8 @@ class TitleState extends funkin.states.MusicBeatState
 		{
 			remove(ngSpr);
 
-			FlxG.camera.flash(FlxColor.WHITE, 4);
+			if (FlxG.save.data.flashing)
+				FlxG.camera.flash(FlxColor.WHITE, 4);
 			remove(credGroup);
 
 			FlxTween.tween(logoBl, {y: -100}, 1.4, {ease: FlxEase.expoInOut});

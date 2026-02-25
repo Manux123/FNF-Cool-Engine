@@ -13,97 +13,162 @@ import sys.FileSystem;
 using StringTools;
 
 /**
- * FunkinSprite (VERSIÓN CORREGIDA)
- * ─────────────────────────────────────────────────────────────
- * Reemplaza FlxSprite en todo el engine.
- * Detecta automáticamente si el asset es:
+ * FunkinSprite — Sprite unificado del engine con caché de frames avanzada.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Detecta automáticamente el tipo de asset:
+ *   ① Texture Atlas (Adobe Animate)  → carpeta con Animation.json
+ *   ② Sparrow Atlas                  → PNG + XML
+ *   ③ Packer Atlas                   → PNG + TXT
+ *   ④ Imagen estática                → Solo PNG
  *
- *   ① Texture Atlas de Adobe Animate
- *      → Carpeta con  Animation.json  +  spritemap1.png
- *      → Usa FlxAnimate INTERNO
- *
- *   ② Sparrow Atlas normal
- *      → PNG + XML  (formato Sparrow v2)
- *      → Usa FlxAtlasFrames.fromSparrow
- *
- *   ③ Packer Atlas (txt)
- *      → PNG + TXT
- *      → Usa FlxAtlasFrames.fromSpriteSheetPacker
- *
- *   ④ Imagen estática
- *      → Solo PNG, sin atlas
- *      → loadGraphic normal
- *
- * CORRECCIÓN: Ahora extiende FlxSprite y usa FlxAnimate como instancia interna.
+ * ─── Mejoras de caché (v2) ───────────────────────────────────────────────────
+ *  • _frameCache    — Cachea FlxAtlasFrames parseados. Si dos personajes usan
+ *                     el mismo sheet, comparten frames sin duplicar el parsing
+ *                     de XML/TXT ni VRAM (el FlxGraphic subyacente ya se
+ *                     comparte via PathsCache).
+ *  • _atlasResCache — Cachea el resultado de resolveAtlasFolder() (si la
+ *                     carpeta existe o no). Evita llamar FileSystem.exists()
+ *                     repetidamente para el mismo key, que en HDD es ~0.5ms
+ *                     por llamada y puede acumularse en stages con muchos sprites.
+ *  • invalidateCache(key)  — API pública para invalidar entradas específicas al
+ *                            recargar mods en caliente.
+ *  • clearAllCaches()      — Limpieza total (cambio de mod, reinicio, etc.)
  */
-
 class FunkinSprite extends FlxSprite
 {
-	// ─── Estado ────────────────────────────────────────────────
+	// ─── Estado ────────────────────────────────────────────────────────────────
 	public var isAnimateAtlas(default, null):Bool = false;
 
-	/** Nombre/key del asset actualmente cargado */
+	/** Key del asset actualmente cargado */
 	public var currentAssetKey(default, null):String = '';
 
-	/** Instancia interna de FlxAnimate (solo cuando isAnimateAtlas = true) */
+	/** Instancia interna de FlxAnimate (sólo cuando isAnimateAtlas = true) */
 	var _animateSprite:FlxAnimate;
 
-	// ─── Constructor ───────────────────────────────────────────
+	// ══════════════════════════════════════════════════════════════════════════
+	//  CACHÉS ESTÁTICOS
+	// ══════════════════════════════════════════════════════════════════════════
+
+	/**
+	 * Caché de FlxAtlasFrames parseados.
+	 *
+	 * key   → path completo al asset (p. ej. "assets/characters/images/bf")
+	 * value → FlxAtlasFrames ya parseado y listo para asignar a .frames
+	 *
+	 * VRAM: los frames sólo contienen FlxRect + referencia al FlxGraphic.
+	 * El FlxGraphic (textura real) ya está cacheado en PathsCache.
+	 * Por tanto este caché es ligero (~1-4 KB por atlas).
+	 */
+	static var _frameCache:Map<String, FlxAtlasFrames> = [];
+
+	/**
+	 * Caché de resolución de carpetas de atlas.
+	 *
+	 * key   → key de asset (sin extensión)
+	 * value → path a la carpeta si tiene Animation.json, null si no
+	 *
+	 * Evita llamadas repetidas a FileSystem.exists() para el mismo key.
+	 */
+	static var _atlasResCache:Map<String, Null<String>> = [];
+
+	/** LRU simple para _frameCache (máx. 120 entradas; los frames son ligeros) */
+	static var _frameLRU:Array<String> = [];
+	static final MAX_FRAME_CACHE = 120;
+
+	// ── API de invalidación ────────────────────────────────────────────────────
+
+	/**
+	 * Invalida una entrada del caché de frames y de resolución de atlas.
+	 * Útil al recargar un mod en caliente: el asset puede haber cambiado.
+	 */
+	public static function invalidateCache(key:String):Void
+	{
+		_frameCache.remove(key);
+		_atlasResCache.remove(key);
+		final idx = _frameLRU.indexOf(key);
+		if (idx >= 0) _frameLRU.splice(idx, 1);
+		trace('[FunkinSprite] Cache invalidado: $key');
+	}
+
+	/**
+	 * Limpia todos los cachés estáticos.
+	 * Llamar al cambiar de mod o al reiniciar el engine.
+	 */
+	public static function clearAllCaches():Void
+	{
+		_frameCache.clear();
+		_atlasResCache.clear();
+		_frameLRU  = [];
+		trace('[FunkinSprite] Todos los cachés limpiados.');
+	}
+
+	// ── Internos de LRU ───────────────────────────────────────────────────────
+
+	static function _frameCachePut(key:String, frames:FlxAtlasFrames):Void
+	{
+		if (_frameLRU.length >= MAX_FRAME_CACHE)
+		{
+			// Evictar el más antiguo
+			final evict = _frameLRU.shift();
+			_frameCache.remove(evict);
+		}
+		_frameCache.set(key, frames);
+		_frameLRU.push(key);
+	}
+
+	static function _frameCacheTouch(key:String):Void
+	{
+		final idx = _frameLRU.indexOf(key);
+		if (idx >= 0)
+		{
+			_frameLRU.splice(idx, 1);
+			_frameLRU.push(key);
+		}
+	}
+
+	// ══════════════════════════════════════════════════════════════════════════
+	//  CONSTRUCTOR
+	// ══════════════════════════════════════════════════════════════════════════
+
 	public function new(x:Float = 0, y:Float = 0)
 	{
 		super(x, y);
 	}
 
-	// ══════════════════════════════════════════════════════════
-	//  MÉTODOS DE CARGA
-	// ══════════════════════════════════════════════════════════
+	// ══════════════════════════════════════════════════════════════════════════
+	//  CARGA DE ASSETS
+	// ══════════════════════════════════════════════════════════════════════════
 
 	/**
-	 * CARGA AUTOMÁTICA — detecta el tipo según los archivos disponibles.
+	 * Carga automática — detecta el tipo de asset según los archivos disponibles.
 	 *
-	 * Orden de prioridad:
-	 *   1. Carpeta con Animation.json  → Texture Atlas (FlxAnimate)
+	 * Prioridad:
+	 *   1. Carpeta con Animation.json  → Texture Atlas
 	 *   2. PNG + XML                   → Sparrow
 	 *   3. PNG + TXT                   → Packer
 	 *   4. Solo PNG                    → Estático
 	 *
-	 * @param assetPath  Path SIN extensión, relativo a assets/
+	 * @param assetPath  Path sin extensión (relativo a assets/)
 	 *                   Ej: "characters/images/bf"
-	 *                       "images/freeplay/dj-bf/dj-bf"
 	 */
 	public function loadAsset(assetPath:String):FunkinSprite
 	{
 		currentAssetKey = assetPath;
 
-		// ① ¿Es un texture atlas? (carpeta con Animation.json)
-		//    El path en este caso apunta a la CARPETA, no al archivo
-		var atlasFolder = resolveAtlasFolder(assetPath);
+		final atlasFolder = resolveAtlasFolder(assetPath);
 		if (atlasFolder != null)
-		{
 			return loadAnimateAtlas(atlasFolder);
-		}
 
-		// ② ¿Existe PNG + XML? → Sparrow
 		if (assetExists('assets/$assetPath.xml'))
-		{
 			return loadSparrow(assetPath);
-		}
 
-		// ③ ¿Existe PNG + TXT? → Packer
 		if (assetExists('assets/$assetPath.txt'))
-		{
 			return loadPacker(assetPath);
-		}
 
-		// ④ Fallback → imagen estática
 		if (assetExists('assets/$assetPath.png'))
-		{
 			loadGraphic('assets/$assetPath.png');
-		}
 		else
-		{
 			trace('[FunkinSprite] WARNING: no se encontró ningún asset para "$assetPath"');
-		}
 
 		isAnimateAtlas = false;
 		return this;
@@ -111,28 +176,22 @@ class FunkinSprite extends FlxSprite
 
 	/**
 	 * Carga un Texture Atlas de Adobe Animate.
-	 * @param folderPath  Carpeta que contiene Animation.json y spritemap*.png
-	 *                    Puede ser relativo a assets/ o path absoluto.
+	 * No usa _frameCache porque FlxAnimate gestiona sus propios frames internamente.
 	 */
 	public function loadAnimateAtlas(folderPath:String):FunkinSprite
 	{
 		isAnimateAtlas = true;
 
-		// FlxAnimate espera el path completo a la carpeta
-		var fullPath = folderPath.startsWith('assets/') ? folderPath : 'assets/$folderPath';
+		final fullPath = folderPath.startsWith('assets/') ? folderPath : 'assets/$folderPath';
 
-		// Limpiar atlas anterior si había uno
 		if (_animateSprite != null)
 		{
 			_animateSprite.destroy();
 			_animateSprite = null;
 		}
 
-		// Crear nueva instancia de FlxAnimate
 		_animateSprite = new FlxAnimate(x, y);
 		_animateSprite.loadAtlas(fullPath);
-
-		// Hacer invisible el FlxSprite base (solo renderizamos el FlxAnimate)
 		visible = false;
 
 		trace('[FunkinSprite] Texture Atlas cargado: $fullPath');
@@ -140,26 +199,30 @@ class FunkinSprite extends FlxSprite
 	}
 
 	/**
-	 * Carga un Sparrow atlas (PNG + XML).
-	 * @param key  Key sin extensión. Se buscará en assets/[key].png y assets/[key].xml
+	 * Carga un Sparrow atlas (PNG + XML) con caché de frames.
+	 *
+	 * Si ya se cargó este asset antes, reutiliza los FlxAtlasFrames cacheados
+	 * en lugar de volver a parsear el XML completo.
 	 */
 	public function loadSparrow(key:String):FunkinSprite
 	{
 		isAnimateAtlas = false;
-
-		// Limpiar FlxAnimate si había uno
-		if (_animateSprite != null)
-		{
-			_animateSprite.destroy();
-			_animateSprite = null;
-		}
-
-		// Hacer visible el FlxSprite base
+		_clearAnimateSprite();
 		visible = true;
 
-		var frames = Paths.getSparrowAtlas(key);
+		final cacheKey = 'sparrow:$key';
+		var cached = _frameCache.get(cacheKey);
+		if (cached != null)
+		{
+			_frameCacheTouch(cacheKey);
+			this.frames = cached;
+			return this;
+		}
+
+		final frames = Paths.getSparrowAtlas(key);
 		if (frames != null)
 		{
+			_frameCachePut(cacheKey, frames);
 			this.frames = frames;
 			trace('[FunkinSprite] Sparrow cargado: $key');
 		}
@@ -172,26 +235,27 @@ class FunkinSprite extends FlxSprite
 	}
 
 	/**
-	 * Carga un Packer atlas (PNG + TXT).
-	 * @param key  Key sin extensión
+	 * Carga un Packer atlas (PNG + TXT) con caché de frames.
 	 */
 	public function loadPacker(key:String):FunkinSprite
 	{
 		isAnimateAtlas = false;
-
-		// Limpiar FlxAnimate si había uno
-		if (_animateSprite != null)
-		{
-			_animateSprite.destroy();
-			_animateSprite = null;
-		}
-
-		// Hacer visible el FlxSprite base
+		_clearAnimateSprite();
 		visible = true;
 
-		var frames = Paths.getPackerAtlas(key);
+		final cacheKey = 'packer:$key';
+		var cached = _frameCache.get(cacheKey);
+		if (cached != null)
+		{
+			_frameCacheTouch(cacheKey);
+			this.frames = cached;
+			return this;
+		}
+
+		final frames = Paths.getPackerAtlas(key);
 		if (frames != null)
 		{
+			_frameCachePut(cacheKey, frames);
 			this.frames = frames;
 			trace('[FunkinSprite] Packer cargado: $key');
 		}
@@ -204,90 +268,113 @@ class FunkinSprite extends FlxSprite
 	}
 
 	/**
-	 * Carga un Sparrow de personaje (assets/characters/images/).
+	 * Carga un sprite de personaje (assets/characters/images/) con caché de frames.
+	 *
+	 * Orden: Texture Atlas → Sparrow → Packer → placeholder invisible.
+	 * Usa _frameCache para Sparrow/Packer, evitando re-parsear el XML/TXT
+	 * cuando el mismo personaje aparece en varias escenas o se recarga.
 	 */
 	public function loadCharacterSparrow(key:String):FunkinSprite
 	{
-		// Intentar texture atlas primero
-		var atlasPath = 'characters/images/$key';
-		var atlasFolder = resolveAtlasFolder(atlasPath);
+		final atlasPath   = 'characters/images/$key';
+		final atlasFolder = resolveAtlasFolder(atlasPath);
 		if (atlasFolder != null)
 			return loadAnimateAtlas(atlasFolder);
 
-		// Fallback a Sparrow normal de personaje
 		isAnimateAtlas = false;
-
-		// Limpiar FlxAnimate si había uno
-		if (_animateSprite != null)
-		{
-			_animateSprite.destroy();
-			_animateSprite = null;
-		}
-
+		_clearAnimateSprite();
 		visible = true;
+
+		// ── Sparrow via caché ─────────────────────────────────────────────────
+		final cacheKey = 'char_sparrow:$key';
+		var cached = _frameCache.get(cacheKey);
+		if (cached != null)
+		{
+			_frameCacheTouch(cacheKey);
+			this.frames = cached;
+			return this;
+		}
 
 		var frames = Paths.characterSprite(key);
 		if (frames != null)
 		{
+			_frameCachePut(cacheKey, frames);
 			this.frames = frames;
-		}
-		else
-		{
-			// Intentar con txt
-			var framesTxt = Paths.characterSpriteTxt(key);
-			if (framesTxt != null) this.frames = framesTxt;
+			return this;
 		}
 
-		// Guard: si no se encontraron frames, usar placeholder invisible
-		// para evitar null object reference en FlxDrawQuadsItem::render
-		if (!isAnimateAtlas && this.frames == null)
+		// ── Packer fallback ───────────────────────────────────────────────────
+		final cacheKeyTxt = 'char_packer:$key';
+		var cachedTxt = _frameCache.get(cacheKeyTxt);
+		if (cachedTxt != null)
 		{
-			trace('[FunkinSprite] WARNING: No graphics found for "" — using invisible placeholder');
-			makeGraphic(1, 1, 0x00000000);
-			visible = false;
+			_frameCacheTouch(cacheKeyTxt);
+			this.frames = cachedTxt;
+			return this;
 		}
 
+		var framesTxt = Paths.characterSpriteTxt(key);
+		if (framesTxt != null)
+		{
+			_frameCachePut(cacheKeyTxt, framesTxt);
+			this.frames = framesTxt;
+			return this;
+		}
+
+		// ── Placeholder invisible ─────────────────────────────────────────────
+		trace('[FunkinSprite] WARNING: No graphics found for "$key" — usando placeholder invisible');
+		makeGraphic(1, 1, 0x00000000);
+		visible = false;
 		return this;
 	}
 
 	/**
-	 * Carga un Sparrow de stage (assets/stages/STAGE/images/).
+	 * Carga un sprite de stage (assets/stages/STAGE/images/) con caché de frames.
 	 */
 	public function loadStageSparrow(key:String):FunkinSprite
 	{
 		isAnimateAtlas = false;
+		_clearAnimateSprite();
+		visible = true;
 
-		// Limpiar FlxAnimate si había uno
+		final cacheKey = 'stage_sparrow:$key';
+		var cached = _frameCache.get(cacheKey);
+		if (cached != null)
+		{
+			_frameCacheTouch(cacheKey);
+			this.frames = cached;
+			return this;
+		}
+
+		final frames = Paths.stageSprite(key);
+		if (frames != null)
+		{
+			_frameCachePut(cacheKey, frames);
+			this.frames = frames;
+		}
+		return this;
+	}
+
+	// ── Helper interno ────────────────────────────────────────────────────────
+
+	inline function _clearAnimateSprite():Void
+	{
 		if (_animateSprite != null)
 		{
 			_animateSprite.destroy();
 			_animateSprite = null;
 		}
-
-		visible = true;
-
-		var frames = Paths.stageSprite(key);
-		if (frames != null) this.frames = frames;
-		return this;
 	}
 
-	// ══════════════════════════════════════════════════════════
+	// ══════════════════════════════════════════════════════════════════════════
 	//  WRAPPER DE ANIMACIONES
-	//  Funcionan igual para Atlas y para Sparrow/Packer
-	// ══════════════════════════════════════════════════════════
+	// ══════════════════════════════════════════════════════════════════════════
 
-	/**
-	 * Añade animación por prefijo — funciona en ambos modos.
-	 * En atlas de Animate usa anim.addByAnimIndices / addBySymbol.
-	 * En Sparrow usa animation.addByPrefix normal.
-	 */
 	public function addAnim(name:String, prefix:String, fps:Int = 24, looped:Bool = true,
 		?indices:Array<Int>):Void
 	{
 		if (isAnimateAtlas && _animateSprite != null)
 		{
-			// addBySymbolIndices cuando hay índices específicos,
-			// addBySymbol para la animación completa del símbolo.
 			if (indices != null && indices.length > 0)
 				_animateSprite.anim.addBySymbolIndices(name, prefix, indices, fps, looped);
 			else
@@ -295,7 +382,6 @@ class FunkinSprite extends FlxSprite
 		}
 		else
 		{
-			// FlxSprite normal
 			if (indices != null && indices.length > 0)
 				this.animation.addByIndices(name, prefix, indices, '', fps, looped);
 			else
@@ -303,26 +389,15 @@ class FunkinSprite extends FlxSprite
 		}
 	}
 
-	/**
-	 * Reproducir animación — funciona en ambos modos.
-	 * @param force  Si true, reinicia la animación aunque ya esté corriendo
-	 */
 	public function playAnim(name:String, force:Bool = false, reversed:Bool = false,
 		startFrame:Int = 0):Void
 	{
 		if (isAnimateAtlas && _animateSprite != null)
-		{
 			_animateSprite.anim.play(name, force, reversed, startFrame);
-		}
 		else
-		{
 			this.animation.play(name, force, reversed, startFrame);
-		}
 	}
 
-	/**
-	 * ¿La animación actual terminó?
-	 */
 	public var animFinished(get, never):Bool;
 	function get_animFinished():Bool
 	{
@@ -331,9 +406,6 @@ class FunkinSprite extends FlxSprite
 		return this.animation.curAnim != null && this.animation.curAnim.finished;
 	}
 
-	/**
-	 * Nombre de la animación actual
-	 */
 	public var animName(get, never):String;
 	function get_animName():String
 	{
@@ -342,9 +414,6 @@ class FunkinSprite extends FlxSprite
 		return this.animation.curAnim != null ? this.animation.curAnim.name : '';
 	}
 
-	/**
-	 * ¿Existe esta animación?
-	 */
 	public function hasAnim(name:String):Bool
 	{
 		if (isAnimateAtlas && _animateSprite != null)
@@ -352,14 +421,10 @@ class FunkinSprite extends FlxSprite
 		return this.animation.getByName(name) != null;
 	}
 
-	// ══════════════════════════════════════════════════════════
+	// ══════════════════════════════════════════════════════════════════════════
 	//  UTILIDADES
-	// ══════════════════════════════════════════════════════════
+	// ══════════════════════════════════════════════════════════════════════════
 
-	/**
-	 * Offset de animación — aplica un offset x/y al sprite según la anim activa.
-	 * Llama esto después de playAnim().
-	 */
 	public function applyAnimOffset(offsetX:Float, offsetY:Float):Void
 	{
 		if (isAnimateAtlas && _animateSprite != null)
@@ -368,9 +433,6 @@ class FunkinSprite extends FlxSprite
 			this.offset.set(offsetX, offsetY);
 	}
 
-	/**
-	 * Escalar manteniendo hitbox actualizado.
-	 */
 	public function setScale(scaleX:Float, scaleY:Float):Void
 	{
 		if (isAnimateAtlas && _animateSprite != null)
@@ -385,9 +447,9 @@ class FunkinSprite extends FlxSprite
 		}
 	}
 
-	// ══════════════════════════════════════════════════════════
-	//  OVERRIDE DE UPDATE Y DRAW
-	// ══════════════════════════════════════════════════════════
+	// ══════════════════════════════════════════════════════════════════════════
+	//  UPDATE / DRAW
+	// ══════════════════════════════════════════════════════════════════════════
 
 	override public function update(elapsed:Float):Void
 	{
@@ -400,33 +462,26 @@ class FunkinSprite extends FlxSprite
 		}
 	}
 
-	/**
-	 * Sincroniza TODAS las propiedades visuales relevantes al _animateSprite.
-	 * Antes solo se sincronizaban x/y → alpha, scale, angle, cameras, etc.
-	 * quedaban desincronizados causando bugs visuales (fades, zoom, rotaciones).
-	 */
 	private function _syncToAnimate():Void
 	{
-		_animateSprite.x            = this.x;
-		_animateSprite.y            = this.y;
-		_animateSprite.alpha        = this.alpha;
-		_animateSprite.angle        = this.angle;
-		_animateSprite.scale.x      = this.scale.x;
-		_animateSprite.scale.y      = this.scale.y;
-		_animateSprite.flipX        = this.flipX;
-		_animateSprite.flipY        = this.flipY;
-		_animateSprite.visible      = this.visible;
+		_animateSprite.x              = this.x;
+		_animateSprite.y              = this.y;
+		_animateSprite.alpha          = this.alpha;
+		_animateSprite.angle          = this.angle;
+		_animateSprite.scale.x        = this.scale.x;
+		_animateSprite.scale.y        = this.scale.y;
+		_animateSprite.flipX          = this.flipX;
+		_animateSprite.flipY          = this.flipY;
+		_animateSprite.visible        = this.visible;
 		_animateSprite.scrollFactor.x = this.scrollFactor.x;
 		_animateSprite.scrollFactor.y = this.scrollFactor.y;
-		_animateSprite.cameras      = this.cameras;
+		_animateSprite.cameras        = this.cameras;
 	}
 
 	override public function draw():Void
 	{
 		if (isAnimateAtlas && _animateSprite != null)
 		{
-			// Re-sync antes del draw para capturar cambios hechos fuera de update()
-			// (ej. tweens que modifican alpha/scale directamente en el frame)
 			_syncToAnimate();
 			_animateSprite.draw();
 		}
@@ -436,23 +491,30 @@ class FunkinSprite extends FlxSprite
 		}
 	}
 
-	// ══════════════════════════════════════════════════════════
-	//  DETECCIÓN DE TIPO DE ASSET (interno)
-	// ══════════════════════════════════════════════════════════
+	// ══════════════════════════════════════════════════════════════════════════
+	//  DETECCIÓN DE TIPO DE ASSET
+	// ══════════════════════════════════════════════════════════════════════════
 
 	/**
-	 * Dado un key como "characters/images/bf", busca si existe
-	 * una carpeta con Animation.json.
+	 * Resuelve si un key tiene un Texture Atlas asociado, usando caché.
 	 *
-	 * Patrones buscados:
-	 *   assets/[key]/Animation.json          ← la carpeta ES el key
-	 *   assets/[key]-atlas/Animation.json    ← convención "-atlas"
-	 *
-	 * Retorna el path a la carpeta si existe, null si no.
+	 * Sin caché: PlayState con 20 sprites llama FileSystem.exists() ~60 veces
+	 * (3 candidatos × 20 sprites) cada vez que se recarga el stage.
+	 * Con caché: sólo la primera vez por key.
 	 */
 	static function resolveAtlasFolder(key:String):Null<String>
 	{
-		// key is typically 'characters/images/NAME' or 'stages/STAGE/images/NAME'
+		if (_atlasResCache.exists(key))
+			return _atlasResCache.get(key);
+
+		final result = _resolveAtlasFolderImpl(key);
+		_atlasResCache.set(key, result);
+		return result;
+	}
+
+	/** Implementación real de la búsqueda (sin caché). */
+	static function _resolveAtlasFolderImpl(key:String):Null<String>
+	{
 		final charPrefix  = 'characters/images/';
 		final stagePrefix = 'stages/';
 
@@ -462,7 +524,7 @@ class FunkinSprite extends FlxSprite
 		var candidates = [
 			'assets/$key',
 			'assets/${key}-atlas',
-			key, // absolute path fallback
+			key,
 		];
 
 		if (mods.ModManager.activeMod != null)
@@ -471,26 +533,19 @@ class FunkinSprite extends FlxSprite
 
 			if (isCharKey)
 			{
-				// Cool Engine layout: mods/mod/characters/images/NAME
 				candidates.unshift('$base/characters/images/$charName');
-				// Psych Engine layout: mods/mod/images/characters/NAME
 				candidates.unshift('$base/images/characters/$charName');
 			}
 			else if (key.startsWith(stagePrefix))
 			{
-				// For stage atlas keys like 'stages/STAGE/images/NAME',
-				// extract the image name after the last /images/ segment
-				final imgIdx = key.lastIndexOf('/images/');
+				final imgIdx  = key.lastIndexOf('/images/');
 				final imgName = imgIdx >= 0 ? key.substr(imgIdx + 8) : key;
-				// Cool Engine layout: mods/mod/stages/STAGE/images/NAME
 				candidates.unshift('$base/$key');
-				// Psych Engine layout: mods/mod/images/stages/NAME
 				candidates.unshift('$base/images/stages/$imgName');
 				candidates.unshift('$base/images/$imgName');
 			}
 			else
 			{
-				// Generic mod path attempt
 				candidates.unshift('$base/$key');
 			}
 		}
@@ -504,14 +559,9 @@ class FunkinSprite extends FlxSprite
 		return null;
 	}
 
-	/**
-	 * Verifica si una carpeta contiene un Texture Atlas de Animate.
-	 * Busca Animation.json dentro de ella.
-	 */
 	public static function folderHasAnimateAtlas(folderPath:String):Bool
 	{
-		var jsonPath = '$folderPath/Animation.json';
-
+		final jsonPath = '$folderPath/Animation.json';
 		#if sys
 		return FileSystem.exists(jsonPath);
 		#else
@@ -519,9 +569,6 @@ class FunkinSprite extends FlxSprite
 		#end
 	}
 
-	/**
-	 * Verifica si un asset existe (cualquier tipo de archivo).
-	 */
 	static function assetExists(path:String):Bool
 	{
 		#if sys
@@ -531,33 +578,27 @@ class FunkinSprite extends FlxSprite
 		#end
 	}
 
-	// ══════════════════════════════════════════════════════════
-	//  STATIC FACTORIES (atajos para crear sprites rápido)
-	// ══════════════════════════════════════════════════════════
+	// ══════════════════════════════════════════════════════════════════════════
+	//  FACTORIES ESTÁTICAS
+	// ══════════════════════════════════════════════════════════════════════════
 
-	/**
-	 * Crea un FunkinSprite con auto-detección.
-	 */
 	public static function create(x:Float, y:Float, assetPath:String):FunkinSprite
 	{
-		var spr = new FunkinSprite(x, y);
+		final spr = new FunkinSprite(x, y);
 		spr.loadAsset(assetPath);
 		return spr;
 	}
 
-	/**
-	 * Crea un FunkinSprite de personaje.
-	 */
 	public static function createCharacter(x:Float, y:Float, charKey:String):FunkinSprite
 	{
-		var spr = new FunkinSprite(x, y);
+		final spr = new FunkinSprite(x, y);
 		spr.loadCharacterSparrow(charKey);
 		return spr;
 	}
 
-	// ══════════════════════════════════════════════════════════
+	// ══════════════════════════════════════════════════════════════════════════
 	//  DESTRUIR
-	// ══════════════════════════════════════════════════════════
+	// ══════════════════════════════════════════════════════════════════════════
 
 	override public function destroy():Void
 	{
@@ -566,7 +607,6 @@ class FunkinSprite extends FlxSprite
 			_animateSprite.destroy();
 			_animateSprite = null;
 		}
-
 		super.destroy();
 	}
 }

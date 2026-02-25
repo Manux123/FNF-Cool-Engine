@@ -103,6 +103,39 @@ typedef StageMember =
 
 class Stage extends FlxTypedGroup<FlxBasic>
 {
+	// ══════════════════════════════════════════════════════════════════════════
+	//  CACHÉ ESTÁTICO DE DATOS DE STAGE
+	// ══════════════════════════════════════════════════════════════════════════
+
+	/**
+	 * Cachea el contenido raw del archivo JSON de cada stage.
+	 *
+	 * key   → nombre del stage (p. ej. "stage_week1", "spooky")
+	 * value → contenido del archivo como String (para re-parsear con loadStage)
+	 *
+	 * Por qué cachear el String y no el StageData ya parseado:
+	 *  • StageData contiene Arrays de StageElement, que son objetos mutables.
+	 *    Compartir la misma instancia entre múltiples Stage causaría bugs.
+	 *  • Cachear el String permite hacer Json.parse() cada vez (muy barato,
+	 *    <0.5 ms para un JSON típico de 8 KB) sin I/O de disco.
+	 *  • Si el mod recarga el stage, basta invalidar la entrada del caché.
+	 */
+	static var _dataCache:Map<String, String> = [];
+
+	/** Invalida el caché de datos de un stage específico (recarga de mod). */
+	public static function invalidateStageCache(stageName:String):Void
+	{
+		_dataCache.remove(stageName);
+		trace('[Stage] Cache invalidado para: $stageName');
+	}
+
+	/** Limpia todo el caché de datos de stages. */
+	public static function clearStageCache():Void
+	{
+		_dataCache.clear();
+		trace('[Stage] Todos los cachés de Stage limpiados.');
+	}
+
 	public var stageData:StageData;
 	public var curStage:String;
 
@@ -152,14 +185,27 @@ class Stage extends FlxTypedGroup<FlxBasic>
 	{
 		try
 		{
-			var file:String = mods.compat.ModCompatLayer.readStageFile(stageName);
+			// ── Caché hit: evitar I/O de disco ────────────────────────────────
+			var file:String;
+			if (_dataCache.exists(stageName))
+			{
+				file = _dataCache.get(stageName);
+				trace('[Stage] Cache hit para: $stageName');
+			}
+			else
+			{
+				file = mods.compat.ModCompatLayer.readStageFile(stageName);
+				if (file != null)
+					_dataCache.set(stageName, file); // guardar en caché
+			}
+
 			if (file == null)
 			{
 				loadDefaultStage();
 				return;
 			}
 			stageData = cast mods.compat.ModCompatLayer.loadStage(file, stageName);
-			trace('stagefile: $file');
+			trace('stagefile (cached=${_dataCache.exists(stageName)}): $stageName');
 
 			for (script in ScriptHandler.stageScripts)
 			{

@@ -436,6 +436,36 @@ class OptionsMenuState extends MusicBeatSubstate
 	{
 		currentOptions = [
 			{
+				name: "GPU Texture Caching",
+				get: function() return FlxG.save.data.gpuCaching ? "ON" : "OFF",
+				toggle: function()
+				{
+					FlxG.save.data.gpuCaching = !FlxG.save.data.gpuCaching;
+					funkin.cache.PathsCache.gpuCaching = FlxG.save.data.gpuCaching;
+					FlxG.save.flush();
+				}
+			},
+			{
+				name: "Low Memory Mode",
+				get: function() return FlxG.save.data.lowMemoryMode ? "ON" : "OFF",
+				toggle: function()
+				{
+					FlxG.save.data.lowMemoryMode = !FlxG.save.data.lowMemoryMode;
+					funkin.cache.PathsCache.lowMemoryMode = FlxG.save.data.lowMemoryMode;
+					FlxG.save.flush();
+				}
+			},
+			{
+				name: "Streamed Music",
+				get: function() return FlxG.save.data.streamedMusic ? "ON" : "OFF",
+				toggle: function()
+				{
+					FlxG.save.data.streamedMusic = !FlxG.save.data.streamedMusic;
+					funkin.cache.PathsCache.streamedMusic = FlxG.save.data.streamedMusic;
+					FlxG.save.flush();
+				}
+			},
+			{
 				name: "Anti-Aliasing",
 				get: function() return FlxG.save.data.antialiasing ? "ON" : "OFF",
 				toggle: function()
@@ -1122,6 +1152,16 @@ class OptionsData
 
 		// Sincronizar con PathsCache al arrancar
 		funkin.cache.PathsCache.gpuCaching = FlxG.save.data.gpuCaching;
+
+		// ── Low Memory Mode (inspirado en Codename Engine) ───────────────────
+		if (FlxG.save.data.lowMemoryMode == null)
+			FlxG.save.data.lowMemoryMode = false;
+		funkin.cache.PathsCache.lowMemoryMode = FlxG.save.data.lowMemoryMode;
+
+		// ── Streamed Music (no cachear audio de canciones) ───────────────────
+		if (FlxG.save.data.streamedMusic == null)
+			FlxG.save.data.streamedMusic = false;
+		funkin.cache.PathsCache.streamedMusic = FlxG.save.data.streamedMusic;
 	}
 }
 

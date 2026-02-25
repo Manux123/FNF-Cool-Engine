@@ -9,6 +9,7 @@ import lime.app.Application;
 import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
 import flixel.addons.transition.FlxTransitionableState;
+import flixel.util.FlxTimer;
 import funkin.transitions.StateTransition;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
@@ -278,6 +279,20 @@ class FreeplayState extends funkin.states.MusicBeatState
 		if (songs.length == 0)
 		{
 			showError("No songs found!\nPlease add songs to your songList.json");
+			
+			// ✅ FIX: Abrir automáticamente el editor si no hay canciones
+			// Esperar un momento para que el mensaje de error sea visible primero
+			new FlxTimer().start(2.0, function(_) {
+				if (funkin.menus.MainMenuState.developerMode)
+				{
+					StateTransition.switchState(new FreeplayEditorState());
+				}
+				else
+				{
+					// Si el modo desarrollador no está activo, mostrar un mensaje adicional
+					showError("No songs found!\n\nEnable Developer Mode in Mod Menu\nSection ''System'' to use the Freeplay Editor");
+				}
+			});
 		}
 
 		// Animación de entrada
@@ -512,8 +527,8 @@ class FreeplayState extends funkin.states.MusicBeatState
 			StateTransition.switchState(new MainMenuState());
 		}
 
-		// Abrir el editor con la tecla E
-		if (FlxG.keys.justPressed.E)
+		// Abrir el editor con la tecla E (solo en Developer Mode — Ctrl+D en MainMenu para activarlo)
+		if (FlxG.keys.justPressed.E && funkin.menus.MainMenuState.developerMode)
 		{
 			StateTransition.switchState(new FreeplayEditorState());
 		}
@@ -716,7 +731,8 @@ class FreeplayState extends funkin.states.MusicBeatState
 			}
 			FlxG.sound.music.volume = 0;
 
-			FlxG.camera.flash(FlxColor.WHITE, 1);
+			if (FlxG.save.data.flashing)
+				FlxG.camera.flash(FlxColor.WHITE, 1);
 			FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.7);
 
 			StickerTransition.start(function()

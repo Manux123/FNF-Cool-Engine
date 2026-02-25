@@ -576,7 +576,8 @@ class RatingState extends FlxSubState
 		bf.animation.play('hey', true);
 
 		// Efectos de salida
-		FlxG.camera.flash(FlxColor.WHITE, 0.5);
+		if (FlxG.save.data.flashing)
+			FlxG.camera.flash(FlxColor.WHITE, 0.5);
 		FlxG.camera.shake(0.005, 0.3);
 
 		// Fade out de música

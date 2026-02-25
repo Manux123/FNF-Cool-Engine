@@ -21,6 +21,8 @@ import funkin.menus.OptionsMenuState;
 import openfl.display.BitmapData as Bitmap;
 import funkin.debug.AnimationDebug;
 import funkin.debug.StageEditor;
+import funkin.debug.DialogueEditor;
+import funkin.debug.charting.ChartingState;
 import data.PlayerSettings;
 import funkin.scripting.StateScriptHandler;
 
@@ -177,6 +179,17 @@ class MainMenuState extends funkin.states.MusicBeatState
 
 	var selectedSomethin:Bool = false;
 
+	/** Developer Mode — da acceso a los editores (Chart, Stage, Dialogue, AnimDebug). */
+	public static var developerMode(get, set):Bool;
+	static inline function get_developerMode():Bool
+		return FlxG.save.data.developerMode == true;
+	static inline function set_developerMode(v:Bool):Bool
+	{
+		FlxG.save.data.developerMode = v;
+		FlxG.save.flush();
+		return v;
+	}
+
 	override function update(elapsed:Float)
 	{
 		#if HSCRIPT_ALLOWED
@@ -190,12 +203,14 @@ class MainMenuState extends funkin.states.MusicBeatState
 		}
 		#end
 
-		if (FlxG.keys.justPressed.ONE)
-			StateTransition.switchState(new AnimationDebug('bf'));
-		/*
-			if (FlxG.keys.justPressed.TWO)
-				StateTransition.switchState(new StageEditor()); */
+		// ── Teclas de editor (solo en developer mode) ──────────────────────────
+		if (developerMode)
+		{
+			if (FlxG.keys.justPressed.ONE)
+				StateTransition.switchState(new AnimationDebug('bf'));
+		}
 
+		// ── Mod Selector ────────────────────────────────────────────────────────
 		if (FlxG.keys.justPressed.SHIFT)
 			StateTransition.switchState(new ModSelectorState());
 
@@ -247,7 +262,8 @@ class MainMenuState extends funkin.states.MusicBeatState
 					// FlxTween.tween(menuItem, {x: menuItem.x + 200}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
 					selectedSomethin = true;
 					FlxG.sound.play(Paths.sound('menus/confirmMenu'));
-					FlxG.camera.flash(FlxColor.WHITE);
+					if (FlxG.save.data.flashing)
+						FlxG.camera.flash(FlxColor.WHITE);
 
 					menuItems.forEach(function(spr:FlxSprite)
 					{

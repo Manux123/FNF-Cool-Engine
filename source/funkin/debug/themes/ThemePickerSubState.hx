@@ -69,9 +69,12 @@ class ThemePickerSubState extends FlxSubState
 	var _nameInput:FlxUIInputText;
 	var _statusTxt:FlxText;
 
-	public function new()
+	var _onApply:Null<Void->Void> = null;
+
+	public function new(?onApply:Void->Void)
 	{
 		super();
+		_onApply = onApply;
 		_preview = _copyTheme(EditorTheme.current);
 	}
 
@@ -428,6 +431,7 @@ class ThemePickerSubState extends FlxSubState
 		if (_nameInput != null && _nameInput.text.trim() != '')
 			_preview.name = _nameInput.text.trim();
 		EditorTheme.applyCustom(_preview);
+		if (_onApply != null) _onApply();
 		_setStatus('Theme "${_preview.name}" saved. Close and reopen the editor to see it.');
 	}
 

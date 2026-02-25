@@ -61,6 +61,11 @@ class MusicBeatState extends FlxUIState
 	}
 	
 	override function destroy() {
+		// ✅ FIX: Ocultar el SoundTray al cambiar de estado
+		var soundTray = FlxG.plugins.get(SoundTray);
+		if (soundTray != null)
+			cast(soundTray, SoundTray).forceHide();
+		
 		controls.removeFlxInput(trackedinputs);
 		Paths.clearCache();
 		Paths.clearFlxBitmapCache();
@@ -74,6 +79,13 @@ class MusicBeatState extends FlxUIState
 	#if !mobileC
 	override function destroy():Void
 	{
+		// ✅ FIX: Ocultar el SoundTray al cambiar de estado
+		// Esto previene que el tray se quede visible si se cambió de estado
+		// mientras el timer de auto-hide estaba activo
+		var soundTray = FlxG.plugins.get(SoundTray);
+		if (soundTray != null)
+			cast(soundTray, SoundTray).forceHide();
+		
 		// Limpieza agresiva igual a la de Codename Engine:
 		// 1. LRU local de Paths (atlas + bitmaps propios del engine)
 		Paths.clearCache();

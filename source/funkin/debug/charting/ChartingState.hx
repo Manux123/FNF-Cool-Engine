@@ -24,6 +24,7 @@ import flixel.util.FlxColor;
 import flixel.util.FlxStringUtil;
 import flixel.util.FlxTimer;
 import haxe.Json;
+import haxe.io.Path as HaxePath;
 import lime.utils.Assets;
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
@@ -2561,9 +2562,24 @@ class ChartingState extends funkin.states.MusicBeatState
 		#if sys
 		try
 		{
-			var path = Paths.resolve('data/${_song.song.toLowerCase()}/autosave-${_song.song.toLowerCase()}.json');
+			// Guardar en la carpeta del mod activo si existe, si no en assets/
+			final songKey = _song.song.toLowerCase();
+			var path:String;
+			if (mods.ModManager.isActive())
+			{
+				final modRoot = mods.ModManager.modRoot();
+				path = '$modRoot/songs/$songKey/autosave-$songKey.json';
+			}
+			else
+			{
+				path = Paths.resolve('data/$songKey/autosave-$songKey.json');
+			}
+			// Asegurar que el directorio existe
+			final dir = HaxePath.directory(path);
+			if (!sys.FileSystem.exists(dir))
+				sys.FileSystem.createDirectory(dir);
 			sys.io.File.saveContent(path, data);
-			showMessage('💾 Autosaved!', ACCENT_SUCCESS);
+			showMessage('💾 Autosaved → ${mods.ModManager.isActive() ? "MOD" : "assets"}', ACCENT_SUCCESS);
 		}
 		catch (e:Dynamic)
 		{

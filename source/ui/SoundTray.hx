@@ -106,13 +106,24 @@ class SoundTray extends FlxBasic
         volumeBarBg.update(elapsed);
         volumeBar.update(elapsed);
 
-        // Teclas de volumen
-        if (FlxG.keys.justPressed.ZERO || FlxG.keys.justPressed.NUMPADZERO)
-            toggleMute();
-        if (FlxG.keys.justPressed.PLUS || FlxG.keys.justPressed.NUMPADPLUS)
-            volumeUp();
-        if (FlxG.keys.justPressed.MINUS || FlxG.keys.justPressed.NUMPADMINUS)
-            volumeDown();
+        // ✅ FIX: No procesar teclas de volumen si hay un campo de texto activo
+        // Esto evita que al escribir +/- en editores se cambie el volumen
+        var hasActiveTextField:Bool = false;
+        #if flash
+        if (flash.text.TextField.focus != null)
+            hasActiveTextField = true;
+        #end
+        
+        if (!hasActiveTextField)
+        {
+            // Teclas de volumen
+            if (FlxG.keys.justPressed.ZERO || FlxG.keys.justPressed.NUMPADZERO)
+                toggleMute();
+            if (FlxG.keys.justPressed.PLUS || FlxG.keys.justPressed.NUMPADPLUS)
+                volumeUp();
+            if (FlxG.keys.justPressed.MINUS || FlxG.keys.justPressed.NUMPADMINUS)
+                volumeDown();
+        }
     }
 
     override public function draw():Void
@@ -133,11 +144,12 @@ class SoundTray extends FlxBasic
     public function show():Void
     {
         if (currentTween != null) currentTween.cancel();
-        hideTimer.cancel();
+        if (hideTimer != null) hideTimer.cancel();
 
         currentTween = FlxTween.tween(volumeBox, {y: SHOWN_Y}, 0.3, {
             onComplete: function(_) {
-                hideTimer.start(1.0, function(_) { hide(); });
+                if (hideTimer != null) // ✅ FIX: Verificar null antes de usar
+                    hideTimer.start(1.0, function(_) { hide(); });
             }
         });
 
@@ -147,10 +159,26 @@ class SoundTray extends FlxBasic
     public function hide():Void
     {
         if (currentTween != null) currentTween.cancel();
+        if (hideTimer != null) hideTimer.cancel(); // ✅ FIX: Verificar null antes de cancelar
 
         var hiddenY:Float = -(volumeBox.height + 20);
         currentTween = FlxTween.tween(volumeBox, {y: hiddenY}, 0.3);
 
+        isShowing = false;
+    }
+
+    /**
+     * ✅ FIX: Fuerza el ocultamiento inmediato del SoundTray
+     * Útil al cambiar de estado para evitar que el tray se quede visible
+     */
+    public function forceHide():Void
+    {
+        if (currentTween != null) currentTween.cancel();
+        if (hideTimer != null) hideTimer.cancel(); // ✅ FIX: Verificar null antes de cancelar
+        
+        var hiddenY:Float = -(volumeBox.height + 20);
+        volumeBox.y = hiddenY; // Ocultar inmediatamente sin animación
+        
         isShowing = false;
     }
 

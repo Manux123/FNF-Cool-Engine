@@ -94,19 +94,42 @@ class PathsCache
 	/**
 	 * Activa el GPU caching: sube texturas a VRAM y libera la imagen en RAM.
 	 * Por defecto true en desktop, false en web/mobile (sin context3D fiable).
-	 * El usuario puede cambiarlo desde las opciones.
+	 * El usuario puede cambiarlo desde las opciones o el menú de mods.
 	 */
 	public static var gpuCaching:Bool =
 		#if (desktop && !hl) true #else false #end;
 
 	/**
-	 * Límite de FlxGraphics en caché antes de empezar a evictar.
-	 * 80 cubre generosamente personajes + stage + UI sin desperdiciar RAM.
+	 * Modo de baja memoria (inspirado en Codename Engine lowMemoryMode).
+	 * Reduce maxGraphics 80→40 y maxSounds 64→32 en tiempo real.
+	 * Recomendado en PCs con menos de 4 GB de RAM.
+	 * Configurable desde el menú de mods (tab SISTEMA).
 	 */
-	public static var maxGraphics:Int = 80;
+	public static var lowMemoryMode(default, set):Bool = false;
+	static function set_lowMemoryMode(v:Bool):Bool
+	{
+		lowMemoryMode = v;
+		if (instance != null)
+		{
+			instance.maxGraphics = v ? 40 : 80;
+			instance.maxSounds   = v ? 32 : 64;
+		}
+		return v;
+	}
 
-	/** Límite de sonidos en caché. Los sonidos son mucho más ligeros. */
-	public static var maxSounds:Int = 64;
+	/**
+	 * Si es true, la música de canciones NO se cachea entre sesiones
+	 * (inspirado en Codename Engine streamedMusic).
+	 * Libera ~15 MB de RAM de audio por canción.
+	 * Configurable desde el menú de mods (tab SISTEMA).
+	 */
+	public static var streamedMusic:Bool = false;
+
+	/** Límite de FlxGraphics en caché (80 normal, 40 en lowMemoryMode). */
+	public var maxGraphics:Int = 80;
+
+	/** Límite de sonidos en caché (64 normal, 32 en lowMemoryMode). */
+	public var maxSounds:Int = 64;
 
 	// ── Almacenamiento ────────────────────────────────────────────────────────
 
@@ -291,8 +314,15 @@ class PathsCache
 			return null;
 		}
 
+		// Si streamedMusic está activo y es música de canción, no cachear
+		if (streamedMusic && (key.contains('/songs/') || key.contains('\\songs\\') || key.contains('inst.') || key.contains('voices.')))
+		{
+			markInUse(key);
+			return sound;
+		}
+
 		// Evictar si se supera el límite
-		if (_soundCount() >= maxSounds)
+		if (_soundCount() >= instance.maxSounds)
 			_evictOldestSound();
 
 		currentTrackedSounds.set(key, sound);
@@ -512,7 +542,7 @@ class PathsCache
 	/** Almacena un FlxGraphic en la caché, con evicción LRU si es necesario. */
 	function _storeGraphic(key:String, graphic:FlxGraphic):FlxGraphic
 	{
-		if (_graphicCount() >= maxGraphics)
+		if (_graphicCount() >= instance.maxGraphics)
 			_evictLRUGraphic();
 
 		currentTrackedGraphics.set(key, graphic);

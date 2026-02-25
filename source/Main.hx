@@ -209,6 +209,7 @@ class Main extends Sprite
 
 		// ── Mods ──────────────────────────────────────────────────────────────
 		mods.ModManager.init();
+		mods.ModManager.applyStartupMod(); // activa el startup mod si no hay sesión guardada
 		mods.ModManager.onModChanged = function(newMod:Null<String>)
 		{
 			Paths.forceClearCache();

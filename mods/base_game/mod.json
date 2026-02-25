@@ -1,0 +1,13 @@
+{
+    "id": "",
+    "name": "Base Game",
+    "description": "",
+    "author": "The Funkin Crew",
+    "version": "1.0.0",
+    "priority": 0,
+    "color": "#6633CC",
+    "website": "",
+    "enabled": true,
+    "startupDefault": true,
+    "folder": "base_game"
+}

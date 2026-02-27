@@ -16,22 +16,34 @@ import flixel.input.actions.FlxActionInput;
 import funkin.gameplay.controls.Controls;
 import ui.SoundTray;
 import funkin.transitions.StateTransition;
+import funkin.scripting.StateScriptHandler;
 #if debug
 import funkin.debug.DebugConsole;
 #end
 
+/**
+ * MusicBeatState v2 — base de todos los estados del juego.
+ *
+ * Novedades:
+ *   • Auto-scripting: si hay scripts en assets/states/{ClassName}/, los carga
+ *     automáticamente sin que cada state tenga que hacerlo manualmente.
+ *   • Propagación de beatHit/stepHit a scripts.
+ *   • Hook onStateCreate/onStateDestroy para scripts globales.
+ *   • autoScriptLoad: bool para deshabilitar si el state lo gestiona manualmente.
+ */
 class MusicBeatState extends FlxUIState
 {
-	private var lastBeat:Float = 0;
-	private var lastStep:Float = 0;
+	private var lastBeat : Float = 0;
+	private var lastStep : Float = 0;
 
-	private var curStep:Int = 0;
-	private var curBeat:Int = 0;
+	private var curStep : Int = 0;
+	private var curBeat : Int = 0;
 	private var controls(get, never):Controls;
 
-	// ── Cache para búsqueda incremental en bpmChangeMap ───────────────────────
-	// El mapa BPM está ordenado — como songPosition es monotónica, solo
-	// necesitamos avanzar este puntero, nunca retroceder. O(1) amortizado.
+	/** Si true, carga automáticamente scripts de assets/states/{ClassName}/. */
+	public var autoScriptLoad:Bool = true;
+
+	// Cache BPM incremental
 	private var _bpmIdx:Int = 0;
 
 	inline function get_controls():Controls
@@ -39,10 +51,10 @@ class MusicBeatState extends FlxUIState
 
 	#if mobileC
 	var _virtualpad:FlxVirtualPad;
-
 	var trackedinputs:Array<FlxActionInput> = [];
 
-	public function addVirtualPad(?DPad:FlxDPadMode, ?Action:FlxActionMode) {
+	public function addVirtualPad(?DPad:FlxDPadMode, ?Action:FlxActionMode)
+	{
 		_virtualpad = new FlxVirtualPad(DPad, Action);
 		_virtualpad.alpha = 0.75;
 		add(_virtualpad);
@@ -59,60 +71,42 @@ class MusicBeatState extends FlxUIState
 		controls.addAndroidBack();
 		#end
 	}
-	
-	override function destroy() {
-		// ✅ FIX: Ocultar el SoundTray al cambiar de estado
-		var soundTray = FlxG.plugins.get(SoundTray);
-		if (soundTray != null)
-			cast(soundTray, SoundTray).forceHide();
-		
+
+	override function destroy()
+	{
+		_onDestroy();
 		controls.removeFlxInput(trackedinputs);
-		Paths.clearCache();
-		Paths.clearFlxBitmapCache();
-		try { openfl.utils.Assets.cache.clear(); } catch (_:Dynamic) {}
+		// NOTE: Paths.clearCache() removed — it was called while the NEW state's
+		// assets were already loaded, destroying graphics that belong to the
+		// incoming state. FunkinCache's postStateSwitch signal handles cleanup.
 		super.destroy();
 	}
 	#else
-	public function addVirtualPad(?DPad, ?Action){};
-	#end
-	
-	#if !mobileC
+	public function addVirtualPad(?DPad, ?Action) {}
+
 	override function destroy():Void
 	{
-		// ✅ FIX: Ocultar el SoundTray al cambiar de estado
-		// Esto previene que el tray se quede visible si se cambió de estado
-		// mientras el timer de auto-hide estaba activo
-		var soundTray = FlxG.plugins.get(SoundTray);
-		if (soundTray != null)
-			cast(soundTray, SoundTray).forceHide();
-		
-		// Limpieza agresiva igual a la de Codename Engine:
-		// 1. LRU local de Paths (atlas + bitmaps propios del engine)
-		Paths.clearCache();
-		// 2. Caché de bitmaps de HaxeFlixel (FlxG.bitmap acumula entre estados)
-		Paths.clearFlxBitmapCache();
-		// 3. Caché interno de OpenFL/Lime (getBitmapData() tiene su propio pool)
-		try { openfl.utils.Assets.cache.clear(); } catch (_:Dynamic) {}
+		_onDestroy();
+		// NOTE: Paths.clearCache() removed — it was called while the NEW state's
+		// assets were already loaded, destroying graphics that belong to the
+		// incoming state. FunkinCache's postStateSwitch signal handles cleanup.
 		super.destroy();
 	}
 	#end
 
-	override function create()
+	override function create():Void
 	{
-		if (transIn != null)
-			trace('reg ' + transIn.region);
-
-		// Resetear puntero BPM para este nuevo state
 		_bpmIdx = 0;
 
 		super.create();
-
-		// Disparar animación de entrada (StateTransition.onStateCreated
-		// comprueba si hay un intro pendiente antes de hacer nada)
 		StateTransition.onStateCreated();
+
+		// Auto-cargar scripts si el state lo permite y no los cargó manualmente
+		if (autoScriptLoad)
+			_autoLoadScripts();
 	}
 
-	override function update(elapsed:Float)
+	override function update(elapsed:Float):Void
 	{
 		var oldStep:Int = curStep;
 
@@ -129,21 +123,64 @@ class MusicBeatState extends FlxUIState
 		super.update(elapsed);
 	}
 
+	// ─── Auto-scripting ───────────────────────────────────────────────────────
+
+	/**
+	 * Carga scripts desde assets/states/{ClassName}/ si existen.
+	 * Se llama automáticamente al crear el state. Los states que ya
+	 * gestionan sus scripts manualmente deben poner `autoScriptLoad = false`
+	 * en su `create()` ANTES de llamar a `super.create()`.
+	 */
+	function _autoLoadScripts():Void
+	{
+		#if HSCRIPT_ALLOWED
+		final className = Type.getClassName(Type.getClass(this)).split('.').pop();
+		final folder    = 'assets/states/${className.toLowerCase()}';
+
+		#if sys
+		if (!sys.FileSystem.exists(folder)) return;
+		#end
+
+		// Solo cargamos si no hay scripts ya activos para este state
+		if (Lambda.count(StateScriptHandler.scripts) == 0)
+		{
+			StateScriptHandler.init();
+			StateScriptHandler.loadStateScripts(className, this);
+
+			if (Lambda.count(StateScriptHandler.scripts) > 0)
+			{
+				StateScriptHandler.callOnScripts('onCreate', []);
+				trace('[MusicBeatState] Auto-scripts cargados para $className.');
+			}
+		}
+		#end
+	}
+
+	function _onDestroy():Void
+	{
+		var soundTray = FlxG.plugins.get(SoundTray);
+		if (soundTray != null)
+			cast(soundTray, SoundTray).forceHide();
+
+		// BUGFIX: Limpiar scripts de HScript al destruir el state.
+		// StateScriptHandler es estático — si los scripts no se limpian aquí,
+		// siguen activos con referencias al state destruido. El nuevo state
+		// nunca carga sus propios scripts (la guarda Lambda.count == 0 es false)
+		// y los scripts viejos crashean al llamar métodos sobre el state muerto.
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.clearStateScripts();
+		#end
+	}
+
+	// ─── BPM / Beat ───────────────────────────────────────────────────────────
+
 	public function updateBeat():Void
 	{
 		curBeat = Math.floor(curStep / 4);
 	}
 
 	/**
-	 * Calcula el step actual.
-	 *
-	 * OPTIMIZACIÓN: búsqueda incremental en vez de loop completo desde 0.
-	 * El bpmChangeMap está ordenado por songTime. Como Conductor.songPosition
-	 * normalmente solo avanza, basta con mover el puntero hacia adelante.
-	 * Si la posición retrocede (seek/restart), el puntero se resetea a 0.
-	 *
-	 * Coste original: O(n) por frame (n = cambios de BPM).
-	 * Coste nuevo:    O(1) amortizado (≈ O(k) donde k = saltos de BPM en el frame).
+	 * Calcula el step actual con búsqueda incremental O(1) amortizado.
 	 */
 	public function updateCurStep():Void
 	{
@@ -157,11 +194,9 @@ class MusicBeatState extends FlxUIState
 			return;
 		}
 
-		// Si la posición retrocedió (seek o restart de canción), releer desde 0
 		if (_bpmIdx > 0 && pos < map[_bpmIdx].songTime)
 			_bpmIdx = 0;
 
-		// Avanzar puntero mientras el próximo evento ya pasó
 		while (_bpmIdx + 1 < len && pos >= map[_bpmIdx + 1].songTime)
 			_bpmIdx++;
 
@@ -171,12 +206,23 @@ class MusicBeatState extends FlxUIState
 
 	public function stepHit():Void
 	{
+		// Propagar a scripts (StateScriptHandler si hay activos)
+		#if HSCRIPT_ALLOWED
+		if (Lambda.count(StateScriptHandler.scripts) > 0)
+			StateScriptHandler.fireRaw('onStepHit', [curStep]);
+		#end
+
 		if (curStep % 4 == 0)
 			beatHit();
 	}
 
 	public function beatHit():Void
 	{
-		// override in subclasses
+		// Propagar a scripts
+		#if HSCRIPT_ALLOWED
+		if (Lambda.count(StateScriptHandler.scripts) > 0)
+			StateScriptHandler.fireRaw('onBeatHit', [curBeat]);
+		#end
+		// override en subclases
 	}
 }

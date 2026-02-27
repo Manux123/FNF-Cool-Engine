@@ -102,6 +102,28 @@ class FunkinSprite extends FlxSprite
 		trace('[FunkinSprite] Todos los cachés limpiados.');
 	}
 
+	/**
+	 * Elimina del _frameCache solo las entradas cuyo atlas ya no es válido
+	 * (bitmap dispuesto o graphic nulo). Preserva entradas válidas de la
+	 * sesión actual para que los sprites en pantalla puedan reutilizarlas.
+	 * Llamar desde PathsCache.clearPreviousSession() en lugar de clearAllCaches().
+	 */
+	public static function pruneStaleCache():Void
+	{
+		final toRemove:Array<String> = [];
+		for (key => atlas in _frameCache)
+		{
+			@:privateAccess
+			final valid = atlas != null && atlas.parent != null && atlas.parent.bitmap != null;
+			if (!valid)
+				toRemove.push(key);
+		}
+		for (key in toRemove)
+			_frameCache.remove(key);
+		if (toRemove.length > 0)
+			trace('[FunkinSprite] pruneStaleCache: ${toRemove.length} entradas stale eliminadas.');
+	}
+
 	// ── Internos de LRU ───────────────────────────────────────────────────────
 
 	static function _frameCachePut(key:String, frames:FlxAtlasFrames):Void
@@ -192,7 +214,10 @@ class FunkinSprite extends FlxSprite
 
 		_animateSprite = new FlxAnimate(x, y);
 		_animateSprite.loadAtlas(fullPath);
-		visible = false;
+		// No establecer visible=false aquí: el override de draw() ya delega en
+		// _animateSprite.draw() y nunca llama super.draw(), así que el sprite
+		// base no se pinta. Poner visible=false impide que FlxGroup llame draw()
+		// y el atlas nunca se renderiza.
 
 		trace('[FunkinSprite] Texture Atlas cargado: $fullPath');
 		return this;
@@ -214,9 +239,21 @@ class FunkinSprite extends FlxSprite
 		var cached = _frameCache.get(cacheKey);
 		if (cached != null)
 		{
-			_frameCacheTouch(cacheKey);
-			this.frames = cached;
-			return this;
+			@:privateAccess
+			final valid = cached.parent != null && cached.parent.bitmap != null;
+			if (valid)
+			{
+				// BUGFIX: rescue the FlxGraphic from _previousGraphics → _currentGraphics
+				// so that Paths.clearPreviousSession() doesn't destroy it while this
+				// sprite still holds a reference via this.frames.
+				_frameCacheTouch(cacheKey);
+				this.frames = cached;
+				return this;
+			}
+			// Atlas stale → evict and reload
+			_frameCache.remove(cacheKey);
+			final idx = _frameLRU.indexOf(cacheKey);
+			if (idx >= 0) _frameLRU.splice(idx, 1);
 		}
 
 		final frames = Paths.getSparrowAtlas(key);
@@ -247,9 +284,19 @@ class FunkinSprite extends FlxSprite
 		var cached = _frameCache.get(cacheKey);
 		if (cached != null)
 		{
-			_frameCacheTouch(cacheKey);
-			this.frames = cached;
-			return this;
+			@:privateAccess
+			final valid = cached.parent != null && cached.parent.bitmap != null;
+			if (valid)
+			{
+				// BUGFIX: rescue the FlxGraphic from _previousGraphics → _currentGraphics
+				_frameCacheTouch(cacheKey);
+				this.frames = cached;
+				return this;
+			}
+			// Atlas stale → evict and reload
+			_frameCache.remove(cacheKey);
+			final idx = _frameLRU.indexOf(cacheKey);
+			if (idx >= 0) _frameLRU.splice(idx, 1);
 		}
 
 		final frames = Paths.getPackerAtlas(key);
@@ -290,9 +337,16 @@ class FunkinSprite extends FlxSprite
 		var cached = _frameCache.get(cacheKey);
 		if (cached != null)
 		{
-			_frameCacheTouch(cacheKey);
-			this.frames = cached;
-			return this;
+			// BUGFIX: Validar bitmap antes de reutilizar — atlas stale → FlxDrawQuadsItem crash
+			@:privateAccess
+			final valid = cached.parent != null && cached.parent.bitmap != null;
+			if (valid)
+			{
+				_frameCacheTouch(cacheKey);
+				this.frames = cached;
+				return this;
+			}
+			_frameCache.remove(cacheKey);
 		}
 
 		var frames = Paths.characterSprite(key);
@@ -308,9 +362,17 @@ class FunkinSprite extends FlxSprite
 		var cachedTxt = _frameCache.get(cacheKeyTxt);
 		if (cachedTxt != null)
 		{
-			_frameCacheTouch(cacheKeyTxt);
-			this.frames = cachedTxt;
-			return this;
+			// BUGFIX: misma validación de atlas stale
+			@:privateAccess
+			final validTxt = cachedTxt.parent != null && cachedTxt.parent.bitmap != null;
+			if (validTxt)
+			{
+				// BUGFIX #2: rescue del FlxGraphic de _previousGraphics → _currentGraphics
+				_frameCacheTouch(cacheKeyTxt);
+				this.frames = cachedTxt;
+				return this;
+			}
+			_frameCache.remove(cacheKeyTxt);
 		}
 
 		var framesTxt = Paths.characterSpriteTxt(key);
@@ -341,9 +403,18 @@ class FunkinSprite extends FlxSprite
 		var cached = _frameCache.get(cacheKey);
 		if (cached != null)
 		{
-			_frameCacheTouch(cacheKey);
-			this.frames = cached;
-			return this;
+			// BUGFIX: Validar que el atlas cacheado sigue siendo válido (bitmap no dispuesto).
+			// Un atlas stale de una sesión anterior causa FlxDrawQuadsItem crash en el primer render.
+			@:privateAccess
+			final valid = cached.parent != null && cached.parent.bitmap != null;
+			if (valid)
+			{
+				_frameCacheTouch(cacheKey);
+				this.frames = cached;
+				return this;
+			}
+			// Atlas inválido → eliminarlo del caché y recargar
+			_frameCache.remove(cacheKey);
 		}
 
 		final frames = Paths.stageSprite(key);
@@ -351,6 +422,14 @@ class FunkinSprite extends FlxSprite
 		{
 			_frameCachePut(cacheKey, frames);
 			this.frames = frames;
+		}
+		else
+		{
+			// BUGFIX: Sin este fallback, this.frames queda null y el sprite se renderiza igual
+			// → crash en FlxDrawQuadsItem::render. Usar placeholder invisible como loadCharacterSparrow.
+			trace('[FunkinSprite] WARNING: Stage asset no encontrado para "$key" — placeholder invisible');
+			makeGraphic(1, 1, 0x00000000);
+			visible = false;
 		}
 		return this;
 	}
@@ -476,6 +555,10 @@ class FunkinSprite extends FlxSprite
 		_animateSprite.scrollFactor.x = this.scrollFactor.x;
 		_animateSprite.scrollFactor.y = this.scrollFactor.y;
 		_animateSprite.cameras        = this.cameras;
+		// Bug fix: sincronizar offset para que los offsets de animación funcionen
+		_animateSprite.offset.set(this.offset.x, this.offset.y);
+		// Bug fix: sincronizar antialiasing
+		_animateSprite.antialiasing   = this.antialiasing;
 	}
 
 	override public function draw():Void

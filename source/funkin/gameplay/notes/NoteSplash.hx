@@ -47,12 +47,20 @@ class NoteSplash extends FlxSprite
 		// Inicializar sistema
 		NoteSkinSystem.init();
 
-		// Limpiar animaciones anteriores si existen
+		// Limpiar animaciones anteriores + nullear frames ANTES de recargar.
+		// Si el splash viene del pool y el atlas fue dispuesto (vuelve de
+		// ChartingState), frames puede apuntar a un FlxAtlasFrames inválido.
+		// Nullear aquí fuerza la recarga limpia en loadNormalSplash/loadHoldCoverSplash.
 		if (animation != null)
 		{
 			animation.destroyAnimations();
 		}
-
+		// Nullear el atlas si el bitmap ya no es válido (sesión anterior)
+		@:privateAccess
+		if (frames != null && frames.parent != null && frames.parent.bitmap == null)
+		{
+			frames = null;
+		}
 		// NUEVO: Para hold splashes, usar archivos holdCover específicos
 		if (isHoldSplash || isReleaseSplash)
 		{

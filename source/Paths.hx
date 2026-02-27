@@ -67,14 +67,18 @@ class Paths
 	// FlxAtlasFrames es ligero: sólo contiene un array de FlxRect + referencia
 	// al FlxGraphic. No tiene datos de píxeles propios.
 	// El bitmap real vive en PathsCache (GPU o RAM según gpuCaching).
+	// LRU eliminado: FNF nunca necesita evictar atlases durante gameplay.
+	// Los frames se liberan con clearPreviousSession(), no por eviction.
 
 	static var atlasCache:Map<String, FlxAtlasFrames> = [];
-	static var _atlasLRU:Array<String>                = [];
-	static var _atlasLRUPos:Map<String, Int>          = [];
 	static var atlasCount:Int = 0;
 
-	/** Límite de atlases en caché. Default: 80. */
-	public static var maxAtlasCache:Int = 80;
+	/**
+	 * Límite de atlases en caché.
+	 * Aumentado a 200 (antes: 80) ya que sin LRU no hay eviction durante
+	 * gameplay — los atlases se limpian en bloque al cambiar de sesión.
+	 */
+	public static var maxAtlasCache:Int = 200;
 
 	/** Si false todos los accesos van a disco (útil para depuración). */
 	public static var cacheEnabled:Bool = true;
@@ -103,6 +107,18 @@ class Paths
 	 */
 	public static inline function beginSession():Void
 		cache.beginSession();
+
+	/**
+	 * Destruye los assets de la sesión anterior que no fueron rescatados.
+	 * Llamar al FINAL de create() de un estado pesado, después de cargar
+	 * todos los assets — esto da tiempo a que los assets compartidos sean
+	 * rescatados de _previousGraphics a _currentGraphics durante la carga.
+	 */
+	public static inline function clearPreviousSession():Void
+	{
+		cache.clearPreviousSession();
+		_pruneInvalidAtlases();
+	}
 
 	/**
 	 * Añade una clave a las exclusiones permanentes (nunca se evicta).
@@ -143,8 +159,39 @@ class Paths
 	}
 
 	/**
-	 * Prueba candidatos en orden y devuelve el primero que existe en disco.
+	 * Resolve a path for WRITING (saving files).
+	 * Unlike resolve(), this does NOT check if the file exists —
+	 * it always returns the mod path if a mod is active.
+	 * Use this whenever you need to save/create a file.
+	 *
+	 * Examples:
+	 *   resolveWrite('characters/bf.json') → 'mods/myMod/characters/bf.json'  (mod active)
+	 *   resolveWrite('characters/bf.json') → 'assets/characters/bf.json'      (no mod)
 	 */
+	public static function resolveWrite(file:String):String
+	{
+		#if sys
+		if (ModManager.isActive())
+			return '${ModManager.modRoot()}/$file';
+		#end
+		return 'assets/$file';
+	}
+
+	/**
+	 * Ensure the directory for a file path exists, then return the path.
+	 * Convenience wrapper for write operations.
+	 */
+	public static function ensureDir(filePath:String):String
+	{
+		#if sys
+		final dir = haxe.io.Path.directory(filePath);
+		if (dir != '' && !sys.FileSystem.exists(dir))
+			sys.FileSystem.createDirectory(dir);
+		#end
+		return filePath;
+	}
+
+
 	public static function resolveAny(candidates:Array<String>):String
 	{
 		for (c in candidates)
@@ -225,16 +272,42 @@ class Paths
 		return resolve('characters/images/$key/');
 
 	public static function sound(key:String):String
-		return resolve('sounds/$key.$SOUND_EXT', SOUND);
+	{
+		final path = resolve('sounds/$key.$SOUND_EXT', SOUND);
+		#if sys
+		// Devolver el path si existe en disco aunque no esté en el manifest de OpenFL
+		if (FileSystem.exists(path)) return path;
+		// Fallback: buscar directamente en assets/ para builds sin recompilar
+		final direct = 'assets/sounds/$key.$SOUND_EXT';
+		if (FileSystem.exists(direct)) return direct;
+		#end
+		return path;
+	}
 
 	public static function soundStage(key:String):String
-		return resolve('stages/$key.$SOUND_EXT', SOUND);
+	{
+		final path = resolve('stages/$key.$SOUND_EXT', SOUND);
+		#if sys
+		if (FileSystem.exists(path)) return path;
+		#end
+		return path;
+	}
 
 	public static inline function soundRandom(key:String, min:Int, max:Int):String
 		return sound(key + FlxG.random.int(min, max));
 
 	public static function music(key:String):String
-		return resolve('music/$key.$SOUND_EXT', MUSIC);
+	{
+		final path = resolve('music/$key.$SOUND_EXT', MUSIC);
+		#if sys
+		// Devolver el path del disco directamente para builds no recompiladas
+		if (FileSystem.exists(path)) return path;
+		// Fallback: assets/ base
+		final direct = 'assets/music/$key.$SOUND_EXT';
+		if (FileSystem.exists(direct)) return direct;
+		#end
+		return path;
+	}
 
 	public static inline function font(key:String):String
 		return resolve('fonts/$key');
@@ -352,15 +425,30 @@ class Paths
 		{
 			#if sys
 			if (FileSystem.exists(path))
+			{
 				snd = Sound.fromFile(path);
+			}
 			else
 			#end
 			if (OpenFlAssets.exists(path, SOUND))
+				snd = OpenFlAssets.getSound(path, false);
+			else if (OpenFlAssets.exists(path, MUSIC))
 				snd = OpenFlAssets.getSound(path, false);
 		}
 		catch (e:Dynamic) { trace('[Paths] getSound "$path": $e'); }
 
 		return cacheEnabled ? cache.getSound(path, snd, safety) : snd;
+	}
+
+	/**
+	 * Carga música de forma segura desde el filesystem o assets embebidos.
+	 * Úsalo en lugar de FlxG.sound.playMusic(Paths.music(...)) cuando el path
+	 * puede venir de una carpeta de mods (no está en el manifest de OpenFL).
+	 */
+	public static function loadMusic(key:String):Null<Sound>
+	{
+		final path = music(key);
+		return getSound(path);
 	}
 
 	// ── Carga de audio de canción (streaming) ─────────────────────────────────
@@ -549,16 +637,20 @@ class Paths
 			}
 		}
 		atlasCache.clear();
-		_atlasLRU  = [];
-		_atlasLRUPos = [];
 		atlasCount = 0;
 		trace('[Paths] Atlas cache limpiado.');
 	}
 
 	/**
-	 * Limpia el caché de Flixel y OpenFL (bitmaps, sonidos embebidos).
-	 * No afecta a PathsCache directamente.
+	 * Limpia entradas del atlasCache cuyo FlxGraphic ya fue dispuesto.
+	 * Llamar después de GC/compact para que atlas invalidados sean detectados.
+	 * Así el siguiente acceso fuerza una recarga limpia desde disco.
 	 */
+	
+	public static inline function pruneAtlasCache():Void{
+		_pruneInvalidAtlases();
+	}
+
 	public static function clearFlxBitmapCache():Void
 	{
 		FlxG.bitmap.clearCache();
@@ -599,7 +691,6 @@ class Paths
 		{
 			final atlas = atlasCache.get(key);
 			atlasCache.remove(key);
-			_atlasLRURemove(key);
 			atlasCount--;
 			if (atlas?.parent != null)
 			{
@@ -672,12 +763,14 @@ class Paths
 			final cached = atlasCache.get(key);
 			if (_atlasValid(cached))
 			{
-				_atlasLRUTouch(key);
+				// Rescue: si el FlxGraphic del atlas está en _previousGraphics,
+				// moverlo a _currentGraphics para que sobreviva esta sesión.
+				if (cached.parent != null)
+					cache.rescueFromPrevious(cached.parent.key, cached.parent);
 				return cached;
 			}
 			// Inválido → limpiar y recargar
 			atlasCache.remove(key);
-			_atlasLRURemove(key);
 			atlasCount--;
 		}
 
@@ -796,28 +889,11 @@ class Paths
 
 	static function _storeAtlas(key:String, atlas:FlxAtlasFrames):Void
 	{
-		if (atlasCount >= maxAtlasCache) _evictAtlas();
+		// Sin eviction durante gameplay — clearPreviousSession() libera en bloque.
 		if (atlas?.parent != null)
 			atlas.parent.destroyOnNoUse = false; // PathsCache gestiona el ciclo de vida
 		atlasCache.set(key, atlas);
-		_atlasLRUPush(key);
 		atlasCount++;
-	}
-
-	static function _evictAtlas():Void
-	{
-		if (_atlasLRU.length == 0) return;
-		final key = _atlasLRU.shift();
-		_atlasLRUPos.remove(key);
-		for (i in 0..._atlasLRU.length) _atlasLRUPos.set(_atlasLRU[i], i);
-		final atlas = atlasCache.get(key);
-		atlasCache.remove(key);
-		atlasCount--;
-		if (atlas?.parent != null)
-		{
-			atlas.parent.destroyOnNoUse = true;
-			if (atlas.parent.useCount <= 0) atlas.parent.destroy();
-		}
 	}
 
 	static inline function _atlasValid(atlas:FlxAtlasFrames):Bool
@@ -835,7 +911,6 @@ class Paths
 		for (key in toRemove)
 		{
 			atlasCache.remove(key);
-			_atlasLRURemove(key);
 			atlasCount--;
 		}
 	}
@@ -907,31 +982,4 @@ class Paths
 		return 'assets/songs/${song.toLowerCase()}';
 	}
 
-	// ── LRU para atlasCache ───────────────────────────────────────────────────
-
-	static inline function _atlasLRUPush(key:String):Void
-	{
-		_atlasLRUPos.set(key, _atlasLRU.length);
-		_atlasLRU.push(key);
-	}
-
-	static function _atlasLRUTouch(key:String):Void
-	{
-		if (!_atlasLRUPos.exists(key)) return;
-		final idx = _atlasLRUPos.get(key);
-		if (idx == _atlasLRU.length - 1) return;
-		_atlasLRU.splice(idx, 1);
-		for (i in idx..._atlasLRU.length) _atlasLRUPos.set(_atlasLRU[i], i);
-		_atlasLRUPos.set(key, _atlasLRU.length);
-		_atlasLRU.push(key);
-	}
-
-	static function _atlasLRURemove(key:String):Void
-	{
-		if (!_atlasLRUPos.exists(key)) return;
-		final idx = _atlasLRUPos.get(key);
-		_atlasLRU.splice(idx, 1);
-		_atlasLRUPos.remove(key);
-		for (i in idx..._atlasLRU.length) _atlasLRUPos.set(_atlasLRU[i], i);
-	}
 }

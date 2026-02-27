@@ -1046,9 +1046,8 @@ class AnimationDebug extends MusicBeatState
 			var sourceDir = haxe.io.Path.directory(sourcePath) + "/";
 			var baseName = haxe.io.Path.withoutExtension(fileName);
 
-			var destDir = Paths.resolve("characters/images/");
-			if (!FileSystem.exists(destDir))
-				FileSystem.createDirectory(destDir);
+			var destDir = Paths.resolveWrite("characters/images/");
+			Paths.ensureDir(destDir + "x");  // ensure dir exists
 
 			File.copy(sourcePath, destDir + fileName);
 
@@ -1086,11 +1085,10 @@ class AnimationDebug extends MusicBeatState
 		try
 		{
 			var fileName = haxe.io.Path.withoutDirectory(sourcePath);
-			var destDir = (fileType == "icon") ? Paths.resolve("icons/") : Paths.resolve("characters/images/");
+			var destDir = (fileType == "icon") ? Paths.resolveWrite("images/icons/") : Paths.resolveWrite("characters/images/");
 			var newFileName = fileName;
 
-			if (!FileSystem.exists(destDir))
-				FileSystem.createDirectory(destDir);
+			Paths.ensureDir(destDir + "x");  // ensure dir exists
 
 			if (fileType == "icon" && healthIconInput != null && healthIconInput.text != "")
 			{
@@ -1152,11 +1150,9 @@ class AnimationDebug extends MusicBeatState
 				return;
 			}
 
-			// Destino: assets/characters/images/<daAnim>/
-			// Coincide con Paths.characterFolder(daAnim)
-			var destFolder = Paths.resolve('characters/images/$daAnim/');
-			if (!FileSystem.exists(destFolder))
-				FileSystem.createDirectory(destFolder);
+			// Destino: {root}/characters/images/<daAnim>/
+			var destFolder = Paths.resolveWrite('characters/images/$daAnim/');
+			Paths.ensureDir(destFolder + "x");  // ensure dir exists
 
 			// Copiar los tres archivos
 			File.copy(sourcePngPath, destFolder + fileName);
@@ -1539,10 +1535,8 @@ class AnimationDebug extends MusicBeatState
 		#if sys
 		try
 		{
-			if (!FileSystem.exists(Paths.resolve('characters/')))
-				FileSystem.createDirectory(Paths.resolve('characters/'));
-
-			File.saveContent(Paths.resolve('characters/' + daAnim + '.json'), jsonString);
+			final charPath = Paths.ensureDir(Paths.resolveWrite('characters/$daAnim.json'));
+			File.saveContent(charPath, jsonString);
 			displayCharacter(daAnim);
 			loadCharacterData();
 		}

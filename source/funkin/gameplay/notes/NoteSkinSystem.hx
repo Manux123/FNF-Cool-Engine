@@ -5,7 +5,9 @@ import lime.utils.Assets;
 import funkin.gameplay.PlayState;
 import flixel.FlxG;
 import flixel.FlxSprite;
+import flixel.graphics.FlxGraphic;
 import flixel.graphics.frames.FlxAtlasFrames;
+import openfl.display.BitmapData;
 import haxe.Json;
 #if sys
 import sys.FileSystem;
@@ -1091,7 +1093,9 @@ class NoteSkinSystem
 		if (tex == null || tex.path == null)
 		{
 			trace('[NoteSkinSystem] loadAtlas: textura inválida, usando Default');
-			return Paths.skinSprite('Default/NOTE_assets');
+			var fallback = Paths.skinSprite('Default/NOTE_assets');
+			if (fallback != null) return fallback;
+			return _makeFallbackFrames();
 		}
 
 		var path:String = tex.path;
@@ -1101,37 +1105,70 @@ class NoteSkinSystem
 		if (!assetExists(path, folder))
 		{
 			trace('[NoteSkinSystem] loadAtlas: "$folder/$path" no encontrado, usando Default');
-			return Paths.skinSprite('Default/NOTE_assets');
+			var fallback = Paths.skinSprite('Default/NOTE_assets');
+			if (fallback != null) return fallback;
+			return _makeFallbackFrames();
 		}
 
 		try
 		{
+			var result:FlxAtlasFrames = null;
 			switch (type.toLowerCase())
 			{
 				case "sparrow":
-					return Paths.skinSprite('$folder/$path');
+					result = Paths.skinSprite('$folder/$path');
 
 				case "packer":
-					return Paths.skinSpriteTxt('$folder/$path');
+					result = Paths.skinSpriteTxt('$folder/$path');
 
 				case "image":
 					var graphic = FlxG.bitmap.add('assets/skins/$folder/$path.png');
+					if (graphic == null) throw 'PNG no encontrado para image skin: $folder/$path';
 					// Dimensiones de frame leídas del JSON — sin hardcodeo por nombre de archivo
 					var fw:Int = tex.frameWidth != null ? Std.int(tex.frameWidth) : 17;
 					var fh:Int = tex.frameHeight != null ? Std.int(tex.frameHeight) : 17;
 					trace('[NoteSkinSystem] image atlas $folder/$path — frame: ${fw}×${fh}px');
-					return FlxAtlasFramesExt.fromGraphic(graphic, fw, fh);
+					result = FlxAtlasFramesExt.fromGraphic(graphic, fw, fh);
 
 				default:
 					trace('[NoteSkinSystem] tipo desconocido "$type" en $folder/$path, usando sparrow');
-					return Paths.skinSprite('$folder/$path');
+					result = Paths.skinSprite('$folder/$path');
 			}
+
+			if (result != null) return result;
+
+			// Resultado null (ej: XML faltante con PNG presente) → fallback Default
+			trace('[NoteSkinSystem] loadAtlas: "$folder/$path" devolvió null, probando Default');
+			var fallback = Paths.skinSprite('Default/NOTE_assets');
+			if (fallback != null) return fallback;
+			return _makeFallbackFrames();
 		}
 		catch (e:Dynamic)
 		{
 			trace('[NoteSkinSystem] Error cargando $folder/$path: $e');
-			return Paths.skinSprite('Default/NOTE_assets');
+			var fallback = Paths.skinSprite('Default/NOTE_assets');
+			if (fallback != null) return fallback;
+			return _makeFallbackFrames();
 		}
+	}
+
+	/**
+	 * Último recurso: crea un FlxAtlasFrames de 1×1 píxel para que los sprites
+	 * nunca tengan frames=null. Sin esto, cualquier StrumNote/Note con skin rota
+	 * causa FlxDrawQuadsItem::render crash en el primer frame de PlayState.
+	 */
+	private static function _makeFallbackFrames():FlxAtlasFrames
+	{
+		trace('[NoteSkinSystem] FALLBACK: usando frames de 1×1 para evitar crash de render');
+		var bmp = new openfl.display.BitmapData(1, 1, true, 0x00000000);
+		var g = FlxG.bitmap.add(bmp, false, 'note_skin_fallback_${Math.random()}');
+		if (g == null)
+		{
+			// Último último recurso: crear FlxGraphic directamente
+			g = flixel.graphics.FlxGraphic.fromBitmapData(bmp, false, null, false);
+		}
+		// fromGraphic con frames 1×1 → atlas de 1 frame, 1×1 px
+		return FlxAtlasFramesExt.fromGraphic(g, 1, 1);
 	}
 
 	private static function loadAtlasSplash(assets:Dynamic, ?folderName:String):FlxAtlasFrames
@@ -1153,6 +1190,7 @@ class NoteSkinSystem
 					return FlxAtlasFrames.fromSpriteSheetPacker(FlxG.bitmap.add('assets/splashes/$folder/$path.png'), 'assets/splashes/$folder/$path.txt');
 				case "image":
 					var g = FlxG.bitmap.add('assets/splashes/$folder/$path.png');
+					if (g == null) throw 'PNG no encontrado para image splash: $folder/$path';
 					return FlxAtlasFramesExt.fromGraphic(g, g.width, g.height);
 				default:
 					return Paths.splashSprite('$folder/$path');

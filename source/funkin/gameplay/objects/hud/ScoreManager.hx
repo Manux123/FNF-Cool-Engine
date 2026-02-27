@@ -1,236 +1,208 @@
 package funkin.gameplay.objects.hud;
 
 import flixel.FlxG;
-import flixel.text.FlxText;
-import flixel.util.FlxColor;
 
-@:keep
 /**
- * Gestor de puntuación y estadísticas
- * Maneja todo lo relacionado con scoring, accuracy y rankings
+ * ScoreManager v2 — gestión de puntuación y estadísticas.
+ *
+ * ─── Fix crítico vs v1 ────────────────────────────────────────────────────────
+ *
+ *  v1: Las constantes de scoring estaban marcadas como `static inline`.
+ *  Problema: `inline` hace que el compilador REEMPLACE cada referencia con el
+ *  valor literal en tiempo de compilación — `Reflect.setField()` nunca las toca
+ *  porque no existen como campo en el binario.
+ *
+ *  v2: Se eliminó `inline` de las variables de configuración (SICK_WINDOW, etc.)
+ *  para que `score.setWindow()` y `score.setPoints()` del ScriptAPI funcionen.
+ *
+ * @author Cool Engine Team
+ * @version 2.0.0
  */
+@:keep // Evitar que DCE elimine campos no referenciados directamente
 class ScoreManager
 {
-	// Estadísticas de jugabilidad
-	public var score:Int = 0;
-	public var combo:Int = 0;
-	public var maxCombo:Int = 0;
-	public var misses:Int = 0;
-	
-	// Contadores de rating
-	public var sicks:Int = 0;
-	public var goods:Int = 0;
-	public var bads:Int = 0;
-	public var shits:Int = 0;
-	
-	// Accuracy
-	public var accuracy:Float = 0;
-	public var totalNotesHit:Float = 0;
-	public var totalNotesPlayed:Int = 0;
-	
-	// Flags de estado
-	public var fullCombo:Bool = true;
-	public var sickCombo:Bool = true; // Solo sicks
-	
-	// Configuración de scoring
-	public static inline var SICK_SCORE:Int = 350;
-	public static inline var GOOD_SCORE:Int = 200;
-	public static inline var BAD_SCORE:Int = 100;
-	public static inline var SHIT_SCORE:Int = 50;
-	public static inline var MISS_PENALTY:Int = -10;
-	
-	// Timing windows (en ms)
-	public static inline var SICK_WINDOW:Float = 45;
-	public static inline var GOOD_WINDOW:Float = 90;
-	public static inline var BAD_WINDOW:Float = 135;
-	public static inline var SHIT_WINDOW:Float = 166;
-	
-	// Multiplicadores de combo
-	private static inline var COMBO_MULTIPLIER_1:Float = 1.0;
-	private static inline var COMBO_MULTIPLIER_2:Float = 1.1; // 10 combo
-	private static inline var COMBO_MULTIPLIER_3:Float = 1.2; // 25 combo
-	private static inline var COMBO_MULTIPLIER_4:Float = 1.3; // 50 combo
-	
+	// ── Estadísticas de jugabilidad ────────────────────────────────────────────
+
+	public var score      : Int   = 0;
+	public var combo      : Int   = 0;
+	public var maxCombo   : Int   = 0;
+	public var misses     : Int   = 0;
+
+	public var sicks  : Int = 0;
+	public var goods  : Int = 0;
+	public var bads   : Int = 0;
+	public var shits  : Int = 0;
+
+	public var accuracy        : Float = 0;
+	public var totalNotesHit   : Float = 0;
+	public var totalNotesPlayed: Int   = 0;
+
+	public var fullCombo : Bool = true;
+	public var sickCombo : Bool = true;
+
+	// ── Configuración de scoring ──────────────────────────────────────────────
+	// ¡IMPORTANTE! NO usar `inline` aquí — los scripts los modifican via Reflect.
+	// `inline` = el compilador incrusta el valor en cada callsite → Reflect no ve el campo.
+
+	public static var SICK_SCORE  : Int = 350;
+	public static var GOOD_SCORE  : Int = 200;
+	public static var BAD_SCORE   : Int = 100;
+	public static var SHIT_SCORE  : Int = 50;
+	public static var MISS_PENALTY: Int = -10;
+
+	// Timing windows (ms) — también sin inline para permitir override desde scripts
+	public static var SICK_WINDOW  : Float = 45;
+	public static var GOOD_WINDOW  : Float = 90;
+	public static var BAD_WINDOW   : Float = 135;
+	public static var SHIT_WINDOW  : Float = 166;
+
+	// ── Multiplicadores de combo ──────────────────────────────────────────────
+	// Sí pueden ser inline porque los scripts no los modifican directamente
+	static inline var COMBO_1 : Float = 1.0;
+	static inline var COMBO_2 : Float = 1.1; // 10 combo
+	static inline var COMBO_3 : Float = 1.2; // 25 combo
+	static inline var COMBO_4 : Float = 1.3; // 50 combo
+
+	// ── Constructor ───────────────────────────────────────────────────────────
+
 	public function new()
 	{
 		reset();
 	}
-	
-	/**
-	 * Reinicia todas las estadísticas
-	 */
+
+	// ── Gestión ───────────────────────────────────────────────────────────────
+
+	/** Reinicia todas las estadísticas para una nueva partida. */
 	public function reset():Void
 	{
-		score = 0;
-		combo = 0;
-		maxCombo = 0;
-		misses = 0;
-		
-		sicks = 0;
-		goods = 0;
-		bads = 0;
-		shits = 0;
-		
-		accuracy = 0;
-		totalNotesHit = 0;
+		score           = 0;
+		combo           = 0;
+		maxCombo        = 0;
+		misses          = 0;
+		sicks = goods = bads = shits = 0;
+		accuracy        = 0;
+		totalNotesHit   = 0;
 		totalNotesPlayed = 0;
-		
-		fullCombo = true;
-		sickCombo = true;
+		fullCombo       = true;
+		sickCombo       = true;
 	}
-	
+
 	/**
-	 * Procesa un hit de nota
-	 * @param noteDiff Diferencia de tiempo en ms (absolute value)
-	 * @return Rating conseguido ('sick', 'good', 'bad', 'shit')
+	 * Procesa un hit y devuelve el rating correspondiente.
+	 * El `diff` es la diferencia absoluta en ms entre el hit y el strumTime.
+	 * Para sustains, usar `isSustain=true` (no suma al combo ni accuracy).
 	 */
-	public function processNoteHit(noteDiff:Float):String
+	public function processNoteHit(diff:Float, isSustain:Bool = false):String
 	{
-		var rating:String = getRating(noteDiff);
-		var ratingScore:Int = 0;
-		
-		// Incrementar contador de rating
-		switch (rating)
+		final rating = getRating(diff);
+
+		if (!isSustain)
 		{
-			case 'sick':
-				sicks++;
-				ratingScore = SICK_SCORE;
-				totalNotesHit += 1;
-			case 'good':
-				goods++;
-				ratingScore = GOOD_SCORE;
-				totalNotesHit += 0.75;
-				sickCombo = false;
-			case 'bad':
-				bads++;
-				ratingScore = BAD_SCORE;
-				totalNotesHit += 0.5;
-				sickCombo = false;
-			case 'shit':
-				shits++;
-				ratingScore = SHIT_SCORE;
-				totalNotesHit += 0.25;
-				sickCombo = false;
+			combo++;
+			if (combo > maxCombo) maxCombo = combo;
+
+			totalNotesPlayed++;
+			totalNotesHit += getNoteHitValue(rating);
+
+			switch (rating)
+			{
+				case 'sick':  sicks++;
+				case 'good':  goods++;
+				case 'bad':   bads++;
+				case 'shit':  shits++;
+			}
+
+			score += getScore(rating, combo);
+			recalcAccuracy();
 		}
-		
-		// Incrementar combo
-		combo++;
-		if (combo > maxCombo)
-			maxCombo = combo;
-		
-		// Aplicar multiplicador de combo
-		var comboMultiplier = getComboMultiplier();
-		score += Std.int(ratingScore * comboMultiplier);
-		
-		totalNotesPlayed++;
-		updateAccuracy();
-		
+
 		return rating;
 	}
-	
-	/**
-	 * Procesa un miss
-	 */
+
+	/** Procesa un miss. */
 	public function processMiss():Void
 	{
-		misses++;
-		combo = 0;
 		fullCombo = false;
 		sickCombo = false;
-		
+		combo     = 0;
+		misses++;
+		totalNotesPlayed++;
+		totalNotesHit += 0.0; // miss = 0 en accuracy
 		score += MISS_PENALTY;
 		if (score < 0) score = 0;
-		
-		totalNotesPlayed++;
-		updateAccuracy();
+		recalcAccuracy();
 	}
-	
-	/**
-	 * Determina el rating basado en la diferencia de tiempo
-	 */
-	private function getRating(noteDiff:Float):String
+
+	/** Modifica la salud del personaje. Rango: 0.0 – 2.0. */
+	public function modifyHealth(delta:Float):Void
 	{
-		if (noteDiff <= SICK_WINDOW)
-			return 'sick';
-		else if (noteDiff <= GOOD_WINDOW)
-			return 'good';
-		else if (noteDiff <= BAD_WINDOW)
-			return 'bad';
-		else
-			return 'shit';
-	}
-	
-	/**
-	 * Calcula el multiplicador de combo actual
-	 */
-	private function getComboMultiplier():Float
-	{
-		if (combo >= 50)
-			return COMBO_MULTIPLIER_4;
-		else if (combo >= 25)
-			return COMBO_MULTIPLIER_3;
-		else if (combo >= 10)
-			return COMBO_MULTIPLIER_2;
-		else
-			return COMBO_MULTIPLIER_1;
-	}
-	
-	/**
-	 * Actualiza el cálculo de accuracy
-	 */
-	private function updateAccuracy():Void
-	{
-		if (totalNotesPlayed == 0)
+		// Delegado al PlayState via getInstance()
+		final ps = funkin.gameplay.PlayState.instance;
+		if (ps != null)
 		{
-			accuracy = 0;
-			return;
+			ps.health = flixel.math.FlxMath.bound(ps.health + delta, 0, 2);
 		}
-		
-		accuracy = (totalNotesHit / totalNotesPlayed) * 100;
-		
-		// Limitar a 2 decimales
-		accuracy = Math.fround(accuracy * 100) / 100;
 	}
-	
-	/**
-	 * Obtiene el ranking final (S, A, B, C, D, F)
-	 */
-	public function getRank():String
+
+	// ── Helpers ───────────────────────────────────────────────────────────────
+
+	/** Clasifica `diff` (ms absolutos) en un rating. */
+	public static function getRating(diff:Float):String
 	{
-		if (sickCombo && fullCombo)
-			return 'S+'; // Perfect
-		else if (fullCombo && accuracy >= 95)
-			return 'S';
-		else if (accuracy >= 90)
-			return 'A';
-		else if (accuracy >= 80)
-			return 'B';
-		else if (accuracy >= 70)
-			return 'C';
-		else if (accuracy >= 60)
-			return 'D';
-		else
-			return 'F';
+		if (diff <= SICK_WINDOW)  return 'sick';
+		if (diff <= GOOD_WINDOW)  return 'good';
+		if (diff <= BAD_WINDOW)   return 'bad';
+		return 'shit';
 	}
-	
+
 	/**
-	 * Genera texto de estadísticas para mostrar
+	 * Calcula los puntos para un hit con el rating y combo dados.
+	 * Aplica multiplicador de combo para combos largos.
 	 */
-	public function getStatsText():String
+	public static function getScore(rating:String, combo:Int):Int
 	{
-		var stats = 'Score: $score\n';
-		stats += 'Accuracy: ${accuracy}%\n';
-		stats += 'Combo: $combo (Max: $maxCombo)\n';
-		stats += 'Sicks: $sicks | Goods: $goods\n';
-		stats += 'Bads: $bads | Shits: $shits | Misses: $misses\n';
-		stats += 'Rank: ${getRank()}';
-		
-		return stats;
+		final base = switch (rating)
+		{
+			case 'sick': SICK_SCORE;
+			case 'good': GOOD_SCORE;
+			case 'bad':  BAD_SCORE;
+			default:     SHIT_SCORE;
+		};
+		return Math.round(base * getComboMultiplier(combo));
 	}
-	
+
+	/** Multiplicador de combo: 1.0 base, hasta 1.3 en 50+ combo. */
+	static function getComboMultiplier(combo:Int):Float
+	{
+		if (combo >= 50) return COMBO_4;
+		if (combo >= 25) return COMBO_3;
+		if (combo >= 10) return COMBO_2;
+		return COMBO_1;
+	}
+
 	/**
-	 * Genera texto compacto para HUD
+	 * Valor de accuracy por rating:
+	 * sick=1.0, good=0.75, bad=0.5, shit=0.25, miss=0.0
 	 */
+	static function getNoteHitValue(rating:String):Float
+	{
+		return switch (rating)
+		{
+			case 'sick': 1.00;
+			case 'good': 0.75;
+			case 'bad':  0.50;
+			case 'shit': 0.25;
+			default:     0.00;
+		};
+	}
+
+	function recalcAccuracy():Void
+	{
+		accuracy = totalNotesPlayed > 0
+			? Math.round((totalNotesHit / totalNotesPlayed) * 10000) / 100
+			: 0;
+	}
+
 	public function getHUDText(gameState:funkin.gameplay.GameState):String
 	{
 		var fcText = fullCombo ? ' [FC]' : '';
@@ -238,47 +210,12 @@ class ScoreManager
 		
 		return ' Score: \n ${gameState.score}\n\n Accuracy: \n ${gameState.accuracy}%\n\n Misses:\n ${gameState.misses}$fcText$scText';
 	}
-	
-	/**
-	 * Calcula el color del texto de accuracy
-	 */
-	public function getAccuracyColor():FlxColor
+
+	/** Resumen de estadísticas para debug. */
+	public function getSummary():String
 	{
-		if (accuracy >= 95)
-			return FlxColor.CYAN;
-		else if (accuracy >= 90)
-			return FlxColor.LIME;
-		else if (accuracy >= 80)
-			return FlxColor.YELLOW;
-		else if (accuracy >= 70)
-			return FlxColor.ORANGE;
-		else
-			return FlxColor.RED;
-	}
-	
-	/**
-	 * Guarda el highscore
-	 */
-	public function saveHighscore(songName:String, difficulty:Int):Void
-	{
-		var key = 'highscore_${songName}_$difficulty';
-		var currentHigh = FlxG.save.data.get(key);
-		
-		if (currentHigh == null || score > currentHigh)
-		{
-			FlxG.save.data.set(key, score);
-			FlxG.save.flush();
-		}
-	}
-	
-	/**
-	 * Obtiene el highscore guardado
-	 */
-	public function getHighscore(songName:String, difficulty:Int):Int
-	{
-		var key = 'highscore_${songName}_$difficulty';
-		var highscore = FlxG.save.data.get(key);
-		
-		return (highscore != null) ? highscore : 0;
+		return 'Score=$score  Combo=$combo  MaxCombo=$maxCombo  '
+		     + 'Misses=$misses  Acc=$accuracy%  '
+		     + 'Sicks=$sicks  Goods=$goods  Bads=$bads  Shits=$shits';
 	}
 }

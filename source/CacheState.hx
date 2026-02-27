@@ -13,6 +13,8 @@ import funkin.states.LoadingState;
 
 using StringTools;
 
+import Paths;
+
 class CacheState extends funkin.states.MusicBeatState
 {
     var loadingBar:FlxSprite;
@@ -28,6 +30,10 @@ class CacheState extends funkin.states.MusicBeatState
 
     override function create()
     {
+        // NOTA: PathsCache.beginSession() es llamado automáticamente por la señal
+        // preStateSwitch en FunkinCache.init(). No llamarlo aquí para evitar doble
+        // beginSession() que causaría que los assets del state anterior queden huérfanos.
+
         FlxG.mouse.visible = false;
 
         Highscore.load();
@@ -128,13 +134,15 @@ class CacheState extends funkin.states.MusicBeatState
             {
                 case SOUND:
                     final path = Paths.sound(asset.path);
-                    if (openfl.utils.Assets.exists(path))
-                        FlxG.sound.load(path, 0.0, false);
+                    final snd = Paths.getSound(path);
+                    if (snd != null)
+                        Paths.cache.addExclusion(path);
 
                 case IMAGE:
                     final path = Paths.image(asset.path);
-                    if (openfl.utils.Assets.exists(path))
-                        FlxG.bitmap.add(path);
+                    final g = Paths.getGraphic(asset.path);
+                    if (g != null)
+                        Paths.cache.addExclusion(path);
             }
         }
         catch (_:Dynamic) {}

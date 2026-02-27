@@ -69,8 +69,19 @@ class ModChartManager
     // ── Eventos pendientes (aún no disparados) ─────────────────────────────────
     private var pending:Array<ModChartEvent> = [];
 
+    /**
+     * Índice del próximo evento pendiente.
+     * Reemplaza pending.shift() (O(n)) por un avance de puntero O(1).
+     */
+    private var _pendingIdx:Int = 0;
+
     // ── Tweens activos (en interpolación) ─────────────────────────────────────
     private var activeTweens:Array<ActiveTween> = [];
+
+    /**
+     * Array reutilizable para tweens terminados — evita new Array() cada frame.
+     */
+    private var _finishedTweens:Array<ActiveTween> = [];
 
     // ── Tiempo actual ──────────────────────────────────────────────────────────
     private var currentBeat:Float = 0;
@@ -271,7 +282,7 @@ class ModChartManager
         }
 
         // Re-copiar eventos pendientes a partir del beat actual
-        pending = [];
+        _pendingIdx = 0; pending = [];
         for (ev in data.events)
         {
             if (ev.beat >= currentBeat - 0.01)
@@ -316,7 +327,7 @@ class ModChartManager
 
         // Preparar pendientes desde este beat
         activeTweens = [];
-        pending = [];
+        _pendingIdx = 0; pending = [];
         for (ev in data.events)
         {
             if (ev.beat >= beat - 0.01)
@@ -364,9 +375,12 @@ class ModChartManager
 
     private function fireReadyEvents(curBeat:Float):Void
     {
-        while (pending.length > 0 && pending[0].beat <= curBeat)
+        while (_pendingIdx < pending.length)
         {
-            var ev = pending.shift();
+            final ev = pending[_pendingIdx];
+            if (ev.beat > curBeat) break;
+
+            _pendingIdx++;
 
             if (ev.type == RESET)
             {
@@ -380,15 +394,14 @@ class ModChartManager
             }
             else
             {
-                // Crear tween
-                var targets = resolveTargets(ev.target, ev.strumIdx);
+                // Crear tween para este evento
+                final targets = resolveTargets(ev.target, ev.strumIdx);
                 for (t in targets)
                 {
-                    var startVal = getStateValue(t.groupId, t.strumIdx, ev.type);
                     activeTweens.push({
                         event     : ev,
                         startBeat : ev.beat,
-                        startVal  : startVal,
+                        startVal  : getStateValue(t.groupId, t.strumIdx, ev.type),
                         groupId   : t.groupId,
                         strumIdx  : t.strumIdx
                     });
@@ -401,23 +414,30 @@ class ModChartManager
 
     private function updateTweens(curBeat:Float):Void
     {
-        var finished:Array<ActiveTween> = [];
+        // Usar _finishedTweens reutilizable — evita new Array cada frame
+        _finishedTweens.resize(0);
 
         for (tw in activeTweens)
         {
-            var elapsed  = curBeat - tw.startBeat;
-            var t        = tw.event.duration > 0 ? elapsed / tw.event.duration : 1;
-            var eased    = ModChartHelpers.applyEase(tw.event.ease, t);
-            var val      = tw.startVal + (tw.event.value - tw.startVal) * eased;
+            final elapsed = curBeat - tw.startBeat;
+            final t       = tw.event.duration > 0 ? elapsed / tw.event.duration : 1.0;
+            final eased   = ModChartHelpers.applyEase(tw.event.ease, t);
+            final val     = tw.startVal + (tw.event.value - tw.startVal) * eased;
 
             setStateValue(tw.groupId, tw.strumIdx, tw.event.type, val);
 
             if (t >= 1.0)
-                finished.push(tw);
+                _finishedTweens.push(tw);
         }
 
-        for (tw in finished)
-            activeTweens.remove(tw);
+        // Eliminar tweens terminados en una pasada inversa (O(n), no O(n²))
+        var i = _finishedTweens.length - 1;
+        while (i >= 0)
+        {
+            final idx = activeTweens.indexOf(_finishedTweens[i]);
+            if (idx >= 0) activeTweens.splice(idx, 1);
+            i--;
+        }
     }
 
     // ── Spin continuo ───────────────────────────────────────────────────────
@@ -619,7 +639,7 @@ class ModChartManager
     public function clearEvents():Void
     {
         data.events = [];
-        pending = [];
+        _pendingIdx = 0; pending = [];
         activeTweens = [];
     }
 
@@ -659,7 +679,7 @@ class ModChartManager
     public function destroy():Void
     {
         activeTweens = [];
-        pending = [];
+        _pendingIdx = 0; pending = [];
         states.clear();
         strumsGroups = null;
         instance = null;

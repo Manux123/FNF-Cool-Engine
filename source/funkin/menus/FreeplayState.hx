@@ -110,7 +110,11 @@ class FreeplayState extends funkin.states.MusicBeatState
 
 		MainMenuState.musicFreakyisPlaying = false;
 		if (vocals == null)
-			FlxG.sound.playMusic(Paths.music('girlfriendsRingtone/girlfriendsRingtone'), 0.7);
+		{
+			final snd = Paths.loadMusic('girlfriendsRingtone/girlfriendsRingtone');
+			if (snd != null) FlxG.sound.playMusic(snd, 0.7);
+			else FlxG.sound.playMusic(Paths.music('girlfriendsRingtone/girlfriendsRingtone'), 0.7);
+		}
 
 		// Error message text
 		errorText = new FlxText(0, FlxG.height * 0.5 - 50, FlxG.width, "", 32);
@@ -640,7 +644,9 @@ class FreeplayState extends funkin.states.MusicBeatState
 			else
 			{
 				destroyFreeplayVocals();
-				FlxG.sound.playMusic(Paths.music('girlfriendsRingtone/girlfriendsRingtone'), 0.7);
+				final gfSnd = Paths.loadMusic('girlfriendsRingtone/girlfriendsRingtone');
+				if (gfSnd != null) FlxG.sound.playMusic(gfSnd, 0.7);
+				else FlxG.sound.playMusic(Paths.music('girlfriendsRingtone/girlfriendsRingtone'), 0.7);
 				instPlaying = -1;
 
 				if (discSpr != null)

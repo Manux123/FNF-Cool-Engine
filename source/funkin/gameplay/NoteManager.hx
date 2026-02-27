@@ -153,11 +153,33 @@ class NoteManager
 	 */
 	public function generateNotes(SONG:SwagSong):Void
 	{
-		unspawnNotes = [];
 		_unspawnIdx = 0;
 		_prevSpawnedNote = null;
 		songSpeed = SONG.speed;
 		_scrollSpeed = 0.45 * FlxMath.roundDecimal(songSpeed, 2);
+
+		// ── v2: pre-calcular capacidad total para evitar resizes del array ────
+		// Cada push() que supera la capacidad interna copia el array completo.
+		// En canciones con 800+ notas esto causaba ~12 copias durante la generación.
+		var noteCount:Int = 0;
+		for (section in SONG.notes)
+			for (songNotes in section.sectionNotes)
+			{
+				noteCount++;
+				var susLength:Float = songNotes[2];
+				if (susLength > 0)
+					noteCount += Math.floor(susLength / Conductor.stepCrochet);
+			}
+
+		// Pre-reservar: llenar con nulls tipados para reservar memoria interna,
+		// luego truncar a 0 sin liberar. Los push() posteriores no reasignan.
+		var _preAlloc:Array<Null<NoteRawData>> = [for (_ in 0...noteCount) null];
+		unspawnNotes = cast _preAlloc;
+		#if (cpp || hl)
+		unspawnNotes.resize(0);
+		#else
+		unspawnNotes = [];
+		#end
 
 		for (section in SONG.notes)
 		{

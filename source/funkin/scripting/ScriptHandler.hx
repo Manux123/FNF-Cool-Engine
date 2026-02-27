@@ -1,8 +1,12 @@
 package funkin.scripting;
 
 import haxe.Exception;
+
+#if sys
 import sys.FileSystem;
 import sys.io.File;
+#end
+
 #if HSCRIPT_ALLOWED
 import hscript.Parser;
 import hscript.Interp;
@@ -11,117 +15,233 @@ import hscript.Interp;
 using StringTools;
 
 /**
- * Sistema central de scripts HScript para gameplay.
+ * ScriptHandler v3 — sistema central de scripts para gameplay y mods.
  *
- * Gestiona tres capas de scripts, en orden de ejecución:
- *   global  → activos durante toda la sesión
- *   stage   → activos durante el stage actual
- *   song    → activos durante la canción actual
- *   ui      → activos durante el UI de la canción
+ * ─── Capas de script ─────────────────────────────────────────────────────────
  *
- * ─── Uso básico ──────────────────────────────────────────────────────────────
- *   ScriptHandler.init();
- *   ScriptHandler.loadSongScripts('bopeebo');
- *   ScriptHandler.callOnScripts('onBeatHit', [beat]);
- *   ScriptHandler.setOnScripts('game', PlayState.instance);
- *   ScriptHandler.clearSongScripts();
+ *   global   → siempre activos (toda la sesión de juego)
+ *   stage    → activos durante el stage actual
+ *   song     → activos durante la canción actual
+ *   ui       → scripts del HUD / UIScriptedManager
+ *   menu     → scripts de estados y menús (FreeplayState, TitleState, etc.)
+ *   char     → scripts de personaje específico
  *
- * ─── Estructura de carpetas esperada ─────────────────────────────────────────
- *   assets/data/scripts/global/     ← siempre activos
- *   assets/data/scripts/events/     ← handlers de eventos personalizados
- *   assets/songs/{song}/scripts/    ← scripts de la canción
- *   assets/songs/{song}/events/     ← eventos custom de la canción
- *   assets/stages/{stage}/scripts/  ← scripts del stage
+ * ─── Estructura de carpetas MÁS COMPLETA ────────────────────────────────────
+ *
+ *   BASE GAME:
+ *   assets/data/scripts/global/          → scripts globales base
+ *   assets/data/scripts/events/          → handlers de eventos personalizados
+ *   assets/songs/{song}/scripts/         → scripts de canción
+ *   assets/songs/{song}/events/          → eventos custom de canción
+ *   assets/stages/{stage}/scripts/       → scripts de stage
+ *   assets/characters/{char}/scripts/    → scripts de personaje
+ *   assets/states/{state}/              → scripts de estado / menú
+ *
+ *   MODS:
+ *   mods/{mod}/scripts/global/           → equivalente base
+ *   mods/{mod}/scripts/events/
+ *   mods/{mod}/songs/{song}/scripts/
+ *   mods/{mod}/songs/{song}/events/
+ *   mods/{mod}/stages/{stage}/scripts/
+ *   mods/{mod}/characters/{char}/scripts/
+ *   mods/{mod}/states/{state}/
+ *   mods/{mod}/data/scripts/             → alias adicional
+ *
+ *   PSYCH-COMPAT (rutas adicionales reconocidas):
+ *   mods/{mod}/custom_events/{event}.hx
+ *   mods/{mod}/custom_notetypes/{type}.hx
+ *
+ * ─── Compatibilidad de librerías ─────────────────────────────────────────────
+ *  hscript 2.4.x y 2.5.x — mismo Parser/Interp API
+ *  hscript anterior a allowMetadata: compilación condicional
+ *
+ * @author Cool Engine Team
+ * @version 3.0.0
  */
 class ScriptHandler
 {
-	public static var globalScripts:Map<String, HScriptInstance> = [];
-	public static var stageScripts:Map<String, HScriptInstance> = [];
-	public static var songScripts:Map<String, HScriptInstance> = [];
-	public static var uiScripts:Map<String, HScriptInstance> = [];
+	// ── Almacenamiento de scripts por capa ────────────────────────────────────
+
+	public static var globalScripts : Map<String, HScriptInstance> = [];
+	public static var stageScripts  : Map<String, HScriptInstance> = [];
+	public static var songScripts   : Map<String, HScriptInstance> = [];
+	public static var uiScripts     : Map<String, HScriptInstance> = [];
+	public static var menuScripts   : Map<String, HScriptInstance> = [];
+	public static var charScripts   : Map<String, HScriptInstance> = [];
+
+	// ── Arrays reutilizables para el hot-path (evitan new Array cada frame) ──
+	// Cada función de callback del gameplay (onUpdate, onBeatHit, onStepHit,
+	// onNoteHit, onMiss…) pasa sus args a través de estos arrays estáticos en
+	// lugar de crear un new Array<Dynamic> en cada llamada.
+	// IMPORTANTE: Estos arrays son de uso temporal — solo válidos durante la
+	// llamada a callOnScripts. No guardarlos por referencia en los scripts.
+
+	/** Para onUpdate(elapsed:Float) */
+	public static final _argsUpdate   : Array<Dynamic> = [0.0];
+	/** Para onUpdatePost(elapsed:Float) */
+	public static final _argsUpdatePost: Array<Dynamic> = [0.0];
+	/** Para onBeatHit(beat:Int) */
+	public static final _argsBeat     : Array<Dynamic> = [0];
+	/** Para onStepHit(step:Int) */
+	public static final _argsStep     : Array<Dynamic> = [0];
+	/** Para onNoteHit / onMiss — [note, extra] */
+	public static final _argsNote     : Array<Dynamic> = [null, null];
+	/** Para eventos con un solo arg genérico */
+	public static final _argsOne      : Array<Dynamic> = [null];
+	/** Array vacío reutilizable — para callbacks sin argumentos */
+	public static final _argsEmpty    : Array<Dynamic> = [];
+
+	// ── Parser compartido ─────────────────────────────────────────────────────
 
 	#if HSCRIPT_ALLOWED
-	/** Parser compartido — se inicializa una sola vez. */
 	static var _parser:Parser = null;
 
 	public static var parser(get, null):Parser;
-
 	static function get_parser():Parser
 	{
 		if (_parser == null)
 		{
 			_parser = new Parser();
 			_parser.allowTypes = true;
-			_parser.allowJSON = true;
-			_parser.allowMetadata = true;
+			_parser.allowJSON  = true;
+			// allowMetadata fue añadido en hscript 2.5. Guard seguro:
+			try { Reflect.setField(_parser, 'allowMetadata', true); } catch(_) {}
 		}
 		return _parser;
 	}
 	#end
 
-	// ─── Init ─────────────────────────────────────────────────────────────────
+	// ── Init ──────────────────────────────────────────────────────────────────
 
 	public static function init():Void
 	{
 		loadGlobalScripts();
-		trace('[ScriptHandler] Listo.');
+		trace('[ScriptHandler v3] Listo.');
 	}
 
+	/**
+	 * Carga todos los scripts globales: base + mods + custom_events (Psych compat).
+	 */
 	public static function loadGlobalScripts():Void
 	{
-		// Mod activo primero, luego assets base
+		// Limpiar scripts globales anteriores para evitar duplicados en la 2ª partida
+		_destroyLayer(globalScripts);
+		globalScripts.clear();
+
 		#if sys
 		if (mods.ModManager.isActive())
 		{
-			final modRoot = mods.ModManager.modRoot();
-			loadScriptsFromFolder('$modRoot/data/scripts/global', 'global');
-			loadScriptsFromFolder('$modRoot/data/scripts/events', 'global');
-			loadScriptsFromFolder('$modRoot/scripts/global',      'global');
-			loadScriptsFromFolder('$modRoot/scripts/events',      'global');
+			final r = mods.ModManager.modRoot();
+			// Rutas estándar del mod
+			_loadFolder('$r/scripts/global',   'global');
+			_loadFolder('$r/scripts/events',   'global');
+			_loadFolder('$r/data/scripts',     'global');
+			// Rutas Psych-compat
+			_loadFolder('$r/custom_events',    'global');
+			_loadFolder('$r/custom_notetypes', 'global');
 		}
 		#end
-		loadScriptsFromFolder('assets/data/scripts/global', 'global');
-		loadScriptsFromFolder('assets/data/scripts/events', 'global');
-		trace('[ScriptHandler] Scripts globales cargados.');
+		_loadFolder('assets/data/scripts/global', 'global');
+		_loadFolder('assets/data/scripts/events', 'global');
+		trace('[ScriptHandler v3] Scripts globales cargados.');
 	}
 
-	// ─── Carga ────────────────────────────────────────────────────────────────
+	// ── Carga por contexto ────────────────────────────────────────────────────
+
+	/** Carga scripts de la canción `songName` desde base + mod. */
+	public static function loadSongScripts(songName:String):Void
+	{
+		#if sys
+		if (mods.ModManager.isActive())
+		{
+			final r = mods.ModManager.modRoot();
+			_loadFolder('$r/songs/$songName/scripts', 'song');
+			_loadFolder('$r/songs/$songName/events',  'song');
+		}
+		#end
+		_loadFolder('assets/songs/$songName/scripts', 'song');
+		_loadFolder('assets/songs/$songName/events',  'song');
+	}
+
+	/** Carga scripts del stage `stageName` desde base + mod. */
+	public static function loadStageScripts(stageName:String):Void
+	{
+		final sn = stageName.toLowerCase();
+		#if sys
+		if (mods.ModManager.isActive())
+		{
+			final r = mods.ModManager.modRoot();
+			_loadFolder('$r/stages/$sn/scripts',        'stage');
+			_loadFolder('$r/assets/stages/$sn/scripts', 'stage');
+		}
+		#end
+		_loadFolder('assets/stages/$sn/scripts',       'stage');
+		_loadFolder('assets/data/stages/$sn/scripts',  'stage');
+	}
+
+	/** Carga scripts de personaje `charName` desde base + mod. */
+	public static function loadCharacterScripts(charName:String):Void
+	{
+		#if sys
+		if (mods.ModManager.isActive())
+		{
+			final r = mods.ModManager.modRoot();
+			_loadFolder('$r/characters/$charName/scripts', 'char');
+			_loadFolder('$r/characters/$charName',         'char'); // script directamente en la carpeta
+		}
+		#end
+		_loadFolder('assets/characters/$charName/scripts', 'char');
+	}
 
 	/**
-	 * Carga un script desde `scriptPath` y lo registra bajo `scriptType`.
-	 * Tipos válidos: `"global"`, `"stage"`, `"song"`, `"ui"`.
-	 * Devuelve `null` si el archivo no existe o hay un error de parse.
+	 * Carga scripts de un estado/menú `stateName`.
+	 * Busca en `assets/states/{stateName}/` y `mods/{mod}/states/{stateName}/`.
 	 */
+	public static function loadStateScripts(stateName:String):Void
+	{
+		#if sys
+		if (mods.ModManager.isActive())
+		{
+			final r = mods.ModManager.modRoot();
+			_loadFolder('$r/states/$stateName', 'menu');
+		}
+		#end
+		_loadFolder('assets/states/$stateName', 'menu');
+	}
+
+	// ── Carga de un script individual ─────────────────────────────────────────
+
 	/**
-	 * Loads and executes a script file.
-	 * Supports .hx / .hscript natively, and .lua via LuaStageConverter transpilation.
+	 * Carga un script desde `scriptPath`.
+	 * Soporta .hx / .hscript nativos y .lua (transpilación Psych-compat).
 	 *
-	 * @param presetVars  Optional vars injected BEFORE execute() so top-level Lua code sees them.
-	 * @param stage       Optional Stage reference — enables the Psych Lua API shim.
+	 * @param presetVars  Variables inyectadas ANTES de execute() (top-level code las ve).
+	 * @param stage       Stage reference para el API shim de Psych Lua.
 	 */
 	public static function loadScript(scriptPath:String, scriptType:String = 'song',
 		?presetVars:Map<String, Dynamic>,
-		?stage:funkin.gameplay.objects.stages.Stage):HScriptInstance
+		?stage:funkin.gameplay.objects.stages.Stage):Null<HScriptInstance>
 	{
 		#if HSCRIPT_ALLOWED
+
+		#if sys
 		if (!FileSystem.exists(scriptPath))
 		{
 			trace('[ScriptHandler] No encontrado: $scriptPath');
 			return null;
 		}
+		#end
 
 		final isLua      = scriptPath.endsWith('.lua');
-		final rawContent = File.getContent(scriptPath);
+		final rawContent = #if sys File.getContent(scriptPath) #else '' #end;
 
-		// Transpile Lua -> HScript if needed
 		final content = isLua
-			? mods.compat.LuaStageConverter.convert(rawContent, extractName(scriptPath))
+			? mods.compat.LuaStageConverter.convert(rawContent, _extractName(scriptPath))
 			: rawContent;
 
-		if (isLua)
-			trace('[ScriptHandler] Transpiling Lua stage script: $scriptPath');
+		if (isLua) trace('[ScriptHandler] Transpilando Lua: $scriptPath');
 
-		final scriptName = extractName(scriptPath);
+		final scriptName = _extractName(scriptPath);
 		final script     = new HScriptInstance(scriptName, scriptPath);
 
 		try
@@ -131,12 +251,10 @@ class ScriptHandler
 
 			ScriptAPI.expose(script.interp);
 
-			// Inject preset variables BEFORE execute() so top-level code sees them
 			if (presetVars != null)
 				for (k => v in presetVars)
 					script.interp.variables.set(k, v);
 
-			// For Lua stage scripts, inject the full Psych Lua API shim
 			if (isLua && stage != null)
 				mods.compat.PsychLuaStageAPI.expose(script.interp, stage);
 
@@ -144,275 +262,318 @@ class ScriptHandler
 			script.call('onCreate');
 			script.call('postCreate');
 
-			registerScript(script, scriptType);
-
-			trace('[ScriptHandler] Cargado [$scriptType]: $scriptName' + (isLua ? ' (from Lua)' : ''));
+			_registerScript(script, scriptType);
+			trace('[ScriptHandler] Cargado [$scriptType]: $scriptName${isLua ? " (Lua)" : ""}');
 			return script;
 		}
 		catch (e:Dynamic)
 		{
-			trace('[ScriptHandler] Error parseando "$scriptName": ' + Std.string(e));
-			if (isLua)
-				trace('[ScriptHandler] Transpiled code:\n$content');
+			trace('[ScriptHandler] ¡Error en "$scriptName"!');
+			trace('  → ${Std.string(e)}');
+			if (isLua) trace('[ScriptHandler] Código transpilado:\n$content');
 			return null;
 		}
+
 		#else
-		trace('[ScriptHandler] HSCRIPT_ALLOWED no definido en Project.xml.');
+		trace('[ScriptHandler] HSCRIPT_ALLOWED no definido en Project.xml — scripts desactivados.');
 		return null;
 		#end
 	}
 
-	/** Carga todos los `.hx` / `.hscript` de una carpeta. */
-	public static function loadScriptsFromFolder(folderPath:String, scriptType:String = 'song'):Array<HScriptInstance>
+	/**
+	 * Igual que loadScript() pero NO llama onCreate/postCreate automáticamente.
+	 * Usar cuando el llamador necesita inyectar APIs adicionales ANTES del primer onCreate.
+	 * El script queda parseado, con ScriptAPI expuesto y el programa ejecutado (funciones definidas).
+	 * El llamador es responsable de llamar script.call('onCreate') cuando esté listo.
+	 */
+	public static function loadScriptNoInit(scriptPath:String, scriptType:String = 'song',
+		?presetVars:Map<String, Dynamic>):Null<HScriptInstance>
 	{
-		final scripts:Array<HScriptInstance> = [];
+		#if HSCRIPT_ALLOWED
 
-		if (!FileSystem.exists(folderPath) || !FileSystem.isDirectory(folderPath))
-			return scripts;
-
-		for (file in FileSystem.readDirectory(folderPath))
+		#if sys
+		if (!FileSystem.exists(scriptPath))
 		{
-			// Accept .hx, .hscript (native) and .lua (transpiled Psych stage scripts)
-			final isScript = file.endsWith('.hx') || file.endsWith('.hscript') || file.endsWith('.lua');
-			if (!isScript)
-				continue;
-			final script = loadScript('$folderPath/$file', scriptType);
-			if (script != null)
-				scripts.push(script);
+			trace('[ScriptHandler] No encontrado: $scriptPath');
+			return null;
+		}
+		#end
+
+		final rawContent = #if sys File.getContent(scriptPath) #else '' #end;
+		final scriptName = _extractName(scriptPath);
+		final script     = new HScriptInstance(scriptName, scriptPath);
+
+		try
+		{
+			script.program = parser.parseString(rawContent, scriptPath);
+			script.interp  = new Interp();
+
+			ScriptAPI.expose(script.interp);
+
+			if (presetVars != null)
+				for (k => v in presetVars)
+					script.interp.variables.set(k, v);
+
+			// Ejecutar el programa define funciones en interp.variables — sin llamar onCreate aún.
+			script.interp.execute(script.program);
+
+			_registerScript(script, scriptType);
+			trace('[ScriptHandler] Cargado sin init [$scriptType]: $scriptName');
+			return script;
+		}
+		catch (e:Dynamic)
+		{
+			trace('[ScriptHandler] ¡Error parseando "$scriptName"!');
+			trace('  → ${Std.string(e)}');
+			return null;
 		}
 
-		return scripts;
+		#else
+		trace('[ScriptHandler] HSCRIPT_ALLOWED no definido — scripts desactivados.');
+		return null;
+		#end
+	}
+
+	/** Carga todos los `.hx` / `.hscript` / `.lua` de una carpeta. */
+	public static function loadScriptsFromFolder(folderPath:String, scriptType:String = 'song'):Array<HScriptInstance>
+	{
+		return _loadFolder(folderPath, scriptType);
 	}
 
 	/** Carga scripts desde una lista explícita de paths. */
 	public static function loadScriptsFromArray(paths:Array<String>, scriptType:String = 'stage'):Array<HScriptInstance>
 	{
-		final scripts:Array<HScriptInstance> = [];
-		for (path in paths)
+		final out:Array<HScriptInstance> = [];
+		for (p in paths)
 		{
-			final s = loadScript(path, scriptType);
-			if (s != null)
-				scripts.push(s);
+			final s = loadScript(p, scriptType);
+			if (s != null) out.push(s);
 		}
-		return scripts;
+		return out;
 	}
 
-	/** Carga scripts para la canción `songName`. */
-	public static function loadSongScripts(songName:String):Void
-	{
-		clearSongScripts();
-
-		// Resolver carpeta real de la canción (cubre espacios vs guiones en mods)
-		#if sys
-		final resolvedFolder = _resolveSongFolder(songName);
-		loadScriptsFromFolder('$resolvedFolder/scripts', 'song');
-		loadScriptsFromFolder('$resolvedFolder/events',  'song');
-		#else
-		final base = 'assets/songs/${songName.toLowerCase()}';
-		loadScriptsFromFolder('$base/scripts', 'song');
-		loadScriptsFromFolder('$base/events', 'song');
-		#end
-
-		trace('[ScriptHandler] Scripts de "$songName" cargados.');
-	}
-
-	/** Resuelve la carpeta real de una canción (mismo algoritmo que Paths._resolveSongFolder). */
-	static function _resolveSongFolder(song:String):String
-	{
-		#if sys
-		final s = song.toLowerCase();
-		final variants:Array<String> = [];
-		function addV(v:String) { v = v.trim(); if (v != '' && variants.indexOf(v) == -1) variants.push(v); }
-		addV(s); addV(s.replace(' ', '-')); addV(s.replace('-', ' '));
-		addV(s.replace('!', '')); addV(s.replace(' ', '-').replace('!', '')); addV(s.replace('-', ' ').replace('!', ''));
-
-		if (mods.ModManager.isActive())
-		{
-			final modRoot = mods.ModManager.modRoot();
-			for (v in variants)
-				for (base in ['$modRoot/songs', '$modRoot/assets/songs'])
-					if (sys.FileSystem.isDirectory('$base/$v'))
-						return '$base/$v';
-		}
-		for (v in variants)
-			if (sys.FileSystem.isDirectory('assets/songs/$v'))
-				return 'assets/songs/$v';
-		return 'assets/songs/$s';
-		#else
-		return 'assets/songs/${song.toLowerCase()}';
-		#end
-	}
-
-	/** Carga scripts para el stage `stageName`. */
-	public static function loadStageScripts(stageName:String):Void
-	{
-		clearStageScripts();
-		#if sys
-		if (mods.ModManager.isActive())
-		{
-			final modRoot = mods.ModManager.modRoot();
-			final sn = stageName.toLowerCase();
-			loadScriptsFromFolder('$modRoot/stages/$sn/scripts', 'stage');
-			loadScriptsFromFolder('$modRoot/assets/stages/$sn/scripts', 'stage');
-		}
-		#end
-		loadScriptsFromFolder('assets/stages/${stageName.toLowerCase()}/scripts', 'stage');
-		trace('[ScriptHandler] Scripts de stage "$stageName" cargados.');
-	}
-
-	// ─── Llamadas ─────────────────────────────────────────────────────────────
+	// ── Llamadas ──────────────────────────────────────────────────────────────
 
 	/**
-	 * Llama `funcName` en todos los scripts activos (global → stage → song).
+	 * Llama `funcName(args)` en TODOS los scripts de TODAS las capas.
+	 * El orden es: global → stage → song → ui → menu → char.
 	 */
 	public static function callOnScripts(funcName:String, args:Array<Dynamic> = null):Void
 	{
-		if (args == null)
-			args = [];
-		callMap(globalScripts, funcName, args);
-		callMap(stageScripts, funcName, args);
-		callMap(songScripts, funcName, args);
+		if (args == null) args = [];
+		_callLayer(globalScripts, funcName, args);
+		_callLayer(stageScripts,  funcName, args);
+		_callLayer(songScripts,   funcName, args);
+		_callLayer(uiScripts,     funcName, args);
+		_callLayer(menuScripts,   funcName, args);
+		_callLayer(charScripts,   funcName, args);
 	}
 
-	/** Llama sólo en los scripts de stage. */
-	public static function callOnStageScripts(funcName:String, args:Array<Dynamic> = null):Void
-		callMap(stageScripts, funcName, args ?? []);
-
 	/**
-	 * Llama `funcName` y devuelve el primer resultado no-null.
-	 * Prioridad: song → stage → global.
+	 * Como callOnScripts pero devuelve el primer valor no-nulo / no-defaultValue.
+	 * Si algún script devuelve `true` (cancelar), se detiene la propagación.
+	 * Sin alloc de array intermedio — itera las capas directamente.
 	 */
 	public static function callOnScriptsReturn(funcName:String, args:Array<Dynamic> = null, defaultValue:Dynamic = null):Dynamic
 	{
-		if (args == null)
-			args = [];
-		var r = firstReturn(songScripts, funcName, args);
-		if (r != null)
-			return r;
-		r = firstReturn(stageScripts, funcName, args);
-		if (r != null)
-			return r;
-		r = firstReturn(globalScripts, funcName, args);
-		if (r != null)
-			return r;
+		if (args == null) args = _argsEmpty;
+		// Iterar capas directamente sin crear Array "layers" cada llamada
+		#if HSCRIPT_ALLOWED
+		function _checkLayer(layer:Map<String, HScriptInstance>):Dynamic {
+			for (script in layer) {
+				if (!script.active) continue;
+				final r = script.call(funcName, args);
+				if (r != null && r != defaultValue) return r;
+			}
+			return null;
+		}
+		var r:Dynamic;
+		r = _checkLayer(globalScripts); if (r != null) return r;
+		r = _checkLayer(stageScripts);  if (r != null) return r;
+		r = _checkLayer(songScripts);   if (r != null) return r;
+		r = _checkLayer(uiScripts);     if (r != null) return r;
+		r = _checkLayer(menuScripts);   if (r != null) return r;
+		r = _checkLayer(charScripts);   if (r != null) return r;
+		#end
 		return defaultValue;
 	}
 
-	// ─── Variables ────────────────────────────────────────────────────────────
-
-	/** Establece `varName = value` en TODOS los scripts. */
+	/** Inyecta una variable en todos los scripts activos. */
 	public static function setOnScripts(varName:String, value:Dynamic):Void
 	{
-		for (s in globalScripts)
-			s.set(varName, value);
-		for (s in stageScripts)
-			s.set(varName, value);
-		for (s in songScripts)
-			s.set(varName, value);
+		// Sin Array "layers" intermedio
+		inline function _setLayer(layer:Map<String, HScriptInstance>):Void
+			for (script in layer) if (script.active) script.set(varName, value);
+		_setLayer(globalScripts);
+		_setLayer(stageScripts);
+		_setLayer(songScripts);
+		_setLayer(uiScripts);
+		_setLayer(menuScripts);
+		_setLayer(charScripts);
 	}
 
-	/**
-	 * Obtiene el valor de una variable de los scripts activos.
-	 * Busca en orden: song -> stage -> global. Devuelve null si no existe.
-	 */
-	public static function getFromScripts(varName:String):Dynamic
-	{
-		for (s in songScripts)
-		{
-			#if HSCRIPT_ALLOWED
-			if (s.interp != null && s.interp.variables.exists(varName))
-				return s.interp.variables.get(varName);
-			#end
-		}
-		for (s in stageScripts)
-		{
-			#if HSCRIPT_ALLOWED
-			if (s.interp != null && s.interp.variables.exists(varName))
-				return s.interp.variables.get(varName);
-			#end
-		}
-		for (s in globalScripts)
-		{
-			#if HSCRIPT_ALLOWED
-			if (s.interp != null && s.interp.variables.exists(varName))
-				return s.interp.variables.get(varName);
-			#end
-		}
-		return null;
-	}
-
-	/** Establece una variable sólo en scripts de stage. */
+	/** Inyecta una variable solo en los scripts de stage. */
 	public static function setOnStageScripts(varName:String, value:Dynamic):Void
 	{
-		for (s in stageScripts)
-			s.set(varName, value);
+		for (script in stageScripts)
+			if (script.active) script.set(varName, value);
 	}
 
-	// ─── Limpiar ──────────────────────────────────────────────────────────────
+	/** Llama una función solo en los scripts de stage. */
+	public static function callOnStageScripts(funcName:String, args:Array<Dynamic> = null):Void
+	{
+		if (args == null) args = [];
+		_callLayer(stageScripts, funcName, args);
+	}
+
+	/** Obtiene el valor de una variable de los scripts activos (primer resultado no-nulo). */
+	public static function getFromScripts(varName:String, defaultValue:Dynamic = null):Dynamic
+	{
+		final layers = [globalScripts, stageScripts, songScripts, uiScripts, menuScripts, charScripts];
+		for (layer in layers)
+			for (script in layer)
+				if (script.active) {
+					final v = script.get(varName);
+					if (v != null) return v;
+				}
+		return defaultValue;
+	}
+
+	// ── Limpieza ──────────────────────────────────────────────────────────────
 
 	public static function clearSongScripts():Void
-		destroyMap(songScripts);
+	{
+		_destroyLayer(songScripts);
+		_destroyLayer(uiScripts);
+		songScripts.clear();
+		uiScripts.clear();
+	}
 
 	public static function clearStageScripts():Void
-		destroyMap(stageScripts);
+	{
+		_destroyLayer(stageScripts);
+		stageScripts.clear();
+	}
 
-	public static function clearUIScripts():Void
-		destroyMap(uiScripts);
+	public static function clearCharScripts():Void
+	{
+		_destroyLayer(charScripts);
+		charScripts.clear();
+	}
 
-	public static function clearAllScripts():Void
+	public static function clearMenuScripts():Void
+	{
+		_destroyLayer(menuScripts);
+		menuScripts.clear();
+	}
+
+	public static function clearAll():Void
 	{
 		clearSongScripts();
 		clearStageScripts();
-		clearUIScripts();
-		destroyMap(globalScripts);
+		clearCharScripts();
+		clearMenuScripts();
+		_destroyLayer(globalScripts);
+		globalScripts.clear();
 	}
 
-	// ─── Helpers internos ─────────────────────────────────────────────────────
+	// ── Hot-reload ────────────────────────────────────────────────────────────
 
-	static function registerScript(script:HScriptInstance, type:String):Void
+	/** Recarga un script por nombre (sin reiniciar el intérprete). */
+	public static function hotReload(name:String):Bool
 	{
-		final map = switch (type.toLowerCase())
+		final layers = [globalScripts, stageScripts, songScripts, uiScripts, menuScripts, charScripts];
+		for (layer in layers)
+		{
+			if (layer.exists(name))
+			{
+				layer.get(name).hotReload();
+				trace('[ScriptHandler] Hot-reload: $name');
+				return true;
+			}
+		}
+		trace('[ScriptHandler] hotReload: "$name" no encontrado.');
+		return false;
+	}
+
+	/** Recarga todos los scripts de todas las capas. */
+	public static function hotReloadAll():Void
+	{
+		final layers = [globalScripts, stageScripts, songScripts, uiScripts, menuScripts, charScripts];
+		for (layer in layers) for (s in layer) s.hotReload();
+		trace('[ScriptHandler] Hot-reload completo.');
+	}
+
+	// ── Internals ─────────────────────────────────────────────────────────────
+
+	static function _loadFolder(folderPath:String, scriptType:String):Array<HScriptInstance>
+	{
+		final out:Array<HScriptInstance> = [];
+		#if sys
+		if (!FileSystem.exists(folderPath) || !FileSystem.isDirectory(folderPath))
+			return out;
+		for (file in FileSystem.readDirectory(folderPath))
+		{
+			if (!file.endsWith('.hx') && !file.endsWith('.hscript') && !file.endsWith('.lua'))
+				continue;
+			final s = loadScript('$folderPath/$file', scriptType);
+			if (s != null) out.push(s);
+		}
+		#end
+		return out;
+	}
+
+	static function _registerScript(script:HScriptInstance, scriptType:String):Void
+	{
+		final target = switch (scriptType.toLowerCase())
 		{
 			case 'global': globalScripts;
-			case 'stage': stageScripts;
-			case 'ui': uiScripts;
-			default: songScripts;
+			case 'stage':  stageScripts;
+			case 'ui':     uiScripts;
+			case 'menu':   menuScripts;
+			case 'char':   charScripts;
+			default:       songScripts;
 		};
-		map.set(script.name, script);
+		// Nombres duplicados → sufijo numérico
+		var name = script.name;
+		var i    = 1;
+		while (target.exists(name)) name = '${script.name}_${i++}';
+		script.name = name;
+		target.set(name, script);
 	}
 
-	static inline function callMap(map:Map<String, HScriptInstance>, fn:String, args:Array<Dynamic>):Void
+	static function _callLayer(layer:Map<String, HScriptInstance>, func:String, args:Array<Dynamic>):Void
 	{
-		for (s in map)
-			s.call(fn, args);
-	}
-
-	static function firstReturn(map:Map<String, HScriptInstance>, fn:String, args:Array<Dynamic>):Dynamic
-	{
-		for (s in map)
+		for (script in layer)
 		{
-			final r = s.call(fn, args);
-			if (r != null)
-				return r;
+			if (script.active)
+			{
+				#if HSCRIPT_ALLOWED
+				script.call(func, args);
+				#end
+			}
 		}
-		return null;
 	}
 
-	static function destroyMap(map:Map<String, HScriptInstance>):Void
+	static function _destroyLayer(layer:Map<String, HScriptInstance>):Void
 	{
-		for (s in map)
-			s.destroy();
-		map.clear();
+		for (script in layer)
+		{
+			#if HSCRIPT_ALLOWED
+			script.call('onDestroy');
+			#end
+		}
 	}
 
-	/** Extrae el nombre de archivo sin extensión de un path. */
-	public static function extractName(path:String):String
+	/** Alias público de _extractName para compatibilidad. */
+	public static inline function extractName(path:String):String
+		return _extractName(path);
+
+	static inline function _extractName(path:String):String
 	{
-		var name = path.split('/').pop();
-		if (name.endsWith('.hscript'))
-			return name.substr(0, name.length - 8);
-		if (name.endsWith('.hx'))
-			return name.substr(0, name.length - 3);
+		var name = path.split('/').pop() ?? path;
+		name = name.split('\\').pop();
+		if (StringTools.contains(name, '.')) name = name.substring(0, name.lastIndexOf('.'));
 		return name;
 	}
 }

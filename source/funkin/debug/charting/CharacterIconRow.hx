@@ -53,6 +53,11 @@ class CharacterIconRow extends FlxGroup
 	var iconSpacing:Int = 66;
 	var gridX:Float;
 
+	// Scroll horizontal de la fila de iconos (permite personajes infinitos)
+	var _rowScrollX:Float = 0;
+	var _rowMaxScroll:Float = 0;
+	var _rowAreaW:Float = 0; // Ancho visible disponible para iconos
+
 	var charDataPopup:CharacterDataPopup;
 
 	public var addCharModalOpen:Bool = false;
@@ -102,71 +107,97 @@ class CharacterIconRow extends FlxGroup
 		iconHitboxes = [];
 
 		var chars = (_song.characters != null) ? _song.characters : [];
-		var currentX = gridX;
+
+		// Calcular ancho disponible para la fila (hasta el panel de UI)
+		_rowAreaW = FlxG.width - 340 - gridX; // dejar espacio para el UI_box
+		if (_rowAreaW < 100) _rowAreaW = 100;
+
+		// Calcular scroll máximo
+		var totalRowW:Float = chars.length * iconSpacing + 36; // +36 para el botón "+"
+		_rowMaxScroll = Math.max(0, totalRowW - _rowAreaW);
+		_rowScrollX   = Math.min(_rowScrollX, _rowMaxScroll);
+		if (_rowScrollX < 0) _rowScrollX = 0;
+
+		var startX:Float = gridX - _rowScrollX;
+		var currentX:Float = startX;
 
 		for (i in 0...chars.length)
 		{
 			var char = chars[i];
 			var typeBg = getTypeColor(char.type);
 
-			// Fondo
-			var bg = new FlxSprite(currentX, rowY).makeGraphic(iconSize, iconSize, typeBg);
-			bg.alpha = 0.8;
-			bg.scrollFactor.set();
-			bg.cameras = [camHUD];
-			iconSprites.add(bg);
+			// Culling: no crear sprites de iconos que están fuera del área visible
+			var iconScreenX:Float = currentX;
+			var inView:Bool = (iconScreenX + iconSize >= gridX) && (iconScreenX <= gridX + _rowAreaW);
 
-			// HealthIcon
-			try
+			if (inView)
 			{
-				var icon = new HealthIcon(char.name);
-				icon.setPosition(currentX + 2, rowY + 2);
-				icon.setGraphicSize(iconSize - 4, iconSize - 4);
-				icon.updateHitbox();
-				icon.scrollFactor.set();
-				icon.cameras = [camHUD];
-				iconSprites.add(cast icon);
-			}
-			catch (e:Dynamic)
-			{
-				var ph = new FlxSprite(currentX + 6, rowY + 6).makeGraphic(iconSize - 12, iconSize - 12, 0xFF444466);
-				ph.scrollFactor.set();
-				ph.cameras = [camHUD];
-				iconSprites.add(ph);
+				// Fondo
+				var bg = new FlxSprite(iconScreenX, rowY).makeGraphic(iconSize, iconSize, typeBg);
+				bg.alpha = 0.8;
+				bg.scrollFactor.set();
+				bg.cameras = [camHUD];
+				iconSprites.add(bg);
+
+				// HealthIcon
+				try
+				{
+					var icon = new HealthIcon(char.name);
+					icon.setPosition(iconScreenX + 2, rowY + 2);
+					icon.setGraphicSize(iconSize - 4, iconSize - 4);
+					icon.updateHitbox();
+					icon.scrollFactor.set();
+					icon.cameras = [camHUD];
+					iconSprites.add(cast icon);
+				}
+				catch (e:Dynamic)
+				{
+					var ph = new FlxSprite(iconScreenX + 6, rowY + 6).makeGraphic(iconSize - 12, iconSize - 12, 0xFF444466);
+					ph.scrollFactor.set();
+					ph.cameras = [camHUD];
+					iconSprites.add(ph);
+				}
+
+				// Nombre
+				var nameLabel = new FlxText(iconScreenX, rowY + iconSize + 2, iconSize, char.name, 8);
+				nameLabel.setFormat(Paths.font("vcr.ttf"), 8, TEXT_GRAY, CENTER);
+				nameLabel.scrollFactor.set();
+				nameLabel.cameras = [camHUD];
+				iconLabels.add(nameLabel);
+
+				// Indicador de StrumsGroup
+				if (char.strumsGroup != null && char.strumsGroup.length > 0)
+				{
+					var sgLabel = new FlxText(iconScreenX, rowY - 11, iconSize, char.strumsGroup, 7);
+					sgLabel.setFormat(Paths.font("vcr.ttf"), 7, ACCENT_CYAN, CENTER);
+					sgLabel.scrollFactor.set();
+					sgLabel.cameras = [camHUD];
+					iconLabels.add(sgLabel);
+				}
 			}
 
-			// Nombre
-			var nameLabel = new FlxText(currentX, rowY + iconSize + 2, iconSize, char.name, 8);
-			nameLabel.setFormat(Paths.font("vcr.ttf"), 8, TEXT_GRAY, CENTER);
-			nameLabel.scrollFactor.set();
-			nameLabel.cameras = [camHUD];
-			iconLabels.add(nameLabel);
-
-			// Indicador de StrumsGroup
-			if (char.strumsGroup != null && char.strumsGroup.length > 0)
-			{
-				var sgLabel = new FlxText(currentX, rowY - 11, iconSize, char.strumsGroup, 7);
-				sgLabel.setFormat(Paths.font("vcr.ttf"), 7, ACCENT_CYAN, CENTER);
-				sgLabel.scrollFactor.set();
-				sgLabel.cameras = [camHUD];
-				iconLabels.add(sgLabel);
-			}
-
+			// Hitbox siempre se registra (con posición en pantalla actual)
 			iconHitboxes.push({
-				x: currentX,
+				x: iconScreenX,
 				y: rowY,
 				w: iconSize,
 				h: iconSize,
 				index: i
 			});
+
 			currentX += iconSpacing;
 		}
 
 		// Reposicionar botón "+"
-		addCharBtn.x = currentX + 4;
-		addCharBtn.y = rowY + 5;
+		addCharBtn.x  = currentX + 4;
+		addCharBtn.y  = rowY + 5;
 		addCharBtnText.x = currentX + 4;
 		addCharBtnText.y = rowY + 7;
+
+		// Ocultar botón si está fuera del área visible
+		var btnInView = (addCharBtn.x >= gridX) && (addCharBtn.x <= gridX + _rowAreaW + 60);
+		addCharBtn.visible     = btnInView;
+		addCharBtnText.visible = btnInView;
 	}
 
 	public function isAnyModalOpen():Bool
@@ -192,20 +223,32 @@ class CharacterIconRow extends FlxGroup
 		if (charDataPopup.isOpen)
 			return;
 
+		// Scroll horizontal de la fila con Ctrl+Rueda del ratón cuando el cursor
+		// está sobre el área de iconos
+		var my:Float = FlxG.mouse.y;
+		var mx:Float = FlxG.mouse.x;
+		var onRow:Bool = (my >= rowY - 14) && (my <= rowY + iconSize + 18);
+		var onGrid:Bool = (mx >= gridX) && (mx <= gridX + _rowAreaW);
+
+		if (onRow && onGrid && FlxG.keys.pressed.CONTROL && FlxG.mouse.wheel != 0)
+		{
+			_rowScrollX -= FlxG.mouse.wheel * iconSpacing;
+			_rowScrollX  = Math.max(0, Math.min(_rowScrollX, _rowMaxScroll));
+			refreshIcons();
+			return; // no procesar clicks este frame
+		}
+
 		if (!FlxG.mouse.justPressed)
 			return;
 
 		// Click en "+"
-		if (FlxG.mouse.overlaps(addCharBtn, camHUD))
+		if (FlxG.mouse.overlaps(addCharBtn, camHUD) && addCharBtn.visible)
 		{
 			openAddCharacterMenu();
 			return;
 		}
 
 		// Click en un icono existente
-		var mx = FlxG.mouse.x;
-		var my = FlxG.mouse.y;
-
 		for (hb in iconHitboxes)
 		{
 			if (mx >= hb.x && mx <= hb.x + hb.w && my >= hb.y && my <= hb.y + hb.h)

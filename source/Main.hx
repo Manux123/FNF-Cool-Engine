@@ -32,6 +32,7 @@ import funkin.system.SystemInfo;
 import funkin.system.WindowManager;
 import funkin.system.WindowManager.ScaleMode;
 import funkin.cache.PathsCache;
+import funkin.cache.FunkinCache;
 
 // ── API nativa ────────────────────────────────────────────────────────────────
 import extensions.CppAPI;
@@ -182,8 +183,19 @@ class Main extends Sprite
 		DebugConsole.init();
 		#end
 
+		// ── FunkinCache — DEBE instalarse ANTES de createGame() ──────────────
+		// Reemplaza openfl.utils.Assets.cache para interceptar TODOS los loads
+		// de OpenFL y liberar bitmaps/sounds automáticamente en cada cambio de
+		// estado. Sin esto, OpenFL acumula assets indefinidamente en su caché
+		// por defecto (~300-400 MB en gameplay).
+		// FunkinCache.init() también suscribe a preStateSwitch/postStateSwitch
+		// para rotar las capas current/second automáticamente, pero esas señales
+		// solo están disponibles después de createGame() → se inicializan dentro
+		// de FunkinCache.init() con FlxG.signals, así que llamamos DESPUÉS.
+
 		// ── Juego ─────────────────────────────────────────────────────────────
 		createGame();
+		FunkinCache.init(); // FlxG ya disponible → suscribir señales
 		AudioConfig.applyToFlixel();
 		StickerTransition.init();
 

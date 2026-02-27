@@ -370,7 +370,10 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		if (bmp != null)
 			sprite.loadGraphic(bmp);
 		else
-			trace('[Stage] createSprite: imagen no encontrada para asset="${element.asset}"');
+		{
+			trace('[Stage] createSprite: imagen no encontrada para asset="${element.asset}" — sprite omitido');
+			return; // Don't add a sprite with no graphic — causes FlxDrawQuadsItem crash
+		}
 
 		applyElementProperties(sprite, element);
 		add(sprite);
@@ -398,6 +401,15 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		var assetKey:String = element.asset.endsWith('.txt') ? element.asset.replace('.txt', '') : element.asset;
 
 		sprite.loadStageSparrow(assetKey);
+
+		// BUGFIX: si loadStageSparrow no encontró el asset, el sprite quedó invisible
+		// (placeholder 1×1 transparente). No añadirlo al Stage para evitar waste de draw calls,
+		// pero si hay animaciones definidas es mejor no añadirlo en absoluto.
+		if (!sprite.visible && sprite.width <= 1 && sprite.height <= 1)
+		{
+			trace('[Stage] createAnimatedSprite: asset no cargado para "${element.asset}" — sprite omitido');
+			return;
+		}
 
 		// Añadir animaciones con la API unificada
 		if (element.animations != null)
@@ -465,8 +477,10 @@ class Stage extends FlxTypedGroup<FlxBasic>
 				else
 				{
 					// Sin animaciones → FlxSprite estático (más ligero)
+					final _memberBmp = Paths.imageStage(member.asset);
+					if (_memberBmp == null) { trace('[Stage] createGroup member: imagen no encontrada para "${member.asset}" — miembro omitido'); continue; }
 					var spr:FlxSprite = new FlxSprite(member.position[0], member.position[1]);
-					spr.loadGraphic(Paths.imageStage(member.asset));
+					spr.loadGraphic(_memberBmp);
 
 					if (member.scrollFactor != null)
 						spr.scrollFactor.set(member.scrollFactor[0], member.scrollFactor[1]);

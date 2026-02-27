@@ -23,7 +23,7 @@ import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 import lime.app.Application;
 import openfl.Assets;
-import openfl.display.BitmapData as Bitmap;
+// BitmapData no usado — assets ahora cargan vía Paths.getGraphic() con caché
 import funkin.data.Conductor;
 import funkin.states.OutdatedSubState;
 import data.PlayerSettings;
@@ -52,7 +52,7 @@ class TitleState extends funkin.states.MusicBeatState
 
 		// curWacky = FlxG.random.getObject(getIntroTextShit());
 
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBGtitle')));
+		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.getGraphic('menu/menuBGtitle'));
 		add(bg);
 
 		// DEBUG BULLSHIT
@@ -154,7 +154,9 @@ class TitleState extends funkin.states.MusicBeatState
 			// Coming back from a mod restart — music was destroyed, restart it
 			if (FlxG.sound.music == null || !FlxG.sound.music.playing)
 			{
-				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7);
+				final snd = Paths.loadMusic('freakyMenu');
+				if (snd != null) FlxG.sound.playMusic(snd, 0.7);
+				else FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7);
 				Conductor.changeBPM(102);
 			}
 			skipIntro();
@@ -172,7 +174,13 @@ class TitleState extends funkin.states.MusicBeatState
 
 			transIn = FlxTransitionableState.defaultTransIn;
 			transOut = FlxTransitionableState.defaultTransOut;
-			FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
+
+			final freakyPath = Paths.music('freakyMenu');
+			final freakySnd  = Paths.loadMusic('freakyMenu');
+			if (freakySnd != null)
+				FlxG.sound.playMusic(freakySnd, 0);
+			else
+				FlxG.sound.playMusic(freakyPath, 0);
 
 			FlxG.sound.music.fadeIn(4, 0, 0.7);
 			Conductor.changeBPM(102);

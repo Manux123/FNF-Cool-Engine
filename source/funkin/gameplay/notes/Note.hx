@@ -117,6 +117,14 @@ class Note extends FlxSprite
 		// ── Cargar frames ─────────────────────────────────────────────────
 		frames = NoteSkinSystem.loadSkinFrames(tex, skinData.folder);
 
+		// BUGFIX CRÍTICO: si frames es null (asset faltante, XML roto, etc.)
+		// el sprite crashea en FlxDrawQuadsItem::render al primer frame de PlayState.
+		if (frames == null)
+		{
+			trace('[Note] WARN: frames null para skin "${skinData.name}" noteData=$noteData — usando placeholder');
+			makeGraphic(Std.int(Note.swagWidth), Std.int(Note.swagWidth), 0x00000000);
+		}
+
 		// ── Escala ────────────────────────────────────────────────────────
 		// BUGFIX: NO usar `width * _noteScale` porque `width` es el hitbox del
 		// ciclo anterior (stale) hasta que se llame updateHitbox(). Usar

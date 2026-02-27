@@ -1,0 +1,210 @@
+package funkin.scripting;
+
+import flixel.FlxG;
+import funkin.states.MusicBeatState;
+import funkin.scripting.StateScriptHandler;
+
+/**
+ * ScriptableState — estado completo definido en HScript.
+ *
+ * Inspirado en el sistema @:hscriptClass de V-Slice pero sin polymod.
+ * En lugar de extender la clase desde script, el estado actúa como
+ * proxy delegando TODOS los métodos de ciclo de vida al script.
+ *
+ * ─── Uso ─────────────────────────────────────────────────────────────────────
+ *
+ * 1. En Haxe (para navegar a un estado scripted):
+ *      StateTransition.switchState(new ScriptableState('myCustomState'));
+ *
+ * 2. Desde un script existente:
+ *      ui.switchStateInstance(new funkin.scripting.ScriptableState('myCustomState'));
+ *
+ * 3. Archivo del script: assets/states/mycustomstate/main.hx
+ *    (o el primero que se encuentre en esa carpeta)
+ *
+ * ─── API disponible en el script ─────────────────────────────────────────────
+ *
+ *   // Ciclo de vida
+ *   function onCreate()      { ... }   // al crear el state
+ *   function onUpdate(dt)    { ... }   // cada frame (antes de super)
+ *   function onUpdatePost(dt){ ... }   // cada frame (después de super)
+ *   function onBeatHit(beat) { ... }
+ *   function onStepHit(step) { ... }
+ *   function onDestroy()     { ... }
+ *
+ *   // Control del state
+ *   ui.add(spr);
+ *   ui.tween(spr, {alpha:0}, 1.0);
+ *   ui.switchState('FreeplayState');
+ *
+ *   // Puede cancelar el input
+ *   function onKeyJustPressed(key)  { return true; } // true = consumido
+ *   function onKeyJustReleased(key) { ... }
+ *
+ * ─── Ejemplo de state completamente en script ────────────────────────────────
+ *
+ *   // assets/states/mycoolmenu/main.hx
+ *   import flixel.util.FlxColor;
+ *
+ *   var bg;
+ *   var title;
+ *
+ *   function onCreate() {
+ *       bg    = ui.solidSprite(0, 0, FlxG.width, FlxG.height, FlxColor.BLACK);
+ *       title = ui.text('MY COOL MENU', 0, 100, 48);
+ *       ui.center(title);
+ *       ui.add(bg);
+ *       ui.add(title);
+ *       ui.tween(title, {alpha: 1}, 1.0, {ease: 'quadOut'});
+ *   }
+ *
+ *   function onUpdate(dt) {
+ *       if (FlxG.keys.justPressed.ESCAPE)
+ *           ui.switchState('MainMenuState');
+ *   }
+ *
+ *   function onBeatHit(beat) {
+ *       ui.zoom(1.05, 0.1);
+ *   }
+ */
+class ScriptableState extends MusicBeatState
+{
+	/** Nombre del estado (busca carpeta assets/states/{name}/). */
+	public var scriptName:String;
+
+	/** Scripts cargados para este estado. */
+	var _scripts:Array<HScriptInstance> = [];
+
+	public function new(scriptName:String)
+	{
+		super();
+		this.scriptName = scriptName;
+	}
+
+	override function create():Void
+	{
+		super.create();
+
+		StateScriptHandler.init();
+		_scripts = StateScriptHandler.loadStateScripts(scriptName, this);
+
+		// Exponer helpers estándar
+		StateScriptHandler.exposeElement('FlxG', FlxG);
+
+		StateScriptHandler.callOnScripts('onCreate', []);
+	}
+
+	override function update(elapsed:Float):Void
+	{
+		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
+
+		// Propagación de input a scripts (cancelable)
+		#if !mobile
+		for (key in _getPressedKeys())
+			StateScriptHandler.callOnScripts('onKeyJustPressed', [key]);
+		#end
+
+		super.update(elapsed);
+
+		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
+	}
+
+	override function beatHit():Void
+	{
+		super.beatHit();
+		StateScriptHandler.callOnScripts('onBeatHit', [curBeat]);
+	}
+
+	override function stepHit():Void
+	{
+		super.stepHit();
+		StateScriptHandler.callOnScripts('onStepHit', [curStep]);
+	}
+
+	override function destroy():Void
+	{
+		StateScriptHandler.callOnScripts('onDestroy', []);
+		StateScriptHandler.clearStateScripts();
+		super.destroy();
+	}
+
+	// ─── Helpers internos ─────────────────────────────────────────────────────
+
+	/** Devuelve las teclas presionadas este frame como strings. */
+	static function _getPressedKeys():Array<String>
+	{
+		final keys:Array<String> = [];
+		#if !mobile
+		// getIsDown() returns all currently-held FlxKeyInput objects.
+		// We filter to those that were just pressed this frame.
+		for (keyInput in FlxG.keys.getIsDown())
+		{
+			if (keyInput.justPressed)
+				keys.push(keyInput.ID.toString());
+		}
+		#end
+		return keys;
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * ScriptableSubState — substate completo desde HScript.
+ *
+ * Igual que ScriptableState pero para substates (pausas, popups, etc.).
+ *
+ * ─── Uso desde Haxe ──────────────────────────────────────────────────────────
+ *   openSubState(new ScriptableSubState('myPopup'));
+ *
+ * ─── Uso desde script ────────────────────────────────────────────────────────
+ *   state.openSubState(new funkin.scripting.ScriptableSubState('myPopup'));
+ *
+ * ─── Script en: assets/states/mypopup/main.hx ───────────────────────────────
+ *   function onCreate() {
+ *       var bg = ui.solidSprite(0, 0, FlxG.width, FlxG.height, 0xAA000000);
+ *       ui.add(bg);
+ *   }
+ *   function onUpdate(dt) {
+ *       if (FlxG.keys.justPressed.ESCAPE)
+ *           close(); // cierra el substate
+ *   }
+ */
+class ScriptableSubState extends flixel.FlxSubState
+{
+	public var scriptName:String;
+
+	public function new(scriptName:String)
+	{
+		super();
+		this.scriptName = scriptName;
+	}
+
+	override function create():Void
+	{
+		super.create();
+
+		StateScriptHandler.init();
+		StateScriptHandler.loadStateScripts(scriptName, null);
+
+		// Exponer `close` al script
+		StateScriptHandler.setOnScripts('close', () -> close());
+		StateScriptHandler.setOnScripts('FlxG',  FlxG);
+
+		StateScriptHandler.callOnScripts('onCreate', []);
+	}
+
+	override function update(elapsed:Float):Void
+	{
+		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
+		super.update(elapsed);
+		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
+	}
+
+	override function destroy():Void
+	{
+		StateScriptHandler.callOnScripts('onDestroy', []);
+		StateScriptHandler.clearStateScripts();
+		super.destroy();
+	}
+}

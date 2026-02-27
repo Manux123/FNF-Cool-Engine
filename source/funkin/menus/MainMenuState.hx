@@ -72,7 +72,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 		if (FlxG.sound.music == null || !FlxG.sound.music.playing)
 		{
 			if (FreeplayState.vocals == null)
-				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7);
+				{ final _s = Paths.loadMusic('freakyMenu'); if (_s != null) FlxG.sound.playMusic(_s, 0.7); else FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7); }
 		}
 		musicFreakyisPlaying = true;
 		#end

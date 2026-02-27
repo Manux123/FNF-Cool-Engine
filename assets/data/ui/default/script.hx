@@ -315,9 +315,9 @@ function onIconsSet(p1, p2)
 	iconP1Name = p1;
 	iconP2Name = p2;
 	if (iconP1 != null)
-		iconP1.updateIcon(p1);
+		iconP1.updateIcon(p1,true);
 	if (iconP2 != null)
-		iconP2.updateIcon(p2);
+		iconP2.updateIcon(p2,false);
 }
 
 // ══════════════════════════════════════════════════════════════════════════

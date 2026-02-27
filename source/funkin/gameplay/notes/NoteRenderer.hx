@@ -309,18 +309,23 @@ class NoteRenderer
     public function clearPools():Void
     {
         // Limpiar hold splashes activos
+        // BUGFIX: NO llamar splash.destroy() aquí — estos splashes también están
+        // en grpNoteSplashes (añadidos vía splashes.add()) y super.destroy() de
+        // PlayState los destruirá correctamente. Destruirlos aquí causa un doble
+        // destroy que corrompe FlxG.bitmap cache → crash en el segundo PlayState.
         for (note in activeHoldSplashes.keys())
         {
             var splash = activeHoldSplashes.get(note);
             if (splash != null)
             {
-                splash.stopContinuousSplash();
-                splash.destroy();
+                splash.stopContinuousSplash(); // solo cancela el timer, no destruye
             }
         }
         activeHoldSplashes.clear();
         
         // Limpiar note pool
+        // Las notas del pool fueron sacadas de `notes` con notes.remove() antes de
+        // ser recicladas, así que NO están en ningún FlxGroup → sí hay que destruirlas.
         for (note in notePool)
         {
             if (note != null) note.destroy();
@@ -333,10 +338,13 @@ class NoteRenderer
         sustainPool = [];
 
         // Limpiar splash pool
+        // BUGFIX: igual que activeHoldSplashes — estos splashes están en
+        // grpNoteSplashes. No llamar destroy() para evitar doble destroy.
+        // Basta con limpiar las referencias del pool; el grupo se encarga del resto.
         for (splash in splashPool)
         {
             if (splash != null)
-                splash.destroy();
+                splash.kill(); // marcar inactivo, pero NO destruir
         }
         splashPool = [];
         
@@ -400,6 +408,11 @@ class NoteRenderer
         
         if (noteBatcher != null)
         {
+            // clearBatches() vacía los arrays internos. flushBatch() solo se activa
+            // con >=128 notas del mismo tipo simultáneas (imposible en FNF), así que
+            // el FlxSpriteGroup interno está vacío y super.destroy() no hay miembros
+            // que destruir dos veces.
+            noteBatcher.clearBatches();
             noteBatcher.destroy();
             noteBatcher = null;
         }

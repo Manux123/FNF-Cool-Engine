@@ -220,22 +220,29 @@ class GPUBatch
     private var texture:BitmapData;
 
     // Buffers reutilizables — alojados UNA VEZ en el constructor
+    // openfl.display.Graphics.drawTriangles espera:
+    //   vertices : [x0,y0, x1,y1, ...]  — solo posiciones (2 floats/vértice)
+    //   uvtData  : [u0,v0, u1,v1, ...]  — coordenadas UV  (2 floats/vértice)
+    //   indices  : triángulos como triples de índices de vértice
     private var vertices:Vector<Float>;
+    private var uvtData:Vector<Float>;
     private var indices:Vector<Int>;
 
-    public  var spriteCount:Int  = 0;
-    public  var avgZIndex:Float  = 0;
+    public  var spriteCount:Int   = 0;
+    public  var avgZIndex:Float   = 0;
     private var totalZIndex:Float = 0;
 
     // Capacidades
-    private static inline var MAX_SPRITES      :Int = 32;  // FNF muestra ~20 notas max simultáneas; 64+ desperdicia buffers
-    private static inline var VERTS_PER_SPRITE :Int = 32; // 4 verts × 8 floats
-    private static inline var INDICES_PER_SPRITE:Int = 6;
+    private static inline var MAX_SPRITES        :Int = 32; // FNF muestra ~20 notas simultáneas
+    private static inline var VERTS_PER_SPRITE   :Int = 8;  // 4 vértices × 2 floats (x, y)
+    private static inline var UVT_PER_SPRITE     :Int = 8;  // 4 vértices × 2 floats (u, v)
+    private static inline var INDICES_PER_SPRITE :Int = 6;  // 2 triángulos × 3 índices
 
     public function new(texture:BitmapData)
     {
         this.texture = texture;
-        vertices = new Vector<Float>(MAX_SPRITES * VERTS_PER_SPRITE, true); // fixed=true
+        vertices = new Vector<Float>(MAX_SPRITES * VERTS_PER_SPRITE,  true);
+        uvtData  = new Vector<Float>(MAX_SPRITES * UVT_PER_SPRITE,    true);
         indices  = new Vector<Int>  (MAX_SPRITES * INDICES_PER_SPRITE, true);
     }
 
@@ -252,71 +259,65 @@ class GPUBatch
         final width  = frame.frame.width  * sprite.scale.x * camera.zoom;
         final height = frame.frame.height * sprite.scale.y * camera.zoom;
 
-        final uvX = frame.frame.x / texture.width;
-        final uvY = frame.frame.y / texture.height;
-        final uvW = frame.frame.width  / texture.width;
-        final uvH = frame.frame.height / texture.height;
+        // Coordenadas UV normalizadas en el atlas
+        final uvX = frame.frame.x         / texture.width;
+        final uvY = frame.frame.y         / texture.height;
+        final uvW = frame.frame.width     / texture.width;
+        final uvH = frame.frame.height    / texture.height;
 
-        final alpha = sprite.alpha;
-        final r = ((sprite.color >> 16) & 0xFF) / 255.0;
-        final g = ((sprite.color >>  8) & 0xFF) / 255.0;
-        final b = ( sprite.color        & 0xFF) / 255.0;
-
+        // ── Posiciones (x, y) ────────────────────────────────────────────────
         var v = spriteCount * VERTS_PER_SPRITE;
+        vertices[v++] = camX;         vertices[v++] = camY;           // TL
+        vertices[v++] = camX + width; vertices[v++] = camY;           // TR
+        vertices[v++] = camX + width; vertices[v++] = camY + height;  // BR
+        vertices[v++] = camX;         vertices[v++] = camY + height;  // BL
 
-        // Top-left
-        vertices[v++]=camX;       vertices[v++]=camY;
-        vertices[v++]=uvX;        vertices[v++]=uvY;
-        vertices[v++]=r; vertices[v++]=g; vertices[v++]=b; vertices[v++]=alpha;
-        // Top-right
-        vertices[v++]=camX+width; vertices[v++]=camY;
-        vertices[v++]=uvX+uvW;    vertices[v++]=uvY;
-        vertices[v++]=r; vertices[v++]=g; vertices[v++]=b; vertices[v++]=alpha;
-        // Bottom-right
-        vertices[v++]=camX+width; vertices[v++]=camY+height;
-        vertices[v++]=uvX+uvW;    vertices[v++]=uvY+uvH;
-        vertices[v++]=r; vertices[v++]=g; vertices[v++]=b; vertices[v++]=alpha;
-        // Bottom-left
-        vertices[v++]=camX;       vertices[v++]=camY+height;
-        vertices[v++]=uvX;        vertices[v++]=uvY+uvH;
-        vertices[v++]=r; vertices[v++]=g; vertices[v++]=b; vertices[v++]=alpha;
+        // ── UV ───────────────────────────────────────────────────────────────
+        var u = spriteCount * UVT_PER_SPRITE;
+        uvtData[u++] = uvX;        uvtData[u++] = uvY;           // TL
+        uvtData[u++] = uvX + uvW;  uvtData[u++] = uvY;           // TR
+        uvtData[u++] = uvX + uvW;  uvtData[u++] = uvY + uvH;     // BR
+        uvtData[u++] = uvX;        uvtData[u++] = uvY + uvH;     // BL
 
-        var idx = spriteCount * INDICES_PER_SPRITE;
-        final base = spriteCount * 4;
-        indices[idx++]=base;   indices[idx++]=base+1; indices[idx++]=base+2;
-        indices[idx++]=base;   indices[idx++]=base+2; indices[idx++]=base+3;
+        // ── Índices (2 triángulos por quad) ──────────────────────────────────
+        var idx  = spriteCount * INDICES_PER_SPRITE;
+        final b  = spriteCount * 4;
+        indices[idx++] = b;     indices[idx++] = b + 1; indices[idx++] = b + 2;
+        indices[idx++] = b;     indices[idx++] = b + 2; indices[idx++] = b + 3;
 
         spriteCount++;
     }
 
     /**
-     * Render sin alloc: usamos los buffers directamente.
-     * Limitamos la longitud con setLength para que drawTriangles
-     * no procese elementos vacíos más allá del rango usado.
+     * Render sin alloc: truncamos los Vectors al rango usado antes de
+     * pasarlos a drawTriangles, y restauramos la capacidad después.
      */
     public function render(graphics:Graphics):Void
     {
         if (spriteCount == 0 || texture == null) return;
 
         final vertCount = spriteCount * VERTS_PER_SPRITE;
+        final uvtCount  = spriteCount * UVT_PER_SPRITE;
         final idxCount  = spriteCount * INDICES_PER_SPRITE;
 
-        // Truncar para la llamada (sin new Vector — solo ajusta el campo length)
         vertices.length = vertCount;
+        uvtData.length  = uvtCount;
         indices.length  = idxCount;
 
         try
         {
-            graphics.beginBitmapFill(texture, null, true, true);
-            graphics.drawTriangles(vertices, indices);
+            // smooth=false: GL_NEAREST para texturas pixel-perfect (notas/HUD)
+            graphics.beginBitmapFill(texture, null, false, false);
+            graphics.drawTriangles(vertices, indices, uvtData);
             graphics.endFill();
         }
         catch (_:Dynamic) {}
 
         avgZIndex = spriteCount > 0 ? totalZIndex / spriteCount : 0;
 
-        // Restaurar capacidad completa para la siguiente escritura
+        // Restaurar capacidad completa para el siguiente frame
         vertices.length = MAX_SPRITES * VERTS_PER_SPRITE;
+        uvtData.length  = MAX_SPRITES * UVT_PER_SPRITE;
         indices.length  = MAX_SPRITES * INDICES_PER_SPRITE;
     }
 

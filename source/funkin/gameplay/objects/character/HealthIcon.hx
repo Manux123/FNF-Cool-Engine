@@ -1,20 +1,23 @@
 package funkin.gameplay.objects.character;
 
 import flixel.FlxG;
-import lime.utils.Assets;
+import flixel.FlxSprite;
+import flixel.graphics.FlxGraphic;
+
 #if sys
 import sys.FileSystem;
 #end
-import flixel.FlxSprite;
-import flixel.graphics.FlxGraphic;
 
 using StringTools;
 
 @:keep
-
 class HealthIcon extends FlxSprite
 {
 	public var sprTracker:FlxSprite;
+
+	/** Last char loaded — avoids redundant reloads when updateIcon is called with the same char. */
+	private var _lastChar:String = '';
+	private var _isPlayer:Bool   = false;
 
 	public function new(char:String = 'bf', isPlayer:Bool = false)
 	{
@@ -24,65 +27,102 @@ class HealthIcon extends FlxSprite
 
 	public function updateIcon(char:String = 'bf', isPlayer:Bool = false)
 	{
-		// Construir path resolviendo mod activo
-		var path = Paths.image('icons/icon-' + char);
+		// Skip reload if same character — avoids unnecessary disk I/O and alloc
+		if (char == _lastChar && isPlayer == _isPlayer && frames != null)
+		{
+			// Just re-apply flip in case isPlayer changed
+			flipX = isPlayer;
+			return;
+		}
 
-		// Assets.exists() falla con rutas de filesystem de mods en native cpp.
-		// Usamos FileSystem.exists() en sys y Assets.exists() solo como fallback.
-		var iconExists:Bool = false;
+		_lastChar  = char;
+		_isPlayer  = isPlayer;
+
+		// ── Resolve path + logical key ────────────────────────────────────────
+		// We track the logical key so that Paths.getGraphic receives the same
+		// key that image() will resolve — avoiding the "no encontrado" mismatch
+		// that caused the null-object crash in FlxDrawQuadsItem::render.
+		var iconKey  = 'icons/icon-' + char;
+		var path     = Paths.image(iconKey);
+
 		#if sys
-		iconExists = sys.FileSystem.exists(path);
+		var iconExists = FileSystem.exists(path);
 		if (!iconExists)
 		{
-			// Psych mods guardan iconos en images/icons/ sin prefijo "icon-"
-			final altPath = Paths.image('icons/' + char);
-			if (sys.FileSystem.exists(altPath)) { path = altPath; iconExists = true; }
+			// Psych mods store icons without the "icon-" prefix
+			final altKey  = 'icons/' + char;
+			final altPath = Paths.image(altKey);
+			if (FileSystem.exists(altPath)) { path = altPath; iconKey = altKey; iconExists = true; }
+		}
+		if (!iconExists)
+		{
+			iconKey = 'icons/icon-face';
+			path    = Paths.image(iconKey);
 		}
 		#else
-		iconExists = Assets.exists(path);
-		#end
-
-		if (!iconExists) path = Paths.image('icons/icon-face');
-
-		// Cargar BitmapData con fromFile en sys (soporta rutas de mod en disco)
-		var graphic:FlxGraphic = null;
-		#if sys
-		if (sys.FileSystem.exists(path))
+		if (!openfl.utils.Assets.exists(path))
 		{
-			final bmp = openfl.display.BitmapData.fromFile(path);
-			if (bmp != null)
-				graphic = flixel.graphics.FlxGraphic.fromBitmapData(bmp, false, path);
+			iconKey = 'icons/icon-face';
+			path    = Paths.image(iconKey);
 		}
 		#end
+
+		// ── Load through PathsCache so the graphic is tracked and freed properly ──
+		var graphic:FlxGraphic = null;
+
+		#if sys
+		if (FileSystem.exists(path))
+		{
+			// Pass the resolved logical key so getGraphic builds the correct path
+			graphic = Paths.getGraphic(iconKey);
+			// Fallback: if getGraphic still can't resolve, load directly and register
+			// in Flixel's bitmap cache so it is properly freed on state cleanup.
+			if (graphic == null)
+			{
+				final bmp = openfl.display.BitmapData.fromFile(path);
+				if (bmp != null)
+				{
+					graphic = FlxGraphic.fromBitmapData(bmp, false, path, true);
+					if (graphic != null) graphic.persist = true;
+				}
+			}
+		}
+		#end
+
 		if (graphic == null)
 			graphic = FlxG.bitmap.add(path);
-		
+
+		if (graphic == null)
+		{
+			trace('[HealthIcon] Could not load icon for "$char"');
+			return;
+		}
+
 		antialiasing = true;
 		loadGraphic(graphic, true, 150, 150);
 
-		var iconCount:Int = Math.floor(graphic.width / 150);
+		final iconCount:Int = Math.floor(graphic.width / 150);
 
-		if (iconCount >= 3) 
+		if (iconCount >= 3)
 		{
-			animation.add('normal', [0], 0, false, isPlayer);
-			animation.add('losing', [1], 0, false, isPlayer);
+			animation.add('normal',  [0], 0, false, isPlayer);
+			animation.add('losing',  [1], 0, false, isPlayer);
 			animation.add('winning', [2], 0, false, isPlayer);
 		}
-		else if (iconCount == 2) 
+		else if (iconCount == 2)
 		{
-			animation.add('normal', [0], 0, false, isPlayer);
-			animation.add('losing', [1], 0, false, isPlayer);
+			animation.add('normal',  [0], 0, false, isPlayer);
+			animation.add('losing',  [1], 0, false, isPlayer);
 			animation.add('winning', [0], 0, false, isPlayer);
 		}
-		else 
+		else
 		{
-			animation.add('normal', [0], 0, false, isPlayer);
-			animation.add('losing', [0], 0, false, isPlayer);
+			animation.add('normal',  [0], 0, false, isPlayer);
+			animation.add('losing',  [0], 0, false, isPlayer);
 			animation.add('winning', [0], 0, false, isPlayer);
 		}
 
-		if (isPlayer)
-			flipX = true;
+		flipX = isPlayer;
 
 		animation.play('normal');
 		scrollFactor.set();

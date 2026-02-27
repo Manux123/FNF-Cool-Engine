@@ -45,6 +45,8 @@ import funkin.gameplay.objects.character.HealthIcon;
 // init
 using StringTools;
 
+// BPM detection & waveform
+
 class ChartingState extends funkin.states.MusicBeatState
 {
 	// COLORES — actualizados desde EditorTheme en _applyTheme()
@@ -191,6 +193,35 @@ class ChartingState extends funkin.states.MusicBeatState
 	var lastMetronomeBeat:Int = -1;
 	var autosaveTimer:Float = 0;
 
+	// HITSOUND POR NOTA (durante reproducción)
+	var _hitsoundFiredNotes:Map<String, Bool> = new Map();
+	var _lastHitsoundTime:Float = -999;
+
+	// WAVEFORM
+	var waveformEnabled:Bool = false;
+	var waveformSprite:FlxSprite;
+	var _waveformData:Array<Float> = [];
+	var _waveformBuilt:Bool = false;
+
+	// Botón de waveform en la toolbar
+	var waveformBtn:FlxSprite;
+	var waveformBtnText:FlxText;
+
+	// CACHE DE TIEMPOS DE SECCIÓN (evita O(n²) en updateNotePositions cada frame)
+	var _sectionStartTimeCache:Array<Float> = [];
+	var _sectionTimeCacheDirty:Bool = true;
+
+	// DIRTY FLAG para updateNotePositions (solo recalcular cuando el grid se movió o se editó)
+	var _notePositionsDirty:Bool = true;
+	var _lastGridY:Float = -99999;
+
+	// OBJECT POOL para notas y sustains del grid (evita GC spikes al editar)
+	var _notePool:Array<Note> = [];
+	var _susPool:Array<FlxSprite> = [];
+
+	// BPM DETECTION
+	var _bpmDetecting:Bool = false;
+
 	// UNDO/REDO System
 	var undoStack:Array<ChartAction> = [];
 	var redoStack:Array<ChartAction> = [];
@@ -302,14 +333,18 @@ class ChartingState extends funkin.states.MusicBeatState
 			"💡 Ctrl+C/V to copy/paste",
 			"💡 N to mirror section",
 			"💡 Q/E to change snap",
-			"💡 T for hitsounds",
+			"💡 T for hitsounds (plays per note!)",
 			"💡 M for metronome",
+			"💡 Click 🌊 Wave button to toggle waveform",
+			"💡 Go to Settings → Auto-Detect BPM",
+			"💡 Ctrl+Scroll over icons to scroll characters",
 			"💡 PageUp/Down to navigate",
 			"💡 Mouse wheel to scroll grid",
 			"💡 Shift+Wheel for pixel scroll",
 			"💡 Space to play/pause",
 			"💡 F5 to test from current section",
 			"💡 Ctrl+Enter to test from start",
+			"💡 W/S or Up/Down to seek audio",
 			"💡 ESC to go back to PlayState"
 		];
 	}
@@ -403,6 +438,24 @@ class ChartingState extends funkin.states.MusicBeatState
 		metaBorder.scrollFactor.set();
 		metaBorder.cameras = [camHUD];
 		add(metaBorder);
+
+		// 🌊 Botón de Waveform (ya no usa la tecla W)
+		waveformBtn = new FlxSprite(568, 10).makeGraphic(68, 22, 0xFF001A2A);
+		waveformBtn.scrollFactor.set();
+		waveformBtn.cameras = [camHUD];
+		add(waveformBtn);
+
+		waveformBtnText = new FlxText(568, 10, 68, "🌊 Wave", 11);
+		waveformBtnText.setFormat(Paths.font("vcr.ttf"), 11, TEXT_GRAY, CENTER);
+		waveformBtnText.scrollFactor.set();
+		waveformBtnText.cameras = [camHUD];
+		add(waveformBtnText);
+
+		var waveBorder = new FlxSprite(568, 29).makeGraphic(68, 2, TEXT_GRAY);
+		waveBorder.alpha = 0.4;
+		waveBorder.scrollFactor.set();
+		waveBorder.cameras = [camHUD];
+		add(waveBorder);
 
 		// ✨ Botón de tema (abre ThemePickerSubState)
 		var themeBtnBg = new FlxSprite(FlxG.width - 38, 40).makeGraphic(32, 32, BG_PANEL);
@@ -906,23 +959,55 @@ class ChartingState extends funkin.states.MusicBeatState
 		hitsoundCheck.callback = function()
 		{
 			hitsoundsEnabled = !hitsoundsEnabled;
+			showMessage(hitsoundsEnabled ? '🔊 Hitsounds ON' : '🔇 Hitsounds OFF', ACCENT_CYAN);
 		};
 		tab_group_settings.add(hitsoundCheck);
 
 		// Metronome
-		var metronomeCheck = new FlxUICheckBox(10, 40, null, null, "Metronome (M)", 100);
+		var metronomeCheck = new FlxUICheckBox(10, 38, null, null, "Metronome (M)", 100);
 		metronomeCheck.checked = metronomeEnabled;
 		metronomeCheck.callback = function()
 		{
 			metronomeEnabled = !metronomeEnabled;
+			showMessage(metronomeEnabled ? '🎵 Metronome ON' : '🔇 Metronome OFF', ACCENT_CYAN);
 		};
 		tab_group_settings.add(metronomeCheck);
 
+		// Waveform toggle
+		var waveformCheck = new FlxUICheckBox(10, 66, null, null, "Waveform (toolbar btn)", 150);
+		waveformCheck.checked = waveformEnabled;
+		waveformCheck.callback = function()
+		{
+			_toggleWaveform();
+		};
+		tab_group_settings.add(waveformCheck);
+
+		// Separador
+		var sep = new FlxText(10, 96, 270, '── Audio Analysis ──', 9);
+		sep.color = TEXT_GRAY;
+		tab_group_settings.add(sep);
+
+		// Botón Auto-Detect BPM
+		var detectBpmBtn = new FlxButton(10, 110, "Auto-Detect BPM", function()
+		{
+			detectBPM();
+		});
+		tab_group_settings.add(detectBpmBtn);
+
+		var bpmHint = new FlxText(10, 135, 270, "Analyses the loaded audio to\nestimate BPM automatically.", 9);
+		bpmHint.color = TEXT_GRAY;
+		tab_group_settings.add(bpmHint);
+
+		// Separador
+		var sep2 = new FlxText(10, 165, 270, '── Chart Files ──', 9);
+		sep2.color = TEXT_GRAY;
+		tab_group_settings.add(sep2);
+
 		// Save/Load
-		var saveBtn = new FlxButton(10, 80, "Save Chart", saveChart);
+		var saveBtn = new FlxButton(10, 180, "Save Chart", saveChart);
 		tab_group_settings.add(saveBtn);
 
-		var loadBtn = new FlxButton(10, 110, "Load Chart", loadChart);
+		var loadBtn = new FlxButton(10, 210, "Load Chart", loadChart);
 		tab_group_settings.add(loadBtn);
 
 		UI_box.addGroup(tab_group_settings);
@@ -982,6 +1067,235 @@ class ChartingState extends funkin.states.MusicBeatState
 		statusText.scrollFactor.set();
 		statusText.cameras = [camHUD];
 		add(statusText);
+
+		// Waveform sprite (inicialmente oculto)
+		waveformSprite = new FlxSprite(0, 0);
+		waveformSprite.makeGraphic(1, 1, 0x00000000);
+		waveformSprite.scrollFactor.set();
+		waveformSprite.cameras = [camGame];
+		waveformSprite.visible = false;
+		add(waveformSprite);
+	}
+
+	/** Toggle waveform ON/OFF — usado por el botón en toolbar. */
+	function _toggleWaveform():Void
+	{
+		waveformEnabled = !waveformEnabled;
+		if (waveformEnabled)
+		{
+			if (!_waveformBuilt)
+				buildWaveform();
+			if (waveformSprite != null)
+				waveformSprite.visible = true;
+			showMessage('🌊 Waveform ON', ACCENT_CYAN);
+		}
+		else
+		{
+			if (waveformSprite != null)
+				waveformSprite.visible = false;
+			showMessage('🌊 Waveform OFF', TEXT_GRAY);
+		}
+		// Actualizar estilo del botón
+		if (waveformBtn != null)
+			waveformBtn.color = waveformEnabled ? 0xFF003A55 : 0xFF001A2A;
+		if (waveformBtnText != null)
+			waveformBtnText.color = waveformEnabled ? ACCENT_CYAN : TEXT_GRAY;
+	}
+
+	/**
+	 * Reconstruye el cache de tiempos de inicio de sección.
+	 * Llamar siempre que cambien las secciones o el BPM.
+	 */
+	function rebuildSectionTimeCache():Void
+	{
+		_sectionStartTimeCache = [];
+		var time:Float = 0;
+		for (i in 0..._song.notes.length)
+		{
+			_sectionStartTimeCache.push(time);
+			var section = _song.notes[i];
+			var bpm = section.changeBPM ? section.bpm : _song.bpm;
+			var beats = section.lengthInSteps / 4;
+			time += (beats * 60 / bpm) * 1000;
+		}
+		_sectionTimeCacheDirty = false;
+	}
+
+	/**
+	 * Versión cacheada de getSectionStartTime.
+	 * O(1) en lugar de O(n) — evita O(n²) en updateNotePositions.
+	 */
+	inline function getSectionStartTimeFast(sectionNum:Int):Float
+	{
+		if (_sectionTimeCacheDirty)
+			rebuildSectionTimeCache();
+		if (sectionNum < 0 || sectionNum >= _sectionStartTimeCache.length)
+			return getSectionStartTime(sectionNum); // fallback
+		return _sectionStartTimeCache[sectionNum];
+	}
+
+	/**
+	 * Devuelve una Note del pool o crea una nueva.
+	 */
+	function poolGetNote(strumTime:Float, direction:Int):Note
+	{
+		if (_notePool.length > 0)
+		{
+			var n = _notePool.pop();
+			// Reinicializar los campos mínimos necesarios
+			n.strumTime = strumTime;
+			n.visible = true;
+			n.alpha = 1.0;
+			return n;
+		}
+		return new Note(strumTime, direction);
+	}
+
+	/**
+	 * Devuelve un sustain FlxSprite del pool o crea uno nuevo.
+	 */
+	function poolGetSus():FlxSprite
+	{
+		if (_susPool.length > 0)
+		{
+			var s = _susPool.pop();
+			s.visible = true;
+			s.alpha = 0.6;
+			return s;
+		}
+		return new FlxSprite();
+	}
+
+
+	function buildWaveform():Void
+	{
+		if (FlxG.sound.music == null)
+		{
+			showMessage('❌ No audio loaded for waveform', ACCENT_ERROR);
+			return;
+		}
+
+		showMessage('📈 Building waveform...', ACCENT_CYAN);
+		trace('[ChartingState] Building waveform...');
+
+		// Obtener referencia al Sound subyacente
+		var sound:openfl.media.Sound = null;
+		try { sound = @:privateAccess FlxG.sound.music._sound; }
+		catch (e:Dynamic) { }
+
+		if (sound == null)
+		{
+			showMessage('❌ Cannot access audio data for waveform', ACCENT_ERROR);
+			return;
+		}
+
+		var waveW:Int  = 40;
+		var waveH:Int  = Std.int(totalGridHeight);
+
+		if (waveH <= 0 || waveH > 32000)
+			waveH = Std.int(Math.min(totalGridHeight, 16000));
+
+		// Extraer datos de amplitud
+		_waveformData = BPMDetector.extractWaveform(sound, waveH);
+
+		// Dibujar
+		if (waveformSprite != null)
+		{
+			remove(waveformSprite, true);
+			waveformSprite.destroy();
+		}
+
+		waveformSprite = new FlxSprite(gridBG.x - waveW - 4, gridBG.y);
+		waveformSprite.makeGraphic(waveW, waveH, 0xFF111122, true);
+		waveformSprite.scrollFactor.set();
+		waveformSprite.cameras = [camGame];
+		waveformSprite.visible = waveformEnabled;
+		add(waveformSprite);
+
+		// Dibujar barras
+		var midX:Int = Std.int(waveW / 2);
+		for (row in 0...waveH)
+		{
+			var amp:Float = (row < _waveformData.length) ? _waveformData[row] : 0.0;
+			var barW:Int  = Std.int(amp * (waveW - 2));
+			if (barW < 1) barW = 1;
+
+			// Color: degradado de cyan a magenta según amplitud
+			var r:Int = Std.int(amp * 0xFF);
+			var g:Int = Std.int((1 - amp) * 0x80);
+			var b:Int = 0xFF;
+			var col:Int = (0xFF << 24) | (r << 16) | (g << 8) | b;
+
+			flixel.util.FlxSpriteUtil.drawRect(
+				waveformSprite,
+				midX - Std.int(barW / 2), row,
+				barW, 1,
+				col
+			);
+		}
+
+		_waveformBuilt = true;
+		showMessage('✅ Waveform built! (W to toggle)', ACCENT_SUCCESS);
+		trace('[ChartingState] Waveform built: ${waveW}x${waveH}');
+	}
+
+	/**
+	 * Detecta el BPM automáticamente desde el audio cargado.
+	 */
+	function detectBPM():Void
+	{
+		if (_bpmDetecting)
+		{
+			showMessage('⏳ BPM detection already running...', ACCENT_WARNING);
+			return;
+		}
+
+		if (FlxG.sound.music == null)
+		{
+			showMessage('❌ No audio loaded for BPM detection', ACCENT_ERROR);
+			return;
+		}
+
+		var sound:openfl.media.Sound = null;
+		try { sound = @:privateAccess FlxG.sound.music._sound; }
+		catch (e:Dynamic) { }
+
+		if (sound == null)
+		{
+			showMessage('❌ Cannot access audio for BPM detection', ACCENT_ERROR);
+			return;
+		}
+
+		_bpmDetecting = true;
+		showMessage('🎵 Detecting BPM from audio...', ACCENT_WARNING);
+		trace('[ChartingState] Starting BPM detection...');
+
+		// Detectar de forma inline (síncrono — puede tardar 1-2 segundos)
+		var detected:Float = BPMDetector.detect(sound, 60, 240);
+
+		_bpmDetecting = false;
+
+		if (detected <= 0)
+		{
+			showMessage('❌ Could not detect BPM from audio', ACCENT_ERROR);
+			trace('[ChartingState] BPM detection failed');
+			return;
+		}
+
+		trace('[ChartingState] Detected BPM: $detected');
+
+		// Aplicar BPM
+		_song.bpm = detected;
+		tempBpm    = detected;
+		Conductor.changeBPM(detected);
+		Conductor.mapBPMChanges(_song);
+
+		// Actualizar stepper de BPM si existe
+		if (stepperBPM != null)
+			stepperBPM.value = detected;
+
+		showMessage('✅ BPM detected: ${detected}', ACCENT_SUCCESS);
+		FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.6);
 	}
 
 	function setupNewExtensions():Void
@@ -1111,6 +1425,14 @@ class ChartingState extends funkin.states.MusicBeatState
 			FlxG.sound.music = null;
 		}
 
+		// Invalidar waveform al cambiar canción
+		_waveformBuilt = false;
+		_waveformData  = [];
+		_hitsoundFiredNotes = new Map();
+		_lastHitsoundTime   = -999;
+		if (waveformSprite != null)
+			waveformSprite.visible = false;
+
 		try
 		{
 			FlxG.sound.music = Paths.loadInst(daSong);
@@ -1215,6 +1537,10 @@ class ChartingState extends funkin.states.MusicBeatState
 		// Preview character: detectar notas que pasa el playhead
 		if (previewPanel != null && FlxG.sound.music != null && FlxG.sound.music.playing)
 			checkNotesForPreview();
+
+		// Hitsounds durante reproducción
+		if (hitsoundsEnabled && FlxG.sound.music != null && FlxG.sound.music.playing)
+			checkNotesForHitsound();
 
 		handleMouseInput();
 		handleKeyboardInput();
@@ -1326,6 +1652,103 @@ class ChartingState extends funkin.states.MusicBeatState
 	var _firedNotes:Map<String, Bool> = new Map();
 	var _lastMusicTime:Float = -999;
 
+	/**
+	 * Dispara hitsounds por cada nota del chart cuando el playhead la cruza.
+	 * Usa su propio mapa independiente de _firedNotes (preview).
+	 */
+	function checkNotesForHitsound():Void
+	{
+		var currentTime:Float = FlxG.sound.music.time;
+		var tolerance:Float   = Conductor.stepCrochet * 0.55;
+
+		// Reset si el audio saltó (seek / reinicio)
+		if (Math.abs(currentTime - _lastHitsoundTime) > 500)
+			_hitsoundFiredNotes = new Map();
+		_lastHitsoundTime = currentTime;
+
+		// Sonidos disponibles para hitsound por dirección
+		var hitSounds:Array<String> = [
+			'menus/chartingSounds/ClickLeft',
+			'menus/chartingSounds/ClickDown',
+			'menus/chartingSounds/ClickUp',
+			'menus/chartingSounds/ClickRight'
+		];
+		// Fallback si no hay direccionales
+		var hitFallback:String = 'menus/chartingSounds/noteLay';
+
+		for (secNum in 0..._song.notes.length)
+		{
+			var section = _song.notes[secNum];
+			for (noteData in section.sectionNotes)
+			{
+				var noteTime:Float = noteData[0];
+				if (Math.abs(noteTime - currentTime) > tolerance)
+					continue;
+
+				// Clave única por nota
+				var key = '${Std.int(noteTime)}_${Std.int(noteData[1])}';
+				if (_hitsoundFiredNotes.exists(key))
+					continue;
+				_hitsoundFiredNotes.set(key, true);
+
+				// Elegir sonido según dirección (columna % 4)
+				var dir:Int = Std.int(noteData[1]) % 4;
+				var sndPath:String = hitSounds[dir % hitSounds.length];
+
+				try
+				{
+					playHitSound();
+				}
+				catch (e:Dynamic)
+				{
+					// Fallback si el sonido específico no existe
+					try { FlxG.sound.play(Paths.sound(hitFallback), 0.5); }
+					catch (_) { }
+				}
+			}
+		}
+	}
+
+	// ── Hitsound pool (evita new FlxSound cada golpe) ─────────────────────
+	private var _hitSounds:Array<FlxSound> = [];
+	private var _hitSoundIdx:Int = 0;
+
+	private static inline var HIT_SOUND_POOL_SIZE:Int = 4;
+
+	private function initHitSoundPool():Void
+	{
+		_hitSounds = [];
+		for (i in 0...HIT_SOUND_POOL_SIZE)
+		{
+			var snd = new FlxSound();
+			try
+			{
+				snd.loadEmbedded(Paths.sound('hitsounds/hit-1'));
+			}
+			catch (_:Dynamic)
+			{
+			}
+			snd.looped = false;
+			FlxG.sound.list.add(snd);
+			_hitSounds.push(snd);
+		}
+	}
+
+	/**
+	 * Play hitsound — usa pool de FlxSound para evitar alloc por golpe
+	 */
+	private function playHitSound():Void
+	{
+		if (_hitSounds.length == 0)
+			initHitSoundPool();
+		var snd = _hitSounds[_hitSoundIdx % HIT_SOUND_POOL_SIZE];
+		_hitSoundIdx++;
+		if (snd == null)
+			return;
+		snd.volume = 1 + FlxG.random.float(-0.2, 0.2);
+		snd.play(true);
+	}
+
 	function updateSectionIndicators():Void
 	{
 		// Limpiar indicadores previos
@@ -1388,6 +1811,11 @@ class ChartingState extends funkin.states.MusicBeatState
 			gridBG.y = 100 - gridScrollY;
 			gridBlackWhite.y = gridBG.y;
 			strumLine.y = gridBG.y;
+			_notePositionsDirty = true; // ← grid se movió
+
+			// Actualizar waveform con el scroll
+			if (waveformSprite != null && waveformSprite.visible)
+				waveformSprite.y = gridBG.y;
 
 			// Actualizar sidebar de eventos con nuevo scroll
 			if (eventsSidebar != null)
@@ -1405,6 +1833,11 @@ class ChartingState extends funkin.states.MusicBeatState
 			gridBG.y = 100 - gridScrollY;
 			gridBlackWhite.y = gridBG.y;
 			strumLine.y = gridBG.y;
+			_notePositionsDirty = true; // ← scroll manual
+
+			// Actualizar waveform con el scroll
+			if (waveformSprite != null && waveformSprite.visible)
+				waveformSprite.y = gridBG.y;
 
 			// Actualizar sidebar de eventos con nuevo scroll
 			if (eventsSidebar != null)
@@ -1839,6 +2272,8 @@ class ChartingState extends funkin.states.MusicBeatState
 			metronomeEnabled = !metronomeEnabled;
 			showMessage(metronomeEnabled ? '🎵 Metronome ON' : '🔇 Metronome OFF', ACCENT_CYAN);
 		}
+
+		// Nota: el Waveform ahora se activa con el botón 🌊 en la toolbar (no con W)
 	}
 
 	function handlePlaybackButtons():Void
@@ -1907,6 +2342,12 @@ class ChartingState extends funkin.states.MusicBeatState
 					metaPopup.open();
 			}
 		}
+
+		// 🌊 Click en botón Waveform → toggle
+		if (waveformBtn != null && FlxG.mouse.justPressed && FlxG.mouse.overlaps(waveformBtn, camHUD))
+		{
+			_toggleWaveform();
+		}
 	}
 
 	// Abre un diálogo rápido para saltar a una sección específica
@@ -1974,6 +2415,11 @@ class ChartingState extends funkin.states.MusicBeatState
 
 	function updateGrid():Void
 	{
+		// Invalidar caches al reconstruir el grid
+		_sectionTimeCacheDirty = true;
+		_notePositionsDirty = true;
+		_susHeightCache = new Map();
+
 		curRenderedNotes.clear();
 		curRenderedSustains.clear();
 		if (curRenderedTypeLabels != null) curRenderedTypeLabels.clear();
@@ -2102,10 +2548,18 @@ class ChartingState extends funkin.states.MusicBeatState
 		return FlxMath.remapToRange(yPos, gridBG.y, gridBG.y + gridBG.height, 0, 16 * Conductor.stepCrochet);
 	}
 
-	// ✨ NUEVA FUNCIÓN: Actualizar posiciones de notas cuando el grid se mueve
+	// Cache de alturas de sustain para evitar makeGraphic cada frame
+	var _susHeightCache:Map<Int, Int> = new Map();
+
+	// ✨ Actualizar posiciones de notas cuando el grid se mueve (con dirty flag)
 	function updateNotePositions():Void
 	{
-		// Recalcular posiciones de todas las notas basándose en gridBG.y actual
+		// Solo recalcular si el grid se movió o hubo una edición
+		if (!_notePositionsDirty && Math.abs(gridBG.y - _lastGridY) < 0.5)
+			return;
+
+		_notePositionsDirty = false;
+		_lastGridY = gridBG.y;
 		var currentStep:Float = 0;
 		var noteIndex = 0;
 		var susIndex = 0;
@@ -2130,10 +2584,9 @@ class ChartingState extends funkin.states.MusicBeatState
 				var daStrumTime:Float = noteData[0];
 				var daNoteData:Int = Std.int(noteData[1]);
 				var daSus:Float = noteData[2];
-				var noteStep = (daStrumTime - getSectionStartTime(secNum)) / Conductor.stepCrochet;
+				var noteStep = (daStrumTime - getSectionStartTimeFast(secNum)) / Conductor.stepCrochet;
 
-				// ✨ REMAPEAR POSICIÓN VISUAL (igual que en updateGrid)
-				// Paso 1: mustHitSection swap
+				// REMAPEAR POSICIÓN VISUAL (igual que en updateGrid)
 				var swappedCol = daNoteData;
 				if (section.mustHitSection)
 				{
@@ -2142,7 +2595,6 @@ class ChartingState extends funkin.states.MusicBeatState
 					else if (daNoteData < 8)
 						swappedCol = daNoteData - 4;
 				}
-				// Paso 2: reordenamiento visual
 				var visualColumn = dataColToVisualCol(swappedCol);
 
 				// ACTUALIZAR posición X e Y
@@ -2151,17 +2603,12 @@ class ChartingState extends funkin.states.MusicBeatState
 
 				// ✨ Aplicar efecto pulsante si es la nota seleccionada
 				var baseColor = NOTE_COLORS[visualColumn % 8];
-
 				if (curSelectedNote != null && noteData == curSelectedNote)
 				{
-					// Crear efecto pulsante: oscila entre 0.4 y 1.0
 					var pulseAmount = 0.4 + (Math.sin(selectedNotePulse) * 0.5 + 0.5) * 0.6;
-
-					// Oscurecer el color multiplicando cada componente
 					var r = Std.int((baseColor >> 16 & 0xFF) * pulseAmount);
 					var g = Std.int((baseColor >> 8 & 0xFF) * pulseAmount);
 					var b = Std.int((baseColor & 0xFF) * pulseAmount);
-
 					note.color = (0xFF << 24) | (r << 16) | (g << 8) | b;
 				}
 				else
@@ -2169,25 +2616,25 @@ class ChartingState extends funkin.states.MusicBeatState
 					note.color = baseColor;
 				}
 
-				// Actualizar sustain si existe
-				// Alrededor de la línea 545 en ChartingState.hx
+				// Actualizar sustain — solo cambiar posición; recrear gráfico SOLO si la altura cambió
 				if (daSus > 0 && susIndex < curRenderedSustains.length)
 				{
 					var sus = curRenderedSustains.members[susIndex];
 					if (sus != null)
 					{
-						var susHeight = (daSus / Conductor.stepCrochet) * GRID_SIZE;
-
-						// ✨ ASEGURAR QUE EL SUSTAIN SEA VISIBLE (mínimo 5 pixels)
-						susHeight = Math.max(5, susHeight);
+						var susHeight:Int = Std.int(Math.max(5, (daSus / Conductor.stepCrochet) * GRID_SIZE));
 
 						sus.x = note.x + (GRID_SIZE / 2) - 4;
 						sus.y = note.y + GRID_SIZE;
 
-						// Redibujamos el gráfico con la nueva altura calculada
-						// Usamos visualColumn % 8 para mantener el color correcto de la nota
-						sus.makeGraphic(8, Std.int(susHeight), NOTE_COLORS[visualColumn % 8]);
-						sus.alpha = 0.6; // ✨ Restaurar la transparencia
+						// Recrear bitmap SOLO si la altura cambió (evita makeGraphic cada frame)
+						var cachedH:Null<Int> = _susHeightCache.get(susIndex);
+						if (cachedH == null || cachedH != susHeight)
+						{
+							sus.makeGraphic(8, susHeight, NOTE_COLORS[visualColumn % 8]);
+							sus.alpha = 0.6;
+							_susHeightCache.set(susIndex, susHeight);
+						}
 					}
 					susIndex++;
 				}
@@ -2253,7 +2700,12 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		// Mover música al inicio de la sección
 		if (FlxG.sound.music != null)
+		{
 			FlxG.sound.music.time = getSectionStartTime(curSection);
+			// Reset hitsound map al hacer seek
+			_hitsoundFiredNotes = new Map();
+			_lastHitsoundTime   = -999;
+		}
 
 		updateSectionUI();
 
@@ -2356,6 +2808,7 @@ class ChartingState extends funkin.states.MusicBeatState
 				case 'song_bpm':
 					tempBpm = nums.value;
 					_song.bpm = tempBpm;
+					_sectionTimeCacheDirty = true; // ← BPM cambió, invalidar cache
 					Conductor.mapBPMChanges(_song);
 					Conductor.changeBPM(tempBpm);
 
@@ -2572,7 +3025,7 @@ class ChartingState extends funkin.states.MusicBeatState
 			}
 			else
 			{
-				path = Paths.resolve('data/$songKey/autosave-$songKey.json');
+				path = Paths.resolveWrite('songs/$songKey/autosave-$songKey.json');
 			}
 			// Asegurar que el directorio existe
 			final dir = HaxePath.directory(path);
@@ -2961,26 +3414,91 @@ class ChartingState extends funkin.states.MusicBeatState
 
 	override function destroy():Void
 	{
-		// Cleanup
+		// ── Audio ──────────────────────────────────────────────────────────
 		if (vocals != null)
 		{
 			vocals.stop();
 			vocals.destroy();
+			vocals = null;
 		}
 
-		// Remove event listeners
+		// ── Waveform ───────────────────────────────────────────────────────
+		if (waveformSprite != null)
+		{
+			waveformSprite.destroy();
+			waveformSprite = null;
+		}
+		_waveformData  = null;
+		_waveformBuilt = false;
+
+		// ── Maps / caches ─────────────────────────────────────────────────
+		_firedNotes          = null;
+		_hitsoundFiredNotes  = null;
+		_susHeightCache      = null;
+		_sectionStartTimeCache = [];
+
+		// ── Object pools ──────────────────────────────────────────────────
+		_notePool = [];
+		_susPool  = [];
+
+		// ── Notes groups ──────────────────────────────────────────────────
+		if (curRenderedNotes != null)
+		{
+			curRenderedNotes.clear();
+			curRenderedNotes = null;
+		}
+		if (curRenderedSustains != null)
+		{
+			curRenderedSustains.clear();
+			curRenderedSustains = null;
+		}
+		if (curRenderedTypeLabels != null)
+		{
+			curRenderedTypeLabels.clear();
+			curRenderedTypeLabels = null;
+		}
+
+		// ── Section indicators ────────────────────────────────────────────
+		if (sectionIndicators != null)
+		{
+			sectionIndicators.clear();
+			sectionIndicators = null;
+		}
+
+		// ── Undo/redo stacks ──────────────────────────────────────────────
+		undoStack = null;
+		redoStack = null;
+		clipboard = null;
+
+		// ── File reference ────────────────────────────────────────────────
 		if (_file != null)
 		{
-			_file.removeEventListener(Event.COMPLETE, onSaveComplete);
-			_file.removeEventListener(Event.CANCEL, onSaveCancel);
-			_file.removeEventListener(IOErrorEvent.IO_ERROR, onSaveError);
+			_file.removeEventListener(openfl.events.Event.COMPLETE, onSaveComplete);
+			_file.removeEventListener(openfl.events.Event.CANCEL,   onSaveCancel);
+			_file.removeEventListener(openfl.events.IOErrorEvent.IO_ERROR, onSaveError);
 			_file = null;
 		}
 
-		// Save last section
+		// ── State ─────────────────────────────────────────────────────────
 		lastSection = curSection;
 
 		super.destroy();
+
+		// ── Liberar memoria del ChartingState ────────────────────────────────
+		// Esto asegura que las texturas del editor (grid, notas del editor, etc.)
+		// se liberen antes de que PlayState empiece a cargar sus assets.
+		// Sin esto, al volver a PlayState la memoria pico puede ser muy alta
+		// porque ambos estados tienen assets en memoria simultáneamente.
+		try { Paths.clearStoredMemory(); } catch (_:Dynamic) {}
+		try { Paths.clearUnusedMemory(); } catch (_:Dynamic) {}
+		try { openfl.system.System.gc(); } catch (_:Dynamic) {}
+		#if cpp
+		try { cpp.vm.Gc.compact(); } catch (_:Dynamic) {}
+		#end
+		// Prune atlas cache DESPUÉS del GC (bitmap==null ya es detectable).
+		// PlayState.create() llamará beginSession()+clearStoredMemory() para carga limpia.
+		try { Paths.pruneAtlasCache(); } catch (_:Dynamic) {}
+		try { FlxG.bitmap.clearUnused(); } catch (_:Dynamic) {}
 	}
 
 	// ==================== HELPER FUNCTIONS ====================

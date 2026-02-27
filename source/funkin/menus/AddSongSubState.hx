@@ -271,7 +271,13 @@ class AddSongSubState extends FlxSubState
 		loadInstBtn = new FlxButton(btnX, btnY, "Load Inst.ogg", function() {
 			#if desktop
 			var d = new FileDialog();
-			d.onSelect.add(function(p) { currentInstPath = p; instLoaded = true; updateFileStatus(); updateStatus("\u2713 Inst.ogg loaded"); });
+			d.onSelect.add(function(p) {
+				currentInstPath = p;
+				instLoaded = true;
+				updateFileStatus();
+				var dest = _songAudioDir(songNameInput.text.trim() != '' ? songNameInput.text.trim() : '(song)');
+				updateStatus("\u2713 Inst.ogg cargado \u2192 " + dest + "/Inst.ogg");
+			});
 			d.browse(OPEN, "ogg", null, "Select Inst.ogg");
 			#else updateStatus("File loading only available on Desktop"); #end
 		});
@@ -285,8 +291,14 @@ class AddSongSubState extends FlxSubState
 		loadVocalsBtn = new FlxButton(btnX, btnY, "Load Vocals.ogg", function() {
 			#if desktop
 			var d = new FileDialog();
-			d.onSelect.add(function(p) { currentVocalsPath = p; vocalsLoaded = true; updateFileStatus(); updateStatus("\u2713 Vocals.ogg loaded"); });
-			d.browse(OPEN, "ogg", null, "Select Vocals.ogg");
+			d.onSelect.add(function(p) {
+				currentVocalsPath = p;
+				vocalsLoaded = true;
+				updateFileStatus();
+				var dest = _songAudioDir(songNameInput.text.trim() != '' ? songNameInput.text.trim() : '(song)');
+				updateStatus("\u2713 Voices.ogg cargado \u2192 " + dest + "/Voices.ogg");
+			});
+			d.browse(OPEN, "ogg", null, "Select Voices.ogg");
 			#else updateStatus("File loading only available on Desktop"); #end
 		});
 		styleButton(loadVocalsBtn, funkin.debug.themes.EditorTheme.current.bgHover, 270); loadVocalsBtn.alpha = 0; add(loadVocalsBtn);
@@ -299,7 +311,14 @@ class AddSongSubState extends FlxSubState
 		loadIconBtn = new FlxButton(btnX, btnY, "Load Icon.png", function() {
 			#if desktop
 			var d = new FileDialog();
-			d.onSelect.add(function(p) { currentIconPath = p; iconFileLoaded = true; updateFileStatus(); updateStatus("\u2713 Icon.png loaded"); });
+			d.onSelect.add(function(p) {
+				currentIconPath = p;
+				iconFileLoaded = true;
+				updateFileStatus();
+				var iname = iconNameInput.text.trim() != '' ? iconNameInput.text.trim() : '(icon)';
+				var dest  = _iconsDir();
+				updateStatus("\u2713 Icon cargado \u2192 " + dest + "/icon-" + iname + ".png");
+			});
 			d.browse(OPEN, "png", null, "Select Icon.png");
 			#else updateStatus("File loading only available on Desktop"); #end
 		});
@@ -482,8 +501,7 @@ class AddSongSubState extends FlxSubState
 		#if sys
 		try
 		{
-			var dir = Paths.resolve('songs/${songName.toLowerCase()}');
-			if (!FileSystem.exists(dir)) FileSystem.createDirectory(dir);
+			var dir = _songDir(songName.toLowerCase());
 
 			var meta:Dynamic    = {};
 			meta.ui             = ui       != '' ? ui       : 'default';
@@ -492,8 +510,9 @@ class AddSongSubState extends FlxSubState
 			if (introVideo != '') meta.introVideo = introVideo;
 			if (outroVideo != '') meta.outroVideo = outroVideo;
 
-			File.saveContent('$dir/meta.json', Json.stringify(meta, null, "\t"));
-			trace('[AddSongSubState] meta.json saved for "$songName"');
+			var metaPath = '$dir/meta.json';
+			File.saveContent(metaPath, Json.stringify(meta, null, "\t"));
+			trace('[AddSong] meta.json guardado en: $metaPath');
 		}
 		catch (e:Dynamic) { trace('[AddSongSubState] Error saving meta.json: $e'); }
 		#else
@@ -538,8 +557,73 @@ class AddSongSubState extends FlxSubState
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
-	// CHART HELPERS
+	// RUTAS — helpers centralizados para saber dónde escribir
 	// ─────────────────────────────────────────────────────────────────────────
+
+	/**
+	 * Raíz donde van las canciones: mods/{id}/ o assets/ según si hay mod activo.
+	 * Siempre devuelve la ruta SIN trailing slash.
+	 */
+	static function _contentRoot():String
+	{
+		#if sys
+		if (mods.ModManager.isActive())
+			return mods.ModManager.modRoot();
+		#end
+		return 'assets';
+	}
+
+	/**
+	 * Carpeta de la canción (se crea si no existe).
+	 * Estructura: {root}/songs/{songName}/
+	 */
+	static function _songDir(songName:String):String
+	{
+		var dir = _contentRoot() + '/songs/' + songName.toLowerCase();
+		#if sys
+		if (!FileSystem.exists(dir)) FileSystem.createDirectory(dir);
+		#end
+		return dir;
+	}
+
+	/**
+	 * Carpeta de audio de la canción (se crea si no existe).
+	 * Estructura: {root}/songs/{songName}/song/
+	 */
+	static function _songAudioDir(songName:String):String
+	{
+		var base = _songDir(songName);
+		var dir  = '$base/song';
+		#if sys
+		if (!FileSystem.exists(dir)) FileSystem.createDirectory(dir);
+		#end
+		return dir;
+	}
+
+	/**
+	 * Ruta donde guardar el songList.json (mod o assets).
+	 */
+	static function _songListPath():String
+	{
+		var dir = _contentRoot() + '/songs';
+		#if sys
+		if (!FileSystem.exists(dir)) FileSystem.createDirectory(dir);
+		#end
+		return '$dir/songList.json';
+	}
+
+	/**
+	 * Carpeta de imágenes de iconos (se crea si no existe).
+	 * HealthIcon busca en images/icons/icon-{name}.png
+	 */
+	static function _iconsDir():String
+	{
+		var dir = _contentRoot() + '/images/icons';
+		#if sys
+		if (!FileSystem.exists(dir)) FileSystem.createDirectory(dir);
+		#end
+		return dir;
+	}
 
 	/**
 	 * Creates base chart JSONs (normal / easy / hard) if they don't exist yet.
@@ -550,7 +634,7 @@ class AddSongSubState extends FlxSubState
 		#if desktop
 		try
 		{
-			var dir = Paths.resolve("songs/" + songName);
+			var dir = _songDir(songName);
 			var nv  = needsVoices ? "true" : "false";
 
 			var sb = new StringBuf();
@@ -584,7 +668,7 @@ class AddSongSubState extends FlxSubState
 	function _patchNeedsVoicesInCharts(songLower:String):Void
 	{
 		#if sys
-		var dir = Paths.resolve('songs/$songLower');
+		var dir = _songDir(songLower);
 		if (!FileSystem.exists(dir)) return;
 		for (file in FileSystem.readDirectory(dir))
 		{
@@ -613,9 +697,11 @@ class AddSongSubState extends FlxSubState
 	{
 		#if sys
 		var lower = songName.toLowerCase();
+		var dir   = _contentRoot() + '/songs/$lower';
+		if (!FileSystem.exists(dir)) return true;
 		for (suffix in ["", "-hard", "-easy"])
 		{
-			var p = Paths.resolve('songs/$lower/$lower$suffix.json');
+			var p = '$dir/$lower$suffix.json';
 			if (!FileSystem.exists(p)) continue;
 			try
 			{
@@ -639,11 +725,10 @@ class AddSongSubState extends FlxSubState
 		#if desktop
 		try
 		{
-			var dir = Paths.resolve("songs/" + songName.toLowerCase());
-			if (!FileSystem.exists(dir)) FileSystem.createDirectory(dir);
-			File.copy(sourcePath, '$dir/song/$fileType.ogg');
-			trace('File copied: $dir/song/$fileType.ogg');
-			createBaseChartJSON(songName.toLowerCase(), Std.parseFloat(bpmInput.text));
+			var audioDir = _songAudioDir(songName);
+			var dest     = '$audioDir/$fileType.ogg';
+			File.copy(sourcePath, dest);
+			trace('[AddSong] Audio copiado: $dest');
 		}
 		catch (e:Dynamic) { trace('Error copying file: $e'); updateStatus("Error copying " + fileType + ".ogg"); }
 		#end
@@ -654,12 +739,14 @@ class AddSongSubState extends FlxSubState
 		#if desktop
 		try
 		{
-			var dir = Paths.resolve("images/icons");
-			if (!FileSystem.exists(dir)) FileSystem.createDirectory(dir);
-			File.copy(sourcePath, '$dir/$iconName.png');
-			trace('Icon copied: $dir/$iconName.png');
+			var dir  = _iconsDir();
+			// HealthIcon busca icon-{name}.png; si el nombre ya empieza con "icon-" no duplicar
+			var fname = iconName.startsWith('icon-') ? '$iconName.png' : 'icon-$iconName.png';
+			var dest  = '$dir/$fname';
+			File.copy(sourcePath, dest);
+			trace('[AddSong] Icono copiado: $dest');
 		}
-		catch (e:Dynamic) { trace('Error copying icon: $e'); }
+		catch (e:Dynamic) { trace('Error copying icon: $e'); updateStatus("Error copying icon"); }
 		#end
 	}
 
@@ -668,8 +755,9 @@ class AddSongSubState extends FlxSubState
 		#if desktop
 		try
 		{
-			File.saveContent(Paths.resolve("songs/songList.json"), Json.stringify(songListData, null, "\t"));
-			trace("songList.json saved!");
+			var path = _songListPath();
+			File.saveContent(path, Json.stringify(songListData, null, "\t"));
+			trace('[AddSong] songList.json guardado en: $path');
 		}
 		catch (e:Dynamic) { trace('Error saving JSON: $e'); updateStatus("Error saving JSON"); }
 		#end
@@ -677,12 +765,27 @@ class AddSongSubState extends FlxSubState
 
 	function loadSongList():Void
 	{
-		var path = Paths.jsonSong('songList');
 		var content:String = null;
 		#if sys
-		if (sys.FileSystem.exists(path)) content = sys.io.File.getContent(path);
+		// Prioridad: mod activo → assets/songs/ → assets embebidos
+		if (mods.ModManager.isActive())
+		{
+			var modPath = '${mods.ModManager.modRoot()}/songs/songList.json';
+			if (sys.FileSystem.exists(modPath))
+				content = sys.io.File.getContent(modPath);
+		}
+		if (content == null)
+		{
+			var basePath = 'assets/songs/songList.json';
+			if (sys.FileSystem.exists(basePath))
+				content = sys.io.File.getContent(basePath);
+		}
 		#end
-		if (content == null) try { content = lime.utils.Assets.getText(path); } catch (_:Dynamic) {}
+		if (content == null)
+		{
+			var fallback = Paths.jsonSong('songList');
+			try { content = lime.utils.Assets.getText(fallback); } catch (_:Dynamic) {}
+		}
 		try
 		{
 			songListData = (content != null && content.trim() != '') ? haxe.Json.parse(content) : {songsWeeks:[]};

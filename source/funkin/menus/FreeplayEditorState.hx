@@ -660,9 +660,31 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 		#if desktop
 		try
 		{
+			var savePath:String;
+			#if sys
+			if (mods.ModManager.isActive())
+			{
+				// Si hay mod activo, guardar en la carpeta del mod
+				var modDir = '${mods.ModManager.modRoot()}/songs';
+				if (!sys.FileSystem.exists(modDir))
+					sys.FileSystem.createDirectory(modDir);
+				savePath = '$modDir/songList.json';
+			}
+			else
+			{
+				// Sin mod: guardar en assets/songs/
+				var dir = 'assets/songs';
+				if (!sys.FileSystem.exists(dir))
+					sys.FileSystem.createDirectory(dir);
+				savePath = '$dir/songList.json';
+			}
+			#else
+			savePath = Paths.resolve("songs/songList.json");
+			#end
+
 			var jsonString = Json.stringify(songInfo, null, "\t");
-			sys.io.File.saveContent(Paths.resolve("songs/songList.json"), jsonString);
-			trace("songList.json saved!");
+			sys.io.File.saveContent(savePath, jsonString);
+			trace('[FreeplayEditor] songList.json guardado en: $savePath');
 		}
 		catch (e:Dynamic)
 		{

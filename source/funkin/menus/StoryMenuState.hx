@@ -112,7 +112,7 @@ class StoryMenuState extends funkin.states.MusicBeatState
 
 		if (!MainMenuState.musicFreakyisPlaying)
 		{
-			FlxG.sound.playMusic(Paths.music('freakyMenu'));
+			{ final _s = Paths.loadMusic('freakyMenu'); if (_s != null) FlxG.sound.playMusic(_s, 0.7); else FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7); }
 			MainMenuState.musicFreakyisPlaying = true;
 		}
 

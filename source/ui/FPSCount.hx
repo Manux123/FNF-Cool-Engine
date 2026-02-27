@@ -1,23 +1,21 @@
 package ui;
 
-import haxe.Timer;
 import haxe.Int32;
 import openfl.events.Event;
 import openfl.text.TextField;
 import openfl.text.TextFormat;
 import openfl.system.System;
-import lime.app.Application;
 #if gl_stats
 import openfl.display._internal.stats.Context3DStats;
 import openfl.display._internal.stats.DrawCallContext;
 #end
 
 /**
- * FPSCount — muestra FPS + Memoria en una sola línea:
- *   FPS: 124 • Memory: 152MB/500MB
+ * FPSCount — muestra FPS + Memoria.
  *
- * DataText queda como alias/wrapper vacío para no romper
- * código existente que lo instancie (simplemente no hace nada).
+ * v2: Ring buffer O(1) en vez de Array + shift() O(n).
+ *   ANTES: times.push() + while(shift()) movía el array entero cada frame.
+ *   AHORA: escritura circular, sin alocaciones ni copies en el game loop.
  */
 #if !openfl_debug
 @:fileXml('tags="haxe,release"')
@@ -25,21 +23,23 @@ import openfl.display._internal.stats.DrawCallContext;
 #end
 class FPSCount extends TextField
 {
-	/** FPS actual (accesible desde fuera si se necesita). */
 	public var currentFPS(default, null):Int;
 
-	@:noCompletion private var cacheCount:Int;
-	@:noCompletion private var currentTime:Float;
-	@:noCompletion private var times:Array<Float>;
+	@:noCompletion private var cacheCount:Int = 0;
+	@:noCompletion private var currentTime:Float = 0.0;
 	@:noCompletion private var showFps:Int = 0;
-
 	@:noCompletion private var memPeak:Float = 0;
 	@:noCompletion private var byteValue:Int32 = 1024;
+
+	// ── Ring buffer: 120 slots fijos (suficiente para 60+ fps en 1 segundo) ──
+	static inline var RING_CAP:Int = 120;
+	@:noCompletion private var _ring:Array<Float>;
+	@:noCompletion private var _ringHead:Int = 0;   // siguiente posición de escritura
+	@:noCompletion private var _ringFill:Int = 0;   // cuántas entradas válidas hay
 
 	public function new(x:Float = 10, y:Float = 10, color:Int = 0xFFFFFF)
 	{
 		super();
-
 		this.x = x;
 		this.y = y;
 
@@ -47,67 +47,63 @@ class FPSCount extends TextField
 		byteValue = 1000;
 		#end
 
-		currentFPS  = 0;
-		selectable  = false;
+		currentFPS   = 0;
+		selectable   = false;
 		mouseEnabled = false;
 		defaultTextFormat = new TextFormat(
 			openfl.utils.Assets.getFont(Paths.font("Funkin.otf")).fontName,
 			14, color
 		);
-
-		visible = true;
+		visible  = true;
 		autoSize = openfl.text.TextFieldAutoSize.LEFT;
-		text = "FPS: 0 - Memory: 0MB/0MB";
+		text     = "FPS: 0 - Memory: 0MB/0MB";
 
-		cacheCount  = 0;
-		currentTime = 0;
-		times       = [];
+		// Pre-alocar buffer una sola vez — cero alocaciones en el game loop
+		_ring = [for (_ in 0...RING_CAP) 0.0];
 
-		addEventListener(Event.ENTER_FRAME, function(e)
-		{
-			var time = openfl.Lib.getTimer();
-			_onEnter(time - currentTime);
-		});
+		addEventListener(Event.ENTER_FRAME, _onFrame);
 	}
 
-	private function _onEnter(deltaTime:Float):Void
+	@:noCompletion
+	private function _onFrame(_:Event):Void
 	{
-		currentTime += deltaTime;
-		times.push(currentTime);
+		var now:Float = openfl.Lib.getTimer();
+		var dt:Float  = now - currentTime;
+		currentTime   = now;
 
-		while (times[0] < currentTime - 1000)
-			times.shift();
+		// ── Escribir en el ring buffer (O(1), sin alocación) ─────────────────
+		_ring[_ringHead] = now;
+		_ringHead = (_ringHead + 1) % RING_CAP;
+		if (_ringFill < RING_CAP) _ringFill++;
 
-		var currentCount = times.length;
-		currentFPS = Math.round((currentCount + cacheCount) / 2);
-
-		// Color según FPS
-		if (currentFPS > showFps)
+		// ── Contar frames dentro del último segundo ───────────────────────────
+		// Leemos desde la entrada más reciente hacia atrás hasta que un
+		// timestamp quede fuera de la ventana de 1000 ms.
+		var cutoff:Float = now - 1000.0;
+		var validCount:Int = 0;
+		for (k in 0..._ringFill)
 		{
-			showFps = currentFPS;
-			textColor = 0x17FF00; // verde — subiendo
+			var idx:Int = ((_ringHead - 1 - k) % RING_CAP + RING_CAP) % RING_CAP;
+			if (_ring[idx] < cutoff) break;
+			validCount++;
 		}
-		else if (currentFPS < showFps)
-		{
-			textColor = 0xFF4444; // rojo — bajando
-			showFps = currentFPS;
-		}
-		else
-			textColor = 0xFFFFFF; // blanco — estable
 
-		if (currentCount != cacheCount && visible)
+		currentFPS = Math.round((validCount + cacheCount) / 2);
+
+		if (currentFPS > showFps)        { showFps = currentFPS; textColor = 0x17FF00; }
+		else if (currentFPS < showFps)   { textColor = 0xFF4444; showFps = currentFPS; }
+		else                             { textColor = 0xFFFFFF; }
+
+		if (validCount != cacheCount && visible)
 		{
-			// Memoria
 			var mem:Float = Math.round(System.totalMemory / (byteValue * byteValue));
 			if (mem > memPeak) memPeak = mem;
-
 			text = 'FPS: $showFps - Memory: ${mem}MB/${memPeak}MB';
-
 			#if (gl_stats && !disable_cffi && (!html5 || !canvas))
 			text += "  DC: " + Context3DStats.totalDrawCalls();
 			#end
 		}
 
-		cacheCount = currentCount;
+		cacheCount = validCount;
 	}
 }

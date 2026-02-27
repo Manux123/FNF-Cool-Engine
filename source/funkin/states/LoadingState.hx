@@ -27,6 +27,9 @@ import sys.io.File;
 
 using StringTools;
 
+// Gestión de caché
+import Paths;
+
 class LoadingState extends funkin.states.MusicBeatState
 {
 	// ── Tiempo mínimo en pantalla ────────────────────────────────────────────
@@ -66,6 +69,9 @@ class LoadingState extends funkin.states.MusicBeatState
 	var totalTime:Float      = 0.0;
 	var barFullWidth:Float   = 0.0; // ancho del fill en px (cacheado)
 
+	// v2: rect reutilizable — evita new FlxRect() en cada frame del update
+	var _barClipRect:flixel.math.FlxRect = new flixel.math.FlxRect();
+
 	// ─────────────────────────────────────────────────────────────────────────
 
 	function new(target:FlxState, stopMusic:Bool)
@@ -77,6 +83,10 @@ class LoadingState extends funkin.states.MusicBeatState
 
 	override function create()
 	{
+		// NOTA: PathsCache.beginSession() es llamado automáticamente por la señal
+		// preStateSwitch en FunkinCache.init(). Llamarlo aquí de nuevo causa que los
+		// assets del state anterior queden huérfanos (ni rescatables ni destruibles).
+
 		super.create();
 		FlxG.camera.bgColor = FlxColor.BLACK;
 
@@ -183,10 +193,12 @@ class LoadingState extends funkin.states.MusicBeatState
 			visualProgress = loadProgress;
 
 		// ── Aplicar clipRect al fill (recortar desde la derecha) ─────────────
+		// v2: reutilizar _barClipRect — antes era new FlxRect() cada frame
 		if (barFill.clipRect != null)
 		{
 			var clipW:Float = barFullWidth * visualProgress;
-			barFill.clipRect = new FlxRect(0, 0, clipW, barFill.clipRect.height);
+			_barClipRect.set(0, 0, clipW, barFill.clipRect.height);
+			barFill.clipRect = _barClipRect;
 		}
 
 		// ── Color dinámico de la barra ────────────────────────────────────────
@@ -471,6 +483,8 @@ class LoadingState extends funkin.states.MusicBeatState
 
 	override function destroy()
 	{
+		// Liberar assets de LoadingState que no pasen a PlayState
+		Paths.clearUnusedMemory();
 		super.destroy();
 		callbacks = null;
 	}

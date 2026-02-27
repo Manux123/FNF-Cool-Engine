@@ -10,9 +10,16 @@ class FlxAtlasFramesExt
 {
 	/**
 	 * Recreación del antiguo FlxAtlasFrames.fromGraphic
+	 * BUGFIX: guarda contra graphic==null para evitar NPE en NoteSkinSystem.loadAtlas
 	 */
 	public static function fromGraphic(graphic:FlxGraphic, frameWidth:Int, frameHeight:Int, ?name:String):FlxAtlasFrames
 	{
+		if (graphic == null)
+		{
+			trace('[FlxAtlasFramesExt] fromGraphic: graphic es null — se devuelve null');
+			return null;
+		}
+
 		if (name == null)
 			name = graphic.key;
 
@@ -20,6 +27,10 @@ class FlxAtlasFramesExt
 
 		var cols = Std.int(graphic.width / frameWidth);
 		var rows = Std.int(graphic.height / frameHeight);
+
+		// Protección ante dimensiones inválidas (frame más grande que el bitmap)
+		if (cols <= 0) cols = 1;
+		if (rows <= 0) rows = 1;
 
 		var index = 0;
 

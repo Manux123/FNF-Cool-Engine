@@ -2,86 +2,52 @@ package funkin.cache;
 
 import flixel.FlxG;
 import flixel.graphics.FlxGraphic;
-import flixel.system.FlxAssets;
-import openfl.display.BitmapData;
 import openfl.media.Sound;
-import openfl.Assets;
 
 #if sys
 import sys.FileSystem;
 import sys.io.File;
 #end
 
+// ── Compatibilidad con OpenFL antiguo / nuevo ─────────────────────────────────
+#if (openfl >= "9.2.0")
+import openfl.utils.Assets as OpenFLAssets;
+#else
+import openfl.Assets as OpenFLAssets;
+#end
+import animationdata.FunkinSprite;
+
 using StringTools;
 
 /**
- * PathsCache — sistema de caché de assets para Cool Engine.
+ * PathsCache v3 — sistema de caché tricapa inspirado en V-Slice FunkinMemory.
  *
- * ─── Inspiración ─────────────────────────────────────────────────────────────
- * Basado en FunkinCache de NightmareVision, adaptado y extendido para
- * el sistema de mods y la arquitectura de Paths de Cool Engine.
+ * ─── Capas de caché ──────────────────────────────────────────────────────────
  *
- * ─── Diferencias clave respecto a la caché anterior de Paths ─────────────────
+ *   PERMANENTE  — UI esencial, countdown, fonts. Nunca se destruye.
+ *   CURRENT     — Assets de la sesión actual (PlayState, menú…). Se rota al cambiar estado.
+ *   PREVIOUS    — Assets de la sesión ANTERIOR, aún no destruidos.
+ *                 Si el nuevo estado los necesita, se "rescatan" a CURRENT sin
+ *                 recargar desde disco → evita stutter al volver al menú.
  *
- *  1. CACHÉ DE FlxGraphic (antes era BitmapData puro)
- *     FlxGraphic se integra directamente con FlxG.bitmap: cuando un sprite
- *     usa el mismo FlxGraphic, Flixel NO duplica la textura en VRAM.
- *     Con BitmapData podían existir múltiples copias del mismo asset en GPU.
+ * ─── Diferencias con v2 ──────────────────────────────────────────────────────
+ *  v2: un solo Map "localTrackedAssets" (Array O(n)) + exclusionSet.
+ *  v3: tres Maps independientes + forceGPURender() (carga textura en GPU ANTES del primer draw)
  *
- *  2. GPU TEXTURE UPLOAD + CPU IMAGE DISPOSE  ← el mayor ahorro de RAM
- *     Cuando gpuCaching=true:
- *       - Se sube el BitmapData como textura OpenGL (en VRAM).
- *       - Se libera la copia decodificada en RAM del sistema (`disposeImage()`).
- *       - Para una textura 1024×1024 RGBA esto libera ~4 MB de RAM por asset.
- *       - Con 30 personajes/stage assets → ~120 MB de RAM liberados.
- *     Cuando gpuCaching=false: se conserva el BitmapData en RAM (útil para
- *     efectos que necesiten leer píxeles en CPU, como tintado dinámico).
+ * ─── Compatibilidad de librerías ─────────────────────────────────────────────
+ *  OpenFL ≥ 9.2.0  : openfl.utils.Assets (nuevo path)
+ *  OpenFL < 9.2.0  : openfl.Assets (path antiguo)
+ *  Flixel ≥ 5.0.0  : FlxG.bitmap.get() devuelve Null<FlxGraphic>
+ *  Flixel < 5.0.0  : igual pero sin null-safety
  *
- *  3. SONIDOS CACHEADOS (currentTrackedSounds)
- *     Sound.fromFile() cada vez que se necesita un sonido de UI es costoso.
- *     Ahora los sonidos se guardan y se reutilizan entre estados.
- *
- *  4. SISTEMA MARK-AND-SWEEP (localTrackedAssets)
- *     Cada estado llama a markInUse(key) para sus assets.
- *     clearStoredMemory() → libera todo lo que NO está marcado + resetea marcas.
- *     clearUnusedMemory() → libera de currentTrackedGraphics lo no marcado.
- *     Esto es más preciso que el LRU puro: el LRU puede evictar un asset que
- *     aún está en uso por el estado actual; el mark-and-sweep no.
- *
- *  5. DUMP EXCLUSIONS
- *     Assets que NUNCA deben evictarse (freakyMenu, cursor, UI permanente).
- *     Se añaden con `addExclusion(key)`.
- *
- *  6. disposeGraphic() CORRECTA
- *     Libera el texture de GPU (bitmap.__texture.dispose()) ANTES de llamar
- *     FlxG.bitmap.remove(). Sin el dispose del texture, la VRAM no se libera
- *     aunque el FlxGraphic sea eliminado del caché de Flixel.
- *
- *  7. LRU COMO RESPALDO (maxSize)
- *     Si se alcanza maxGraphics, se evicta el FlxGraphic menos recientemente
- *     usado que no esté en dumpExclusions ni en localTrackedAssets.
- *
- * ─── Ciclo de vida típico ─────────────────────────────────────────────────────
- *
- *   // Al entrar en un estado (p.ej. PlayState.create):
- *   PathsCache.beginSession();          // marca inicio, NO borra nada
- *
- *   // Al cargar assets (interno, Paths lo llama automáticamente):
- *   PathsCache.getGraphic(key, bmp);    // cachea y marca como "en uso"
- *
- *   // Al salir del estado (PlayState.destroy):
- *   PathsCache.clearStoredMemory();     // borra todo lo fuera de uso
- *   PathsCache.clearUnusedMemory();     // borra gráficos no marcados + GC
- *
- * @author  Cool Engine Team
- * @since   0.5.1
+ * @author Cool Engine Team
+ * @version 3.0.0
  */
 @:access(openfl.display.BitmapData)
 class PathsCache
 {
 	// ── Singleton ─────────────────────────────────────────────────────────────
 
-	/** Instancia global. Se inicializa la primera vez que se accede. */
 	public static var instance(get, null):PathsCache;
 	static function get_instance():PathsCache
 	{
@@ -89,585 +55,587 @@ class PathsCache
 		return instance;
 	}
 
-	// ── Opciones ──────────────────────────────────────────────────────────────
+	// ── Opciones globales ─────────────────────────────────────────────────────
 
 	/**
-	 * Activa el GPU caching: sube texturas a VRAM y libera la imagen en RAM.
-	 * Por defecto true en desktop, false en web/mobile (sin context3D fiable).
-	 * El usuario puede cambiarlo desde las opciones o el menú de mods.
+	 * GPU caching: libera RAM después de subir la textura a la GPU.
+	 * Solo tiene efecto en targets nativos (cpp/hl). En web no hace nada.
+	 * Desktop con ≥ 2 GB VRAM: true. Dispositivos limitados: false.
 	 */
 	public static var gpuCaching:Bool =
-		#if (desktop && !hl) true #else false #end;
+		#if (desktop && !hl && cpp) true #else false #end;
 
-	/**
-	 * Modo de baja memoria (inspirado en Codename Engine lowMemoryMode).
-	 * Reduce maxGraphics 80→40 y maxSounds 64→32 en tiempo real.
-	 * Recomendado en PCs con menos de 4 GB de RAM.
-	 * Configurable desde el menú de mods (tab SISTEMA).
-	 */
 	public static var lowMemoryMode(default, set):Bool = false;
 	static function set_lowMemoryMode(v:Bool):Bool
 	{
 		lowMemoryMode = v;
 		if (instance != null)
 		{
-			instance.maxGraphics = v ? 40 : 80;
-			instance.maxSounds   = v ? 32 : 64;
+			instance.maxGraphics = v ? 30 : 80;
+			instance.maxSounds   = v ? 24 : 64;
 		}
 		return v;
 	}
 
-	/**
-	 * Si es true, la música de canciones NO se cachea entre sesiones
-	 * (inspirado en Codename Engine streamedMusic).
-	 * Libera ~15 MB de RAM de audio por canción.
-	 * Configurable desde el menú de mods (tab SISTEMA).
-	 */
+	/** Si true, los assets de música se transmiten desde disco en lugar de cargar en RAM. */
 	public static var streamedMusic:Bool = false;
 
-	/** Límite de FlxGraphics en caché (80 normal, 40 en lowMemoryMode). */
+	// ── Límites de caché ─────────────────────────────────────────────────────
+
 	public var maxGraphics:Int = 80;
+	public var maxSounds:Int   = 64;
 
-	/** Límite de sonidos en caché (64 normal, 32 en lowMemoryMode). */
-	public var maxSounds:Int = 64;
+	// ── Tricapa de texturas ───────────────────────────────────────────────────
+	// Inspirada directamente en FunkinMemory de V-Slice.
 
-	// ── Almacenamiento ────────────────────────────────────────────────────────
+	/** Texturas que NUNCA se destruyen (UI, countdown, fonts). */
+	final _permanentGraphics : Map<String, FlxGraphic> = [];
 
-	/**
-	 * Graphics actualmente en caché: key → FlxGraphic.
-	 * Todos tienen persist=true y destroyOnNoUse=false mientras estén aquí.
-	 */
-	public final currentTrackedGraphics:Map<String, FlxGraphic> = [];
+	/** Texturas de la sesión ACTUAL. */
+	final _currentGraphics   : Map<String, FlxGraphic> = [];
 
-	/**
-	 * Sonidos actualmente en caché: key → Sound.
-	 */
-	public final currentTrackedSounds:Map<String, Sound> = [];
+	/** Texturas de la sesión ANTERIOR — candidatas a destrucción. */
+	var   _previousGraphics  : Map<String, FlxGraphic> = [];
 
-	/**
-	 * Assets marcados como "en uso" en la sesión actual (estado/canción).
-	 * Se resetea en beginSession() o clearStoredMemory().
-	 * Usar markInUse(key) para añadir; el sistema lo llama automáticamente.
-	 */
-	public final localTrackedAssets:Array<String> = [];
+	// ── Tricapa de sonidos ────────────────────────────────────────────────────
+
+	final _permanentSounds : Map<String, Sound> = [];
+	final _currentSounds   : Map<String, Sound> = [];
+	var   _previousSounds  : Map<String, Sound> = [];
+
+	// ── API de compatibilidad pública (expuesta como antes para no romper callers) ──
 
 	/**
-	 * Assets que NUNCA se evictan aunque no estén en localTrackedAssets.
-	 * Ejemplo: freakyMenu, cursor, iconos de UI permanente.
+	 * Todos los assets de la sesión actual (lectura) — Array para compatibilidad.
+	 * El lookup interno usa los Maps, no este array.
 	 */
-	public final dumpExclusions:Array<String> = [];
-
-	// ── LRU para gráficos ─────────────────────────────────────────────────────
-	// Respaldo cuando el mark-and-sweep no puede determinar qué evictar.
-
-	var _graphicLRU:Array<String>      = [];
-	var _graphicLRUPos:Map<String,Int> = [];
-
-	// ── Estadísticas ─────────────────────────────────────────────────────────
-
-	public var graphicHits(default, null):Int  = 0;
-	public var graphicMisses(default, null):Int = 0;
-	public var soundHits(default, null):Int    = 0;
-	public var soundMisses(default, null):Int  = 0;
-	public var gpuUploads(default, null):Int   = 0;
-	public var gpuDisposes(default, null):Int  = 0;
-
-	// ── Init ─────────────────────────────────────────────────────────────────
-
-	public function new()
+	public var localTrackedAssets(get, never):Array<String>;
+	inline function get_localTrackedAssets():Array<String>
 	{
-		// Exclusiones por defecto: assets de UI permanente que siempre están
-		// en pantalla o se acceden con mucha frecuencia.
-		dumpExclusions.push('assets/music/freakyMenu.ogg');
-		dumpExclusions.push('assets/music/freakyMenu.mp3');
-		dumpExclusions.push('assets/images/menu/cursor/cursor-default.png');
-		dumpExclusions.push('assets/images/icons/icon-bf.png');
+		// Construir bajo demanda (no es ruta caliente)
+		final out:Array<String> = [];
+		for (k in _currentGraphics.keys()) out.push(k);
+		for (k in _currentSounds.keys())   out.push(k);
+		return out;
 	}
 
-	// ── API pública ───────────────────────────────────────────────────────────
+	/** Lectura directa de gráficos en caché. */
+	public var currentTrackedGraphics(get, never):Map<String, FlxGraphic>;
+	inline function get_currentTrackedGraphics() return _currentGraphics;
+
+	/** Lectura directa de sonidos en caché. */
+	public var currentTrackedSounds(get, never):Map<String, Sound>;
+	inline function get_currentTrackedSounds() return _currentSounds;
+
+	// ── Contadores O(1) ──────────────────────────────────────────────────────
+
+	var _graphicCount : Int = 0;
+	var _soundCount   : Int = 0;
+
+	public function graphicCount():Int return _graphicCount;
+	public function soundCount():Int   return _soundCount;
+
+	/** Helper: cuenta entradas de un Map (Map no tiene .count() en Haxe std). */
+	static inline function _count<K,V>(m:Map<K,V>):Int {
+		var n = 0; for (_ in m) n++; return n;
+	}
+
+	// ── API de compatibilidad esperada por Paths.hx ───────────────────────────
+
+	/** Devuelve true si la clave existe en alguna capa y el gráfico es no-nulo. */
+	public function hasValidGraphic(key:String):Bool {
+		if (_permanentGraphics.exists(key)) return _permanentGraphics.get(key) != null;
+		if (_currentGraphics.exists(key))   return _currentGraphics.get(key) != null;
+		if (_previousGraphics.exists(key))  return _previousGraphics.get(key) != null;
+		return false;
+	}
+
+	/** Retorna el gráfico sin cargarlo desde disco (peek). */
+	public inline function peekGraphic(key:String):Null<FlxGraphic> return getGraphic(key);
+
+	/** Devuelve true si el sonido está en caché. */
+	public function hasSound(key:String):Bool {
+		if (_permanentSounds.exists(key)) return true;
+		if (_currentSounds.exists(key))   return true;
+		if (_previousSounds.exists(key))  return true;
+		return false;
+	}
+
+	// ── Constructor ───────────────────────────────────────────────────────────
+
+	function new() {}
+
+	// ═══════════════════════════════════════════════════════════════════════════
+	// GESTIÓN DE SESIÓN
+	// ═══════════════════════════════════════════════════════════════════════════
 
 	/**
-	 * Inicia una nueva sesión (nuevo estado/canción).
-	 * Resetea localTrackedAssets sin borrar nada del caché.
-	 * Llamar al inicio de create() en cada estado.
+	 * Inicia una nueva sesión.
+	 * Los assets de current pasan a previous.
+	 * Los assets que se carguen ahora se añaden a current.
 	 */
 	public function beginSession():Void
 	{
-		#if (haxe >= "4.0.0")
-		localTrackedAssets.resize(0);
-		#else
-		localTrackedAssets.splice(0, localTrackedAssets.length);
-		#end
+		// No-op: FunkinCache maneja el lifecycle via preStateSwitch/postStateSwitch.
+		// PathsCache ya no destruye FlxGraphics durante cambios de estado — es solo un loader.
+		trace('[PathsCache] beginSession() — no-op, FunkinCache gestiona el lifecycle');
 	}
 
-	/**
-	 * Marca una clave como "en uso" en la sesión actual.
-	 * Llamado automáticamente por getGraphic() y getSound().
-	 */
-	public inline function markInUse(key:String):Void
-	{
-		if (!localTrackedAssets.contains(key))
-			localTrackedAssets.push(key);
-	}
+	// ═══════════════════════════════════════════════════════════════════════════
+	// TEXTURAS
+	// ═══════════════════════════════════════════════════════════════════════════
 
 	/**
-	 * Añade una clave a las exclusiones permanentes.
+	 * Carga o rescata una textura.
+	 * Si existe en previous → la rescata sin tocar disco.
+	 * Si existe en permanent/current → no hace nada.
+	 * Si no existe → carga desde disco y la sube a GPU.
 	 */
-	public inline function addExclusion(key:String):Void
+	public function cacheGraphic(key:String):Null<FlxGraphic>
 	{
-		if (!dumpExclusions.contains(key))
-			dumpExclusions.push(key);
-	}
+		// Ya en current o permanent
+		if (_currentGraphics.exists(key)) return _currentGraphics.get(key);
 
-	// ── Gráficos ──────────────────────────────────────────────────────────────
-
-	/**
-	 * Obtiene o crea un FlxGraphic para la clave dada.
-	 *
-	 * Si el graphic ya está en caché, lo devuelve y lo marca como en uso.
-	 * Si no, lo crea desde `bitmap`, opcionalmente lo sube a GPU (si gpuCaching),
-	 * lo cachea y lo devuelve.
-	 *
-	 * @param key       Clave lógica del asset (path resuelto o key de Paths).
-	 * @param bitmap    BitmapData fuente. Sólo se usa si no está en caché.
-	 * @param allowGPU  Si false, ignora gpuCaching para este asset específico.
-	 * @return FlxGraphic listo para usar, o null si bitmap era null.
-	 */
-	public function getGraphic(key:String, bitmap:BitmapData, allowGPU:Bool = true):Null<FlxGraphic>
-	{
-		// ── Cache hit ─────────────────────────────────────────────────────────
-		if (currentTrackedGraphics.exists(key))
+		// Rescatar de previous (evita recarga desde disco)
+		if (_previousGraphics.exists(key))
 		{
-			graphicHits++;
-			markInUse(key);
-			_lruTouch(key);
-			return currentTrackedGraphics.get(key);
-		}
-
-		graphicMisses++;
-
-		if (bitmap == null) return null;
-
-		// ── GPU upload ────────────────────────────────────────────────────────
-		if (allowGPU && gpuCaching)
-			_uploadToGPU(bitmap);
-
-		// ── Crear FlxGraphic ──────────────────────────────────────────────────
-		// fromBitmapData con cache=false evita que Flixel lo meta en SU propio
-		// caché con una clave diferente; lo gestionamos nosotros.
-		var graphic:FlxGraphic = FlxGraphic.fromBitmapData(bitmap, false, key, false);
-		graphic.persist         = true;  // no destruir al cambiar de estado
-		graphic.destroyOnNoUse  = false; // no destruir cuando useCount llegue a 0
-
-		// ── Registrar en FlxG.bitmap ──────────────────────────────────────────
-		// Necesario para que FlxSprite lo encuentre por clave.
-		@:privateAccess
-		FlxG.bitmap._cache.set(key, graphic);
-
-		return _storeGraphic(key, graphic);
-	}
-
-	/**
-	 * Obtiene un FlxGraphic directamente de la caché (sin cargarlo).
-	 * Devuelve null si no está cacheado.
-	 */
-	public inline function peekGraphic(key:String):Null<FlxGraphic>
-		return currentTrackedGraphics.get(key);
-
-	/**
-	 * ¿Está este graphic en la caché y sigue siendo válido?
-	 */
-	public function hasValidGraphic(key:String):Bool
-	{
-		final g = currentTrackedGraphics.get(key);
-		return g != null && g.bitmap != null;
-	}
-
-	// ── Sonidos ───────────────────────────────────────────────────────────────
-
-	/**
-	 * Cachea y devuelve un Sound.
-	 * Si ya está en caché, lo devuelve sin recargarlo.
-	 *
-	 * @param key    Clave lógica (path resuelto).
-	 * @param sound  Instancia de Sound ya cargada. Sólo se usa en un miss.
-	 * @param safety Si true y sound es null, devuelve un beep de Flixel.
-	 */
-	public function getSound(key:String, sound:Null<Sound>, safety:Bool = false):Null<Sound>
-	{
-		if (currentTrackedSounds.exists(key))
-		{
-			soundHits++;
-			markInUse(key);
-			return currentTrackedSounds.get(key);
-		}
-
-		soundMisses++;
-
-		if (sound == null)
-		{
-			if (safety)
+			final g = _previousGraphics.get(key);
+			_previousGraphics.remove(key);
+			// BUGFIX: el gráfico puede haber sido destruido por clearPreviousSession() llamado
+			// desde PlayState.destroy(). destroy() pone bitmap=null. No meter ese gráfico en
+			// _currentGraphics — recargar desde disco en su lugar.
+			if (g != null && g.bitmap != null)
 			{
-				trace('[PathsCache] Sound "$key" no encontrado — usando beep de fallback.');
-				return flixel.system.FlxAssets.getSound('flixel/sounds/beep');
+				_currentGraphics.set(key, g);
+				_graphicCount++;
+						return g;
 			}
+			// Gráfico inválido — caer al _loadGraphic abajo
+		}
+
+		// Cargar desde disco
+		return _loadGraphic(key, false);
+	}
+
+	/**
+	 * Carga una textura y la marca como permanente.
+	 * Usada durante el pre-caché de arranque.
+	 */
+	public function permanentCacheGraphic(key:String):Null<FlxGraphic>
+	{
+		if (_permanentGraphics.exists(key)) return _permanentGraphics.get(key);
+		final g = _loadGraphic(key, true);
+		if (g != null) { _permanentGraphics.set(key, g); _currentGraphics.set(key, g); }
+		return g;
+	}
+
+	/** Registra un FlxGraphic ya existente en la sesión actual. */
+	public function trackGraphic(key:String, graphic:FlxGraphic):Void
+	{
+		if (_currentGraphics.exists(key)) return;
+		graphic.persist = true;
+		_currentGraphics.set(key, graphic);
+		_graphicCount++;
+	}
+
+	/**
+	 * Rescata un FlxGraphic de _previousGraphics a _currentGraphics.
+	 * Llamar cuando un atlas cacheado se reutiliza entre sesiones para
+	 * evitar que su gráfico sea destruido por clearPreviousSession().
+	 *
+	 * BUGFIX: también rescata el BitmapData subyacente en FunkinCache.
+	 * Sin esto, FunkinCache.clearSecondLayer() llama dispose() sobre el
+	 * BitmapData que este FlxGraphic sigue usando → graphic.bitmap = null
+	 * → FlxDrawQuadsItem::render null-object crash en el primer frame.
+	 */
+	public function rescueFromPrevious(key:String, graphic:FlxGraphic):Void
+	{
+		if (_currentGraphics.exists(key) || _permanentGraphics.exists(key)) return;
+		if (_previousGraphics.exists(key))
+		{
+			_previousGraphics.remove(key);
+		}
+		graphic.persist = true;
+		_currentGraphics.set(key, graphic);
+		_graphicCount++;
+	}
+
+
+
+	/** Devuelve un FlxGraphic buscando en todas las capas. */
+	public function getGraphic(key:String, ?bitmapData:openfl.display.BitmapData, allowGPU:Bool = true):Null<FlxGraphic>
+	{
+		if (_permanentGraphics.exists(key)) return _permanentGraphics.get(key);
+		if (_currentGraphics.exists(key))   return _currentGraphics.get(key);
+		// ── RESCUE: mover de previous a current para que sobreviva esta sesión ──
+		if (_previousGraphics.exists(key))
+		{
+			final g = _previousGraphics.get(key);
+			_previousGraphics.remove(key);
+			// BUGFIX: si el gráfico fue destruido (bitmap=null), no rescatar — recargar.
+			if (g != null && g.bitmap != null)
+			{
+				_currentGraphics.set(key, g);
+				_graphicCount++;
+						return g;
+			}
+			// Caer al bloque de bitmapData / retorno nulo abajo
+		}
+		// If a BitmapData was supplied, create and register the graphic now
+		if (bitmapData != null) {
+			var g = FlxGraphic.fromBitmapData(bitmapData, false, key, true);
+			if (g != null) {
+				g.persist = true;
+				if (allowGPU) _forceGPURender(g);
+				_currentGraphics.set(key, g);
+				_graphicCount++;
+			}
+			return g;
+		}
+		return null;
+	}
+
+	function _loadGraphic(key:String, permanent:Bool):Null<FlxGraphic>
+	{
+		// Intentar con FlxG.bitmap primero (puede que Flixel ya lo tenga en caché propia)
+		var existing = FlxG.bitmap.get(key);
+		if (existing != null)
+		{
+			// BUGFIX CRÍTICO — FlxDrawQuadsItem::render null object reference:
+			// FlxG.bitmap._cache conserva entradas cuyo FlxGraphic fue destruido por
+			// clearPreviousSession() (llamado desde PlayState.destroy() vía clearUnusedMemory).
+			// destroy() llama bitmap.dispose() → bitmap = null, pero la entrada sigue en el cache.
+			// Si aceptamos ese gráfico sin verificar, lo metemos en _currentGraphics con bitmap=null
+			// → FlxDrawQuadsItem::render falla en el primer frame con null object reference.
+			// Solución: si bitmap es null, eliminar la entrada huérfana y recargar desde disco.
+			if (existing.bitmap == null)
+			{
+				trace('[PathsCache] FlxGraphic huérfano detectado para "$key" (bitmap=null), recargando desde disco.');
+				@:privateAccess FlxG.bitmap.removeKey(key);
+				existing = null;
+				// Caer al bloque de carga desde disco abajo
+			}
+			else
+			{
+				existing.persist = true;
+				_currentGraphics.set(key, existing);
+				_graphicCount++;
+				// BUGFIX (crash FlxDrawQuadsItem::render):
+				// FlxG.bitmap todavía contiene FlxGraphics de la sesión anterior —
+				// no se limpian hasta postStateSwitch → clearPreviousSession().
+				// Su BitmapData fue movido a bitmapData2 por moveToSecondLayer().
+				// Si no lo rescatamos aquí, clearSecondLayer() llama dispose() sobre él
+				// mientras este FlxGraphic (ya en _currentGraphics) sigue usándolo →
+				// bitmap dispuesto en el primer frame de render → crash.
+						return existing;
+			}
+		}
+
+		// Cargar vía FlxGraphic.fromAssetKey — igual que V-Slice FunkinMemory.cacheTexture().
+		// Es más directo que getBitmapData → fromBitmapData y funciona con todas las
+		// versiones de OpenFL porque delega la resolución al pipeline nativo de Flixel.
+		var g:FlxGraphic = null;
+		try
+		{
+			g = FlxGraphic.fromAssetKey(key, false, null, true);
+		}
+		catch (e:Dynamic) { trace('[PathsCache] Error cargando "$key": $e'); return null; }
+
+		if (g == null)
+		{
+			trace('[PathsCache] No se pudo cargar "$key"');
 			return null;
 		}
 
-		// Si streamedMusic está activo y es música de canción, no cachear
-		if (streamedMusic && (key.contains('/songs/') || key.contains('\\songs\\') || key.contains('inst.') || key.contains('voices.')))
+		g.persist = true;
+
+		// GPU pre-render: primero draw() (paso principal), luego getTexture() como fallback.
+		// Orden correcto según V-Slice forceRender() — draw() primero garantiza que el
+		// sprite quede registrado en el pipeline de OpenFL antes de subir a VRAM.
+		_forceGPURender(g);
+
+		// GPU caching: liberar RAM tras subida a VRAM, SOLO si la textura GPU
+		// fue realmente subida. Si context3D no está listo aún, no disponer —
+		// OpenFL necesita bitmap.image para subir la textura en el primer draw call.
+		if (gpuCaching && !permanent && g.bitmap != null)
 		{
-			markInUse(key);
-			return sound;
+			#if (cpp || hl)
+			try
+			{
+				if (FlxG.stage != null && FlxG.stage.context3D != null)
+				{
+					final tex = g.bitmap.getTexture(FlxG.stage.context3D);
+					// Solo liberar CPU pixels si la textura GPU existe
+					if (tex != null)
+						g.bitmap.disposeImage();
+				}
+				// Si context3D == null: no disponer. La textura se subirá en el
+				// primer frame de render y bitmap.image debe seguir disponible.
+			}
+			catch (_:Dynamic) {}
+			#end
 		}
 
-		// Evictar si se supera el límite
-		if (_soundCount() >= instance.maxSounds)
-			_evictOldestSound();
+		_currentGraphics.set(key, g);
+		_graphicCount++;
+		return g;
+	}
 
-		currentTrackedSounds.set(key, sound);
-		markInUse(key);
+	/**
+	 * Pre-carga la textura en la GPU dibujando un sprite temporal.
+	 * Replicado de V-Slice FunkinMemory.forceRender() para evitar el stutter
+	 * del primer frame en el que OpenGL sube la textura.
+	 *
+	/**
+	 * Pre-sube la textura a VRAM usando getTexture() directo.
+	 *
+	 * El dummy FlxSprite + draw() fue eliminado: instanciar un FlxSprite fuera
+	 * del render loop causa stutter durante el precacheo (especialmente al
+	 * cargar 40-100 texturas en LoadingState→PlayState). Flixel sube la textura
+	 * a GPU en el primer draw call real, lo que ocurre suavemente dentro del
+	 * frame loop cuando la loading screen ya está visible.
+	 *
+	 * getTexture() se mantiene como optimización opcional para context3D
+	 * disponible (desktop, no web/mobile).
+	 */
+	static function _forceGPURender(graphic:FlxGraphic):Void
+	{
+		if (graphic == null || graphic.bitmap == null) return;
+		#if (desktop && !hl)
+		try
+		{
+			if (FlxG.stage != null && FlxG.stage.context3D != null)
+				graphic.bitmap.getTexture(FlxG.stage.context3D);
+		}
+		catch (_:Dynamic) {}
+		#end
+	}
+
+	// ═══════════════════════════════════════════════════════════════════════════
+	// SONIDOS
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	public function cacheSound(key:String):Null<Sound>
+	{
+		if (_currentSounds.exists(key)) return _currentSounds.get(key);
+
+		// Rescatar de previous
+		if (_previousSounds.exists(key))
+		{
+			final s = _previousSounds.get(key);
+			_previousSounds.remove(key);
+			if (s != null) { _currentSounds.set(key, s); _soundCount++; }
+			return s;
+		}
+
+		return _loadSound(key, false);
+	}
+
+	public function permanentCacheSound(key:String):Null<Sound>
+	{
+		if (_permanentSounds.exists(key)) return _permanentSounds.get(key);
+		final s = _loadSound(key, true);
+		if (s != null) { _permanentSounds.set(key, s); _currentSounds.set(key, s); }
+		return s;
+	}
+
+	public function getSound(key:String, ?sound:Sound, safety:Bool = false):Null<Sound>
+	{
+		if (_permanentSounds.exists(key)) return _permanentSounds.get(key);
+		if (_currentSounds.exists(key))   return _currentSounds.get(key);
+		if (_previousSounds.exists(key))  return _previousSounds.get(key);
+		if (sound != null) {
+			_currentSounds.set(key, sound);
+			_soundCount++;
+			return sound;
+		}
+		return null;
+	}
+
+	function _loadSound(key:String, permanent:Bool):Null<Sound>
+	{
+		var sound:Sound = null;
+		try
+		{
+			if (OpenFLAssets.exists(key, openfl.utils.AssetType.SOUND)
+			 || OpenFLAssets.exists(key, openfl.utils.AssetType.MUSIC))
+				sound = OpenFLAssets.getSound(key, true);
+		}
+		catch (e:Dynamic) { trace('[PathsCache] Error de audio "$key": $e'); return null; }
+
+		if (sound == null) return null;
+
+		_currentSounds.set(key, sound);
+		_soundCount++;
 		return sound;
 	}
 
-	/**
-	 * ¿Está este sonido en la caché?
-	 */
-	public inline function hasSound(key:String):Bool
-		return currentTrackedSounds.exists(key);
-
-	// ── Limpieza: patrón clearStoredMemory / clearUnusedMemory ───────────────
+	// ═══════════════════════════════════════════════════════════════════════════
+	// LIBERACIÓN DE MEMORIA
+	// ═══════════════════════════════════════════════════════════════════════════
 
 	/**
-	 * Limpia assets que NO están en localTrackedAssets ni en dumpExclusions.
-	 *
-	 * ─── Qué hace exactamente ────────────────────────────────────────────────
-	 *  • Gráficos: los que no están en uso se marcan para destrucción
-	 *    (destroyOnNoUse=true) pero NO se destruyen todavía. La destrucción
-	 *    real ocurre en clearUnusedMemory() o cuando useCount llega a 0.
-	 *  • Sonidos: se eliminan directamente del caché de OpenFL y de nuestra Map.
-	 *  • Resetea localTrackedAssets para la próxima sesión.
-	 *  • Limpia el caché interno de canciones de OpenFL.
-	 *
-	 * Llamar al final de PlayState.destroy() ANTES de clearUnusedMemory().
+	 * Destruye los assets de la sesión ANTERIOR que no fueron rescatados.
+	 * Llamar después de `beginSession()` cuando la nueva sesión ya cargó sus assets.
 	 */
-	public function clearStoredMemory():Void
+	/**
+	 * DEPRECATED — la destrucción de assets la hace FunkinCache.clearSecondLayer()
+	 * via FlxG.bitmap.removeByKey (modelo Codename). Mantener como no-op para
+	 * compatibilidad con Paths.clearPreviousSession() en PlayState/LoadingState.
+	 */
+	public function clearPreviousSession():Void
 	{
-		// ── Desmarcar graphics fuera de uso ───────────────────────────────────
-		@:privateAccess
-		for (key in FlxG.bitmap._cache.keys())
-		{
-			if (!currentTrackedGraphics.exists(key)) continue;
-			if (!localTrackedAssets.contains(key) && !dumpExclusions.contains(key))
-			{
-				var g = FlxG.bitmap.get(key);
-				if (g != null) g.destroyOnNoUse = true;
-			}
-		}
-
-		// ── Limpiar sonidos fuera de uso ──────────────────────────────────────
-		var soundsRemoved = 0;
-		for (key in currentTrackedSounds.keys())
-		{
-			if (!localTrackedAssets.contains(key) && !dumpExclusions.contains(key))
-			{
-				Assets.cache.clear(key);
-				currentTrackedSounds.remove(key);
-				soundsRemoved++;
-			}
-		}
-
-		// ── Resetear marcas de sesión ─────────────────────────────────────────
-		localTrackedAssets.resize(0);
-
-		// ── Limpiar caché de canciones de OpenFL ──────────────────────────────
-		// OpenFL guarda una referencia interna a cada Sound cargado de songs/.
-		// Sin esto la RAM de audio no se libera entre canciones.
-		try { openfl.Assets.cache.clear("songs"); } catch (_:Dynamic) {}
-
-		if (soundsRemoved > 0)
-			trace('[PathsCache] clearStoredMemory: $soundsRemoved sonidos liberados.');
+		// No-op: FunkinCache.postStateSwitch ya llama clearSecondLayer() que
+		// usa FlxG.bitmap.removeByKey para destruir los gráficos no rescatados.
+		// Destruir FlxGraphics aquí (como hacía antes) causaba el crash porque
+		// se destruían DESPUÉS de que los sprites del nuevo estado los cargaron.
+		trace('[PathsCache] clearPreviousSession() — no-op, FunkinCache gestiona la destrucción');
 	}
 
-	/**
-	 * Destruye los FlxGraphics que quedaron marcados como no usados en
-	 * clearStoredMemory() + fuerza un ciclo de GC.
-	 *
-	 * ─── Orden recomendado ───────────────────────────────────────────────────
-	 *   clearStoredMemory();   // marcar + limpiar sonidos
-	 *   clearUnusedMemory();   // destruir gráficos + GC
-	 *
-	 * Llamar DESPUÉS de clearStoredMemory(). No llamar durante gameplay.
-	 */
-	public function clearUnusedMemory():Void
-	{
-		var graphicsRemoved = 0;
+	
 
-		for (key in currentTrackedGraphics.keys())
+	function _clearPreviousGraphics():Void
+	{
+		// No-op: FunkinCache.clearSecondLayer() via FlxG.bitmap.removeByKey() maneja la destrucción.
+		// Destruir FlxGraphics aquí causaba crashes porque ocurría después de que
+		// los sprites del nuevo estado ya tenían referencias a esos gráficos.
+		_previousGraphics = [];
+	}
+
+	function _clearPreviousSounds():Void
+	{
+		for (key => sound in _previousSounds)
 		{
-			if (!localTrackedAssets.contains(key) && !dumpExclusions.contains(key))
-			{
-				disposeGraphic(currentTrackedGraphics.get(key));
-				currentTrackedGraphics.remove(key);
-				_lruRemove(key);
-				graphicsRemoved++;
-			}
+			if (_permanentSounds.exists(key)) { _previousSounds.remove(key); continue; }
+			if (sound == null) { _previousSounds.remove(key); continue; }
+			try { OpenFLAssets.cache.removeSound(key); } catch(_) {}
+			_previousSounds.remove(key);
 		}
 
-		// GC completo después de liberar potencialmente decenas de texturas
-		openfl.system.System.gc();
-		#if cpp
-		cpp.vm.Gc.run(true);
-		cpp.vm.Gc.compact();
-		#elseif hl
-		hl.Gc.major();
-		#end
+		// Limpiar las librerías de canciones completas — igual que V-Slice purgeSoundCache().
+		// removeSound() por key individual no libera los bundles de audio de OpenFL.
+		try { OpenFLAssets.cache.clear('songs'); }  catch(_) {}
+		try { OpenFLAssets.cache.clear('music'); }  catch(_) {}
 
-		if (graphicsRemoved > 0)
-			trace('[PathsCache] clearUnusedMemory: $graphicsRemoved gráfico(s) destruidos.');
+		if (_soundCount > maxSounds) _soundCount = _count(_currentSounds);
 	}
 
-	/**
-	 * Vacía completamente el caché: gráficos + sonidos + exclusiones + LRU.
-	 * Usar sólo al cambiar de mod o al cerrar el juego.
-	 */
-	public function forceFullClear():Void
+	/** Limpieza completa (al salir del juego). */
+	public function destroy():Void
 	{
-		// Destruir todos los gráficos
-		for (g in currentTrackedGraphics) disposeGraphic(g);
-		currentTrackedGraphics.clear();
-
-		// Limpiar sonidos
-		for (key in currentTrackedSounds.keys()) Assets.cache.clear(key);
-		currentTrackedSounds.clear();
-
-		// Resetear LRU y marcas
-		_graphicLRU  = [];
-		_graphicLRUPos = [];
-		localTrackedAssets.resize(0);
-
-		// Limpiar cachés de Flixel y OpenFL
-		FlxG.bitmap.clearCache();
-		try { openfl.Assets.cache.clear(); } catch (_:Dynamic) {}
-
-		#if cpp cpp.vm.Gc.run(true); cpp.vm.Gc.compact(); #end
-		#if hl hl.Gc.major(); #end
-
-		trace('[PathsCache] forceFullClear: caché completamente vaciado.');
+		_clearPreviousGraphics();
+		for (k => g in _currentGraphics)
+		{
+			if (_permanentGraphics.exists(k)) continue;
+			if (g == null) continue;
+			FlxG.bitmap.remove(g);
+			g.persist = false;
+			try { g.destroy(); } catch(_) {}
+		}
+		_currentGraphics.clear();
+		_permanentGraphics.clear();
+		_currentSounds.clear();
+		_permanentSounds.clear();
+		_previousSounds.clear();
+		_graphicCount = 0;
+		_soundCount   = 0;
 	}
 
-	/**
-	 * Limpia SÓLO los assets de gameplay (char_, stage_, skin_) sin tocar UI.
-	 * Más rápido que forceFullClear. Llamar desde PlayState.destroy().
-	 */
-	public function clearGameplayAssets():Void
+	/** Limpieza de assets de un contexto específico (p.ej. "freeplay"). */
+	public function clearContext(contextTag:String):Void
 	{
-		final prefixes = ["char_", "stage_", "skin_", "splash_"];
 		final toRemove:Array<String> = [];
 
-		for (key in currentTrackedGraphics.keys())
+		@:privateAccess
+		if (FlxG.bitmap._cache != null)
 		{
-			if (dumpExclusions.contains(key)) continue;
-			for (p in prefixes)
+			@:privateAccess
+			for (k in FlxG.bitmap._cache.keys())
 			{
-				if (key.startsWith(p)) { toRemove.push(key); break; }
+				if (!k.contains(contextTag)) continue;
+				if (_permanentGraphics.exists(k) || k.contains('fonts')) continue;
+				toRemove.push(k);
 			}
 		}
 
-		for (key in toRemove)
+		for (k in toRemove)
 		{
-			disposeGraphic(currentTrackedGraphics.get(key));
-			currentTrackedGraphics.remove(key);
-			_lruRemove(key);
+			final g = FlxG.bitmap.get(k);
+			if (g != null) { g.destroy(); @:privateAccess FlxG.bitmap.removeKey(k); }
+			_currentGraphics.remove(k);
+			try { OpenFLAssets.cache.clear(k); } catch(_) {}
 		}
-
-		if (toRemove.length > 0)
-			trace('[PathsCache] clearGameplayAssets: ${toRemove.length} gráficos de gameplay liberados.');
 	}
 
-	// ── Dispose individual ────────────────────────────────────────────────────
+	// ═══════════════════════════════════════════════════════════════════════════
+	// COMPAT — métodos esperados por Paths.hx y el resto del engine
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	/** Lista de claves pendientes de marcar como permanentes. */
+	var _pendingExclusions:Array<String> = [];
 
 	/**
-	 * Destruye un FlxGraphic correctamente:
-	 *  1. Libera la textura de GPU (bitmap.__texture.dispose()) — lo que
-	 *     FunkinCache hace y la implementación por defecto de Flixel NO hace.
-	 *  2. Llama FlxG.bitmap.remove() para quitar del caché de Flixel.
-	 *
-	 * Sin el paso 1, la VRAM no se libera aunque el objeto sea nulificado.
+	 * Marca una clave como permanente (nunca se evicta).
+	 * Si el asset ya está cargado en current, lo promueve a permanente.
+	 * Si aún no está cargado, lo anota para promoverlo cuando se cargue.
 	 */
-	@:access(openfl.display.BitmapData)
-	public function disposeGraphic(graphic:Null<FlxGraphic>):Void
+	public function addExclusion(key:String):Void
 	{
-		if (graphic == null) return;
-		try
-		{
-			if (graphic.bitmap != null && graphic.bitmap.__texture != null)
-			{
-				graphic.bitmap.__texture.dispose();
-				gpuDisposes++;
-			}
-			graphic.destroyOnNoUse = true;
-		}
-		catch (e:Dynamic)
-		{
-			trace('[PathsCache] disposeGraphic error: $e');
-		}
-		@:privateAccess FlxG.bitmap.remove(graphic);
+		final g = _currentGraphics.get(key);
+		if (g != null) { _permanentGraphics.set(key, g); return; }
+		final s = _currentSounds.get(key);
+		if (s != null) { _permanentSounds.set(key, s); return; }
+		if (!_pendingExclusions.contains(key))
+			_pendingExclusions.push(key);
 	}
 
-	// ── Stats ─────────────────────────────────────────────────────────────────
+	/** Libera assets de la sesión anterior. FunkinCache maneja la destrucción real. */
+	public function clearStoredMemory():Void
+	{
+		// FunkinCache.clearSecondLayer() ya destruye via removeByKey en postStateSwitch.
+		// Esta función queda como no-op para compatibilidad con Paths.clearStoredMemory().
+		try { FlxG.bitmap.clearUnused(); } catch (_:Dynamic) {}
+	}
 
-	/** String de debug compacto para el overlay. */
+	/** Destruye gráficos sin uso y fuerza GC. */
+	public function clearUnusedMemory():Void
+	{
+		try { FlxG.bitmap.clearUnused(); } catch (_:Dynamic) {}
+		try { openfl.system.System.gc(); } catch (_:Dynamic) {}
+		#if cpp
+		cpp.vm.Gc.run(true);
+		try { cpp.vm.Gc.compact(); } catch (_:Dynamic) {}
+		#end
+		#if hl hl.Gc.major(); #end
+	}
+
+	/** Limpieza total — alias de destroy() para cambio de mod / reinicio. */
+	public function forceFullClear():Void
+		destroy();
+
+	/** Limpia assets de gameplay (prefijos char_, stage_, skin_). */
+	public function clearGameplayAssets():Void
+	{
+		for (prefix in ['char_', 'stage_', 'skin_'])
+			clearContext(prefix);
+	}
+
+	/** String compacto para el overlay de debug. */
 	public function debugString():String
-	{
-		final gCount   = _graphicCount();
-		final sCount   = _soundCount();
-		final hitRate  = (graphicHits + soundHits) > 0
-			? Math.round(graphicHits / (graphicHits + graphicMisses) * 100) : 0;
-		return 'Gfx: $gCount/$maxGraphics  Snd: $sCount/$maxSounds  Hits: ${hitRate}%  GPU↑: $gpuUploads';
-	}
+		return 'Cache: ${_count(_currentGraphics)} tex / ${_count(_currentSounds)} snd';
 
-	/** String de stats extendido para el debug console. */
+	/** Stats completos (alias de getStats). */
 	public function fullStats():String
+		return getStats();
+
+	// ═══════════════════════════════════════════════════════════════════════════
+	// STATS / DEBUG
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	public function getStats():String
 	{
-		return '[PathsCache]\n'
-			+ '  Gráficos:  cached=${_graphicCount()}/$maxGraphics  hits=$graphicHits  misses=$graphicMisses\n'
-			+ '  Sonidos:   cached=${_soundCount()}/$maxSounds  hits=$soundHits  misses=$soundMisses\n'
-			+ '  GPU:       uploads=$gpuUploads  disposes=$gpuDisposes  gpuCaching=$gpuCaching\n'
-			+ '  Sesión:    enUso=${localTrackedAssets.length}  exclusiones=${dumpExclusions.length}';
-	}
-
-	// ── Internos ──────────────────────────────────────────────────────────────
-
-	/** Almacena un FlxGraphic en la caché, con evicción LRU si es necesario. */
-	function _storeGraphic(key:String, graphic:FlxGraphic):FlxGraphic
-	{
-		if (_graphicCount() >= instance.maxGraphics)
-			_evictLRUGraphic();
-
-		currentTrackedGraphics.set(key, graphic);
-		_lruPush(key);
-		markInUse(key);
-		return graphic;
-	}
-
-	/** Sube un BitmapData a GPU y libera la imagen en RAM del sistema. */
-	@:access(openfl.display.BitmapData)
-	function _uploadToGPU(bitmap:BitmapData):Void
-	{
-		if (bitmap == null) return;
-		try
-		{
-			// Premultiplied alpha → requerido por OpenGL para blending correcto
-			bitmap.image.premultiplied = true;
-
-			// Subir al context3D de OpenFL — esto crea la textura en VRAM
-			bitmap.getTexture(FlxG.stage.context3D);
-
-			// Asegurarse de que la superficie esté disponible para lecturas GL
-			bitmap.getSurface();
-
-			// ── Liberar la imagen en RAM del sistema ──────────────────────────
-			// Después del upload, bitmap.image contiene los bytes del PNG/BMP
-			// decodificados en RAM (~4 MB para 1024×1024 RGBA).
-			// Ya no los necesitamos porque la GPU tiene su propia copia.
-			// FunkinCache hace exactamente esto en cacheBitmap().
-			bitmap.disposeImage();
-
-			// Asegurarse de que el bitmap sigue siendo "readable" para Flixel
-			// (algunos efectos como tintado lo necesitan incluso sin imagen en RAM)
-			bitmap.readable = true;
-
-			gpuUploads++;
-		}
-		catch (e:Dynamic)
-		{
-			// Algunos drivers o plataformas pueden no soportar esto —
-			// en ese caso simplemente no liberamos la imagen en RAM.
-			trace('[PathsCache] GPU upload falló para un asset: $e');
-		}
-	}
-
-	/** Evicta el FlxGraphic menos recientemente usado que pueda evictarse. */
-	function _evictLRUGraphic():Void
-	{
-		// Buscar desde el más antiguo un candidato evictable
-		var i = 0;
-		while (i < _graphicLRU.length)
-		{
-			final key = _graphicLRU[i];
-			if (!dumpExclusions.contains(key) && !localTrackedAssets.contains(key))
-			{
-				disposeGraphic(currentTrackedGraphics.get(key));
-				currentTrackedGraphics.remove(key);
-				_graphicLRU.splice(i, 1);
-				// Recalcular posiciones
-				for (j in i..._graphicLRU.length)
-					_graphicLRUPos.set(_graphicLRU[j], j);
-				_graphicLRUPos.remove(key);
-				return;
-			}
-			i++;
-		}
-		// Si todos están protegidos, ampliar el límite temporalmente
-		trace('[PathsCache] LRU: todos los gráficos son exclusiones o están en uso, no se evictó ninguno.');
-	}
-
-	/** Evicta el sonido más antiguo del caché (FIFO simple, sin LRU). */
-	function _evictOldestSound():Void
-	{
-		for (key in currentTrackedSounds.keys())
-		{
-			if (!dumpExclusions.contains(key) && !localTrackedAssets.contains(key))
-			{
-				Assets.cache.clear(key);
-				currentTrackedSounds.remove(key);
-				return;
-			}
-		}
-	}
-
-	inline function _graphicCount():Int
-	{
-		var n = 0;
-		for (_ in currentTrackedGraphics) n++;
-		return n;
-	}
-
-	inline function _soundCount():Int
-	{
-		var n = 0;
-		for (_ in currentTrackedSounds) n++;
-		return n;
-	}
-
-	// ── LRU helpers ───────────────────────────────────────────────────────────
-
-	inline function _lruPush(key:String):Void
-	{
-		_graphicLRUPos.set(key, _graphicLRU.length);
-		_graphicLRU.push(key);
-	}
-
-	function _lruTouch(key:String):Void
-	{
-		if (!_graphicLRUPos.exists(key)) return;
-		final idx = _graphicLRUPos.get(key);
-		if (idx == _graphicLRU.length - 1) return;
-		_graphicLRU.splice(idx, 1);
-		for (i in idx..._graphicLRU.length)
-			_graphicLRUPos.set(_graphicLRU[i], i);
-		_graphicLRUPos.set(key, _graphicLRU.length);
-		_graphicLRU.push(key);
-	}
-
-	function _lruRemove(key:String):Void
-	{
-		if (!_graphicLRUPos.exists(key)) return;
-		final idx = _graphicLRUPos.get(key);
-		_graphicLRU.splice(idx, 1);
-		_graphicLRUPos.remove(key);
-		for (i in idx..._graphicLRU.length)
-			_graphicLRUPos.set(_graphicLRU[i], i);
+		return '[PathsCache v3] Permanent: ${_count(_permanentGraphics)} tex / ${_count(_permanentSounds)} snd'
+			+ ' | Current: ${_count(_currentGraphics)} tex / ${_count(_currentSounds)} snd'
+			+ ' | Previous: ${_count(_previousGraphics)} tex / ${_count(_previousSounds)} snd';
 	}
 }

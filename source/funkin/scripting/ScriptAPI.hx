@@ -2,695 +2,857 @@ package funkin.scripting;
 
 import flixel.FlxG;
 import flixel.FlxSprite;
-import shaders.ShaderManager;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
+import flixel.util.FlxColor;
+import flixel.util.FlxTimer;
 import funkin.transitions.StateTransition;
-import funkin.transitions.StateTransition.TransitionType;
 import funkin.transitions.StickerTransition;
-import funkin.system.WindowManager;
-import lime.app.Application;
+import funkin.scripting.ScriptableState.ScriptableSubState;
+
 #if HSCRIPT_ALLOWED
 import hscript.Interp;
 #end
 
-using StringTools;
-
 /**
- * ScriptAPI — API global expuesta a todos los scripts HScript.
+ * ScriptAPI v4 — API completa expuesta a los scripts HScript.
  *
- * ─── Categorías (v2) ─────────────────────────────────────────────────────────
- *   • Flixel core          — FlxG, FlxSprite, FlxText, FlxCamera, etc.
- *   • Tweens / timers      — FlxTween, FlxEase, FlxTimer
- *   • Color helpers        — FlxColor (abstract → objeto con helpers)
- *   • Gameplay             — PlayState, Conductor, EventManager, Character, Stage
- *   • Shaders              — ShaderManager + objeto `shaders` de conveniencia
- *   • Ventana              — NUEVO: objeto `window` con hide/show/opacity/spotlight
- *   • Visibilidad          — NUEVO: objeto `visibility` con spotlight/layer control
- *   • Utilidades           — Math, Std, StringTools, Paths, Json, Type, Reflect
- *   • Debug                — trace(), debugLog(), warn()
- *   • Eventos              — registerEvent(), fireEvent()
- *   • Autocompletado       — NUEVO: objeto `__api` con docs de toda la API
+ * ─── Nuevas categorías en v4 ─────────────────────────────────────────────────
  *
- * ─── Autocompletado en editores ─────────────────────────────────────────────
- * La función `__api.help()` imprime por consola todas las variables y métodos
- * disponibles. Complementar con el archivo `funkin_api.d.hx` que genera
- * `ScriptAPI.generateTypeDefinitions()` para IDEs compatibles con HScript.
+ *  `mod`    — información del mod activo, rutas, assets, manifest
+ *  `char`   — acceso directo a personajes de PlayState (bf, dad, gf)
+ *  `camera` — control de cámaras sin acceder a PlayState directamente
+ *  `hud`    — control del HUD (healthbar, score text, visibilidad)
+ *
+ * ─── Compatibilidad garantizada ──────────────────────────────────────────────
+ *  Funciona con o sin FlxSignal (no es requisito).
+ *  `importClass` usa Reflect: funciona con cualquier versión de OpenFL/Flixel.
+ *  El objeto `states` usa null-checks en todos sus accesos a FlxG.state.
+ *
+ * @author Cool Engine Team
+ * @version 4.0.0
  */
 class ScriptAPI
 {
-	/**
-	 * Expone el set completo de variables globales a un intérprete.
-	 * Llamar una vez después de crear el `Interp`, antes de `execute()`.
-	 */
-	public static function expose(#if HSCRIPT_ALLOWED interp:Interp #else _:Dynamic #end):Void
+	#if HSCRIPT_ALLOWED
+
+	public static function expose(interp:Interp):Void
 	{
-		#if HSCRIPT_ALLOWED
 		exposeFlixel(interp);
 		exposeGameplay(interp);
+		exposeScoring(interp);
+		exposeNoteTypes(interp);
+		exposeStates(interp);
+		exposeSignals(interp);
+		exposeStorage(interp);
+		exposeImport(interp);
+		exposeMath(interp);
+		exposeArray(interp);
 		exposeShaders(interp);
 		exposeWindow(interp);
 		exposeVisibility(interp);
 		exposeUtils(interp);
 		exposeEvents(interp);
 		exposeDebug(interp);
-		exposeAutoComplete(interp);
-		#end
+		exposeMod(interp);          // NUEVO v4
+		exposeCharacters(interp);   // NUEVO v4
+		exposeCamera(interp);       // NUEVO v4
+		exposeHUD(interp);          // NUEVO v4
 	}
 
-	// ─── Flixel ───────────────────────────────────────────────────────────────
-	#if HSCRIPT_ALLOWED
+	// ─── Flixel core ──────────────────────────────────────────────────────────
+
 	static function exposeFlixel(interp:Interp):Void
 	{
-		interp.variables.set('FlxG', FlxG);
-		interp.variables.set('FlxSprite', flixel.FlxSprite);
-		interp.variables.set('FlxText', flixel.text.FlxText);
-		interp.variables.set('FlxSound', flixel.sound.FlxSound);
-		interp.variables.set('FlxTween', flixel.tweens.FlxTween);
-		interp.variables.set('FlxEase', flixel.tweens.FlxEase);
-		interp.variables.set('FlxTimer', flixel.util.FlxTimer);
-		interp.variables.set('FlxCamera', flixel.FlxCamera);
-		interp.variables.set('FlxGroup', flixel.group.FlxGroup);
-		interp.variables.set('FlxSpriteGroup', flixel.group.FlxSpriteGroup);
-		interp.variables.set('FlxTrail', flixel.addons.effects.FlxTrail);
-		interp.variables.set('FlxAnimate', flxanimate.FlxAnimate);
-		interp.variables.set('FlxMath', flixel.math.FlxMath);
-		interp.variables.set('FlxPoint',      buildPointObject());
-		interp.variables.set('FlxRect',       buildRectObject());
-		interp.variables.set('FlxAxes',       buildAxesObject());
-		interp.variables.set('FlxStringUtil', flixel.util.FlxStringUtil);
+		interp.variables.set('FlxG',       FlxG);
+		interp.variables.set('FlxSprite',  FlxSprite);
+		interp.variables.set('FlxTween',   FlxTween);
+		interp.variables.set('FlxEase',    _flxEaseProxy());
+		interp.variables.set('FlxColor',   _flxColorProxy());
+		interp.variables.set('FlxTimer',   FlxTimer);
 		interp.variables.set('FunkinSprite', animationdata.FunkinSprite);
 
-		// FlxColor como objeto con helpers (el abstract no funciona directamente en HScript)
-		interp.variables.set('FlxColor', buildColorObject());
-	}
+		// Tipos adicionales útiles
+		interp.variables.set('FlxText',       flixel.text.FlxText);
+		interp.variables.set('FlxGroup',      flixel.group.FlxGroup);
+		interp.variables.set('FlxSpriteGroup', flixel.group.FlxSpriteGroup);
+		// BUGFIX: FlxMath.lerp (y otros) son `static inline` en HaxeFlixel.
+		// Las funciones inline se eliminan en tiempo de compilación (C++/HL) y devuelven
+		// null cuando se accede a ellas por reflexión — HScript llama null → "Null Function Pointer".
+		// Solución: exponer un proxy con lambdas equivalentes para las funciones inline.
+		// BUGFIX: FlxMath.lerp y compañía son `static inline` en HaxeFlixel.
+		// Las funciones inline se eliminan en compilación (C++/HL) → reflexión devuelve null
+		// → HScript lanza "Null Function Pointer" en cada frame de onUpdate.
+		// Solución: proxy con lambdas equivalentes para todas las funciones inline,
+		// y referencias directas solo para las que son accesibles por reflexión.
+		// NOTA: numDigits, getDistance, getDegreesFromRadians, getRadiansFromDegrees
+		// NO existen en la versión de FlxMath de este proyecto — los omitimos.
+		interp.variables.set('FlxMath', {
+			// ── Inline wrappers ───────────────────────────────────────────────────
+			lerp          : function(a:Float, b:Float, ratio:Float):Float return a + (b - a) * ratio,
+			fastSin       : function(angle:Float):Float return Math.sin(angle),
+			fastCos       : function(angle:Float):Float return Math.cos(angle),
+			// ── Non-inline: solo los que existen en esta versión de FlxMath ──────
+			remapToRange  : flixel.math.FlxMath.remapToRange,
+			bound         : flixel.math.FlxMath.bound,
+			roundDecimal  : flixel.math.FlxMath.roundDecimal,
+			isOdd         : flixel.math.FlxMath.isOdd,
+			isEven        : flixel.math.FlxMath.isEven,
+			dotProduct    : flixel.math.FlxMath.dotProduct,
+			vectorLength  : flixel.math.FlxMath.vectorLength,
+			MIN_VALUE_INT  : flixel.math.FlxMath.MIN_VALUE_INT,
+			MAX_VALUE_INT  : flixel.math.FlxMath.MAX_VALUE_INT,
+			MIN_VALUE_FLOAT: flixel.math.FlxMath.MIN_VALUE_FLOAT,
+			MAX_VALUE_FLOAT: flixel.math.FlxMath.MAX_VALUE_FLOAT
+		});
+		interp.variables.set('FlxPoint',      _flxPointProxy());
+		interp.variables.set('FlxRect',       _flxRectProxy());
+		interp.variables.set('FlxAngle',      flixel.math.FlxAngle);
 
-	/**
-	 * Construye el objeto FlxColor accesible desde HScript.
-	 */
-	static function buildColorObject():Dynamic
-	{
-		return {
-			WHITE: 0xFFFFFFFF,
-			BLACK: 0xFF000000,
-			RED: 0xFFFF0000,
-			GREEN: 0xFF00FF00,
-			BLUE: 0xFF0000FF,
-			YELLOW: 0xFFFFFF00,
-			CYAN: 0xFF00FFFF,
-			MAGENTA: 0xFFFF00FF,
-			LIME: 0xFF00FF00,
-			PINK: 0xFFFFC0CB,
-			ORANGE: 0xFFFFA500,
-			PURPLE: 0xFF800080,
-			BROWN: 0xFFA52A2A,
-			GRAY: 0xFF808080,
-			TRANSPARENT: 0x00000000,
-			// fromRGB(r, g, b, a=255) → Int
-			fromRGB: function(r:Int, g:Int, b:Int, a:Int = 255):Int return (a << 24) | (r << 16) | (g << 8) | b,
-			// fromHex('#RRGGBB' o 'RRGGBB') → Int
-			fromHex: function(hex:String):Int
-			{
-				if (hex.charCodeAt(0) == '#'.code)
-					hex = hex.substr(1);
-				if (hex.startsWith('0x') || hex.startsWith('0X'))
-					hex = hex.substr(2);
-				return Std.parseInt('0xFF' + hex);
-			},
-			// toRGB(color) → {r, g, b, a}
-			toRGB: function(color:Int):Dynamic
-			{
-				return {
-					r: (color >> 16) & 0xFF,
-					g: (color >> 8) & 0xFF,
-					b: color & 0xFF,
-					a: (color >> 24) & 0xFF
-				};
-			},
-			// interpolate(from, to, t) → Int
-			interpolate: function(from:Int, to:Int, t:Float):Int
-			{
-				var r1 = (from >> 16) & 0xFF;
-				var r2 = (to >> 16) & 0xFF;
-				var g1 = (from >> 8) & 0xFF;
-				var g2 = (to >> 8) & 0xFF;
-				var b1 = from & 0xFF;
-				var b2 = to & 0xFF;
-				var a1 = (from >> 24) & 0xFF;
-				var a2 = (to >> 24) & 0xFF;
-				return (Std.int(a1 + (a2 - a1) * t) << 24) | (Std.int(r1 + (r2 - r1) * t) << 16) | (Std.int(g1 + (g2 - g1) * t) << 8) | Std.int(b1
-					+ (b2 - b1) * t);
-			}
-		};
-	}
-
-	// ─── FlxPoint ─────────────────────────────────────────────────────────────
-
-	/**
-	 * Wrapper de FlxPoint para HScript.
-	 * Uso en scripts:
-	 *   var p = FlxPoint.get(100, 200);
-	 *   var w = FlxPoint.weak(0, 0);
-	 */
-	static function buildPointObject():Dynamic
-	{
-		return {
-			get:  function(x:Float = 0, y:Float = 0):flixel.math.FlxPoint
-				return flixel.math.FlxPoint.get(x, y),
-			weak: function(x:Float = 0, y:Float = 0):flixel.math.FlxPoint
-				return flixel.math.FlxPoint.weak(x, y)
-		};
-	}
-
-	// ─── FlxRect ──────────────────────────────────────────────────────────────
-
-	/**
-	 * Wrapper de FlxRect para HScript.
-	 * Uso en scripts:
-	 *   var r = FlxRect.get(0, 0, 100, 50);
-	 */
-	static function buildRectObject():Dynamic
-	{
-		return {
-			get: function(x:Float = 0, y:Float = 0, width:Float = 0, height:Float = 0):flixel.math.FlxRect
-				return flixel.math.FlxRect.get(x, y, width, height)
-		};
-	}
-
-	// ─── FlxAxes ──────────────────────────────────────────────────────────────
-
-	/**
-	 * Wrapper de FlxAxes para HScript.
-	 * Uso en scripts:
-	 *   sprite.drag.set(100, 0);
-	 *   FlxAxes.X / FlxAxes.Y / FlxAxes.XY / FlxAxes.NONE
-	 */
-	static function buildAxesObject():Dynamic
-	{
-		return {
-			X:    flixel.util.FlxAxes.X,
-			Y:    flixel.util.FlxAxes.Y,
-			XY:   flixel.util.FlxAxes.XY,
-			NONE: flixel.util.FlxAxes.NONE
-		};
+		// OpenFL
+		interp.variables.set('BitmapData',    openfl.display.BitmapData);
+		interp.variables.set('Sound',         openfl.media.Sound);
 	}
 
 	// ─── Gameplay ─────────────────────────────────────────────────────────────
 
 	static function exposeGameplay(interp:Interp):Void
 	{
-		interp.variables.set('PlayState', funkin.gameplay.PlayState);
-		interp.variables.set('game', funkin.gameplay.PlayState.instance);
-		interp.variables.set('Conductor', funkin.data.Conductor);
-		interp.variables.set('EventManager', funkin.scripting.EventManager);
-		interp.variables.set('MetaData', funkin.data.MetaData);
-		interp.variables.set('GlobalConfig', funkin.data.GlobalConfig);
-		interp.variables.set('Song', funkin.data.Song);
-		interp.variables.set('HealthIcon', funkin.gameplay.objects.character.HealthIcon);
-		interp.variables.set('ScoreManager', funkin.gameplay.objects.hud.ScoreManager);
-		interp.variables.set('UIScriptedManager', funkin.gameplay.UIScriptedManager);
-		interp.variables.set('ModManager', mods.ModManager);
-		interp.variables.set('ModPaths', mods.ModPaths);
-		interp.variables.set('Alphabet', ui.Alphabet);
-		interp.variables.set('save', FlxG.save.data);
-		interp.variables.set('VideoManager', funkin.cutscenes.VideoManager);
+		interp.variables.set('PlayState',          funkin.gameplay.PlayState);
+		interp.variables.set('game',               funkin.gameplay.PlayState.instance);
+		interp.variables.set('Conductor',          funkin.data.Conductor);
+		interp.variables.set('Paths',              Paths);
+		interp.variables.set('MetaData',           funkin.data.MetaData);
+		interp.variables.set('GlobalConfig',       funkin.data.GlobalConfig);
+		interp.variables.set('Song',               funkin.data.Song);
+		interp.variables.set('Note',               funkin.gameplay.notes.Note);
+		interp.variables.set('NoteSkinSystem',     funkin.gameplay.notes.NoteSkinSystem);
+		interp.variables.set('NotePool',           funkin.gameplay.notes.NotePool);
+		interp.variables.set('NoteTypeManager',    funkin.gameplay.notes.NoteTypeManager);
+		interp.variables.set('ModManager',         mods.ModManager);
+		interp.variables.set('ModPaths',           mods.ModPaths);
+	}
 
-		// ── Personajes y escenarios ───────────────────────────────────────────
-		interp.variables.set('Character', funkin.gameplay.objects.character.Character);
-		interp.variables.set('CharacterList', funkin.gameplay.objects.character.CharacterList);
-		interp.variables.set('Stage', funkin.gameplay.objects.stages.Stage);
-		interp.variables.set('CharacterController', funkin.gameplay.CharacterController);
-		interp.variables.set('CameraController', funkin.gameplay.CameraController);
-		interp.variables.set('NoteManager', funkin.gameplay.NoteManager);
-		interp.variables.set('CameraUtil', funkin.data.CameraUtil);
-		interp.variables.set('PathsCache', funkin.cache.PathsCache);
+	// ─── Scoring custom ───────────────────────────────────────────────────────
 
-		// ── Ranking / scoring ────────────────────────────────────────────────
-		interp.variables.set('Ranking', funkin.data.Ranking);
-
-		// ── Transiciones ──────────────────────────────────────────────────────
-		interp.variables.set('StateTransition', StateTransition);
-		interp.variables.set('TransitionType', {
-			FADE: TransitionType.FADE,
-			FADE_WHITE: TransitionType.FADE_WHITE,
-			SLIDE_LEFT: TransitionType.SLIDE_LEFT,
-			SLIDE_RIGHT: TransitionType.SLIDE_RIGHT,
-			SLIDE_UP: TransitionType.SLIDE_UP,
-			SLIDE_DOWN: TransitionType.SLIDE_DOWN,
-			CIRCLE_WIPE: TransitionType.CIRCLE_WIPE,
-			NONE: TransitionType.NONE,
-			CUSTOM: TransitionType.CUSTOM
+	static function exposeScoring(interp:Interp):Void
+	{
+		interp.variables.set('score', {
+			setWindow: function(rating:String, ms:Float) {
+				final sm = funkin.gameplay.objects.hud.ScoreManager;
+				switch (rating.toLowerCase())
+				{
+					case 'sick':  Reflect.setField(sm, 'SICK_WINDOW',  ms);
+					case 'good':  Reflect.setField(sm, 'GOOD_WINDOW',  ms);
+					case 'bad':   Reflect.setField(sm, 'BAD_WINDOW',   ms);
+					case 'shit':  Reflect.setField(sm, 'SHIT_WINDOW',  ms);
+				}
+			},
+			setPoints: function(rating:String, pts:Int) {
+				final sm = funkin.gameplay.objects.hud.ScoreManager;
+				switch (rating.toLowerCase())
+				{
+					case 'sick':  Reflect.setField(sm, 'SICK_SCORE',  pts);
+					case 'good':  Reflect.setField(sm, 'GOOD_SCORE',  pts);
+					case 'bad':   Reflect.setField(sm, 'BAD_SCORE',   pts);
+					case 'shit':  Reflect.setField(sm, 'SHIT_SCORE',  pts);
+				}
+			},
+			setMissPenalty: function(penalty:Int) {
+				Reflect.setField(funkin.gameplay.objects.hud.ScoreManager, 'MISS_PENALTY', penalty);
+			},
+			getAccuracy:  function():Float {
+				final i = funkin.gameplay.PlayState.instance;
+				return i != null ? i.scoreManager.accuracy : 0.0;
+			},
+			getCombo:     function():Int {
+				final i = funkin.gameplay.PlayState.instance;
+				return i != null ? i.scoreManager.combo : 0;
+			},
+			getScore:     function():Int {
+				final i = funkin.gameplay.PlayState.instance;
+				return i != null ? i.scoreManager.score : 0;
+			},
+			addScore:     function(n:Int) {
+				final i = funkin.gameplay.PlayState.instance;
+				if (i != null) i.scoreManager.score += n;
+			},
+			resetCombo:   function() {
+				final i = funkin.gameplay.PlayState.instance;
+				if (i != null) { i.scoreManager.combo = 0; i.scoreManager.fullCombo = false; }
+			},
+			onNoteHit: null,
+			onMiss:    null
 		});
-		interp.variables.set('StickerTransition', StickerTransition);
+	}
+
+	// ─── NoteTypes ────────────────────────────────────────────────────────────
+
+	static function exposeNoteTypes(interp:Interp):Void
+	{
+		interp.variables.set('noteTypes', {
+			register:   function(name:String, cfg:Dynamic) {
+				funkin.gameplay.notes.NoteTypeManager.register(name, cfg);
+			},
+			unregister: function(name:String) {
+				funkin.gameplay.notes.NoteTypeManager.unregister(name);
+			},
+			exists:     function(name:String):Bool {
+				return funkin.gameplay.notes.NoteTypeManager.exists(name);
+			},
+			list:       function():Array<String> {
+				return funkin.gameplay.notes.NoteTypeManager.getAll();
+			}
+		});
+	}
+
+	// ─── States ───────────────────────────────────────────────────────────────
+
+	static function exposeStates(interp:Interp):Void
+	{
+		interp.variables.set('states', {
+			goto:               function(name:String) { ScriptBridge.switchStateByName(name); },
+			open:               function(state:flixel.FlxState) { StateTransition.switchState(state); },
+			sticker:            function(state:flixel.FlxState) {
+				StickerTransition.start(function() StateTransition.switchState(state));
+			},
+			load:               function(state:flixel.FlxState) {
+				funkin.states.LoadingState.loadAndSwitchState(state);
+			},
+			openSubState:       function(name:String) {
+				final ss = new ScriptableSubState(name);
+				if (FlxG.state != null) FlxG.state.openSubState(ss);
+			},
+			openSubStateInstance: function(ss:flixel.FlxSubState) {
+				if (FlxG.state != null) FlxG.state.openSubState(ss);
+			},
+			close:              function() { if (FlxG.state != null) FlxG.state.closeSubState(); },
+			scripted:           function(name:String) {
+				final ss = new ScriptableSubState(name);
+				if (FlxG.state != null) FlxG.state.openSubState(ss);
+			},
+			current:            function():flixel.FlxState { return FlxG.state; }
+		});
+	}
+
+	// ─── Signal bus ───────────────────────────────────────────────────────────
+
+	static var _signals    : Map<String, Array<Dynamic>> = [];
+	static var _signalsOnce: Map<String, Array<Dynamic>> = [];
+
+	static function exposeSignals(interp:Interp):Void
+	{
+		interp.variables.set('signal', {
+			on:   function(event:String, cb:Dynamic) {
+				if (!_signals.exists(event)) _signals.set(event, []);
+				_signals.get(event).push(cb);
+			},
+			once: function(event:String, cb:Dynamic) {
+				if (!_signalsOnce.exists(event)) _signalsOnce.set(event, []);
+				_signalsOnce.get(event).push(cb);
+			},
+			off:  function(event:String, cb:Dynamic) {
+				final arr = _signals.get(event);
+				if (arr != null) arr.remove(cb);
+			},
+			emit: function(event:String, ?data:Dynamic) {
+				final arr  = _signals.get(event);
+				if (arr != null)
+					for (cb in arr.copy()) try { Reflect.callMethod(null, cb, [data]); } catch(_) {}
+				final once = _signalsOnce.get(event);
+				if (once != null)
+				{
+					for (cb in once.copy()) try { Reflect.callMethod(null, cb, [data]); } catch(_) {}
+					once.resize(0);
+				}
+			},
+			clear:    function(event:String) { _signals.remove(event); _signalsOnce.remove(event); },
+			clearAll: function() { _signals.clear(); _signalsOnce.clear(); }
+		});
+	}
+
+	// ─── Storage ──────────────────────────────────────────────────────────────
+
+	static function exposeStorage(interp:Interp):Void
+	{
+		interp.variables.set('data', {
+			set:    function(key:String, value:Dynamic) {
+				Reflect.setField(FlxG.save.data, key, value);
+			},
+			get:    function(key:String, ?fallback:Dynamic):Dynamic {
+				final v = Reflect.field(FlxG.save.data, key);
+				return v != null ? v : fallback;
+			},
+			delete: function(key:String) {
+				Reflect.deleteField(FlxG.save.data, key);
+			},
+			has:    function(key:String):Bool {
+				return Reflect.hasField(FlxG.save.data, key);
+			},
+			save:   function() { FlxG.save.flush(); },
+			dump:   function():Dynamic { return FlxG.save.data; }
+		});
+	}
+
+	// ─── Import dinámico ──────────────────────────────────────────────────────
+
+	static function exposeImport(interp:Interp):Void
+	{
+		// BUGFIX: mismo proxy que en expose() para que import('FlxMath') tampoco devuelva
+		// lerp=null por ser inline. Ver comentario detallado más arriba.
+		final _flxMathProxy:Dynamic = interp.variables.get('FlxMath');
+
+		// Mapa de clases permitidas para importación dinámica.
+		// NOTA: era una expresión suelta `[...]` sin asignar → "_classRegistry" Unknown identifier.
+		final _classRegistry:Map<String, Dynamic> = [
+			// Flixel
+			'FlxSprite'       => FlxSprite,
+			'FlxText'         => flixel.text.FlxText,
+			'FlxG'            => FlxG,
+			'FlxTween'        => FlxTween,
+			'FlxEase'         => _flxEaseProxy(),
+			'FlxColor'        => _flxColorProxy(),
+			'FlxTimer'        => FlxTimer,
+			'FlxMath'         => _flxMathProxy,   // BUGFIX: proxy sin inline, no la clase directa
+			'FlxPoint'        => _flxPointProxy(),
+			'FlxSpriteGroup'  => flixel.group.FlxSpriteGroup,
+			'FlxGroup'        => flixel.group.FlxGroup,
+			// Funkin
+			'PlayState'       => funkin.gameplay.PlayState,
+			'Conductor'       => funkin.data.Conductor,
+			'Paths'           => Paths,
+			'Note'            => funkin.gameplay.notes.Note,
+			'NotePool'        => funkin.gameplay.notes.NotePool,
+			'ModManager'      => mods.ModManager,
+			'ModPaths'        => mods.ModPaths,
+			// OpenFL
+			'BitmapData'      => openfl.display.BitmapData,
+			'Sound'           => openfl.media.Sound,
+		];
+
+		interp.variables.set('importClass', function(className:String):Dynamic {
+			if (_classRegistry.exists(className)) return _classRegistry.get(className);
+			// Fallback: Type.resolveClass (requiere que el tipo esté en el build)
+			final resolved = Type.resolveClass(className);
+			if (resolved != null) return resolved;
+			trace('[ScriptAPI] importClass: "$className" no encontrada.');
+			return null;
+		});
+
+		interp.variables.set('createInstance', function(className:String, args:Array<Dynamic>):Dynamic {
+			final cls = Type.resolveClass(className);
+			if (cls == null) { trace('[ScriptAPI] createInstance: "$className" no encontrada.'); return null; }
+			return Type.createInstance(cls, args ?? []);
+		});
+	}
+
+	// ─── Math extendido ───────────────────────────────────────────────────────
+
+	static function exposeMath(interp:Interp):Void
+	{
+		interp.variables.set('math', {
+			// Interpolación
+			lerp:       function(a:Float, b:Float, t:Float):Float return a + (b - a) * t,
+			lerpSnap:   function(a:Float, b:Float, t:Float, snap:Float):Float {
+				final r = a + (b - a) * t;
+				return Math.abs(r - b) < snap ? b : r;
+			},
+			// Rango
+			clamp:      function(v:Float, min:Float, max:Float):Float return Math.min(Math.max(v, min), max),
+			map:        function(v:Float, i0:Float, i1:Float, o0:Float, o1:Float):Float {
+				return o0 + (v - i0) / (i1 - i0) * (o1 - o0);
+			},
+			norm:       function(v:Float, min:Float, max:Float):Float return (v - min) / (max - min),
+			snap:       function(v:Float, step:Float):Float return Math.round(v / step) * step,
+			pingpong:   function(v:Float, len:Float):Float {
+				final t = v % (len * 2);
+				return t < len ? t : len * 2 - t;
+			},
+			sign:       function(v:Float):Int return v > 0 ? 1 : (v < 0 ? -1 : 0),
+			// Random
+			rnd:        function(min:Int, max:Int):Int return FlxG.random.int(min, max),
+			rndf:       function(min:Float, max:Float):Float return FlxG.random.float(min, max),
+			chance:     function(pct:Float):Bool return FlxG.random.float() < pct,
+			// Geometría
+			dist:       function(x1:Float, y1:Float, x2:Float, y2:Float):Float {
+				final dx = x2 - x1; final dy = y2 - y1;
+				return Math.sqrt(dx * dx + dy * dy);
+			},
+			angle:      function(x1:Float, y1:Float, x2:Float, y2:Float):Float {
+				return Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+			},
+			// Curvas de Bézier
+			bezier:     function(t:Float, p0:Float, p1:Float, p2:Float, p3:Float):Float {
+				final u = 1 - t;
+				return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3;
+			},
+			quadBezier: function(t:Float, p0:Float, p1:Float, p2:Float):Float {
+				final u = 1 - t;
+				return u*u*p0 + 2*u*t*p1 + t*t*p2;
+			},
+			// Trig en grados
+			sin:        function(d:Float):Float return Math.sin(d * Math.PI / 180),
+			cos:        function(d:Float):Float return Math.cos(d * Math.PI / 180),
+			tan:        function(d:Float):Float return Math.tan(d * Math.PI / 180),
+			// Constantes
+			PI:   Math.PI,
+			TAU:  Math.PI * 2,
+			E:    Math.exp(1.0),
+			SQRT2: Math.sqrt(2.0),
+			INF:  Math.POSITIVE_INFINITY
+		});
+	}
+
+	// ─── Array helpers ────────────────────────────────────────────────────────
+
+	static function exposeArray(interp:Interp):Void
+	{
+		interp.variables.set('arr', {
+			find:    function(a:Array<Dynamic>, fn:Dynamic):Dynamic {
+				for (x in a) if (Reflect.callMethod(null, fn, [x])) return x;
+				return null;
+			},
+			filter:  function(a:Array<Dynamic>, fn:Dynamic):Array<Dynamic> {
+				return a.filter(function(x) return Reflect.callMethod(null, fn, [x]));
+			},
+			map:     function(a:Array<Dynamic>, fn:Dynamic):Array<Dynamic> {
+				return a.map(function(x) return Reflect.callMethod(null, fn, [x]));
+			},
+			some:    function(a:Array<Dynamic>, fn:Dynamic):Bool {
+				for (x in a) if (Reflect.callMethod(null, fn, [x])) return true;
+				return false;
+			},
+			every:   function(a:Array<Dynamic>, fn:Dynamic):Bool {
+				for (x in a) if (!Reflect.callMethod(null, fn, [x])) return false;
+				return true;
+			},
+			shuffle: function(a:Array<Dynamic>):Array<Dynamic> {
+				final r = a.copy();
+				for (i in 0...r.length)
+				{
+					final j = FlxG.random.int(0, r.length - 1);
+					final tmp = r[i]; r[i] = r[j]; r[j] = tmp;
+				}
+				return r;
+			},
+			pick:    function(a:Array<Dynamic>):Dynamic {
+				return a.length > 0 ? a[FlxG.random.int(0, a.length - 1)] : null;
+			},
+			unique:  function(a:Array<Dynamic>):Array<Dynamic> {
+				final r:Array<Dynamic> = [];
+				for (x in a) if (!r.contains(x)) r.push(x);
+				return r;
+			},
+			flatten: function(a:Array<Array<Dynamic>>):Array<Dynamic> {
+				final r:Array<Dynamic> = [];
+				for (sub in a) for (x in sub) r.push(x);
+				return r;
+			},
+			sum:     function(a:Array<Float>):Float {
+				var s = 0.0; for (x in a) s += x; return s;
+			},
+			max:     function(a:Array<Float>):Float {
+				var m = Math.NEGATIVE_INFINITY; for (x in a) if (x > m) m = x; return m;
+			},
+			min:     function(a:Array<Float>):Float {
+				var m = Math.POSITIVE_INFINITY; for (x in a) if (x < m) m = x; return m;
+			},
+			sortBy:  function(a:Array<Dynamic>, key:String):Array<Dynamic> {
+				final r = a.copy();
+				r.sort(function(x, y) {
+					final vx = Reflect.field(x, key);
+					final vy = Reflect.field(y, key);
+					if (vx < vy) return -1;
+					if (vx > vy) return  1;
+					return 0;
+				});
+				return r;
+			},
+			range:   function(from:Int, to:Int, ?step:Int):Array<Int> {
+				if (step == null) step = 1;
+				final r:Array<Int> = [];
+				var i = from;
+				while (step > 0 ? i < to : i > to) { r.push(i); i += step; }
+				return r;
+			},
+			zip:     function(a:Array<Dynamic>, b:Array<Dynamic>):Array<Array<Dynamic>> {
+				final len = Std.int(Math.min(a.length, b.length));
+				return [for (i in 0...len) [a[i], b[i]]];
+			}
+		});
+	}
+
+	// ─── NUEVO v4: Mod info ────────────────────────────────────────────────────
+
+	/**
+	 * Objeto `mod` — información y utilidades del mod activo.
+	 *
+	 *   mod.isActive()           → true si hay un mod cargado
+	 *   mod.name()               → nombre del mod activo
+	 *   mod.root()               → ruta raíz del mod (string)
+	 *   mod.path('images/bg')    → ruta completa en el mod
+	 *   mod.exists('images/bg')  → true si el asset existe en el mod
+	 *   mod.list()               → Array de mods instalados
+	 *   mod.info()               → ModInfo del mod activo
+	 */
+	static function exposeMod(interp:Interp):Void
+	{
+		interp.variables.set('mod', {
+			isActive: function():Bool   return mods.ModManager.isActive(),
+			name:     function():String return mods.ModManager.activeMod ?? 'base',
+			root:     function():String return mods.ModManager.isActive() ? mods.ModManager.modRoot() : 'assets',
+			path:     function(rel:String):String {
+				if (mods.ModManager.isActive())
+					return '${mods.ModManager.modRoot()}/$rel';
+				return 'assets/$rel';
+			},
+			exists:   function(rel:String):Bool {
+				#if sys
+				if (mods.ModManager.isActive())
+				{
+					final p = '${mods.ModManager.modRoot()}/$rel';
+					if (sys.FileSystem.exists(p)) return true;
+				}
+				return sys.FileSystem.exists('assets/$rel');
+				#else
+				return false;
+				#end
+			},
+			list:     function():Array<String> {
+				return [for (m in mods.ModManager.installedMods) m.id];
+			},
+			info:     function():Dynamic {
+				final id = mods.ModManager.activeMod;
+				if (id == null) return null;
+				for (m in mods.ModManager.installedMods)
+					if (m.id == id) return m;
+				return null;
+			},
+			// Cargar imagen desde el mod con fallback a base
+			getImage:  function(name:String):Dynamic {
+				return Paths.image(name);
+			},
+			// Cargar sonido desde el mod con fallback a base
+			getSound:  function(name:String):Dynamic {
+				return Paths.sound(name);
+			},
+			// Cargar música desde el mod con fallback a base
+			getMusic:  function(name:String):Dynamic {
+				return Paths.music(name);
+			}
+		});
+	}
+
+	// ─── NUEVO v4: Characters ─────────────────────────────────────────────────
+
+	/**
+	 * Objeto `chars` — acceso directo a los personajes del PlayState.
+	 *
+	 *   chars.bf()           → Character del jugador
+	 *   chars.dad()          → Character del oponente
+	 *   chars.gf()           → Character del GF/espectador
+	 *   chars.get(index)     → Character por índice
+	 *   chars.playAnim(c, a) → c.playAnim(a, true)
+	 *   chars.setVisible(c, b)
+	 */
+	static function exposeCharacters(interp:Interp):Void
+	{
+		interp.variables.set('chars', {
+			bf:          function():Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				return ps != null ? ps.boyfriend : null;
+			},
+			dad:         function():Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				return ps != null ? ps.dad : null;
+			},
+			gf:          function():Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				return ps != null ? ps.gf : null;
+			},
+			get:         function(idx:Int):Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps == null) return null;
+				final cc = Reflect.field(ps, 'characterController');
+				final c = (cc != null) ? cc.getCharacter(idx) : null;
+				return c;
+			},
+			playAnim:    function(char:Dynamic, anim:String) {
+				if (char != null) char.playAnim(anim, true);
+			},
+			setVisible:  function(char:Dynamic, v:Bool) {
+				if (char != null) char.visible = v;
+			},
+			setPosition: function(char:Dynamic, x:Float, y:Float) {
+				if (char != null) { char.x = x; char.y = y; }
+			},
+			getAnim:     function(char:Dynamic):String {
+				if (char == null || char.animation == null) return '';
+				final cur = char.animation.curAnim;
+				return cur != null ? cur.name : '';
+			}
+		});
+	}
+
+	// ─── NUEVO v4: Camera ─────────────────────────────────────────────────────
+
+	/**
+	 * Objeto `camera` — control de cámaras desde script.
+	 *
+	 *   camera.game     → camGame (FlxCamera)
+	 *   camera.hud      → camHUD  (FlxCamera)
+	 *   camera.other    → camOther
+	 *   camera.zoom(v)  → camGame.zoom = v
+	 *   camera.shake()  → efecto de shake
+	 *   camera.flash()  → efecto de flash
+	 *   camera.fade()   → efecto de fade
+	 *   camera.focusBf()
+	 *   camera.focusDad()
+	 */
+	static function exposeCamera(interp:Interp):Void
+	{
+		interp.variables.set('camera', {
+			game:    function():Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				return ps != null ? Reflect.field(ps, 'camGame') : FlxG.camera;
+			},
+			hud:     function():Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				return ps != null ? Reflect.field(ps, 'camHUD') : null;
+			},
+			other:   function():Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				return ps != null ? Reflect.field(ps, 'camOther') : null;
+			},
+			setZoom: function(v:Float) {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps != null) { final cg = Reflect.field(ps, 'camGame'); if (cg != null) cg.zoom = v; }
+			},
+			getZoom: function():Float {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps == null) return 1.0;
+				final cg = Reflect.field(ps, 'camGame');
+				return cg != null ? cg.zoom : 1.0;
+			},
+			shake:   function(?intensity:Float, ?duration:Float, ?target:Dynamic) {
+				final cam = target ?? FlxG.camera;
+				cam.shake(intensity ?? 0.03, duration ?? 0.2);
+			},
+			flash:   function(?color:Int, ?duration:Float, ?target:Dynamic) {
+				final cam = target ?? FlxG.camera;
+				cam.flash(color ?? FlxColor.WHITE, duration ?? 0.3);
+			},
+			fade:    function(?color:Int, ?duration:Float, ?inward:Bool, ?target:Dynamic) {
+				final cam = target ?? FlxG.camera;
+				if (inward ?? false) cam.fade(color ?? FlxColor.BLACK, duration ?? 0.5, true);
+				else                 cam.fade(color ?? FlxColor.BLACK, duration ?? 0.5);
+			},
+			focusBf: function() {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps != null && ps.cameraController != null) ps.cameraController.setTarget('bf');
+			},
+			focusDad: function() {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps != null && ps.cameraController != null) ps.cameraController.setTarget('opponent');
+			}
+		});
+	}
+
+	// ─── NUEVO v4: HUD ────────────────────────────────────────────────────────
+
+	/**
+	 * Objeto `hud` — control del HUD del PlayState.
+	 *
+	 *   hud.setVisible(b)      → mostrar/ocultar HUD completo
+	 *   hud.setHealth(v)       → health 0.0-2.0
+	 *   hud.setScoreVisible(b)
+	 *   hud.showRating(r)      → mostrar rating popup
+	 */
+	static function exposeHUD(interp:Interp):Void
+	{
+		interp.variables.set('hud', {
+			setVisible: function(v:Bool) {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps != null && ps.uiManager != null)
+					Reflect.setField(ps.uiManager, 'visible', v);
+			},
+			setHealth: function(v:Float) {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps != null && ps.gameState != null) ps.gameState.health = v;
+			},
+			getHealth: function():Float {
+				final ps = funkin.gameplay.PlayState.instance;
+				return (ps != null && ps.gameState != null) ? ps.gameState.health : 1.0;
+			},
+			setScoreVisible: function(v:Bool) {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps != null && ps.uiManager != null)
+				{
+					final txt = Reflect.field(ps.uiManager, 'scoreText');
+					if (txt != null) txt.visible = v;
+				}
+			},
+			showRating: function(rating:String, ?combo:Int) {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps != null && ps.uiManager != null)
+					ps.uiManager.showRatingPopup(rating, combo ?? ps.scoreManager.combo);
+			}
+		});
 	}
 
 	// ─── Shaders ──────────────────────────────────────────────────────────────
 
 	static function exposeShaders(interp:Interp):Void
 	{
-		interp.variables.set('ShaderManager', ShaderManager);
-
-		interp.variables.set('shaders', {
-			get: (name:String) -> ShaderManager.getShader(name),
-			apply: (sprite:FlxSprite, name:String) -> ShaderManager.applyShader(sprite, name),
-			remove: (sprite:FlxSprite) -> ShaderManager.removeShader(sprite),
-			setParam: (name:String, param:String, val:Dynamic) -> ShaderManager.setShaderParam(name, param, val),
-			list: () -> ShaderManager.getAvailableShaders(),
-			reload: (name:String) -> ShaderManager.reloadShader(name)
-		});
+		interp.variables.set('ShaderManager', shaders.ShaderManager);
+		interp.variables.set('WaveEffect',    shaders.WaveEffect);
+		interp.variables.set('WiggleEffect',  shaders.WiggleEffect);
 	}
 
-	// ─── NUEVO: Ventana ────────────────────────────────────────────────────────
+	// ─── Window ───────────────────────────────────────────────────────────────
 
-	/**
-	 * Expone el objeto `window` — control de la ventana del juego.
-	 *
-	 * ─── Uso en scripts ────────────────────────────────────────────────────────
-	 *
-	 *   window.hide();                // Oculta la ventana (el proceso sigue)
-	 *   window.show();                // Muestra la ventana
-	 *   window.setVisible(false);     // Alias de hide/show
-	 *   window.setOpacity(0.5);       // Opacidad de ventana OS (0.0-1.0)
-	 *   window.setGameAlpha(0.0);     // Fade del contenido del juego (portable)
-	 *   window.toggleFullscreen();    // Alternar pantalla completa
-	 *   window.setFullscreen(true);   // Establecer pantalla completa
-	 *   window.minimize();            // Minimizar
-	 *   window.restore();             // Restaurar
-	 *   window.center();              // Centrar en pantalla
-	 *   window.setSize(w, h);         // Cambiar tamaño
-	 *   window.setPosition(x, y);     // Mover ventana
-	 *   window.setBounds(x,y,w,h);    // Mover y redimensionar
-	 *   window.setTitle('Mi Mod');    // Cambiar título
-	 *   window.width                  // Ancho actual
-	 *   window.height                 // Alto actual
-	 *   window.isFullscreen           // ¿Pantalla completa?
-	 *   window.isVisible              // ¿Visible?
-	 *   window.aspectRatio            // Relación de aspecto
-	 */
 	static function exposeWindow(interp:Interp):Void
 	{
-		interp.variables.set('WindowManager', WindowManager);
-
-		interp.variables.set('window', {
-			// ── Visibilidad ────────────────────────────────────────────────────
-			hide: () -> WindowManager.hide(),
-			show: () -> WindowManager.show(),
-			setVisible: (v:Bool) -> WindowManager.setWindowVisible(v),
-			// ── Opacidad ──────────────────────────────────────────────────────
-			setOpacity: (a:Float) -> WindowManager.setWindowOpacity(a),
-			setGameAlpha: (a:Float) -> WindowManager.setGameAlpha(a),
-			// ── Fullscreen ────────────────────────────────────────────────────
-			toggleFullscreen: () -> WindowManager.toggleFullscreen(),
-			setFullscreen: (v:Bool) ->
-			{
-				FlxG.fullscreen = v;
-			},
-			// ── Ventana ───────────────────────────────────────────────────────
-			minimize: () -> WindowManager.minimize(),
-			restore: () -> WindowManager.restore(),
-			center: () -> WindowManager.centerOnScreen(),
-			setSize: (w:Int, h:Int) -> {
-				#if !html5
-				if (Application.current?.window != null)
-					Application.current.window.resize(w, h);
-				#end
-			},
-			setPosition: (x:Int, y:Int) -> {
-				#if !html5
-				if (Application.current?.window != null)
-					Application.current.window.move(x, y);
-				#end
-			},
-			setBounds: (x:Int, y:Int, w:Int, h:Int) -> WindowManager.setWindowBounds(x, y, w, h),
-			setTitle: (t:String) -> {
-				#if !html5
-				if (Application.current?.window != null)
-					Application.current.window.title = t;
-				#end
-			},
-			// ── Propiedades (read-only) ────────────────────────────────────────
-			// Nota: los objetos anónimos de Haxe no soportan getters,
-			// así que se exponen como funciones. En scripts: window.width()
-			width:        () -> WindowManager.windowWidth,
-			height:       () -> WindowManager.windowHeight,
-			isFullscreen: () -> WindowManager.isFullscreen,
-			isVisible:    () -> WindowManager.isWindowVisible,
-			aspectRatio:  () -> WindowManager.aspectRatio
+		interp.variables.set('Window', {
+			setTitle:  function(t:String) { try { openfl.Lib.application.window.title = t; } catch(_) {} },
+			getTitle:  function():String  { try { return openfl.Lib.application.window.title; } catch(_) { return ''; } },
+			setFPS:    function(fps:Int)  { FlxG.updateFramerate = fps; FlxG.drawFramerate = fps; },
+			getFPS:    function():Int     { return FlxG.updateFramerate; }
 		});
 	}
 
-	// ─── NUEVO: Visibilidad de sprites ─────────────────────────────────────────
+	// ─── Visibility ───────────────────────────────────────────────────────────
 
-	/**
-	 * Expone el objeto `visibility` — control de visibilidad de sprites y cámaras.
-	 *
-	 * ─── Uso en scripts ────────────────────────────────────────────────────────
-	 *
-	 *   // Spotlight: sólo bf visible, fondo negro semitransparente
-	 *   visibility.beginSpotlight([bf], true, 0.85);
-	 *
-	 *   // Cambiar qué sprite está en el spotlight sin reiniciarlo
-	 *   visibility.updateSpotlight([dad]);
-	 *
-	 *   // Añadir un sprite al spotlight activo
-	 *   visibility.addToSpotlight(dialogBox);
-	 *
-	 *   // Terminar spotlight (restaura todas las visibilidades)
-	 *   visibility.endSpotlight();
-	 *
-	 *   // ¿Spotlight activo?
-	 *   if (visibility.spotlightActive) { ... }
-	 *
-	 *   // Ocultar/mostrar todos los sprites de una cámara
-	 *   visibility.setCameraVisible(FlxG.camera, false); // ocultar HUD
-	 *   visibility.setCameraVisible(FlxG.camera, true);  // mostrar HUD
-	 *
-	 *   // Ocultar todas las cámaras excepto una
-	 *   visibility.setOtherCamerasVisible(myCam, false);
-	 *
-	 *   // Ocultar un sprite individual
-	 *   visibility.hide(sprite);
-	 *   visibility.show(sprite);
-	 *   visibility.toggle(sprite);
-	 *
-	 *   // Fade in/out de un sprite (usa FlxTween)
-	 *   visibility.fadeOut(sprite, 0.5);   // fadeOut en 0.5s
-	 *   visibility.fadeIn(sprite, 0.5);    // fadeIn en 0.5s
-	 */
 	static function exposeVisibility(interp:Interp):Void
 	{
-		interp.variables.set('visibility', {
-			// ── Spotlight ─────────────────────────────────────────────────────
-			beginSpotlight: (sprites:Array<Dynamic>, blackBg:Bool = false, bgAlpha:Float = 0.85) ->
-			{
-				var casted:Array<FlxSprite> = [for (s in sprites) Std.downcast(s, FlxSprite)].filter(s -> s != null);
-				WindowManager.beginSpotlight(casted, blackBg, bgAlpha);
-			},
-			updateSpotlight: (sprites:Array<Dynamic>) ->
-			{
-				var casted:Array<FlxSprite> = [for (s in sprites) Std.downcast(s, FlxSprite)].filter(s -> s != null);
-				WindowManager.updateSpotlight(casted);
-			},
-			addToSpotlight: (sprite:FlxSprite) -> WindowManager.addToSpotlight(sprite),
-			removeFromSpotlight: (sprite:FlxSprite) -> WindowManager.removeFromSpotlight(sprite),
-			endSpotlight: () -> WindowManager.endSpotlight(),
-			spotlightActive: () -> WindowManager.spotlightActive,
-
-			// ── Por cámara ────────────────────────────────────────────────────
-			setCameraVisible: (cam:flixel.FlxCamera, v:Bool) -> WindowManager.setCameraLayerVisible(cam, v),
-			setOtherCamerasVisible: (exceptCam:flixel.FlxCamera, v:Bool) -> WindowManager.setOtherCamerasVisible(exceptCam, v),
-
-			// ── Sprite individual ─────────────────────────────────────────────
-			hide: (sprite:FlxSprite) ->
-			{
-				if (sprite != null)
-					sprite.visible = false;
-			},
-			show: (sprite:FlxSprite) ->
-			{
-				if (sprite != null)
-					sprite.visible = true;
-			},
-			toggle: (sprite:FlxSprite) ->
-			{
-				if (sprite != null)
-					sprite.visible = !sprite.visible;
-			},
-
-			// ── Fade ──────────────────────────────────────────────────────────
-			fadeOut: (sprite:FlxSprite, duration:Float = 1.0, ?onComplete:Void->Void) ->
-			{
-				if (sprite == null)
-					return;
-				flixel.tweens.FlxTween.tween(sprite, {alpha: 0.0}, duration, {
-					onComplete: function(_)
-					{
-						sprite.visible = false;
-						if (onComplete != null)
-							onComplete();
-					}
-				});
-			},
-			fadeIn: (sprite:FlxSprite, duration:Float = 1.0, ?onComplete:Void->Void) ->
-			{
-				if (sprite == null)
-					return;
-				sprite.visible = true;
-				sprite.alpha = 0.0;
-				flixel.tweens.FlxTween.tween(sprite, {alpha: 1.0}, duration, {
-					onComplete: function(_)
-					{
-						if (onComplete != null)
-							onComplete();
-					}
-				});
-			},
-
-			// ── Ocultar todo excepto lista ─────────────────────────────────────
-			hideAllExcept: (sprites:Array<Dynamic>) ->
-			{
-				if (FlxG.state == null)
-					return;
-				final casted:Array<FlxSprite> = [for (s in sprites) Std.downcast(s, FlxSprite)].filter(s -> s != null);
-				for (obj in FlxG.state.members)
-				{
-					if (obj == null)
-						continue;
-					final spr = Std.downcast(obj, FlxSprite);
-					if (spr != null)
-						spr.visible = casted.contains(spr);
-				}
-			},
-
-			// ── Mostrar todos ─────────────────────────────────────────────────
-			showAll: () ->
-			{
-				if (FlxG.state == null)
-					return;
-				for (obj in FlxG.state.members)
-					if (obj != null)
-						obj.visible = true;
-			}
-		});
+		interp.variables.set('show', function(spr:Dynamic) { if (spr != null) { spr.visible = true;  spr.active = true; }});
+		interp.variables.set('hide', function(spr:Dynamic) { if (spr != null) { spr.visible = false; spr.active = false; }});
 	}
 
-	// ─── Utilidades ───────────────────────────────────────────────────────────
+	// ─── Utils ────────────────────────────────────────────────────────────────
 
 	static function exposeUtils(interp:Interp):Void
 	{
-		interp.variables.set('Math', Math);
-		interp.variables.set('Std', Std);
 		interp.variables.set('StringTools', StringTools);
-		interp.variables.set('Paths', Paths);
-		interp.variables.set('Json', haxe.Json);
-		interp.variables.set('Type', Type);
-		interp.variables.set('Reflect', Reflect);
-		interp.variables.set('Array', Array);
-
-		// ── Helpers de tiempo ────────────────────────────────────────────────
-		interp.variables.set('haxe', {
-			Timer: haxe.Timer,
-			Json: haxe.Json
-		});
-
-		// ── CoolUtil / helpers del engine ────────────────────────────────────
-		interp.variables.set('CoolUtil', extensions.CoolUtil);
-		interp.variables.set('Mathf', extensions.Mathf);
+		interp.variables.set('Std',         Std);
+		interp.variables.set('Math',        Math);
+		interp.variables.set('Json',        haxe.Json);
+		interp.variables.set('Reflect',     Reflect);
+		interp.variables.set('Type',        Type);
+		interp.variables.set('trace',       function(v:Dynamic) trace('[Script] $v'));
+		interp.variables.set('print',       function(v:Dynamic) trace('[Script] $v'));
 	}
 
-	// ─── Eventos ──────────────────────────────────────────────────────────────
+	// ─── Events ───────────────────────────────────────────────────────────────
 
 	static function exposeEvents(interp:Interp):Void
 	{
-		// registerEvent('NombreEvento', function(v1, v2, time) { ... })
-		interp.variables.set('registerEvent', function(name:String, handler:Dynamic):Void
-		{
-			funkin.scripting.EventManager.registerCustomEvent(name, function(evts:Array<funkin.scripting.EventManager.EventData>):Bool
-			{
-				final e = evts[0];
-				return handler(e.value1, e.value2, e.time) == true;
-			});
-			trace('[Script] Evento registrado: "$name"');
-		});
-
-		// fireEvent('NombreEvento', v1, v2)
-		interp.variables.set('fireEvent', function(name:String, v1:String = '', v2:String = ''):Void funkin.scripting.EventManager.fireEvent(name, v1, v2));
+		interp.variables.set('EventManager', funkin.scripting.EventManager);
 	}
 
 	// ─── Debug ────────────────────────────────────────────────────────────────
 
 	static function exposeDebug(interp:Interp):Void
 	{
-		interp.variables.set('trace', (v:Dynamic) -> trace('[Script] $v'));
-		interp.variables.set('debugLog', (v:Dynamic) -> trace('[DEBUG]  $v'));
-		interp.variables.set('warn', (v:Dynamic) -> trace('[WARN]   $v'));
-		interp.variables.set('error', (v:Dynamic) -> trace('[ERROR]  $v'));
-
-		// print() — alias amigable de trace (familiaridad con Lua)
-		interp.variables.set('print', (v:Dynamic) -> trace('[Script] $v'));
-	}
-
-	// ─── NUEVO: Autocompletado ────────────────────────────────────────────────
-
-	/**
-	 * Expone el objeto `__api` con documentación de toda la API en tiempo de ejecución.
-	 *
-	 * ─── Uso en scripts ────────────────────────────────────────────────────────
-	 *   __api.help();           // Imprime todas las categorías y variables
-	 *   __api.help('window');   // Imprime métodos del objeto 'window'
-	 *   __api.list();           // Devuelve array de todas las variables
-	 */
-	static function exposeAutoComplete(interp:Interp):Void
-	{
-		final allVars = interp.variables;
-
-		interp.variables.set('__api', {
-			// ── help([category]) ──────────────────────────────────────────────
-			help: function(?category:String):Void
-			{
-				if (category == null)
-				{
-					trace('=== Cool Engine Script API ===');
-					trace('');
-					trace('FLIXEL CORE:');
-					trace('  FlxG         — Motor principal de Flixel (cámaras, sonido, estado, mouse, teclado)');
-					trace('  FlxSprite    — Sprite básico con animaciones');
-					trace('  FlxText      — Texto con formato');
-					trace('  FlxSound     — Sonido/música');
-					trace('  FlxCamera    — Cámara (zoom, pos, shake, filtros)');
-					trace('  FlxTween     — Tweens de propiedades');
-					trace('  FlxEase      — Funciones de easing');
-					trace('  FlxTimer     — Temporizadores');
-					trace('  FlxMath      — Utilidades matemáticas');
-					trace('  FlxPoint     — Vector 2D');
-					trace('  FunkinSprite — Sprite unificado (sparrow/atlas/packer)');
-					trace('');
-					trace('GAMEPLAY:');
-					trace('  game         — PlayState.instance (estado de juego actual)');
-					trace('  PlayState    — Clase del estado de juego');
-					trace('  Conductor    — BPM, beats, steps, tiempo de canción');
-					trace('  Character    — Clase de personaje');
-					trace('  Stage        — Clase de escenario');
-					trace('  Song         — Datos de la canción');
-					trace('  NoteManager  — Gestión de notas');
-					trace('  ScoreManager — Puntuación, rating, FC');
-					trace('  EventManager — Eventos del chart');
-					trace('');
-					trace('VENTANA (objeto `window`):');
-					trace('  window.hide()            — Ocultar ventana');
-					trace('  window.show()            — Mostrar ventana');
-					trace('  window.setOpacity(0.5)   — Opacidad OS (0.0-1.0)');
-					trace('  window.setGameAlpha(0.0) — Alpha del contenido del juego');
-					trace('  window.toggleFullscreen() — Alternar pantalla completa');
-					trace('  window.minimize()         — Minimizar');
-					trace('  window.center()           — Centrar en pantalla');
-					trace('  window.setTitle("Texto") — Cambiar título');
-					trace('  window.width / .height   — Tamaño actual');
-					trace('');
-					trace('VISIBILIDAD (objeto `visibility`):');
-					trace('  visibility.beginSpotlight([sprite1, sprite2], blackBg, alpha)');
-					trace('            — Sólo los sprites dados son visibles');
-					trace('  visibility.updateSpotlight([otroSprite])');
-					trace('            — Cambiar sprites del spotlight activo');
-					trace('  visibility.addToSpotlight(sprite)  — Añadir al spotlight');
-					trace('  visibility.endSpotlight()          — Restaurar todo');
-					trace('  visibility.fadeOut(sprite, secs)   — Fade out con tween');
-					trace('  visibility.fadeIn(sprite, secs)    — Fade in con tween');
-					trace('  visibility.hideAllExcept([sprites]) — Ocultar todo excepto lista');
-					trace('  visibility.showAll()               — Mostrar todos');
-					trace('  visibility.setCameraVisible(cam, bool)');
-					trace('');
-					trace('SHADERS (objeto `shaders`):');
-					trace('  shaders.apply(sprite, "shaderName") — Aplicar shader');
-					trace('  shaders.remove(sprite)              — Quitar shader');
-					trace('  shaders.setParam("name","param",v)  — Cambiar parámetro');
-					trace('  shaders.list()                      — Shaders disponibles');
-					trace('');
-					trace('UTILIDADES:');
-					trace('  Math / Std / StringTools / Paths / Json / Type / Reflect');
-					trace('  CoolUtil / Mathf');
-					trace('');
-					trace('EVENTOS:');
-					trace('  registerEvent("nombre", fn(v1,v2,time)) — Registrar evento del chart');
-					trace('  fireEvent("nombre", v1, v2)             — Disparar evento manualmente');
-					trace('');
-					trace('DEBUG:');
-					trace('  trace(v) / print(v) / debugLog(v) / warn(v) / error(v)');
-					trace('');
-					trace('AUTOCOMPLETADO:');
-					trace('  __api.help()           — Esta ayuda');
-					trace('  __api.help("window")   — Ayuda detallada de ventana');
-					trace('  __api.list()           — Lista de todas las variables');
-					trace('==============================');
-				}
-				else
-				{
-					switch (category.toLowerCase())
-					{
-						case 'window':
-							trace('=== window ===');
-							trace('  .hide()                  — Ocultar ventana del OS');
-							trace('  .show()                  — Mostrar ventana del OS');
-							trace('  .setVisible(bool)        — Alias hide/show');
-							trace('  .setOpacity(float)       — 0.0-1.0 (requiere CppAPI en Windows)');
-							trace('  .setGameAlpha(float)     — 0.0-1.0 (portable, afecta contenido)');
-							trace('  .toggleFullscreen()      — Alternar pantalla completa');
-							trace('  .setFullscreen(bool)     — Establecer pantalla completa');
-							trace('  .minimize()              — Minimizar ventana');
-							trace('  .restore()               — Restaurar ventana minimizada');
-							trace('  .center()                — Centrar en monitor principal');
-							trace('  .setSize(w, h)           — Cambiar tamaño (respeta min)');
-							trace('  .setPosition(x, y)       — Mover ventana');
-							trace('  .setBounds(x,y,w,h)      — Mover y redimensionar');
-							trace('  .setTitle(str)           — Cambiar título de la ventana');
-							trace('  .width (get)             — Ancho actual en px');
-							trace('  .height (get)            — Alto actual en px');
-							trace('  .isFullscreen (get)      — ¿Pantalla completa?');
-							trace('  .isVisible (get)         — ¿Ventana visible?');
-							trace('  .aspectRatio (get)       — width/height');
-
-						case 'visibility':
-							trace('=== visibility ===');
-							trace('  .beginSpotlight(sprites, [blackBg=false], [bgAlpha=0.85])');
-							trace('       Oculta todo excepto `sprites`. blackBg añade overlay negro.');
-							trace('  .updateSpotlight(sprites)');
-							trace('       Cambia qué sprites están en el spotlight sin reiniciarlo.');
-							trace('  .addToSpotlight(sprite)    — Añadir sprite al spotlight activo');
-							trace('  .removeFromSpotlight(spr)  — Quitar sprite del spotlight');
-							trace('  .endSpotlight()            — Restaurar visibilidades originales');
-							trace('  .spotlightActive (get)     — ¿Spotlight activo?');
-							trace('  .setCameraVisible(cam, v)  — Ocultar/mostrar capa de cámara');
-							trace('  .setOtherCamerasVisible(cam, v) — Afectar todas excepto una');
-							trace('  .hide(sprite)              — sprite.visible = false');
-							trace('  .show(sprite)              — sprite.visible = true');
-							trace('  .toggle(sprite)            — Alternar visibilidad');
-							trace('  .fadeOut(sprite, secs, [cb]) — Tween alpha 1→0, luego visible=false');
-							trace('  .fadeIn(sprite, secs, [cb])  — visible=true, tween alpha 0→1');
-							trace('  .hideAllExcept(sprites)    — Ocultar todo excepto lista');
-							trace('  .showAll()                 — Mostrar todos los sprites del state');
-
-						default:
-							trace('Categorías disponibles: window, visibility');
-							trace('O llama __api.help() sin argumentos para la ayuda completa.');
-					}
-				}
-			},
-
-			// ── list() ────────────────────────────────────────────────────────
-			list: function():Array<String>
-			{
-				var result:Array<String> = [];
-				for (key in allVars.keys())
-					result.push(key);
-				result.sort((a, b) -> a < b ? -1 : a > b ? 1 : 0);
-				return result;
-			},
-
-			// ── exists(name) ──────────────────────────────────────────────────
-			exists: function(name:String):Bool return allVars.exists(name),
-
-			// ── version ───────────────────────────────────────────────────────
-			version: '2.0.0',
-			engine: 'Cool Engine'
+		interp.variables.set('debug', {
+			log:    function(msg:Dynamic) trace('[ScriptDebug] $msg'),
+			warn:   function(msg:Dynamic) trace('[ScriptWARN] $msg'),
+			error:  function(msg:Dynamic) trace('[ScriptERROR] $msg'),
+			assert: function(cond:Bool, msg:String) { if (!cond) trace('[ScriptASSERT FAIL] $msg'); },
 		});
 	}
-	#end
+
+	#end // HSCRIPT_ALLOWED
+	// ── FlxColor proxy ───────────────────────────────────────────────────────
+	// FlxColor is an abstract(Int) so it cannot be passed as a plain value to
+	// HScript. We expose a Dynamic object with all constants + factory methods.
+	static function _flxColorProxy():Dynamic
+	{
+		return {
+			// Constants
+			TRANSPARENT : (flixel.util.FlxColor.TRANSPARENT  : Int),
+			WHITE       : (flixel.util.FlxColor.WHITE        : Int),
+			BLACK       : (flixel.util.FlxColor.BLACK        : Int),
+			RED         : (flixel.util.FlxColor.RED          : Int),
+			GREEN       : (flixel.util.FlxColor.GREEN        : Int),
+			BLUE        : (flixel.util.FlxColor.BLUE         : Int),
+			YELLOW      : (flixel.util.FlxColor.YELLOW       : Int),
+			ORANGE      : (flixel.util.FlxColor.ORANGE       : Int),
+			CYAN        : (flixel.util.FlxColor.CYAN         : Int),
+			MAGENTA     : (flixel.util.FlxColor.MAGENTA      : Int),
+			PURPLE      : (flixel.util.FlxColor.PURPLE       : Int),
+			PINK        : (flixel.util.FlxColor.PINK         : Int),
+			BROWN       : (flixel.util.FlxColor.BROWN        : Int),
+			GRAY        : (flixel.util.FlxColor.GRAY         : Int),
+			LIME        : (flixel.util.FlxColor.LIME         : Int),
+			// Factory methods
+			fromRGB     : function(r:Int, g:Int, b:Int, ?a:Int):Int {
+				var c = flixel.util.FlxColor.fromRGB(r, g, b, a == null ? 255 : a);
+				return (c : Int);
+			},
+			fromHSB     : function(h:Float, s:Float, b:Float, ?a:Float):Int {
+				var c = flixel.util.FlxColor.fromHSB(h, s, b, a == null ? 1.0 : a);
+				return (c : Int);
+			},
+			fromHSL     : function(h:Float, s:Float, l:Float, ?a:Float):Int {
+				var c = flixel.util.FlxColor.fromHSL(h, s, l, a == null ? 1.0 : a);
+				return (c : Int);
+			},
+			fromString  : function(s:String):Int {
+				var c = flixel.util.FlxColor.fromString(s);
+				return (c : Int);
+			},
+			fromInt     : function(v:Int):Int return v,
+			toString    : function(c:Int):String {
+				return (c : flixel.util.FlxColor).toHexString(true);
+			},
+			interpolate : function(a:Int, b:Int, t:Float):Int {
+				var c = flixel.util.FlxColor.interpolate((a:flixel.util.FlxColor), (b:flixel.util.FlxColor), t);
+				return (c : Int);
+			}
+		};
+	}
+
+	// ── FlxEase proxy ────────────────────────────────────────────────────────
+	static function _flxEaseProxy():Dynamic
+	{
+		return {
+			linear     : FlxEase.linear,
+			quadIn     : FlxEase.quadIn,     quadOut    : FlxEase.quadOut,    quadInOut  : FlxEase.quadInOut,
+			cubeIn     : FlxEase.cubeIn,     cubeOut    : FlxEase.cubeOut,    cubeInOut  : FlxEase.cubeInOut,
+			quartIn    : FlxEase.quartIn,    quartOut   : FlxEase.quartOut,   quartInOut : FlxEase.quartInOut,
+			quintIn    : FlxEase.quintIn,    quintOut   : FlxEase.quintOut,   quintInOut : FlxEase.quintInOut,
+			sineIn     : FlxEase.sineIn,     sineOut    : FlxEase.sineOut,    sineInOut  : FlxEase.sineInOut,
+			bounceIn   : FlxEase.bounceIn,   bounceOut  : FlxEase.bounceOut,  bounceInOut: FlxEase.bounceInOut,
+			circIn     : FlxEase.circIn,     circOut    : FlxEase.circOut,    circInOut  : FlxEase.circInOut,
+			expoIn     : FlxEase.expoIn,     expoOut    : FlxEase.expoOut,    expoInOut  : FlxEase.expoInOut,
+			backIn     : FlxEase.backIn,     backOut    : FlxEase.backOut,    backInOut  : FlxEase.backInOut,
+			elasticIn  : FlxEase.elasticIn,  elasticOut : FlxEase.elasticOut, elasticInOut: FlxEase.elasticInOut,
+			smoothStepIn: FlxEase.smoothStepIn, smoothStepOut: FlxEase.smoothStepOut, smootherStepIn: FlxEase.smootherStepIn, smootherStepOut: FlxEase.smootherStepOut
+		};
+	}
+
+	// ── FlxPoint proxy ────────────────────────────────────────────────────────
+	static function _flxPointProxy():Dynamic
+	{
+		return {
+			get     : function(x:Float = 0, y:Float = 0):flixel.math.FlxPoint return flixel.math.FlxPoint.get(x, y),
+			weak    : function(x:Float = 0, y:Float = 0):flixel.math.FlxPoint return flixel.math.FlxPoint.weak(x, y),
+			floor   : function(p:flixel.math.FlxPoint):flixel.math.FlxPoint   return p.floor(),
+			ceil    : function(p:flixel.math.FlxPoint):flixel.math.FlxPoint    return p.ceil(),
+			round   : function(p:flixel.math.FlxPoint):flixel.math.FlxPoint   return p.round()
+		};
+	}
+
+	// ── FlxRect proxy ────────────────────────────────────────────────────────
+	static function _flxRectProxy():Dynamic
+	{
+		return {
+			get : function(x:Float = 0, y:Float = 0, w:Float = 0, h:Float = 0):flixel.math.FlxRect
+				return flixel.math.FlxRect.get(x, y, w, h),
+			weak: function(x:Float = 0, y:Float = 0, w:Float = 0, h:Float = 0):flixel.math.FlxRect
+				return flixel.math.FlxRect.weak(x, y, w, h)
+		};
+	}
+
 }

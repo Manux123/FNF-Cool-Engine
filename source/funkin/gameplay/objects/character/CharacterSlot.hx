@@ -50,6 +50,9 @@ class CharacterSlot
 		trace('[CharacterSlot] Creado slot $index: ${charData.name} en (${charData.x}, ${charData.y})');
 	}
 	
+	/** Dirección → sufijo de animación. Static para evitar alloc por nota golpeada. */
+	static final NOTES_ANIM:Array<String> = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
+
 	/**
 	 * Hacer cantar al personaje
 	 */
@@ -58,8 +61,7 @@ class CharacterSlot
 		if (!isActive || !character.canSing || character.isPlayingSpecialAnim())
 			return;
 		
-		var notesAnim:Array<String> = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
-		var animName:String = 'sing' + notesAnim[noteData] + altAnim;
+		var animName:String = 'sing' + NOTES_ANIM[noteData] + altAnim;
 		
 		// Fallback si no existe la animación alterna.
 		// NOTA: Para FunkinSprite/FlxAnimate usamos animOffsets como fuente de verdad
@@ -67,7 +69,7 @@ class CharacterSlot
 		// no las del sistema FlxAnimate interno.
 		if (!character.animOffsets.exists(animName))
 		{
-			animName = 'sing' + notesAnim[noteData];
+			animName = 'sing' + NOTES_ANIM[noteData];
 		}
 		
 		character.playAnim(animName, true);
@@ -88,8 +90,7 @@ class CharacterSlot
 		if (!isActive)
 			return;
 		
-		var notesAnim:Array<String> = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
-		var animName:String = 'sing' + notesAnim[noteData] + 'miss';
+		var animName:String = 'sing' + NOTES_ANIM[noteData] + 'miss';
 		
 		// Solo reproducir si existe la animación (usando animOffsets como fuente de verdad)
 		if (character.animOffsets.exists(animName))

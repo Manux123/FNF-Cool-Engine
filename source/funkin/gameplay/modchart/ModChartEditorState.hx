@@ -1262,8 +1262,7 @@ class ModChartEditorState extends FlxState
 	{
 		#if sys
 		try {
-			var p = Paths.resolve('modcharts/${manager.data.song.toLowerCase()}.json');
-			sys.FileSystem.createDirectory(Paths.resolve('modcharts'));
+			var p = Paths.ensureDir(Paths.resolveWrite('modcharts/${manager.data.song.toLowerCase()}.json'));
 			sys.io.File.saveContent(p, manager.toJson());
 			setStatus('✓ Guardado: $p');
 		} catch (e:Dynamic) { setStatus("Error: " + e); }

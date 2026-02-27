@@ -340,7 +340,19 @@ class StickerTransition
 		}
 
 		var sticker = new FlxSprite();
-		sticker.loadGraphic(graphic);
+		try
+		{
+			sticker.loadGraphic(graphic);
+		}
+		catch (e:Dynamic)
+		{
+			// El bitmap fue dispuesto (p.ej. por PlayState.destroy) — invalidar cache
+			trace('[StickerTransition] ⚠️ loadGraphic falló ($cacheKey): $e — invalidando cache');
+			graphicsCache.remove(cacheKey);
+			cacheLoaded = false;
+			sticker.destroy();
+			return null;
+		}
 
 		// ✅ La posición se asigna en generateStickers()
 
@@ -543,6 +555,17 @@ class StickerTransition
 
 		trace('[StickerTransition] Cancelled');
 		finish();
+	}
+
+	/**
+	 * Invalida el cache de gráficos para que se recarguen en el próximo start().
+	 * Llamar desde PlayState.destroy() para evitar crash por bitmaps dispuestos.
+	 */
+	public static function invalidateCache():Void
+	{
+		graphicsCache.clear();
+		cacheLoaded = false;
+		trace('[StickerTransition] Cache invalidado — se recargará en el próximo start()');
 	}
 
 	/**

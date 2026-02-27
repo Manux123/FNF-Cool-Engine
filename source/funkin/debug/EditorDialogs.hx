@@ -175,21 +175,17 @@ class FileManagerDialog extends FlxTypedGroup<FlxSprite>
 	{
 		#if sys
 		var fileName = sourcePath.split("/").pop().split("\\").pop();
-		var destFolder = Paths.resolve('stages/${stageName}/${fileType}s');
+		var destFolder = Paths.resolveWrite('stages/${stageName}/${fileType}s');
 		var destPath = '$destFolder/$fileName';
-		
-		// Crear carpeta si no existe
-		if (!FileSystem.exists(destFolder))
-		{
-			FileSystem.createDirectory(destFolder);
-		}
-		
+
+		Paths.ensureDir(destPath);
+
 		// Copiar archivo
 		try
 		{
 			File.copy(sourcePath, destPath);
 			trace('File copied to: $destPath');
-			
+
 			if (onFileSelected != null)
 				onFileSelected(fileName);
 		}

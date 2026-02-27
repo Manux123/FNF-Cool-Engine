@@ -60,6 +60,40 @@ class NoteTypeManager
 
 	// ─── DISCOVERY ───────────────────────────────────────────────────────────
 
+	/** Runtime registry for script-registered note types (ScriptAPI compat). */
+	static var _runtimeTypes:Map<String, Dynamic> = [];
+
+	/** Registers a note type at runtime from a script. */
+	public static function register(name:String, cfg:Dynamic):Void
+	{
+		_runtimeTypes.set(name, cfg);
+		_types = null;
+		trace('[NoteTypeManager] Tipo "$name" registrado en runtime.');
+	}
+
+	/** Removes a runtime-registered note type. */
+	public static function unregister(name:String):Void
+	{
+		_runtimeTypes.remove(name);
+		_types = null;
+	}
+
+	/** Returns true if the type exists (built-in or runtime). */
+	public static function exists(name:String):Bool
+	{
+		if (_runtimeTypes.exists(name)) return true;
+		return getTypes().indexOf(name) >= 0;
+	}
+
+	/** Returns all available note types (built-in + runtime). */
+	public static function getAll():Array<String>
+	{
+		final base = getTypes().copy();
+		for (k in _runtimeTypes.keys())
+			if (base.indexOf(k) < 0) base.push(k);
+		return base;
+	}
+
 	/** Devuelve los nombres de todos los tipos disponibles (sin "normal"). */
 	public static function getTypes():Array<String>
 	{

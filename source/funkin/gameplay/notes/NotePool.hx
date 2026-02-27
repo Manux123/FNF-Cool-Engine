@@ -1,176 +1,50 @@
 package funkin.gameplay.notes;
 
 /**
- * NotePool — object pool de notas sin dependencia en FlxPool.
+ * NotePool — STUB. El pool real está en NoteRenderer (instancia por canción).
  *
- * ─── Por qué no FlxPool ──────────────────────────────────────────────────────
- * FlxPool<Note> requiere que Note tenga un constructor sin parámetros Y llama
- * internamente a `new Note()` cuando el pool está vacío, lo que ignora los
- * parámetros de `get()`. Usar un Array<Note> propio da control total.
+ * ¿Por qué existe este stub?
+ *  - La versión anterior tenía DOS sistemas de pool simultáneos:
+ *      1. NotePool (estático, FlxTypedSpriteGroup) — inicializado pero NUNCA usado para
+ *         spawning real. Sus notas prewarm'd eran RAM desperdiciada.
+ *      2. NoteRenderer.notePool/sustainPool (por instancia, Array<Note>) — el que SÍ
+ *         maneja todas las notas en gameplay via getNote()/recycleNote().
+ *  - Tener dos pools duplicaba GC pressure: 32 Note prewarm'd × 2 grupos = 64 objetos
+ *    con texturas que nunca se utilizaban, más el overhead de FlxTypedSpriteGroup.
+ *  - Este stub mantiene la API para que OptimizationManager y PlayState compilen
+ *    sin cambios mientras se elimina el pool duplicado.
  *
- * ─── Optimizaciones ──────────────────────────────────────────────────────────
- * • `prewarm()` sin arrays intermedios — push directo al pool.
- * • `put()` no consulta `pool.length` (O(n) en Array) — usa contador propio.
- * • `get()` / `put()` son las únicas funciones en el hot path; sin allocs.
+ * El pool real se puede consultar vía NoteRenderer.getPoolStats().
  */
 class NotePool
 {
-	static inline var INITIAL_SIZE : Int = 16; // Reducido: NoteRenderer tiene su propio pool; esto es solo precarga mínima
-	static inline var MAX_SIZE     : Int = 64;  // Reducido: suficiente para cualquier canción FNF sin desperdiciar RAM
-
-	static var notePool    : Array<Note> = [];
-	static var sustainPool : Array<Note> = [];
-
-	static var noteCount    : Int  = 0;
-	static var sustainCount : Int  = 0;
-
-	// Stats
+	// Stats delegados al renderer activo (solo lectura)
 	public static var totalCreated  : Int = 0;
 	public static var totalRecycled : Int = 0;
-	public static var inUse         : Int = 0;
-	public static var hits          : Int = 0;
-	public static var misses        : Int = 0;
 
-	static var initialized : Bool = false;
+	public static var inUse(get, never) : Int;
+	static inline function get_inUse():Int return 0;
 
-	// ─── Init ─────────────────────────────────────────────────────────────────
+	/** No-op: el pool real es NoteRenderer, gestionado por NoteManager. */
+	public static inline function init():Void {}
 
-	public static function init():Void
+	/** No-op: NoteRenderer limpia su pool interno al destruirse. */
+	public static inline function clear():Void {}
+
+	/** No-op. */
+	public static inline function destroy():Void {}
+
+	/** No-op. */
+	public static inline function forceGC():Void
 	{
-		if (initialized) return;
-		prewarm(INITIAL_SIZE);
-		initialized = true;
-
-	}
-
-	/** Crea `count` notas y las devuelve al pool directamente, sin arrays intermedios. */
-	static function prewarm(count:Int):Void
-	{
-		final half = count >> 1; // count / 2
-
-		for (_ in 0...half)
-		{
-			notePool.push(new Note(0, 0, null, false, false));
-			noteCount++;
-			totalCreated++;
-		}
-		for (_ in 0...half)
-		{
-			sustainPool.push(new Note(0, 0, null, true, false));
-			sustainCount++;
-			totalCreated++;
-		}
-	}
-
-	// ─── Hot path ─────────────────────────────────────────────────────────────
-
-	/** Obtiene una nota del pool (o crea una nueva si está vacío). */
-	public static function get(strumTime:Float, noteData:Int, ?prevNote:Note,
-	                            sustainNote:Bool = false, mustHitNote:Bool = false):Note
-	{
-		if (!initialized) init();
-
-		final pool  = sustainNote ? sustainPool  : notePool;
-		final count = sustainNote ? sustainCount : noteCount;
-		var note : Note;
-
-		if (count > 0)
-		{
-			note = pool.pop();
-			if (sustainNote) sustainCount--; else noteCount--;
-			hits++;
-		}
-		else
-		{
-			note = new Note(0, 0, null, sustainNote, false);
-			totalCreated++;
-			misses++;
-		}
-
-		note.recycle(strumTime, noteData, prevNote, sustainNote, mustHitNote);
-		inUse++;
-		return note;
-	}
-
-	/** Devuelve una nota al pool. */
-	public static function put(note:Note):Void
-	{
-		if (!initialized || note == null) return;
-
-		note.prevNote = null;
-		note.kill();
-
-		if (note.isSustainNote)
-		{
-			if (sustainCount < MAX_SIZE) { sustainPool.push(note); sustainCount++; totalRecycled++; }
-			else note.destroy();
-		}
-		else
-		{
-			if (noteCount < MAX_SIZE) { notePool.push(note); noteCount++; totalRecycled++; }
-			else note.destroy();
-		}
-
-		if (inUse > 0) inUse--;
-	}
-
-	// ─── Gestión ──────────────────────────────────────────────────────────────
-
-	/** Limpia el pool (entre canciones). */
-	public static function clear():Void
-	{
-		// FIX: Destruir notas explícitamente antes de limpiar el array.
-		// Sin esto, las notas se vuelven huérfanas sin decrementar graphic.useCount,
-		// impidiendo que FlxG.bitmap libere las texturas entre canciones.
-		for (n in notePool)    if (n != null) n.destroy();
-		for (n in sustainPool) if (n != null) n.destroy();
-		notePool.resize(0);    noteCount    = 0;
-		sustainPool.resize(0); sustainCount = 0;
-		inUse  = 0;
-		hits   = 0;
-		misses = 0;
-		totalCreated = 0;
-		totalRecycled = 0;
-
-		// CRÍTICO: Marcar como no inicializado para que la próxima llamada a init()
-		// haga prewarm() con el curStage correcto de la nueva canción.
-		// NO llamar prewarm() aquí — el bitmap cache aún no está cargado para el
-		// nuevo stage, así que las notas creadas ahora tendrían texturas inválidas.
-		initialized = false;
-	}
-
-	/** Destruye completamente el pool (al salir del juego). */
-	public static function destroy():Void
-	{
-		for (n in notePool)    n.destroy();
-		for (n in sustainPool) n.destroy();
-		notePool.resize(0);    noteCount    = 0;
-		sustainPool.resize(0); sustainCount = 0;
-		initialized = false;
-	}
-
-	/** Fuerza GC y recrea el pool. Útil entre canciones largas. */
-	public static function forceGC():Void
-	{
-		for (n in notePool)    n.destroy();
-		for (n in sustainPool) n.destroy();
-		notePool.resize(0);
-		sustainPool.resize(0);
-		noteCount    = 0;
-		sustainCount = 0;
 		#if cpp  cpp.vm.Gc.run(true);  #end
 		#if hl   hl.Gc.major();        #end
-		prewarm(INITIAL_SIZE);
-
 	}
-
-	// ─── Stats ────────────────────────────────────────────────────────────────
 
 	public static function getStats():String
 	{
-		final eff = (hits + misses) > 0 ? Math.round(hits / (hits + misses) * 100) : 0;
-		return '[NotePool] Created=$totalCreated  InUse=$inUse  '
-		     + 'NormalPool=$noteCount  SustainPool=$sustainCount  '
-		     + 'Hits=$hits  Misses=$misses  Eff=$eff%';
+		// Las stats reales las reporta NoteRenderer vía NoteManager.getPoolStats()
+		// que OptimizationManager puede consultar si tiene ref a PlayState.
+		return '[NotePool] Delegado a NoteRenderer — ver NoteManager.getPoolStats()';
 	}
 }

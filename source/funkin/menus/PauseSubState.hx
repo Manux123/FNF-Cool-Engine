@@ -202,9 +202,15 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 				case "Exit to menu":
 					PlayState.isPlaying = false;
 					if (PlayState.isStoryMode)
-						StickerTransition.start(() -> StateTransition.switchState(new StoryMenuState()));
+						StickerTransition.start(() -> {
+							FlxG.sound.resume();
+							StateTransition.switchState(new StoryMenuState());
+						});
 					else
-						StickerTransition.start(() -> StateTransition.switchState(new FreeplayState()));
+						StickerTransition.start(() -> {
+							FlxG.sound.resume();
+							StateTransition.switchState(new FreeplayState());
+						});
 			}
 		}
 
@@ -228,10 +234,6 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 
 	override function destroy()
 	{
-		// ── 1. Cancelar todos los tweens sobre elementos visuales ANTES de que
-		//       super.destroy() libere los objetos subyacentes. Un tween activo
-		//       sobre un objeto ya destruido escribe en memoria libre → crash en
-		//       la 2ª apertura del pause menu.
 		if (bg != null)             { FlxTween.cancelTweensOf(bg);             bg = null; }
 		if (levelInfo != null)      { FlxTween.cancelTweensOf(levelInfo);      levelInfo = null; }
 		if (levelDifficulty != null){ FlxTween.cancelTweensOf(levelDifficulty); levelDifficulty = null; }
@@ -271,6 +273,10 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 
 		// ── 4. super.destroy() destruye todos los miembros restantes del grupo.
 		super.destroy();
+
+		// ── 5. Seguridad: si el substate se destruyó sin pasar por Resume/Exit,
+		//       el SoundManager global puede quedarse pausado indefinidamente.
+		FlxG.sound.resume();
 	}
 
 	// ─── Helpers privados ────────────────────────────────────────────────────

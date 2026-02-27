@@ -302,7 +302,7 @@ class Character extends FunkinSprite
 		var curAnimName = getCurAnimName();
 		var curAnimDone = isCurAnimFinished();
 
-		if (!curCharacter.startsWith('bf'))
+		if (!isPlayer)
 		{
 			if (curAnimName.startsWith(_singAnimPrefix))
 			{
@@ -369,23 +369,6 @@ class Character extends FunkinSprite
 
 			switch (curCharacter)
 			{
-				case 'gf' | 'gf-car' | 'gf-pixel' | 'gf-christmas' | 'gf-tankmen':
-					if (!hasCurAnim() || !getCurAnimName().startsWith(_singAnimPrefix))
-					{
-						if (!hasCurAnim() || !getCurAnimName().startsWith('hair') || isCurAnimFinished())
-						{
-							danced = !danced;
-							playAnim(danced ? 'danceRight' : 'danceLeft');
-						}
-					}
-
-				case 'spooky':
-					if (!hasCurAnim() || !getCurAnimName().startsWith(_singAnimPrefix))
-					{
-						danced = !danced;
-						playAnim(danced ? 'danceRight' : 'danceLeft');
-					}
-
 				default:
 					if (hasDanceAnims)
 					{

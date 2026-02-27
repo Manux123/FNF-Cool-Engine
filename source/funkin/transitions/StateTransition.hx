@@ -386,6 +386,7 @@ class TransitionOverlay extends Sprite
 					ease: ease,
 					onComplete: function(_)
 					{
+						_activeTween = null; // BUGFIX: limpiar antes de que el tween vuelva al pool
 						alpha = 1;
 						onDone();
 					}
@@ -401,6 +402,7 @@ class TransitionOverlay extends Sprite
 					ease: ease,
 					onComplete: function(_)
 					{
+						_activeTween = null;
 						x = 0;
 						onDone();
 					}
@@ -416,6 +418,7 @@ class TransitionOverlay extends Sprite
 					ease: ease,
 					onComplete: function(_)
 					{
+						_activeTween = null;
 						x = 0;
 						onDone();
 					}
@@ -431,6 +434,7 @@ class TransitionOverlay extends Sprite
 					ease: ease,
 					onComplete: function(_)
 					{
+						_activeTween = null;
 						y = 0;
 						onDone();
 					}
@@ -446,6 +450,7 @@ class TransitionOverlay extends Sprite
 					ease: ease,
 					onComplete: function(_)
 					{
+						_activeTween = null;
 						y = 0;
 						onDone();
 					}
@@ -460,6 +465,7 @@ class TransitionOverlay extends Sprite
 					ease: ease,
 					onComplete: function(_)
 					{
+						_activeTween = null;
 						_redraw(CIRCLE_WIPE, 1);
 						onDone();
 					}
@@ -490,6 +496,7 @@ class TransitionOverlay extends Sprite
 					ease: ease,
 					onComplete: function(_)
 					{
+						_activeTween = null;
 						onDone();
 					}
 				}, function(v:Float)
@@ -504,6 +511,7 @@ class TransitionOverlay extends Sprite
 					ease: ease,
 					onComplete: function(_)
 					{
+						_activeTween = null;
 						onDone();
 					}
 				}, function(v:Float)
@@ -518,6 +526,7 @@ class TransitionOverlay extends Sprite
 					ease: ease,
 					onComplete: function(_)
 					{
+						_activeTween = null;
 						onDone();
 					}
 				}, function(v:Float)
@@ -532,6 +541,7 @@ class TransitionOverlay extends Sprite
 					ease: ease,
 					onComplete: function(_)
 					{
+						_activeTween = null;
 						onDone();
 					}
 				}, function(v:Float)
@@ -546,6 +556,7 @@ class TransitionOverlay extends Sprite
 					ease: ease,
 					onComplete: function(_)
 					{
+						_activeTween = null;
 						onDone();
 					}
 				}, function(v:Float)
@@ -558,6 +569,7 @@ class TransitionOverlay extends Sprite
 					ease: ease,
 					onComplete: function(_)
 					{
+						_activeTween = null;
 						_redraw(CIRCLE_WIPE, 0);
 						onDone();
 					}

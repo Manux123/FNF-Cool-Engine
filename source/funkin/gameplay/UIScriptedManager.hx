@@ -66,6 +66,14 @@ class UIScriptedManager extends FlxGroup
 	// ─── Script ─────────────────────────────────────────────────────────────
 	private var uiScript:HScriptInstance;
 
+	// ─── Arrays reutilizables para callbacks del script (evitan alloc/frame) ─
+	static final _argUpdate    : Array<Dynamic> = [0.0];
+	static final _argBeat      : Array<Dynamic> = [0];
+	static final _argStep      : Array<Dynamic> = [0];
+	static final _argTwo       : Array<Dynamic> = [null, null];
+	static final _argOne       : Array<Dynamic> = [null];
+	static final _argEmpty     : Array<Dynamic> = [];
+
 	// ─── Referencias ────────────────────────────────────────────────────────
 	private var camHUD:FlxCamera;
 	private var gameState:GameState;
@@ -130,7 +138,12 @@ class UIScriptedManager extends FlxGroup
 		}
 
 		trace('[UIScriptedManager] Cargando UI script desde: $path');
-		uiScript = ScriptHandler.loadScript(path, 'ui');
+		// BUGFIX: ScriptHandler.loadScript() llama onCreate() automáticamente ANTES de que
+		// exposeUIAPI() haya inyectado makeSprite/makeBar/uiAdd/etc.
+		// Eso hace que la primera onCreate() falle silenciosamente (makeSprite = null).
+		// Solución: cargar el script SIN auto-onCreate usando loadScriptNoInit(), luego
+		// exponer la API y llamar onCreate() una sola vez nosotros.
+		uiScript = ScriptHandler.loadScriptNoInit(path, 'ui');
 
 		if (uiScript == null)
 		{
@@ -248,41 +261,47 @@ class UIScriptedManager extends FlxGroup
 	override function update(elapsed:Float):Void
 	{
 		super.update(elapsed);
-		uiScript?.call('onUpdate', [elapsed]);
+		_argUpdate[0] = elapsed;
+		uiScript?.call('onUpdate', _argUpdate);
 	}
 
 	// ─── Callbacks del juego → script ────────────────────────────────────────
 
 	public function onBeatHit(beat:Int):Void
 	{
-		uiScript?.call('onBeatHit', [beat]);
+		_argBeat[0] = beat;
+		uiScript?.call('onBeatHit', _argBeat);
 	}
 
 	public function onStepHit(step:Int):Void
 	{
-		uiScript?.call('onStepHit', [step]);
+		_argStep[0] = step;
+		uiScript?.call('onStepHit', _argStep);
 	}
 
 	public function showRatingPopup(ratingName:String, combo:Int):Void
 	{
 		if (metaData.hideRatings)
 			return;
-		uiScript?.call('onRatingPopup', [ratingName, combo]);
+		_argTwo[0] = ratingName; _argTwo[1] = combo;
+		uiScript?.call('onRatingPopup', _argTwo);
 	}
 
 	public function showMissPopup():Void
 	{
-		uiScript?.call('onMissPopup', []);
+		uiScript?.call('onMissPopup', _argEmpty);
 	}
 
 	public function setIcons(p1:String, p2:String):Void
 	{
-		uiScript?.call('onIconsSet', [p1, p2]);
+		_argTwo[0] = p1; _argTwo[1] = p2;
+		uiScript?.call('onIconsSet', _argTwo);
 	}
 
 	public function setStage(stage:String):Void
 	{
-		uiScript?.call('onStageSet', [stage]);
+		_argOne[0] = stage;
+		uiScript?.call('onStageSet', _argOne);
 	}
 
 	// ─── Acceso a iconos (compatibilidad con PlayState) ───────────────────────
@@ -301,7 +320,7 @@ class UIScriptedManager extends FlxGroup
 
 	override function destroy():Void
 	{
-		uiScript?.call('onDestroy', []);
+		uiScript?.call('onDestroy', _argEmpty);
 		uiScript?.destroy();
 		uiScript = null;
 		super.destroy();

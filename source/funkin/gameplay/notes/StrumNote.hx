@@ -59,6 +59,17 @@ class StrumNote extends FlxSprite
 		var tex = skinData.texture;
 		frames = NoteSkinSystem.loadSkinFrames(tex, skinData.folder);
 
+		// BUGFIX CRÍTICO: si frames sigue siendo null aquí (asset faltante, XML roto, etc.)
+		// el sprite se renderizará en el primer frame de PlayState con frame=null
+		// → FlxDrawQuadsItem::render line 119 crash.
+		// makeGraphic() crea un BitmapData de 1x1 garantizado que evita el crash.
+		// El sprite quedará invisible (scale 0.7 → 0.7×0.7 px) pero el juego no crashea.
+		if (frames == null)
+		{
+			trace('[StrumNote] WARN: frames null para skin "${skinData.name}" noteID=$noteID — usando placeholder para evitar crash');
+			makeGraphic(Std.int(Note.swagWidth), Std.int(Note.swagWidth), 0x00000000);
+		}
+
 		var noteScale = tex.scale != null ? tex.scale : 1.0;
 		// BUGFIX: usar scale.set() directo en lugar de setGraphicSize(width*scale)
 		// que usaría el hitbox stale si loadSkin() se llamara de nuevo (recarga de skin).

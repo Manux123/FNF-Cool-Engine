@@ -57,9 +57,16 @@ class NoteSplash extends FlxSprite
 		}
 		// Nullear el atlas si el bitmap ya no es válido (sesión anterior)
 		@:privateAccess
-		if (frames != null && frames.parent != null && frames.parent.bitmap == null)
+		var isTextureInvalid = (frames == null || frames.parent == null || frames.parent.bitmap == null);
+		
+		if (isTextureInvalid)
 		{
-			frames = null;
+			trace('[NoteSplash] ERROR: Textura inválida o bitmap destruido de la caché. Abortando splash para evitar crash.');
+			makeGraphic(1, 1, 0x00000000); // Forzar un gráfico vacío seguro
+			visible = false;
+			active = false;
+			exists = false; // <-- CRÍTICO: Evita que el render loop intente procesarlo
+			return; // Abortamos el resto del setup
 		}
 		// NUEVO: Para hold splashes, usar archivos holdCover específicos
 		if (isHoldSplash || isReleaseSplash)
@@ -195,6 +202,19 @@ class NoteSplash extends FlxSprite
 	{
 		// Cargar frames
 		frames = NoteSkinSystem.getSplashTexture();
+
+		// BUGFIX: getSplashTexture() puede devolver null si el atlas del splash
+		// (incluso el Default) no existe en disco. Con frames=null el sprite
+		// crashea en FlxDrawQuadsItem::render en el primer fotograma.
+		// makeGraphic() garantiza un BitmapData/frames válido como último recurso.
+		if (frames == null)
+		{
+			trace('[NoteSplash] WARN: getSplashTexture() devolvió null — usando placeholder para evitar crash');
+			makeGraphic(1, 1, 0x00000000);
+			inUse = false;
+			visible = false;
+			return;
+		}
 
 		// Aplicar escala
 		var splashScale:Float = splashData.assets.scale != null ? splashData.assets.scale : 1.0;
@@ -381,6 +401,17 @@ class NoteSplash extends FlxSprite
 	{
 		// Cargar splash por defecto de FNF
 		frames = Paths.splashSprite('Default/noteSplashes');
+
+		// BUGFIX: si el asset Default/noteSplashes.png no existe (mod incompleto,
+		// instalación rota, etc.) frames queda null → crash en FlxDrawQuadsItem::render.
+		if (frames == null)
+		{
+			trace('[NoteSplash] WARN: Default/noteSplashes no encontrado — usando placeholder para evitar crash');
+			makeGraphic(1, 1, 0x00000000);
+			inUse = false;
+			visible = false;
+			return;
+		}
 
 		antialiasing = true;
 

@@ -56,6 +56,13 @@ class FunkinCache extends AssetCache
 			// El nuevo estado rescatará lo que necesite via getBitmapData().
 			instance.moveToSecondLayer();
 
+			// Sincronizar PathsCache: mover _currentGraphics → _previousGraphics.
+			// Sin esto, PathsCache._currentGraphics acumula FlxGraphics "muertos"
+			// (bitmap=null) que clearSecondLayer() destruye via removeByKey().
+			// hasValidGraphic() los detectaba como vivos → atlas con bitmap=null
+			// → FlxDrawQuadsItem::render null-object crash en el primer frame.
+			funkin.cache.PathsCache.instance.rotateSession();
+
 			// Limpiar caché de atlas — el nuevo estado crea FlxAtlasFrames frescos.
 			// Sin esto, sprites reutilizan atlas con gráficos ya destruidos → crash.
 			FunkinSprite.clearAllCaches();
@@ -88,18 +95,30 @@ class FunkinCache extends AssetCache
 	}
 
 	/**
-	 * Destruye los assets de SECOND que el nuevo estado no rescató.
-	 * Usa FlxG.bitmap.removeByKey() exactamente como Codename Engine:
-	 * elimina Y destruye el FlxGraphic asociado de forma segura porque
-	 * getBitmapData() ya rescató a CURRENT todo lo que el nuevo estado usó.
+	 * Destruye los assets de SECOND que el nuevo estado no está usando.
+	 * Antes de destruir cada bitmap, comprueba useCount/persist en FlxG.bitmap
+	 * para rescatar assets cargados via FlxG.bitmap.add() directo (que no pasan
+	 * por getBitmapData() y por tanto no se auto-rescatan).
 	 */
 	public function clearSecondLayer():Void
 	{
 		for (k => b in bitmapData2)
 		{
-			// removeByKey: elimina de FlxG.bitmap y llama destroy() en el FlxGraphic.
-			// Seguro porque si el nuevo estado necesitaba este asset,
-			// getBitmapData() ya lo movió de bitmapData2 → bitmapData.
+			// BUGFIX crash FlxDrawQuadsItem::render
+			// Algunos assets se cargan via FlxG.bitmap.add() directamente
+			// (p.ej. Paths.characterSprite → FlxAtlasFrames.fromSparrow), que
+			// tiene su propio caché y NO llama a getBitmapData(). En esos casos
+			// el "rescue" de getBitmapData() nunca ocurre, pero el FlxGraphic SÍ
+			// está en uso (useCount > 0). Llamar removeByKey() lo destruye → bitmap
+			// null → crash en el primer draw frame.
+			// Solución: si el gráfico sigue en uso, rescatarlo a CURRENT.
+			var graphic = FlxG.bitmap.get(k);
+			if (graphic != null && (graphic.useCount > 0 || graphic.persist))
+			{
+				bitmapData.set(k, b);
+				bitmapData2.remove(k);
+				continue;
+			}
 			FlxG.bitmap.removeByKey(k);
 			#if lime
 			LimeAssets.cache.image.remove(k);

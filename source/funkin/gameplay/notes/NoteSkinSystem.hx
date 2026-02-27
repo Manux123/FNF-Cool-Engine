@@ -1124,6 +1124,16 @@ class NoteSkinSystem
 				case "image":
 					var graphic = FlxG.bitmap.add('assets/skins/$folder/$path.png');
 					if (graphic == null) throw 'PNG no encontrado para image skin: $folder/$path';
+					// BUGFIX: FlxG.bitmap.add() deja persist=false y useCount=0.
+					// FunkinCache.clearSecondLayer() → clearUnused() destruye cualquier
+					// gráfico con persist=false + useCount=0 al final de postStateSwitch,
+					// ANTES de que los StrumNotes/Notes hayan dibujado su primer frame.
+					// Resultado: frame.parent.bitmap = null → FlxDrawQuadsItem::render crash.
+					// Solución: marcar persist=true y registrar en PathsCache para que el
+					// sistema de caché lo gestione correctamente entre sesiones.
+					graphic.persist = true;
+					graphic.destroyOnNoUse = false;
+					funkin.cache.PathsCache.instance.trackGraphic('assets/skins/$folder/$path.png', graphic);
 					// Dimensiones de frame leídas del JSON — sin hardcodeo por nombre de archivo
 					var fw:Int = tex.frameWidth != null ? Std.int(tex.frameWidth) : 17;
 					var fh:Int = tex.frameHeight != null ? Std.int(tex.frameHeight) : 17;
@@ -1191,6 +1201,11 @@ class NoteSkinSystem
 				case "image":
 					var g = FlxG.bitmap.add('assets/splashes/$folder/$path.png');
 					if (g == null) throw 'PNG no encontrado para image splash: $folder/$path';
+					// BUGFIX: igual que loadAtlas "image" — persist=true para evitar que
+					// clearSecondLayer() → clearUnused() destruya el gráfico antes del primer render.
+					g.persist = true;
+					g.destroyOnNoUse = false;
+					funkin.cache.PathsCache.instance.trackGraphic('assets/splashes/$folder/$path.png', g);
 					return FlxAtlasFramesExt.fromGraphic(g, g.width, g.height);
 				default:
 					return Paths.splashSprite('$folder/$path');
@@ -1205,18 +1220,28 @@ class NoteSkinSystem
 	private static function assetExists(path:String, folder:String):Bool
 	{
 		#if sys
-		return FileSystem.exists('assets/skins/$folder/$path.png') || FileSystem.exists('$path.png');
+		// Comprobar primero en el mod activo, luego en assets base.
+		// Sin esto, skins en mods/MyMod/skins/ZoneNotes/NOTE_assets.png
+		// son ignoradas y el juego cae silenciosamente al Default.
+		final modRoot = mods.ModManager.modRoot();
+		if (modRoot != null && sys.FileSystem.exists('$modRoot/skins/$folder/$path.png'))
+			return true;
+		return sys.FileSystem.exists('assets/skins/$folder/$path.png') || sys.FileSystem.exists('$path.png');
 		#else
-		return Assets.exists('assets/skins/$folder/$path.png');
+		return openfl.utils.Assets.exists('assets/skins/$folder/$path.png');
 		#end
 	}
 
 	private static function splashAssetExists(path:String, folder:String):Bool
 	{
 		#if sys
-		return FileSystem.exists('assets/splashes/$folder/$path.png') || FileSystem.exists('$path.png');
+		// Misma lógica que assetExists: comprobar mod primero.
+		final modRoot = mods.ModManager.modRoot();
+		if (modRoot != null && sys.FileSystem.exists('$modRoot/splashes/$folder/$path.png'))
+			return true;
+		return sys.FileSystem.exists('assets/splashes/$folder/$path.png') || sys.FileSystem.exists('$path.png');
 		#else
-		return Assets.exists('assets/splashes/$folder/$path.png');
+		return openfl.utils.Assets.exists('assets/splashes/$folder/$path.png');
 		#end
 	}
 

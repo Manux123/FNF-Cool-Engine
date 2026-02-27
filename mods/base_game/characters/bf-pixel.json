@@ -2,7 +2,6 @@
 	"path": "weeb/bfPixel",
 	"isPlayer": true,
 	"antialiasing": false,
-	"charDeath":"bf-pixel-dead",
 	"scale": 6.0,
 	"flipX": true,
 	"cameraOffset":[-200,-200],
@@ -79,5 +78,11 @@
 			"offsetX": 0,
 			"offsetY": 0
 		}
-	]
+	],
+	"charDeath": "bf-pixel-dead",
+	"gameOverSound": "fnf_loss_sfx-pixel",
+	"gameOverMusic": "gameplay/gameOver-pixel",
+	"gameOverEnd": "gameplay/gameOverEnd-pixel",
+	"gameOverBpm": 100,
+	"gameOverCamFrame": 12
 }

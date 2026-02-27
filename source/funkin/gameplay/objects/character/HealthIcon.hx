@@ -94,7 +94,12 @@ class HealthIcon extends FlxSprite
 
 		if (graphic == null)
 		{
-			trace('[HealthIcon] Could not load icon for "$char"');
+			trace('[HealthIcon] Could not load icon for "$char" — using transparent placeholder to avoid FlxDrawQuadsItem crash');
+			// BUGFIX: without a graphic, frames == null, which causes a null object
+			// reference in FlxDrawQuadsItem::render on the very first draw call.
+			// makeGraphic() guarantees a valid BitmapData/frames even when the asset
+			// is missing, so the icon is invisible but the game does not crash.
+			makeGraphic(150, 150, 0x00000000);
 			return;
 		}
 

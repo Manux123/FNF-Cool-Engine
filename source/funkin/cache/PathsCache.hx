@@ -142,11 +142,25 @@ class PathsCache
 
 	// ── API de compatibilidad esperada por Paths.hx ───────────────────────────
 
-	/** Devuelve true si la clave existe en alguna capa y el gráfico es no-nulo. */
+	/** Devuelve true si la clave existe en alguna capa, el gráfico es no-nulo Y su bitmap no fue dispuesto. */
 	public function hasValidGraphic(key:String):Bool {
-		if (_permanentGraphics.exists(key)) return _permanentGraphics.get(key) != null;
-		if (_currentGraphics.exists(key))   return _currentGraphics.get(key) != null;
-		if (_previousGraphics.exists(key))  return _previousGraphics.get(key) != null;
+		// BUGFIX: comprobar bitmap != null, no solo que el objeto FlxGraphic exista.
+		// FunkinCache.clearSecondLayer() llama FlxG.bitmap.removeByKey() → g.destroy() → g.bitmap = null,
+		// pero PathsCache._currentGraphics sigue sosteniendo la misma referencia muerta.
+		// Sin esta comprobación, hasValidGraphic() devuelve true para un gráfico con bitmap=null
+		// y el primer draw → FlxDrawQuadsItem::render null-object crash.
+		var g = _permanentGraphics.get(key);
+		if (g != null) return g.bitmap != null;
+		g = _currentGraphics.get(key);
+		if (g != null) {
+			if (g.bitmap != null) return true;
+			// Evictar entrada stale para que la siguiente carga lo recargue desde disco
+			_currentGraphics.remove(key);
+			_graphicCount--;
+			return false;
+		}
+		g = _previousGraphics.get(key);
+		if (g != null) return g.bitmap != null;
 		return false;
 	}
 
@@ -179,6 +193,36 @@ class PathsCache
 		// No-op: FunkinCache maneja el lifecycle via preStateSwitch/postStateSwitch.
 		// PathsCache ya no destruye FlxGraphics durante cambios de estado — es solo un loader.
 		trace('[PathsCache] beginSession() — no-op, FunkinCache gestiona el lifecycle');
+	}
+
+	/**
+	 * Rota las capas de gráficos: _current → _previous, _previous descartada.
+	 * Llamar desde FunkinCache.preStateSwitch, ANTES de que el nuevo estado cargue assets.
+	 *
+	 * Por qué es necesario:
+	 *   FunkinCache.clearSecondLayer() llama FlxG.bitmap.removeByKey() → g.destroy()
+	 *   → g.bitmap = null sobre los gráficos de la sesión anterior.
+	 *   Sin esta rotación, PathsCache._currentGraphics retiene esos FlxGraphics muertos
+	 *   indefinidamente. hasValidGraphic() veía el objeto != null y devolvía true.
+	 *   El nuevo estado obtenía un gráfico con bitmap=null, lo usaba en FlxAtlasFrames,
+	 *   y el primer draw → FlxDrawQuadsItem::render → null-object crash.
+	 *
+	 * Con esta rotación:
+	 *   - Los gráficos actuales se mueven a _previousGraphics.
+	 *   - Si el nuevo estado los necesita, getGraphic() los rescata a _current (siempre
+	 *     que bitmap != null — si ya fueron destruidos se descartan y se recargan).
+	 *   - _currentGraphics queda vacío → hasValidGraphic() devuelve false → carga limpia.
+	 */
+	public function rotateSession():Void
+	{
+		// _currentGraphics y _previousGraphics son `final` — no se pueden reasignar.
+		// Copiar current → previous y limpiar current en su lugar.
+		_previousGraphics.clear();
+		for (k => g in _currentGraphics)
+			_previousGraphics.set(k, g);
+		_currentGraphics.clear();
+		_graphicCount = 0;
+		// Nota: _permanentGraphics NO se rota — nunca se destruyen.
 	}
 
 	// ═══════════════════════════════════════════════════════════════════════════
@@ -260,13 +304,27 @@ class PathsCache
 		_graphicCount++;
 	}
 
-
-
 	/** Devuelve un FlxGraphic buscando en todas las capas. */
 	public function getGraphic(key:String, ?bitmapData:openfl.display.BitmapData, allowGPU:Bool = true):Null<FlxGraphic>
 	{
-		if (_permanentGraphics.exists(key)) return _permanentGraphics.get(key);
-		if (_currentGraphics.exists(key))   return _currentGraphics.get(key);
+		// BUGFIX: siempre verificar bitmap != null antes de devolver un gráfico.
+		// FunkinCache.clearSecondLayer() puede haber destruido el gráfico (g.bitmap = null)
+		// mientras PathsCache._currentGraphics sigue sosteniendo la referencia.
+		// Devolver un gráfico muerto → FlxAtlasFrames con bitmap=null → crash en primer render.
+		var gPerm = _permanentGraphics.get(key);
+		if (gPerm != null)
+		{
+			if (gPerm.bitmap != null) return gPerm;
+			_permanentGraphics.remove(key); // permanente destruido — limpiar y recargar
+		}
+		var gCur = _currentGraphics.get(key);
+		if (gCur != null)
+		{
+			if (gCur.bitmap != null) return gCur;
+			// Stale: evictar para que la siguiente carga lo recargue desde disco
+			_currentGraphics.remove(key);
+			_graphicCount--;
+		}
 		// ── RESCUE: mover de previous a current para que sobreviva esta sesión ──
 		if (_previousGraphics.exists(key))
 		{
@@ -499,7 +557,7 @@ class PathsCache
 		// No-op: FunkinCache.clearSecondLayer() via FlxG.bitmap.removeByKey() maneja la destrucción.
 		// Destruir FlxGraphics aquí causaba crashes porque ocurría después de que
 		// los sprites del nuevo estado ya tenían referencias a esos gráficos.
-		_previousGraphics = [];
+		_previousGraphics.clear();
 	}
 
 	function _clearPreviousSounds():Void

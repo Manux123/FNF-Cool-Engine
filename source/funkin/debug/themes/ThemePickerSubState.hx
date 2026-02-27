@@ -402,6 +402,10 @@ class ThemePickerSubState extends FlxSubState
 			flixel.FlxG.mouse.visible = false;
 			funkin.transitions.StateTransition.switchState(new StageEditor());
 		}
+		else if (Std.isOfType(curState, funkin.menus.CharacterSelectorState))
+		{
+			funkin.transitions.StateTransition.switchState(new funkin.menus.CharacterSelectorState());
+		}
 		else if (Std.isOfType(curState, funkin.debug.AnimationDebug))
 		{
 			var ad:funkin.debug.AnimationDebug = cast curState;

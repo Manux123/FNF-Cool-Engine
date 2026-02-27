@@ -95,5 +95,12 @@
 			"offsetY": 0,
 			"specialAnim": true
 		}
-	]
+	],
+
+	"charDeath": "bf_death",
+	"gameOverSound": "fnf_loss_sfx",
+	"gameOverMusic": "gameplay/gameOver",
+	"gameOverEnd": "gameplay/gameOverEnd",
+	"gameOverBpm": 100,
+	"gameOverCamFrame": 12
 }

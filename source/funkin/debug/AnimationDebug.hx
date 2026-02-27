@@ -142,6 +142,12 @@ class AnimationDebug extends MusicBeatState
 	var hudHealthBar:FlxSprite;
 	var hudHealthBarLabel:FlxText;
 	var charDeathInput:FlxText;
+	// ── Game Over fields ──────────────────────────────────────────────────────
+	var gameOverSoundInput:FlxUIInputText;
+	var gameOverMusicInput:FlxUIInputText;
+	var gameOverEndInput:FlxUIInputText;
+	var gameOverBpmStepper:FlxUINumericStepper;
+	var gameOverCamFrameStepper:FlxUINumericStepper;
 	// Color actual seleccionado para la healthBar
 	var currentHealthBarColor:FlxColor = FlxColor.fromString("#31B0D1");
 
@@ -433,14 +439,55 @@ class AnimationDebug extends MusicBeatState
 		charDeathHint.color = FlxColor.BLACK;
 		tab.add(charDeathHint);
 
-		var refreshBtn = new FlxButton(10, 140, "Refresh Character", function()
+		// ── Game Over ──────────────────────────────────────────────────────────
+		var goLabel = new FlxText(10, 140, 0, "── Game Over ──", 10);
+		goLabel.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 1);
+		tab.add(goLabel);
+
+		var yGO = 157;
+
+		tab.add(new FlxText(10, yGO, 0, "Death SFX  (Paths.sound):", 8));
+		gameOverSoundInput = new FlxUIInputText(10, yGO + 12, 200, '', 8);
+		var goSndHint = new FlxText(10, yGO + 26, 280, "Default: fnf_loss_sfx", 7);
+		goSndHint.color = FlxColor.BLACK;
+		tab.add(gameOverSoundInput);
+		tab.add(goSndHint);
+		yGO += 42;
+
+		tab.add(new FlxText(10, yGO, 0, "Loop Music  (Paths.music):", 8));
+		gameOverMusicInput = new FlxUIInputText(10, yGO + 12, 200, '', 8);
+		var goMusHint = new FlxText(10, yGO + 26, 280, "Default: gameplay/gameOver", 7);
+		goMusHint.color = FlxColor.BLACK;
+		tab.add(gameOverMusicInput);
+		tab.add(goMusHint);
+		yGO += 42;
+
+		tab.add(new FlxText(10, yGO, 0, "End/Retry SFX  (Paths.music):", 8));
+		gameOverEndInput = new FlxUIInputText(10, yGO + 12, 200, '', 8);
+		var goEndHint = new FlxText(10, yGO + 26, 280, "Default: gameplay/gameOverEnd", 7);
+		goEndHint.color = FlxColor.BLACK;
+		tab.add(gameOverEndInput);
+		tab.add(goEndHint);
+		yGO += 42;
+
+		tab.add(new FlxText(10, yGO, 0, "BPM:", 8));
+		gameOverBpmStepper = new FlxUINumericStepper(60, yGO + 1, 1, 100, 1, 999, 1);
+		tab.add(gameOverBpmStepper);
+
+		tab.add(new FlxText(130, yGO, 0, "Cam Frame:", 8));
+		gameOverCamFrameStepper = new FlxUINumericStepper(200, yGO + 1, 1, 12, 0, 60, 0);
+		tab.add(gameOverCamFrameStepper);
+
+		yGO += 24;
+
+		var refreshBtn = new FlxButton(10, yGO, "Refresh Character", function()
 		{
 			displayCharacter(daAnim);
 			loadCharacterData();
 		});
 		tab.add(refreshBtn);
 
-		tab.add(new FlxButton(10, 170, "Reset Camera", function()
+		tab.add(new FlxButton(170, yGO, "Reset Camera", function()
 		{
 			camFollow.setPosition(FlxG.width / 2, FlxG.height / 2);
 			camGame.zoom = 1;
@@ -1489,6 +1536,18 @@ class AnimationDebug extends MusicBeatState
 				}
 			}
 
+			// ── Game Over fields ────────────────────────────────────────────────
+			if (gameOverSoundInput != null)
+				gameOverSoundInput.text = characterData.gameOverSound ?? '';
+			if (gameOverMusicInput != null)
+				gameOverMusicInput.text = characterData.gameOverMusic ?? '';
+			if (gameOverEndInput != null)
+				gameOverEndInput.text = characterData.gameOverEnd ?? '';
+			if (gameOverBpmStepper != null)
+				gameOverBpmStepper.value = characterData.gameOverBpm ?? 100;
+			if (gameOverCamFrameStepper != null)
+				gameOverCamFrameStepper.value = characterData.gameOverCamFrame ?? 12;
+
 			currentAnimData = characterData.animations;
 
 			if (usingFlxAnimate)
@@ -1529,6 +1588,18 @@ class AnimationDebug extends MusicBeatState
 
 		if (charDeathInput != null && charDeathInput.text.trim() != "")
 			tempData.charDeath = charDeathInput.text.trim();
+
+		// ── Game Over ──────────────────────────────────────────────────────────
+		if (gameOverSoundInput != null && gameOverSoundInput.text.trim() != "")
+			tempData.gameOverSound = gameOverSoundInput.text.trim();
+		if (gameOverMusicInput != null && gameOverMusicInput.text.trim() != "")
+			tempData.gameOverMusic = gameOverMusicInput.text.trim();
+		if (gameOverEndInput != null && gameOverEndInput.text.trim() != "")
+			tempData.gameOverEnd = gameOverEndInput.text.trim();
+		if (gameOverBpmStepper != null && gameOverBpmStepper.value != 100)
+			tempData.gameOverBpm = gameOverBpmStepper.value;
+		if (gameOverCamFrameStepper != null && Std.int(gameOverCamFrameStepper.value) != 12)
+			tempData.gameOverCamFrame = Std.int(gameOverCamFrameStepper.value);
 
 		var jsonString = Json.stringify(tempData, null, '\t');
 
@@ -1581,6 +1652,18 @@ class AnimationDebug extends MusicBeatState
 
 		if (charDeathInput != null && charDeathInput.text.trim() != "")
 			exportData.charDeath = charDeathInput.text.trim();
+
+		// ── Game Over ──────────────────────────────────────────────────────────
+		if (gameOverSoundInput != null && gameOverSoundInput.text.trim() != "")
+			exportData.gameOverSound = gameOverSoundInput.text.trim();
+		if (gameOverMusicInput != null && gameOverMusicInput.text.trim() != "")
+			exportData.gameOverMusic = gameOverMusicInput.text.trim();
+		if (gameOverEndInput != null && gameOverEndInput.text.trim() != "")
+			exportData.gameOverEnd = gameOverEndInput.text.trim();
+		if (gameOverBpmStepper != null && gameOverBpmStepper.value != 100)
+			exportData.gameOverBpm = gameOverBpmStepper.value;
+		if (gameOverCamFrameStepper != null && Std.int(gameOverCamFrameStepper.value) != 12)
+			exportData.gameOverCamFrame = Std.int(gameOverCamFrameStepper.value);
 
 		return exportData;
 	}

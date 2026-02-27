@@ -431,10 +431,7 @@ class PlayState extends funkin.states.MusicBeatState
 		startCountdown();
 		// });
 
-		// ── Liberar assets de la sesión anterior que nadie rescató ────────────
-		// FunkinCache.postStateSwitch se encarga de limpiar assets no rescatados
-		// via clearSecondLayer() después de que create() termina. No necesitamos
-		// llamar clearPreviousSession() manualmente — eso causaba double-destroy.
+		Paths.clearPreviousSession();
 
 		super.create();
 	}
@@ -1397,7 +1394,7 @@ class PlayState extends funkin.states.MusicBeatState
 			modChartManager = null;
 
 			FlxG.mouse.visible = true;
-			StateTransition.switchState(new ModChartEditorState());
+			//StateTransition.switchState(new ModChartEditorState());
 		}
 
 		/*

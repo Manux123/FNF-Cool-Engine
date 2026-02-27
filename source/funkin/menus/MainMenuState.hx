@@ -207,7 +207,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 		if (developerMode)
 		{
 			if (FlxG.keys.justPressed.ONE)
-				StateTransition.switchState(new AnimationDebug('bf'));
+				StateTransition.switchState(new funkin.menus.CharacterSelectorState());
 		}
 
 		// ── Mod Selector ────────────────────────────────────────────────────────

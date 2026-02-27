@@ -5,41 +5,56 @@ import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
 import flixel.util.FlxTimer;
 
 /**
- * SoundTray — misma base de imágenes del original, con dos mejoras:
+ * SoundTray — persiste entre cambios de state igual que los stickers.
  *
- *  1. "Barras fantasma": bars_10.png siempre visible a alpha bajo,
- *     para que los huecos de volumen no desaparezcan, solo se atenúen.
+ * SISTEMA: Mismo patrón que StickerTransition/StickerTransitionContainer:
+ *  - SoundTrayContainer extiende openfl.display.Sprite
+ *  - La FlxCamera es hijo del Sprite de OpenFL (NO de FlxG.cameras.list)
+ *    → nunca se destruye cuando Flixel resetea las cámaras al cambiar state
+ *  - Update via FlxG.signals.preUpdate (sobrevive cambios de state)
+ *  - Insertado via FlxG.addChildBelowMouse con z muy alto (encima de stickers)
  *
- *  2. Las barras siguen al volumeBox directamente en update() —
- *     sin tween propio para las barras, todo se mueve junto.
- *
- * Registrar UNA vez en Main.hx:
- *     FlxG.plugins.add(new SoundTray());
+ * FIXES adicionales:
+ *  1. Sin doble volumen: limpia volumeUpKeys/volumeDownKeys/muteKeys de Flixel.
+ *  2. Barras correctas: Math.round en vez de Math.floor (fix float 0.5999...).
+ *  3. Fade in/out al mostrar/ocultar.
  */
 class SoundTray extends FlxBasic
 {
-    private var volumeBox:FlxSprite;      // fondo: volumebox.png
-    private var volumeBarBg:FlxSprite;   // barras fantasma: bars_10.png alpha bajo
-    private var volumeBar:FlxSprite;     // barras activas: bars_N.png
+    // ── Contenedor OpenFL persistente ─────────────────────────────────────────
+    private static var _container:SoundTrayContainer;
 
+    // ── Sprites ───────────────────────────────────────────────────────────────
+    private var volumeBox:FlxSprite;
+    private var volumeBarBg:FlxSprite;
+    private var volumeBar:FlxSprite;
+
+    // ── Sonidos ───────────────────────────────────────────────────────────────
     private var volumeUpSound:String   = "assets/sounds/soundtray/Volup.ogg";
     private var volumeDownSound:String = "assets/sounds/soundtray/Voldown.ogg";
     private var volumeMaxSound:String  = "assets/sounds/soundtray/VolMAX.ogg";
 
+    // ── Estado ────────────────────────────────────────────────────────────────
     private var hideTimer:FlxTimer;
     private var currentTween:FlxTween;
+    private var alphaTween:FlxTween;
 
     private var isShowing:Bool  = false;
     private var isMuted:Bool    = false;
     private var volumeBeforeMute:Float = 1.0;
 
-    private var trayCam:FlxCamera;
+    // Indica si la barra activa debe mostrarse (false solo cuando vol=0/muted).
+    // Separado de volumeBar.alpha para que _setAlpha no confunda "oculto por fade"
+    // con "oculto porque no hay volumen" — sin esto, tras un hide la barra no
+    // volvía a aparecer en el primer press porque alpha=0 bloqueaba el fade-in.
+    private var _barVisible:Bool = false;
 
-    // Y objetivo cuando el tray está visible
-    private static inline var SHOWN_Y:Float = 10;
+    private static inline var SHOWN_Y:Float   = 10;
+    private static inline var TWEEN_TIME:Float = 0.3;
 
     public function new()
     {
@@ -47,7 +62,14 @@ class SoundTray extends FlxBasic
 
         loadVolume();
 
-        // ── Fondo ────────────────────────────────────────────────────────────
+        // ── FIX: desactivar teclas de volumen nativas de Flixel ───────────────
+        // Sin esto, PLUS/MINUS lo procesa Flixel (+0.1) Y SoundTray (+0.1)
+        // → el volumen sube 0.2 de golpe = 2 barras por pulsación.
+        FlxG.sound.volumeUpKeys   = [];
+        FlxG.sound.volumeDownKeys = [];
+        FlxG.sound.muteKeys       = [];
+
+        // ── Sprites ───────────────────────────────────────────────────────────
         volumeBox = new FlxSprite(0, 0);
         volumeBox.loadGraphic("assets/images/soundtray/volumebox.png");
         volumeBox.scale.set(0.6, 0.6);
@@ -55,68 +77,53 @@ class SoundTray extends FlxBasic
         volumeBox.screenCenter(X);
         volumeBox.scrollFactor.set(0, 0);
 
-        // ── Barras fantasma (siempre 10, alpha bajo) ──────────────────────
         volumeBarBg = new FlxSprite(0, 0);
         volumeBarBg.loadGraphic("assets/images/soundtray/bars_10.png");
         volumeBarBg.scale.set(0.6, 0.6);
         volumeBarBg.updateHitbox();
         volumeBarBg.scrollFactor.set(0, 0);
-        volumeBarBg.alpha = 0.35; // visibles pero atenuadas
+        volumeBarBg.alpha = 0.35;
 
-        // ── Barras activas (bars_N.png encima) ───────────────────────────
         volumeBar = new FlxSprite(0, 0);
         volumeBar.loadGraphic("assets/images/soundtray/bars_10.png");
         volumeBar.scale.set(0.6, 0.6);
         volumeBar.updateHitbox();
         volumeBar.scrollFactor.set(0, 0);
 
-        // Esconder fuera de pantalla
+        // Empezar oculto y transparente
         var hiddenY:Float = -(volumeBox.height + 20);
         volumeBox.y = hiddenY;
+        _setAlpha(0);
 
-        hideTimer = new FlxTimer();
+        // ── CRÍTICO: globalManager → sobrevive cambios de state ──────────────
+        hideTimer = new FlxTimer(FlxTimer.globalManager);
 
         updateVolumeBar();
-        ensureCamera();
-    }
 
-    // ── Cámara dedicada ───────────────────────────────────────────────────────
+        // ── Crear/reusar el contenedor OpenFL persistente ─────────────────────
+        if (_container == null)
+            _container = new SoundTrayContainer();
 
-    private function ensureCamera():Void
-    {
-        if (trayCam != null && FlxG.cameras.list.contains(trayCam))
-            return;
-
-        trayCam = new FlxCamera();
-        trayCam.bgColor = 0x00000000;
-        FlxG.cameras.add(trayCam, false);
+        _container.attachSprites(volumeBox, volumeBarBg, volumeBar);
+        _container.insert();
     }
 
     // ── Plugin lifecycle ──────────────────────────────────────────────────────
+    // El update de los sprites lo hace SoundTrayContainer via preUpdate signal.
+    // Aquí solo manejamos input.
 
     override public function update(elapsed:Float):Void
     {
         super.update(elapsed);
 
-        volumeBox.update(elapsed);
-
-        // Las barras se pegan al box — sin tween propio
-        syncBarsToBox();
-
-        volumeBarBg.update(elapsed);
-        volumeBar.update(elapsed);
-
-        // ✅ FIX: No procesar teclas de volumen si hay un campo de texto activo
-        // Esto evita que al escribir +/- en editores se cambie el volumen
         var hasActiveTextField:Bool = false;
         #if flash
         if (flash.text.TextField.focus != null)
             hasActiveTextField = true;
         #end
-        
+
         if (!hasActiveTextField)
         {
-            // Teclas de volumen
             if (FlxG.keys.justPressed.ZERO || FlxG.keys.justPressed.NUMPADZERO)
                 toggleMute();
             if (FlxG.keys.justPressed.PLUS || FlxG.keys.justPressed.NUMPADPLUS)
@@ -126,59 +133,56 @@ class SoundTray extends FlxBasic
         }
     }
 
-    override public function draw():Void
-    {
-        ensureCamera();
+    // El render lo maneja SoundTrayContainer — nada que hacer aquí.
+    override public function draw():Void {}
 
-        volumeBox.cameras    = [trayCam];
-        volumeBarBg.cameras  = [trayCam];
-        volumeBar.cameras    = [trayCam];
-
-        volumeBox.draw();
-        volumeBarBg.draw();  // fantasma debajo
-        volumeBar.draw();    // activas encima
-    }
-
-    // ── Mostrar / Ocultar — SOLO el box tiene tween ───────────────────────────
+    // ── Mostrar / Ocultar ─────────────────────────────────────────────────────
 
     public function show():Void
     {
         if (currentTween != null) currentTween.cancel();
-        if (hideTimer != null) hideTimer.cancel();
+        if (alphaTween   != null) alphaTween.cancel();
+        if (hideTimer    != null) hideTimer.cancel();
 
-        currentTween = FlxTween.tween(volumeBox, {y: SHOWN_Y}, 0.3, {
-            onComplete: function(_) {
-                if (hideTimer != null) // ✅ FIX: Verificar null antes de usar
-                    hideTimer.start(1.0, function(_) { hide(); });
-            }
-        });
+        // globalManager → el tween no se destruye al cambiar de state
+        currentTween = FlxTween.globalManager.tween(volumeBox, {y: SHOWN_Y}, TWEEN_TIME,
+            {ease: FlxEase.quartOut});
+
+        alphaTween = FlxTween.globalManager.num(volumeBox.alpha, 1.0, TWEEN_TIME,
+            {ease: FlxEase.quartOut}, function(v) { _setAlpha(v); });
 
         isShowing = true;
+
+        hideTimer.start(1.5, function(_) { hide(); });
     }
 
     public function hide():Void
     {
         if (currentTween != null) currentTween.cancel();
-        if (hideTimer != null) hideTimer.cancel(); // ✅ FIX: Verificar null antes de cancelar
+        if (alphaTween   != null) alphaTween.cancel();
+        if (hideTimer    != null) hideTimer.cancel();
 
         var hiddenY:Float = -(volumeBox.height + 20);
-        currentTween = FlxTween.tween(volumeBox, {y: hiddenY}, 0.3);
+
+        currentTween = FlxTween.globalManager.tween(volumeBox, {y: hiddenY}, TWEEN_TIME,
+            {ease: FlxEase.quartIn});
+
+        alphaTween = FlxTween.globalManager.num(volumeBox.alpha, 0.0, TWEEN_TIME,
+            {ease: FlxEase.quartIn}, function(v) { _setAlpha(v); });
 
         isShowing = false;
     }
 
-    /**
-     * ✅ FIX: Fuerza el ocultamiento inmediato del SoundTray
-     * Útil al cambiar de estado para evitar que el tray se quede visible
-     */
     public function forceHide():Void
     {
         if (currentTween != null) currentTween.cancel();
-        if (hideTimer != null) hideTimer.cancel(); // ✅ FIX: Verificar null antes de cancelar
-        
+        if (alphaTween   != null) alphaTween.cancel();
+        if (hideTimer    != null) hideTimer.cancel();
+
         var hiddenY:Float = -(volumeBox.height + 20);
-        volumeBox.y = hiddenY; // Ocultar inmediatamente sin animación
-        
+        volumeBox.y = hiddenY;
+        _setAlpha(0);
+
         isShowing = false;
     }
 
@@ -188,7 +192,7 @@ class SoundTray extends FlxBasic
     {
         if (isMuted) { isMuted = false; FlxG.sound.volume = volumeBeforeMute; }
 
-        var v = FlxG.sound.volume + 0.1;
+        var v = _roundVol(FlxG.sound.volume + 0.1);
         if (v >= 1.0) { v = 1.0; FlxG.sound.play(volumeMaxSound); }
         else            FlxG.sound.play(volumeUpSound);
 
@@ -202,7 +206,7 @@ class SoundTray extends FlxBasic
     {
         if (isMuted) { isMuted = false; FlxG.sound.volume = volumeBeforeMute; }
 
-        var v = FlxG.sound.volume - 0.1;
+        var v = _roundVol(FlxG.sound.volume - 0.1);
         if (v < 0.0) v = 0.0;
 
         FlxG.sound.play(volumeDownSound);
@@ -235,33 +239,41 @@ class SoundTray extends FlxBasic
 
     // ── Helpers internos ──────────────────────────────────────────────────────
 
+    private inline function _setAlpha(a:Float):Void
+    {
+        volumeBox.alpha   = a;
+        volumeBarBg.alpha = a * 0.35;
+        volumeBar.alpha   = _barVisible ? a : 0;
+    }
+
+    private inline function _roundVol(v:Float):Float
+        return Math.round(v * 10) / 10;
+
     private function syncBarsToBox():Void
     {
-        // Las barras se colocan siempre centradas sobre el box — sin tween propio
         volumeBarBg.x = volumeBox.x + (volumeBox.width  - volumeBarBg.width)  / 2;
         volumeBarBg.y = volumeBox.y + (volumeBox.height - volumeBarBg.height) / 2 - 20;
-
-        volumeBar.x = volumeBarBg.x;
-        volumeBar.y = volumeBarBg.y;
+        volumeBar.x   = volumeBarBg.x;
+        volumeBar.y   = volumeBarBg.y;
     }
 
     private function updateVolumeBar():Void
     {
-        var barLevel:Int = isMuted ? 0 : Math.floor(FlxG.sound.volume * 10);
-        if (barLevel < 0)  barLevel = 0;
-        if (barLevel > 10) barLevel = 10;
+        var barLevel:Int = isMuted ? 0 : Math.round(FlxG.sound.volume * 10);
+        barLevel = Std.int(Math.max(0, Math.min(10, barLevel)));
 
-        // bars_0 no existe — mostrar barras activas con alpha 0 cuando muted/vol=0
         if (barLevel == 0)
         {
+            _barVisible = false;
             volumeBar.alpha = 0;
         }
         else
         {
+            _barVisible = true;
             volumeBar.loadGraphic("assets/images/soundtray/bars_" + barLevel + ".png");
             volumeBar.scale.set(0.6, 0.6);
             volumeBar.updateHitbox();
-            volumeBar.alpha = 1.0;
+            volumeBar.alpha = volumeBox.alpha;
         }
 
         syncBarsToBox();
@@ -284,5 +296,123 @@ class SoundTray extends FlxBasic
             if (isMuted) { volumeBeforeMute = FlxG.sound.volume; FlxG.sound.volume = 0; }
         }
     }
-    // destroy() NO se sobreescribe — el plugin vive para siempre con FlxG
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * SoundTrayContainer — OpenFL Sprite persistente entre cambios de state.
+ *
+ * La clave: la FlxCamera es addChild() del Sprite (igual que StickerTransitionContainer),
+ * NO está en FlxG.cameras.list. Flixel solo destruye las cámaras que están en
+ * esa lista cuando cambia de state → la nuestra sobrevive siempre.
+ *
+ * Z-index 99999 → por encima de stickers (9999) y de cualquier state.
+ */
+@:access(flixel.FlxCamera)
+class SoundTrayContainer extends openfl.display.Sprite
+{
+    private var trayCamera:FlxCamera;
+
+    private var sprBox:FlxSprite;
+    private var sprBg:FlxSprite;
+    private var sprBar:FlxSprite;
+
+    private var _updateConnected:Bool = false;
+
+    public function new():Void
+    {
+        super();
+        visible = false;
+
+        trayCamera = new FlxCamera();
+        trayCamera.bgColor = 0x00000000;
+        addChild(trayCamera.flashSprite);
+
+        FlxG.signals.gameResized.add((_, _) -> onResize());
+        scrollRect = new openfl.geom.Rectangle();
+        onResize();
+    }
+
+    /** Asigna los tres sprites del tray y los apunta a nuestra cámara. */
+    public function attachSprites(box:FlxSprite, bg:FlxSprite, bar:FlxSprite):Void
+    {
+        sprBox = box;
+        sprBg  = bg;
+        sprBar = bar;
+
+        sprBox.cameras = [trayCamera];
+        sprBg.cameras  = [trayCamera];
+        sprBar.cameras = [trayCamera];
+    }
+
+    /**
+     * Inserta el container en OpenFL por encima de todo.
+     * Usa remove() antes de add() para evitar conectar el signal dos veces.
+     */
+    public function insert():Void
+    {
+        // Z 99999 → encima de stickers (9999) y de cualquier otra capa
+        FlxG.addChildBelowMouse(this, 99999);
+        visible = true;
+        onResize();
+
+        if (!_updateConnected)
+        {
+            FlxG.signals.preUpdate.add(_manualUpdate);
+            _updateConnected = true;
+        }
+    }
+
+    // ── Update manual (via signal → sobrevive state switch) ───────────────────
+
+    private function _manualUpdate():Void
+    {
+        if (!visible || sprBox == null) return;
+
+        var elapsed = FlxG.elapsed;
+
+        // Sincronizar barras a la posición del box (el tween mueve box.y)
+        _syncBars();
+
+        sprBox.update(elapsed);
+        sprBg.update(elapsed);
+        sprBar.update(elapsed);
+
+        trayCamera.update(elapsed);
+        trayCamera.clearDrawStack();
+        trayCamera.canvas.graphics.clear();
+
+        sprBox.draw();
+        sprBg.draw();
+        sprBar.draw();
+
+        trayCamera.render();
+    }
+
+    private function _syncBars():Void
+    {
+        if (sprBox == null || sprBg == null || sprBar == null) return;
+        sprBg.x  = sprBox.x + (sprBox.width  - sprBg.width)  / 2;
+        sprBg.y  = sprBox.y + (sprBox.height - sprBg.height) / 2 - 20;
+        sprBar.x = sprBg.x;
+        sprBar.y = sprBg.y;
+    }
+
+    // ── Resize ────────────────────────────────────────────────────────────────
+
+    public function onResize():Void
+    {
+        x = y = 0;
+        scaleX = scaleY = 1;
+
+        __scrollRect.setTo(
+            0, 0,
+            FlxG.camera._scrollRect.scrollRect.width,
+            FlxG.camera._scrollRect.scrollRect.height
+        );
+
+        trayCamera.onResize();
+        trayCamera._scrollRect.scrollRect = scrollRect;
+    }
 }

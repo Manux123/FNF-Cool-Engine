@@ -25,6 +25,12 @@ typedef CharacterData =
 	@:optional var healthIcon:String;
 	@:optional var healthBarColor:String;
 	@:optional var cameraOffset:Array<Float>;
+	// ── Game Over ─────────────────────────────────────────────────────────
+	@:optional var gameOverSound:String; // sfx upon dying.          Default: "fnf_loss_sfx"
+	@:optional var gameOverMusic:String; // music on loop.       Default: "gameplay/gameOver"
+	@:optional var gameOverEnd:String; // sfx upon retry.          Default: "gameplay/gameOverEnd"
+	@:optional var gameOverBpm:Float; // BPM.                  Default: 100
+	@:optional var gameOverCamFrame:Int; // camera follow frame. Default: 12
 }
 
 typedef AnimData =
@@ -39,35 +45,44 @@ typedef AnimData =
 }
 
 /**
- * Character — Personaje jugable / NPC con caché de datos avanzada.
- *
- * ─── Mejoras de caché (v2) ────────────────────────────────────────────────────
- *  • _dataCache     — Cachea CharacterData (resultado del JSON.parse) por nombre
- *                     de personaje. Elimina el costo de File.getContent() +
- *                     JSON.parse() en cargas repetidas (ej: misma canción se
- *                     replaya, o mismo personaje en varios stages). Parsing de
- *                     un JSON de ~2 KB es ~0.3-1 ms; insignificante una vez,
- *                     pero si se repite 20 veces en sesión suma ~15 ms de I/O.
- *  • _pathCache     — Cachea la ruta resuelta por ModCompatLayer para cada char.
- *                     Evita recorrer las rutas del compat layer en cada carga.
- *  • invalidateCharCache(name)  — Invalida entradas específicas (recarga de mod).
- *  • clearCharCaches()          — Limpieza total.
- *
- * FunkinSprite ya cachea los FlxAtlasFrames → los assets de textura no se
- * duplican aunque el mismo personaje sea instanciado varias veces.
+	* Character — Playable character / NPC with advanced data cache.
+	*
+	* ─── Cache Improvements (v2) ───────────────────────────────────────────────────
+
+	* • _dataCache — Caches CharacterData (result of JSON.parse) by character name. Eliminates the cost of File.getContent() +
+
+	* JSON.parse() on repeated loads (e.g., same song is played
+
+	repeated, or same character in multiple stages). Parsing
+
+	a ~2 KB JSON file takes ~0.3-1 ms; negligible once,
+
+	but if repeated 20 times in a session, it adds ~15 ms of I/O.
+
+	* • _pathCache — Caches the path resolved by ModCompatLayer for each character.
+
+	* Avoids traversing the compat layer paths on each load.
+
+	* • invalidateCharCache(name) — Invalidates specific entries (mod reload).
+
+	* • clearCharCaches() — Complete clearing.
+	*
+	* FunkinSprite already caches FlxAtlasFrames → texture assets are not
+
+	duplicated even if the same character is instantiated multiple times.
  */
 class Character extends FunkinSprite
 {
 	public var animOffsets:Map<String, Array<Dynamic>>;
 	public var debugMode:Bool = false;
 
-	public var canSing:Bool     = true;
-	public var stunned:Bool     = false;
-	public var isPlayer:Bool    = false;
+	public var canSing:Bool = true;
+	public var stunned:Bool = false;
+	public var isPlayer:Bool = false;
 	public var curCharacter:String = 'bf';
-	public var holdTimer:Float  = 0;
+	public var holdTimer:Float = 0;
 
-	public var healthIcon:String       = 'bf';
+	public var healthIcon:String = 'bf';
 	public var healthBarColor:FlxColor = FlxColor.fromString("#31B0D1");
 	public var cameraOffset:Array<Float> = [0, 0];
 
@@ -75,7 +90,7 @@ class Character extends FunkinSprite
 
 	var danced:Bool = false;
 	var _singAnimPrefix:String = "sing";
-	var _idleAnim:String       = "idle";
+	var _idleAnim:String = "idle";
 
 	// ══════════════════════════════════════════════════════════════════════════
 	//  CACHÉS ESTÁTICOS
@@ -123,10 +138,10 @@ class Character extends FunkinSprite
 	{
 		super(x, y);
 
-		animOffsets    = new Map<String, Array<Dynamic>>();
-		curCharacter   = character;
-		this.isPlayer  = isPlayer;
-		antialiasing   = true;
+		animOffsets = new Map<String, Array<Dynamic>>();
+		curCharacter = character;
+		this.isPlayer = isPlayer;
+		antialiasing = true;
 
 		loadCharacterData(character);
 
@@ -212,9 +227,9 @@ class Character extends FunkinSprite
 	/** Aplica valores derivados del CharacterData (healthIcon, barColor, etc.) */
 	function applyCharacterDataDefaults(data:CharacterData, character:String):Void
 	{
-		healthIcon      = data.healthIcon     != null ? data.healthIcon     : character;
-		healthBarColor  = data.healthBarColor != null ? FlxColor.fromString(data.healthBarColor) : healthBarColor;
-		cameraOffset    = data.cameraOffset   != null ? data.cameraOffset   : cameraOffset;
+		healthIcon = data.healthIcon != null ? data.healthIcon : character;
+		healthBarColor = data.healthBarColor != null ? FlxColor.fromString(data.healthBarColor) : healthBarColor;
+		cameraOffset = data.cameraOffset != null ? data.cameraOffset : cameraOffset;
 	}
 
 	function characterLoad(character:String):Void
@@ -281,13 +296,20 @@ class Character extends FunkinSprite
 	public function isPlayingSpecialAnim():Bool
 	{
 		var name = getCurAnimName();
-		if (name == '' || isCurAnimFinished()) return false;
-		if (name.startsWith(_singAnimPrefix))  return false;
-		if (name == _idleAnim)                 return false;
-		if (name.startsWith('dance'))          return false;
-		if (name.endsWith('miss'))             return false;
-		if (name == 'firstDeath')              return false;
-		if (name == 'deathLoop')               return false;
+		if (name == '' || isCurAnimFinished())
+			return false;
+		if (name.startsWith(_singAnimPrefix))
+			return false;
+		if (name == _idleAnim)
+			return false;
+		if (name.startsWith('dance'))
+			return false;
+		if (name.endsWith('miss'))
+			return false;
+		if (name == 'firstDeath')
+			return false;
+		if (name == 'deathLoop')
+			return false;
 		return true;
 	}
 
@@ -297,7 +319,8 @@ class Character extends FunkinSprite
 	{
 		super.update(elapsed);
 
-		if (!hasCurAnim()) return;
+		if (!hasCurAnim())
+			return;
 
 		var curAnimName = getCurAnimName();
 		var curAnimDone = isCurAnimFinished();
@@ -317,7 +340,8 @@ class Character extends FunkinSprite
 			else
 			{
 				holdTimer = 0;
-				if (curAnimDone) dance();
+				if (curAnimDone)
+					dance();
 			}
 		}
 		else if (!debugMode)
@@ -394,26 +418,27 @@ class Character extends FunkinSprite
 		switch (curCharacter)
 		{
 			case 'bf-pixel-enemy':
-				width  -= 100;
+				width -= 100;
 				height -= 100;
 		}
 	}
 
 	function flipAnimations():Void
 	{
-		if (isAnimateAtlas) return;
+		if (isAnimateAtlas)
+			return;
 
 		if (animation.getByName('singRIGHT') != null && animation.getByName('singLEFT') != null)
 		{
 			var oldRight = animation.getByName('singRIGHT').frames;
 			animation.getByName('singRIGHT').frames = animation.getByName('singLEFT').frames;
-			animation.getByName('singLEFT').frames  = oldRight;
+			animation.getByName('singLEFT').frames = oldRight;
 		}
 		if (animation.getByName('singRIGHTmiss') != null && animation.getByName('singLEFTmiss') != null)
 		{
 			var oldMiss = animation.getByName('singRIGHTmiss').frames;
 			animation.getByName('singRIGHTmiss').frames = animation.getByName('singLEFTmiss').frames;
-			animation.getByName('singLEFTmiss').frames  = oldMiss;
+			animation.getByName('singLEFTmiss').frames = oldMiss;
 		}
 	}
 
@@ -425,7 +450,8 @@ class Character extends FunkinSprite
 	public function getAnimationList():Array<String>
 	{
 		var list:Array<String> = [];
-		for (a in animOffsets.keys()) list.push(a);
+		for (a in animOffsets.keys())
+			list.push(a);
 		return list;
 	}
 

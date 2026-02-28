@@ -203,7 +203,13 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 
 				case "Restart Song":
 					if (PlayState.instance != null)
+					{
+						// BUGFIX: Poner paused=false ANTES de close() para que
+						// PlayState.closeSubState() no llame a resyncVocals() mientras
+						// el audio ya fue pausado por startRewindRestart().
+						PlayState.instance.paused = false;
 						PlayState.instance.startRewindRestart();
+					}
 					close();
 
 				case "Skip Song":
@@ -219,16 +225,20 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 
 				case "Exit to menu":
 					PlayState.isPlaying = false;
+					// BUGFIX: Poner paused=false ANTES de la transición para que
+					// PlayState.closeSubState() no llame a resyncVocals() durante el
+					// destroy del estado, lo que provocaba un crash al intentar
+					// reproducir música en un estado inválido.
+					if (PlayState.instance != null)
+						PlayState.instance.paused = false;
 					if (PlayState.isStoryMode)
 						StickerTransition.start(() ->
 						{
-							FlxG.sound.resume();
 							StateTransition.switchState(new StoryMenuState());
 						});
 					else
 						StickerTransition.start(() ->
 						{
-							FlxG.sound.resume();
 							StateTransition.switchState(new FreeplayState());
 						});
 

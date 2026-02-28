@@ -4,9 +4,9 @@ import funkin.states.LoadingState;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxState;
-import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 import openfl.events.Event;
+import openfl.display.Shape;
 
 using StringTools;
 // ────────────────────────────────────────────────────────────────────────────
@@ -28,6 +28,9 @@ class MP4Handler
 	public var bitmap:VlcBitmap;
 	public var sprite:FlxSprite;
 
+	// Pantalla negra que cubre el gameplay mientras VLC carga el primer frame
+	var _loadingCover:Shape;
+
 	// Evita que onVLCComplete se dispare después de kill()
 	var _killed:Bool = false;
 
@@ -43,6 +46,19 @@ class MP4Handler
 			if (FlxG.sound.music != null)
 				FlxG.sound.music.stop();
 		}
+
+		// ── Cobertura negra de carga ──────────────────────────────────────────
+		// Se añade ANTES del bitmap para que tape el gameplay mientras VLC
+		// decodifica el primer frame. Se elimina en onVLCVideoReady().
+		if (outputTo == null)
+		{
+			_loadingCover = new Shape();
+			_loadingCover.graphics.beginFill(0x000000);
+			_loadingCover.graphics.drawRect(0, 0, FlxG.stage.stageWidth, FlxG.stage.stageHeight);
+			_loadingCover.graphics.endFill();
+			FlxG.addChildBelowMouse(_loadingCover);
+		}
+		// ─────────────────────────────────────────────────────────────────────
 
 		bitmap = new VlcBitmap();
 
@@ -110,6 +126,10 @@ class MP4Handler
 	function onVLCVideoReady():Void
 	{
 		trace("MP4Handler: video loaded!");
+
+		// El video ya tiene su primer frame listo → quitar la cobertura negra
+		_removeLoadingCover();
+
 		if (sprite != null)
 			sprite.loadGraphic(bitmap.bitmapData);
 	}
@@ -124,10 +144,9 @@ class MP4Handler
 
 		// 1. Primero sacar el bitmap del stage para que desaparezca visualmente
 		_removeBitmapFromStage();
+		_removeLoadingCover();
 
-		FlxG.camera.fade(FlxColor.BLACK, 0, false);
-
-		new FlxTimer().start(0.3, function(tmr:FlxTimer)
+		new FlxTimer().start(0.1, function(tmr:FlxTimer)
 		{
 			// 2. Liberar memoria nativa VLC
 			_disposeBitmapObject();
@@ -160,6 +179,7 @@ class MP4Handler
 
 		// Sacar del stage primero
 		_removeBitmapFromStage();
+		_removeLoadingCover();
 
 		// Llamar callback antes de liberar memoria
 		if (finishCallback != null)
@@ -208,6 +228,13 @@ class MP4Handler
 		try { FlxG.removeChild(bitmap); } catch (_:Dynamic) {}
 	}
 
+	function _removeLoadingCover():Void
+	{
+		if (_loadingCover == null) return;
+		try { FlxG.removeChild(_loadingCover); } catch (_:Dynamic) {}
+		_loadingCover = null;
+	}
+
 	function _disposeBitmapObject():Void
 	{
 		if (bitmap == null) return;
@@ -223,6 +250,7 @@ class MP4Handler
 
 		FlxG.stage.removeEventListener(Event.ENTER_FRAME, _update);
 		_removeBitmapFromStage();
+		_removeLoadingCover();
 		_disposeBitmapObject();
 
 		if (finishCallback != null)

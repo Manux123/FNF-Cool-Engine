@@ -72,7 +72,9 @@ class VideoManager
 		final handler = new MP4Handler();
 		current = handler;
 
-		handler.playMP4(path, false, false, null, false, true);
+		// midSong=true: evitamos que playMP4 llame FlxG.sound.music.stop() — stop()
+		// deja el FlxSound streaming invalido en CPP. La musica ya fue pausada arriba.
+		handler.playMP4(path, true, false, null, false, true);
 		handler.finishCallback = _buildFinish();
 		#else
 		trace('[VideoManager] Video playback not supported on this platform.');

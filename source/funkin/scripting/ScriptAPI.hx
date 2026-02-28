@@ -58,6 +58,8 @@ class ScriptAPI
 		exposeCharacters(interp);   // NUEVO v4
 		exposeCamera(interp);       // NUEVO v4
 		exposeHUD(interp);          // NUEVO v4
+		exposeStrums(interp);       // NUEVO v5
+		exposeModChart(interp);     // NUEVO v5
 	}
 
 	// ─── Flixel core ──────────────────────────────────────────────────────────
@@ -131,6 +133,29 @@ class ScriptAPI
 		interp.variables.set('NoteTypeManager',    funkin.gameplay.notes.NoteTypeManager);
 		interp.variables.set('ModManager',         mods.ModManager);
 		interp.variables.set('ModPaths',           mods.ModPaths);
+
+		// Modchart classes
+		interp.variables.set('ModChartManager',  funkin.gameplay.modchart.ModChartManager);
+		interp.variables.set('ModChartHelpers',  funkin.gameplay.modchart.ModChartEvent.ModChartHelpers);
+		// ModEventType string constants (enums no son accesibles en HScript directamente)
+		interp.variables.set('ModEventType', {
+			MOVE_X   : "moveX",   MOVE_Y   : "moveY",
+			ANGLE    : "angle",   ALPHA    : "alpha",
+			SCALE    : "scale",   SCALE_X  : "scaleX",    SCALE_Y  : "scaleY",
+			SPIN     : "spin",    RESET    : "reset",
+			SET_ABS_X: "setAbsX", SET_ABS_Y: "setAbsY",
+			VISIBLE  : "visible"
+		});
+		interp.variables.set('ModEase', {
+			LINEAR    : "linear",
+			QUAD_IN   : "quadIn",    QUAD_OUT   : "quadOut",    QUAD_IN_OUT  : "quadInOut",
+			CUBE_IN   : "cubeIn",    CUBE_OUT   : "cubeOut",    CUBE_IN_OUT  : "cubeInOut",
+			SINE_IN   : "sineIn",    SINE_OUT   : "sineOut",    SINE_IN_OUT  : "sineInOut",
+			ELASTIC_IN: "elasticIn", ELASTIC_OUT: "elasticOut",
+			BOUNCE_OUT: "bounceOut",
+			BACK_IN   : "backIn",    BACK_OUT   : "backOut",
+			INSTANT   : "instant"
+		});
 	}
 
 	// ─── Scoring custom ───────────────────────────────────────────────────────
@@ -661,20 +686,35 @@ class ScriptAPI
 	// ─── NUEVO v4: HUD ────────────────────────────────────────────────────────
 
 	/**
-	 * Objeto `hud` — control del HUD del PlayState.
+	 * Objeto `hud` — control completo del HUD del PlayState.
 	 *
-	 *   hud.setVisible(b)      → mostrar/ocultar HUD completo
-	 *   hud.setHealth(v)       → health 0.0-2.0
+	 *   hud.setVisible(b)       → mostrar/ocultar HUD completo
+	 *   hud.get()               → FlxGroup del UIManager (para animar, tween, etc.)
+	 *   hud.camera()            → camHUD (FlxCamera)
+	 *   hud.setHealth(v)        → health 0.0-2.0
+	 *   hud.getHealth()         → health actual
+	 *   hud.iconP1()            → HealthIcon del jugador
+	 *   hud.iconP2()            → HealthIcon del CPU
 	 *   hud.setScoreVisible(b)
-	 *   hud.showRating(r)      → mostrar rating popup
+	 *   hud.showRating(r, combo)
+	 *   hud.tweenTo(obj, props, dur, ease) → FlxTween.tween wrapper
 	 */
 	static function exposeHUD(interp:Interp):Void
 	{
 		interp.variables.set('hud', {
+			// Referencia directa al FlxGroup del UIManager
+			get: function():Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				return (ps != null) ? ps.uiManager : null;
+			},
+			camera: function():Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				return (ps != null) ? ps.camHUD : null;
+			},
 			setVisible: function(v:Bool) {
 				final ps = funkin.gameplay.PlayState.instance;
 				if (ps != null && ps.uiManager != null)
-					Reflect.setField(ps.uiManager, 'visible', v);
+					ps.uiManager.visible = v;
 			},
 			setHealth: function(v:Float) {
 				final ps = funkin.gameplay.PlayState.instance;
@@ -683,6 +723,14 @@ class ScriptAPI
 			getHealth: function():Float {
 				final ps = funkin.gameplay.PlayState.instance;
 				return (ps != null && ps.gameState != null) ? ps.gameState.health : 1.0;
+			},
+			iconP1: function():Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				return (ps != null && ps.uiManager != null) ? ps.uiManager.iconP1 : null;
+			},
+			iconP2: function():Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				return (ps != null && ps.uiManager != null) ? ps.uiManager.iconP2 : null;
 			},
 			setScoreVisible: function(v:Bool) {
 				final ps = funkin.gameplay.PlayState.instance;
@@ -696,6 +744,11 @@ class ScriptAPI
 				final ps = funkin.gameplay.PlayState.instance;
 				if (ps != null && ps.uiManager != null)
 					ps.uiManager.showRatingPopup(rating, combo ?? ps.scoreManager.combo);
+			},
+			// Shortcut para tweenear cualquier objeto del HUD
+			tweenTo: function(obj:Dynamic, props:Dynamic, dur:Float, ?ease:Dynamic) {
+				if (obj == null) return null;
+				return FlxTween.tween(obj, props, dur, ease != null ? {ease: ease} : null);
 			}
 		});
 	}
@@ -759,6 +812,185 @@ class ScriptAPI
 			warn:   function(msg:Dynamic) trace('[ScriptWARN] $msg'),
 			error:  function(msg:Dynamic) trace('[ScriptERROR] $msg'),
 			assert: function(cond:Bool, msg:String) { if (!cond) trace('[ScriptASSERT FAIL] $msg'); },
+		});
+	}
+
+	// ─── NUEVO v5: Strum access ─────────────────────────────────────────────────
+
+	/**
+	 * Objeto `strum` — acceso directo a strums y grupos desde scripts.
+	 *
+	 *   strum.getGroup(id)            → StrumsGroup por id
+	 *   strum.getPlayer()             → playerStrumsGroup
+	 *   strum.getCpu()                → cpuStrumsGroup
+	 *   strum.getAll()                → Array<StrumsGroup>
+	 *   strum.getStrum(groupId, idx)  → StrumNote (0=L,1=D,2=U,3=R)
+	 *   strum.getPlayerStrum(idx)     → StrumNote del jugador
+	 *   strum.getCpuStrum(idx)        → StrumNote del CPU
+	 *   strum.setX(groupId, idx, v)   → mover strum horizontalmente
+	 *   strum.setY(groupId, idx, v)   → mover strum verticalmente
+	 *   strum.setAlpha(groupId, idx, v)
+	 *   strum.setAngle(groupId, idx, v)
+	 *   strum.setVisible(groupId, idx, v)
+	 *   strum.setScale(groupId, idx, sx, sy)
+	 */
+	static function exposeStrums(interp:Interp):Void
+	{
+		interp.variables.set('strum', {
+			getGroup: function(id:String):Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps == null) return null;
+				return ps.strumsGroupMap.get(id);
+			},
+			getPlayer: function():Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				return (ps != null) ? ps.playerStrumsGroup : null;
+			},
+			getCpu: function():Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				return (ps != null) ? ps.cpuStrumsGroup : null;
+			},
+			getAll: function():Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				return (ps != null) ? ps.strumsGroups : [];
+			},
+			getStrum: function(groupId:String, idx:Int):Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps == null) return null;
+				final g = ps.strumsGroupMap.get(groupId);
+				return (g != null) ? g.getStrum(idx) : null;
+			},
+			getPlayerStrum: function(idx:Int):Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps == null || ps.playerStrumsGroup == null) return null;
+				return ps.playerStrumsGroup.getStrum(idx);
+			},
+			getCpuStrum: function(idx:Int):Dynamic {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps == null || ps.cpuStrumsGroup == null) return null;
+				return ps.cpuStrumsGroup.getStrum(idx);
+			},
+			// Helpers de escritura directa (sin modchart)
+			setX: function(groupId:String, idx:Int, v:Float) {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps == null) return;
+				final g = ps.strumsGroupMap.get(groupId);
+				final s = (g != null) ? g.getStrum(idx) : null;
+				if (s != null) s.x = v;
+			},
+			setY: function(groupId:String, idx:Int, v:Float) {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps == null) return;
+				final g = ps.strumsGroupMap.get(groupId);
+				final s = (g != null) ? g.getStrum(idx) : null;
+				if (s != null) s.y = v;
+			},
+			setAlpha: function(groupId:String, idx:Int, v:Float) {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps == null) return;
+				final g = ps.strumsGroupMap.get(groupId);
+				final s = (g != null) ? g.getStrum(idx) : null;
+				if (s != null) s.alpha = v;
+			},
+			setAngle: function(groupId:String, idx:Int, v:Float) {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps == null) return;
+				final g = ps.strumsGroupMap.get(groupId);
+				final s = (g != null) ? g.getStrum(idx) : null;
+				if (s != null) s.angle = v;
+			},
+			setVisible: function(groupId:String, idx:Int, v:Bool) {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps == null) return;
+				final g = ps.strumsGroupMap.get(groupId);
+				final s = (g != null) ? g.getStrum(idx) : null;
+				if (s != null) s.visible = v;
+			},
+			setScale: function(groupId:String, idx:Int, sx:Float, ?sy:Float) {
+				final ps = funkin.gameplay.PlayState.instance;
+				if (ps == null) return;
+				final g = ps.strumsGroupMap.get(groupId);
+				final s = (g != null) ? g.getStrum(idx) : null;
+				if (s != null) s.scale.set(sx, sy ?? sx);
+			}
+		});
+	}
+
+	// ─── NUEVO v5: ModChart scripting API ────────────────────────────────────────
+
+	/**
+	 * Objeto `modchart` — control del ModChartManager desde scripts.
+	 *
+	 * EVENTOS (usar en onSongStart o en callbacks de beat/step):
+	 *   modchart.add(beat, target, strumIdx, type, value, dur, ease)
+	 *   modchart.addNow(target, strumIdx, type, value, dur, ease)   ← beat actual
+	 *   modchart.clear()       → borrar todos los eventos
+	 *   modchart.reset()       → resetear a posición base
+	 *   modchart.enable()  / modchart.disable()
+	 *   modchart.isEnabled()   → Bool
+	 *   modchart.manager()     → ModChartManager.instance
+	 *
+	 * TARGETS: "player", "cpu", "all", o id de grupo específico
+	 * STRUM IDX: -1=todos, 0=LEFT, 1=DOWN, 2=UP, 3=RIGHT
+	 * TIPOS: usar ModEventType.MOVE_X, ModEventType.ANGLE, etc.
+	 * EASES: usar ModEase.SINE_OUT, ModEase.QUAD_IN_OUT, etc.
+	 *
+	 * EJEMPLO en script:
+	 *   modchart.add(4, "player", -1, ModEventType.MOVE_X, 200, 2, ModEase.SINE_OUT);
+	 *   modchart.add(8, "all",    0,  ModEventType.SPIN,   360, 0);
+	 */
+	static function exposeModChart(interp:Interp):Void
+	{
+		interp.variables.set('modchart', {
+			// Añadir evento en un beat concreto
+			add: function(beat:Float, target:String, strumIdx:Int,
+			             type:String, value:Float,
+			             ?duration:Float, ?ease:String) {
+				final mc = funkin.gameplay.modchart.ModChartManager.instance;
+				if (mc == null) return;
+				mc.addEventSimple(beat, target, strumIdx, type, value,
+					duration ?? 0.0, ease ?? "linear");
+			},
+			// Añadir evento desde el beat actual
+			addNow: function(target:String, strumIdx:Int,
+			                 type:String, value:Float,
+			                 ?duration:Float, ?ease:String) {
+				final mc = funkin.gameplay.modchart.ModChartManager.instance;
+				if (mc == null) return;
+				final beat = funkin.data.Conductor.crochet > 0
+					? funkin.data.Conductor.songPosition / funkin.data.Conductor.crochet
+					: 0.0;
+				mc.addEventSimple(beat, target, strumIdx, type, value,
+					duration ?? 0.0, ease ?? "linear");
+			},
+			clear: function() {
+				final mc = funkin.gameplay.modchart.ModChartManager.instance;
+				if (mc != null) mc.clearEvents();
+			},
+			reset: function() {
+				final mc = funkin.gameplay.modchart.ModChartManager.instance;
+				if (mc != null) mc.resetToStart();
+			},
+			enable: function() {
+				final mc = funkin.gameplay.modchart.ModChartManager.instance;
+				if (mc != null) mc.enabled = true;
+			},
+			disable: function() {
+				final mc = funkin.gameplay.modchart.ModChartManager.instance;
+				if (mc != null) mc.enabled = false;
+			},
+			isEnabled: function():Bool {
+				final mc = funkin.gameplay.modchart.ModChartManager.instance;
+				return mc != null ? mc.enabled : false;
+			},
+			manager: function():Dynamic {
+				return funkin.gameplay.modchart.ModChartManager.instance;
+			},
+			// Seek a un beat (útil para preview / restart)
+			seek: function(beat:Float) {
+				final mc = funkin.gameplay.modchart.ModChartManager.instance;
+				if (mc != null) mc.seekToBeat(beat);
+			}
 		});
 	}
 

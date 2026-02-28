@@ -441,8 +441,7 @@ class NoteManager
 		if (onCPUNoteHit != null)
 			onCPUNoteHit(note);
 		// Solo animar el strum en la nota cabeza, NO en las piezas de sustain.
-		if (!note.isSustainNote)
-			handleStrumAnimation(note.noteData, note.strumsGroupIndex, false);
+		handleStrumAnimation(note.noteData, note.strumsGroupIndex, false);
 		if (!note.isSustainNote && !FlxG.save.data.middlescroll && FlxG.save.data.notesplashes && renderer != null)
 			createNormalSplash(note, false);
 /*

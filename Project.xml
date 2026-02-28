@@ -115,11 +115,32 @@
 	<haxedef name="no-deprecation-warnings" unless="debug" />
 	<haxeflag name="-dce" value="std" unless="debug" />
 	
-	<!-- Memory management -->
-	<haxedef name="HXCPP_GC_GENERATIONAL" />
-	<haxedef name="HXCPP_CHECK_POINTER" if="debug" />
+	<!-- Memory / Crash management -->
+	<!--
+		HXCPP_GC_GENERATIONAL REMOVIDO:
+		El GC generacional puede colectar FlxGraphics que FunkinCache considera
+		vivos pero que temporalmente no tienen referencias fuertes desde C++.
+		Resultado: bitmap=null en FlxDrawQuadsItem::render (null object reference).
+		El GC conservador (default) es necesario con el sistema de caché de dos
+		capas del engine.
 
-	<haxedef name="DISABLE_TRACES" unless="debug" />
+		HXCPP_CHECK_POINTER sin if="debug":
+		Sin esto en release, un null ptr es SIGSEGV puro — el CrashHandler nunca
+		se entera. Con él, hxcpp inserta checks y lanza una excepción Haxe
+		capturable tanto en debug como en release.
+	-->
+	<haxedef name="HXCPP_CHECK_POINTER" />
+
+	<!--
+		openfl_enable_handle_error:
+		Necesario para que OpenFL despache UncaughtErrorEvent correctamente
+		en targets nativos (cpp). Sin esto el CrashHandler no recibe el evento.
+	-->
+	<haxedef name="openfl_enable_handle_error" />
+
+	<!-- DISABLE_TRACES removido: los traces son necesarios para que CrashHandler
+		 pueda imprimir diagnóstico. Reactivar solo cuando el crash esté resuelto. -->
+	<!-- <haxedef name="DISABLE_TRACES" unless="debug" /> -->
 	
 	<!-- Additional optimizations -->
 	<!-- nullSafety disabled: StrictThreaded causes false positives on mac/linux -->

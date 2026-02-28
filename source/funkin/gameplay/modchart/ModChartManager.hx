@@ -266,8 +266,10 @@ class ModChartManager
             var arr = states.get(group.id);
             if (arr == null) continue;
 
-            for (st in arr)
+            for (i in 0...arr.length)
             {
+                var st  = arr[i];
+                var spr = group.getStrum(i);
                 st.offsetX  = 0;
                 st.offsetY  = 0;
                 st.absX     = null;
@@ -275,8 +277,9 @@ class ModChartManager
                 st.angle    = 0;
                 st.spinRate = 0;
                 st.alpha    = 1;
-                st.scaleX   = 0.7;
-                st.scaleY   = 0.7;
+                // Restaurar escala base real (no hardcodeada a 0.7)
+                st.scaleX   = (spr != null) ? spr.scale.x : 0.7;
+                st.scaleY   = (spr != null) ? spr.scale.y : 0.7;
                 st.visible  = true;
             }
         }
@@ -304,12 +307,16 @@ class ModChartManager
         {
             var arr = states.get(group.id);
             if (arr == null) continue;
-            for (st in arr)
+            for (i in 0...arr.length)
             {
+                var st  = arr[i];
+                var spr = group.getStrum(i);
                 st.offsetX = 0; st.offsetY = 0;
                 st.absX = null; st.absY = null;
                 st.angle = 0; st.spinRate = 0;
-                st.alpha = 1; st.scaleX = 0.7; st.scaleY = 0.7;
+                st.alpha = 1;
+                st.scaleX = (spr != null) ? spr.scale.x : 0.7;
+                st.scaleY = (spr != null) ? spr.scale.y : 0.7;
                 st.visible = true;
             }
         }
@@ -601,11 +608,18 @@ class ModChartManager
         {
             var arr = states.get(t.groupId);
             if (arr == null) continue;
-            var st = arr[t.strumIdx];
+            if (t.strumIdx < 0 || t.strumIdx >= arr.length) continue;
+            var st  = arr[t.strumIdx];
+            // Buscar el sprite para restaurar escala real
+            var spr:Dynamic = null;
+            for (g in strumsGroups)
+                if (g.id == t.groupId) { spr = g.getStrum(t.strumIdx); break; }
             st.offsetX = 0; st.offsetY = 0;
             st.absX = null; st.absY = null;
             st.angle = 0; st.spinRate = 0;
-            st.alpha = 1; st.scaleX = 0.7; st.scaleY = 0.7;
+            st.alpha = 1;
+            st.scaleX = (spr != null) ? spr.scale.x : 0.7;
+            st.scaleY = (spr != null) ? spr.scale.y : 0.7;
             st.visible = true;
         }
     }

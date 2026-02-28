@@ -2351,7 +2351,7 @@ class StageEditor extends funkin.states.MusicBeatState
 				else if (assetKey.endsWith('.jpg')) assetKey = assetKey.substr(0, assetKey.length - 4);
 
 				if (elemAssetInput != null)
-					elemAssetInput.text = 'images/$assetKey';
+					elemAssetInput.text = '$assetKey';
 			});
 			_fileRef.load();
 		});
@@ -2578,7 +2578,7 @@ class AddElementSubState extends flixel.FlxSubState
 		lbl('Asset path  (images/stages/… or browse to copy):', y);
 
 		// Asset path input
-		assetInput = new FlxUIInputText(panX + 12, y + 14, W - 110, 'images/stages/myAsset', 11);
+		assetInput = new FlxUIInputText(panX + 12, y + 14, W - 110, 'myAsset', 11);
 		assetInput.scrollFactor.set();
 		assetInput.cameras = [_camSub];
 		add(assetInput);
@@ -2688,7 +2688,7 @@ class AddElementSubState extends flixel.FlxSubState
 				if (nameInput.text == 'new_element' || nameInput.text == '')
 					nameInput.text = assetKey;
 
-				assetInput.text = 'stages/$_stageName/images/$assetKey';
+				assetInput.text = '$assetKey';
 			});
 			_fileRef.load();
 		});

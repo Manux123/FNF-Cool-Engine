@@ -12,15 +12,9 @@ using StringTools;
 // ────────────────────────────────────────────────────────────────────────────
 // MP4Handler — VLC-backed MP4 playback
 //
-// Supported platforms:  Windows · macOS · Linux  (all desktop cpp targets)
-// Unsupported:          Android · iOS · HTML5
-//
-// macOS prerequisites:
-//   brew install --cask vlc   OR   brew install libvlc
-//
-// Linux prerequisites:
-//   sudo apt install libvlc-dev   (Debian/Ubuntu)
-//   sudo dnf install vlc-devel    (Fedora)
+// NOTA IMPORTANTE: El skip de videos SOLO ocurre desde el menú de pausa
+// (PauseSubState → "Skip Cutscene"). No se capturan teclas aquí para
+// evitar que ENTER dispare el skip Y el menú de pausa simultáneamente.
 // ────────────────────────────────────────────────────────────────────────────
 
 #if (cpp && !mobile)
@@ -34,11 +28,16 @@ class MP4Handler
 	public var bitmap:VlcBitmap;
 	public var sprite:FlxSprite;
 
+	// Evita que onVLCComplete se dispare después de kill()
+	var _killed:Bool = false;
+
 	public function new() {}
 
 	public function playMP4(path:String, ?midSong:Bool = false, ?repeat:Bool = false,
 		?outputTo:FlxSprite = null, ?isWindow:Bool = false, ?isFullscreen:Bool = false):Void
 	{
+		_killed = false;
+
 		if (!midSong)
 		{
 			if (FlxG.sound.music != null)
@@ -47,7 +46,6 @@ class MP4Handler
 
 		bitmap = new VlcBitmap();
 
-		// Maintain 16:9 aspect ratio centred on screen
 		var targetRatio:Float = 16 / 9;
 		var screenWidth:Float  = FlxG.stage.stageWidth;
 		var screenHeight:Float = FlxG.stage.stageHeight;
@@ -71,7 +69,7 @@ class MP4Handler
 		bitmap.onComplete   = onVLCComplete;
 		bitmap.onError      = onVLCError;
 
-		FlxG.stage.addEventListener(Event.ENTER_FRAME, update);
+		FlxG.stage.addEventListener(Event.ENTER_FRAME, _update);
 
 		bitmap.repeat     = repeat ? -1 : 0;
 		bitmap.inWindow   = isWindow;
@@ -82,36 +80,25 @@ class MP4Handler
 
 		if (outputTo != null)
 		{
-			// Render into a FlxSprite instead of the stage directly
 			bitmap.alpha = 0;
 			sprite = outputTo;
 		}
 	}
 
-	/** 
-	 * Normalise the path so libVLC always receives a valid URI.
-	 * Works on Windows (C:\\...), macOS (/Users/...) and Linux (/home/...).
-	 */
 	function normalisePath(fileName:String):String
 	{
-		// Already a full URI?
 		if (fileName.indexOf("file://") != -1 || fileName.indexOf("http") == 0)
 			return fileName;
 
 		#if windows
-		// Windows absolute path → file:///C:/path/to/file
 		if (fileName.indexOf(":") != -1)
 			return "file:///" + fileName.split("\\").join("/");
 		#end
 
-		// Relative path → prepend CWD as file URI
 		var cwd = Sys.getCwd().split("\\").join("/");
-		// Ensure trailing slash
-		if (!cwd.endsWith("/"))
-			cwd += "/";
+		if (!cwd.endsWith("/")) cwd += "/";
 
 		#if (mac || linux)
-		// Unix: path already uses forward slashes
 		return "file://" + cwd + fileName;
 		#else
 		return "file:///" + cwd + fileName;
@@ -123,65 +110,135 @@ class MP4Handler
 	function onVLCVideoReady():Void
 	{
 		trace("MP4Handler: video loaded!");
-
 		if (sprite != null)
 			sprite.loadGraphic(bitmap.bitmapData);
 	}
 
 	public function onVLCComplete():Void
 	{
-		FlxG.stage.removeEventListener(Event.ENTER_FRAME, update);
+		if (_killed) return; // kill() ya lo manejó, no disparar doble
+
+		_killed = true;
+		FlxG.stage.removeEventListener(Event.ENTER_FRAME, _update);
 		bitmap.stop();
+
+		// 1. Primero sacar el bitmap del stage para que desaparezca visualmente
+		_removeBitmapFromStage();
 
 		FlxG.camera.fade(FlxColor.BLACK, 0, false);
 
 		new FlxTimer().start(0.3, function(tmr:FlxTimer)
 		{
+			// 2. Liberar memoria nativa VLC
+			_disposeBitmapObject();
+
+			// 3. Ahora ejecutar el callback (puede cambiar de estado)
 			if (finishCallback != null)
-				finishCallback();
+			{
+				var cb = finishCallback;
+				finishCallback = null;
+				cb();
+			}
 			else if (stateCallback != null)
 				LoadingState.loadAndSwitchState(stateCallback);
-
-			if (bitmap != null)
-			{
-				bitmap.dispose();
-				if (FlxG.stage.contains(bitmap))
-					FlxG.stage.removeChild(bitmap);
-			}
 		});
 	}
 
+	/**
+	 * Para el video inmediatamente y limpia todo.
+	 * Llamado por VideoManager.stop() cuando el jugador usa "Skip Cutscene" del menú de pausa.
+	 */
 	public function kill():Void
 	{
-		if (bitmap == null)
-			return;
+		if (_killed) return;
+		_killed = true;
 
+		if (bitmap == null) return;
+
+		FlxG.stage.removeEventListener(Event.ENTER_FRAME, _update);
 		bitmap.stop();
 
-		if (finishCallback != null)
-			finishCallback();
+		// Sacar del stage primero
+		_removeBitmapFromStage();
 
-		bitmap.visible = false;
+		// Llamar callback antes de liberar memoria
+		if (finishCallback != null)
+		{
+			var cb = finishCallback;
+			finishCallback = null;
+			cb();
+		}
+
+		// Liberar memoria nativa
+		_disposeBitmapObject();
+	}
+
+	/**
+	 * Pausa la reproducción SIN ocultar el bitmap.
+	 * Baja el bitmap por debajo del canvas de Flixel (donde renderizan las cámaras)
+	 * para que el PauseSubState quede VISIBLE encima del video en pausa.
+	 */
+	public function pause():Void
+	{
+		if (bitmap == null) return;
+		bitmap.pause();
+		// El bitmap fue añadido con FlxG.addChildBelowMouse → está en FlxG.game.
+		// Al moverlo al índice 0, el canvas de Flixel queda por encima → PauseSubState visible.
+		try { FlxG.game.setChildIndex(bitmap, 0); } catch (_:Dynamic) {}
+	}
+
+	/**
+	 * Reanuda la reproducción y devuelve el bitmap a la cima del display list
+	 * para que el video tape el gameplay de nuevo.
+	 */
+	public function resume():Void
+	{
+		if (bitmap == null) return;
+		// Devolver a la cima para tapar el canvas de Flixel.
+		try { FlxG.game.setChildIndex(bitmap, FlxG.game.numChildren - 1); } catch (_:Dynamic) {}
+		bitmap.resume();
+	}
+
+	function _removeBitmapFromStage():Void
+	{
+		if (bitmap == null) return;
+		// El bitmap fue añadido con FlxG.addChildBelowMouse → está en FlxG.game, NO en FlxG.stage.
+		// FlxG.stage.removeChild() lanza excepción silenciosa porque no es hijo directo.
+		// La forma correcta es FlxG.removeChild(), igual que StateTransition.detach().
+		try { FlxG.removeChild(bitmap); } catch (_:Dynamic) {}
+	}
+
+	function _disposeBitmapObject():Void
+	{
+		if (bitmap == null) return;
+		try { bitmap.dispose(); } catch (_:Dynamic) {}
+		bitmap = null;
 	}
 
 	function onVLCError():Void
 	{
 		trace("MP4Handler: VLC error — file not found or codec issue.");
+		if (_killed) return;
+		_killed = true;
+
+		FlxG.stage.removeEventListener(Event.ENTER_FRAME, _update);
+		_removeBitmapFromStage();
+		_disposeBitmapObject();
 
 		if (finishCallback != null)
-			finishCallback();
+		{
+			var cb = finishCallback;
+			finishCallback = null;
+			cb();
+		}
 		else if (stateCallback != null)
 			LoadingState.loadAndSwitchState(stateCallback);
 	}
 
-	function update(e:Event):Void
+	function _update(e:Event):Void
 	{
-		// Skip video with Enter or Space
-		if (FlxG.keys.justPressed.ENTER || FlxG.keys.justPressed.SPACE)
-		{
-			if (bitmap != null && bitmap.isPlaying)
-				onVLCComplete();
-		}
+		// NO se maneja skip con teclado aquí.
+		// El único skip válido es desde PauseSubState → "Skip Cutscene".
 
 		if (bitmap != null)
 		{
@@ -194,9 +251,7 @@ class MP4Handler
 
 #else
 
-// ── Stub for unsupported platforms (mobile, html5) ──────────────────────────
-// Provides the same public API so the rest of the codebase compiles cleanly,
-// but shows a warning and skips to the next state immediately.
+// ── Stub para plataformas sin soporte (mobile, html5) ────────────────────────
 class MP4Handler
 {
 	public var finishCallback:Void->Void;
@@ -209,17 +264,23 @@ class MP4Handler
 	public function playMP4(path:String, ?midSong:Bool = false, ?repeat:Bool = false,
 		?outputTo:Dynamic = null, ?isWindow:Bool = false, ?isFullscreen:Bool = false):Void
 	{
-		trace("MP4Handler: VLC video playback is not supported on this platform. Skipping.");
+		trace("MP4Handler: no soportado en esta plataforma. Skipping.");
 		_skip();
 	}
 
 	public function onVLCComplete():Void { _skip(); }
 	public function kill():Void         { _skip(); }
+	public function pause():Void        {}
+	public function resume():Void       {}
 
 	inline function _skip():Void
 	{
 		if (finishCallback != null)
-			finishCallback();
+		{
+			var cb = finishCallback;
+			finishCallback = null;
+			cb();
+		}
 		else if (stateCallback != null)
 			funkin.states.LoadingState.loadAndSwitchState(stateCallback);
 	}

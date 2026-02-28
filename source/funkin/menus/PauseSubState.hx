@@ -18,12 +18,37 @@ import funkin.data.CoolUtil;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 import ui.Alphabet;
+import funkin.cutscenes.VideoManager;
+import funkin.data.Song;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modos del menú de pausa
+// ─────────────────────────────────────────────────────────────────────────────
+enum PauseMode
+{
+	Standard;   // Gameplay normal
+	Difficulty; // Submenú de cambio de dificultad
+	Cutscene;   // Pausado durante cutscene de video
+}
 
 class PauseSubState extends funkin.states.MusicBeatSubstate
 {
 	var grpMenuShit:FlxTypedGroup<Alphabet>;
-	var menuItems:Array<String> = ['Resume', 'Restart Song', 'Options', 'Exit to menu'];
-	var curSelected:Int = 0;
+
+	// Entradas base para cada modo
+	static final ENTRIES_STANDARD:Array<String> = [
+		'Resume', 'Restart Song', 'Change Difficulty', 'Options', 'Exit to menu'
+	];
+	static final ENTRIES_CUTSCENE:Array<String> = [
+		'Resume', 'Skip Cutscene', 'Exit to menu'
+	];
+
+	var menuItems:Array<String> = [];
+	var curSelected:Int         = 0;
+	var currentMode:PauseMode   = Standard;
+
+	/** true si se abrió durante una cutscene de video. */
+	var isCutsceneMode:Bool = false;
 
 	var pauseMusic:FlxSound;
 
@@ -35,17 +60,18 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 	var levelAuthor:FlxText;
 	var helpText:FlxText;
 
-	// Camera usado por este substate — determinado al inicio.
 	var _pauseCam:flixel.FlxCamera;
 
-	public function new()
+	/**
+	 * @param cutsceneMode  Pasar `true` cuando se pausa durante un video en curso.
+	 */
+	public function new(?cutsceneMode:Bool = false)
 	{
 		super();
 
-		// ── CRÍTICO: determinar la cámara ANTES de crear cualquier sprite.
-		// Se asigna cameras=[_pauseCam] en el substate Y en cada sprite individual.
-		// Esto evita que los sprites rendericen en la cámara equivocada (crash de
-		// renderizado en 2ª apertura cuando la cámara por defecto cambia de estado).
+		isCutsceneMode = cutsceneMode;
+
+		// ── Cámara — siempre la última de la lista para estar encima de todo ──
 		_pauseCam = FlxG.cameras.list[FlxG.cameras.list.length - 1];
 		cameras = [_pauseCam];
 
@@ -55,19 +81,15 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 		StateScriptHandler.callOnScripts('onCreate', []);
 		#end
 
-		if (PlayState.storyPlaylist.length > 1 && PlayState.isStoryMode)
-			menuItems.insert(2, "Skip Song");
-
-		// ── Limpiar entradas muertas del sound list ──────────────────────────
 		_cleanSoundList();
 
-		// ── Música de pausa ──────────────────────────────────────────────────
+		// Música de pausa
 		pauseMusic = new FlxSound().loadEmbedded(Paths.music('breakfast'), true, true);
 		pauseMusic.volume = 0;
 		pauseMusic.play(false, FlxG.random.int(0, Std.int(pauseMusic.length / 2)));
 		FlxG.sound.list.add(pauseMusic);
 
-		// ── Fondo (1×1 pixel escalado: evita alojar ~8 MB por bitmap 1920×1080) ──
+		// Fondo semitransparente (1×1 escalado para no alocar un bitmap enorme)
 		bg = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
 		bg.setGraphicSize(FlxG.width, FlxG.height);
 		bg.updateHitbox();
@@ -76,7 +98,7 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 		bg.cameras = [_pauseCam];
 		add(bg);
 
-		// ── Info de canción ────────────────────────────────────────────────────
+		// Info de la canción (esquina superior derecha)
 		levelInfo = new FlxText(FlxG.width - 400, 20, 380, PlayState.SONG.song, 32);
 		levelInfo.scrollFactor.set();
 		levelInfo.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
@@ -111,35 +133,19 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 		levelAuthor.cameras = [_pauseCam];
 		add(levelAuthor);
 
-		// ── Tweens de entrada ──────────────────────────────────────────────────
+		// Tweens de entrada
 		FlxTween.tween(bg,              {alpha: 0.7},                          0.4, {ease: FlxEase.quartInOut});
 		FlxTween.tween(levelInfo,       {alpha: 1, x: levelInfo.x + 10},       0.4, {ease: FlxEase.quartInOut, startDelay: 0.3});
 		FlxTween.tween(levelDifficulty, {alpha: 1, x: levelDifficulty.x + 10}, 0.4, {ease: FlxEase.quartInOut, startDelay: 0.4});
 		FlxTween.tween(levelDeaths,     {alpha: 1, x: levelDeaths.x + 10},     0.4, {ease: FlxEase.quartInOut, startDelay: 0.5});
 		FlxTween.tween(levelAuthor,     {alpha: 1, x: levelAuthor.x + 10},     0.4, {ease: FlxEase.quartInOut, startDelay: 0.6});
 
-		// ── Ítems del menú ──────────────────────────────────────────────────────
+		// Grupo de ítems del menú
 		grpMenuShit = new FlxTypedGroup<Alphabet>();
 		grpMenuShit.cameras = [_pauseCam];
 		add(grpMenuShit);
 
-		for (i in 0...menuItems.length)
-		{
-			var songText:Alphabet = new Alphabet(0, (70 * i) + 30, menuItems[i], true, false);
-			songText.isMenuItem = true;
-			songText.targetY = i;
-			songText.alpha = 0;
-			grpMenuShit.add(songText);
-
-			FlxTween.tween(songText, {alpha: 0.6}, 0.3, {
-				ease: FlxEase.quartOut,
-				startDelay: 0.3 + (i * 0.05)
-			});
-		}
-
-		changeSelection(0, true);
-
-		// ── Texto de ayuda ─────────────────────────────────────────────────────
+		// Texto de ayuda (parte inferior)
 		helpText = new FlxText(20, FlxG.height - 40, FlxG.width - 40,
 			"ENTER: Select  |  ARROWS: Navigate  |  ESC: Resume", 16);
 		helpText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.GRAY, CENTER, OUTLINE, FlxColor.BLACK);
@@ -149,7 +155,14 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 		add(helpText);
 
 		FlxTween.tween(helpText, {alpha: 0.7}, 0.4, {ease: FlxEase.quartInOut, startDelay: 0.7});
+
+		// Cargar el modo inicial
+		switchMode(isCutsceneMode ? Cutscene : Standard);
 	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// Update
+	// ─────────────────────────────────────────────────────────────────────────
 
 	override function update(elapsed:Float)
 	{
@@ -165,12 +178,14 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 		if (controls.UP_P)   changeSelection(-1);
 		if (controls.DOWN_P) changeSelection(1);
 
+		// ESC / BACK: volver al menú padre o hacer resume
 		if (FlxG.keys.justPressed.ESCAPE || controls.BACK)
 		{
-			close();
-			FlxG.sound.resume();
-			if (PlayState.instance != null)
-				PlayState.instance.paused = false;
+			if (currentMode == Difficulty)
+				switchMode(Standard);
+			else
+				_doResume();
+			return;
 		}
 
 		if (controls.ACCEPT)
@@ -178,39 +193,55 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 			var daSelected:String = menuItems[curSelected];
 
 			#if HSCRIPT_ALLOWED
-			StateScriptHandler.callOnScripts('onMenuItemSelected', [menuItems[curSelected], curSelected]);
+			StateScriptHandler.callOnScripts('onMenuItemSelected', [daSelected, curSelected]);
 			#end
 
 			switch (daSelected)
 			{
 				case "Resume":
-					close();
-					FlxG.sound.resume();
-					if (PlayState.instance != null)
-						PlayState.instance.paused = false;
+					_doResume();
+
 				case "Restart Song":
-					// Rewind restart — no destruye el state, lo reutiliza (V-Slice style)
 					if (PlayState.instance != null)
 						PlayState.instance.startRewindRestart();
-					close(); // cerrar pause DESPUÉS de iniciar el rewind
+					close();
+
 				case "Skip Song":
 					if (PlayState.instance != null)
 						PlayState.instance.endSong();
+
+				case "Change Difficulty":
+					switchMode(Difficulty);
+
 				case "Options":
 					OptionsMenuState.fromPause = true;
 					openSubState(new OptionsMenuState());
+
 				case "Exit to menu":
 					PlayState.isPlaying = false;
 					if (PlayState.isStoryMode)
-						StickerTransition.start(() -> {
+						StickerTransition.start(() ->
+						{
 							FlxG.sound.resume();
 							StateTransition.switchState(new StoryMenuState());
 						});
 					else
-						StickerTransition.start(() -> {
+						StickerTransition.start(() ->
+						{
 							FlxG.sound.resume();
 							StateTransition.switchState(new FreeplayState());
 						});
+
+				case "Skip Cutscene":
+					_skipCutscene();
+
+				case "Back":
+					switchMode(Standard);
+
+				default:
+					// Selección de dificultad generada dinámicamente
+					if (currentMode == Difficulty)
+						_applyDifficulty(daSelected);
 			}
 		}
 
@@ -219,8 +250,156 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 		#end
 	}
 
-	/** Cuando OptionsMenuState cierra con pendingRewind=true, disparar el rewind
-	 *  y cerrar el pause en lugar de quedarse abierto esperando al jugador. */
+	// ─────────────────────────────────────────────────────────────────────────
+	// Cambio de modo
+	// ─────────────────────────────────────────────────────────────────────────
+
+	function switchMode(mode:PauseMode):Void
+	{
+		currentMode = mode;
+		curSelected = 0;
+
+		switch (mode)
+		{
+			case Standard:
+				menuItems = ENTRIES_STANDARD.copy();
+				// Añadir "Skip Song" en modo historia con playlist > 1
+				if (PlayState.storyPlaylist.length > 1 && PlayState.isStoryMode)
+					menuItems.insert(2, "Skip Song");
+
+			case Cutscene:
+				menuItems = ENTRIES_CUTSCENE.copy();
+
+			case Difficulty:
+				menuItems = [];
+				for (i in 0...CoolUtil.difficultyArray.length)
+				{
+					// Marcar la dificultad activa con un indicador visual
+					var label = CoolUtil.difficultyArray[i];
+					if (i == PlayState.storyDifficulty)
+						label += "  ◀";
+					menuItems.push(label);
+				}
+				menuItems.push("Back");
+		}
+
+		_rebuildMenu();
+	}
+
+	function _rebuildMenu():Void
+	{
+		if (grpMenuShit != null)
+		{
+			for (item in grpMenuShit.members)
+				if (item != null) FlxTween.cancelTweensOf(item);
+			grpMenuShit.clear();
+		}
+
+		for (i in 0...menuItems.length)
+		{
+			var songText:Alphabet = new Alphabet(0, (70 * i) + 30, menuItems[i], true, false);
+			songText.isMenuItem = true;
+			songText.targetY    = i;
+			songText.alpha      = 0;
+			grpMenuShit.add(songText);
+
+			FlxTween.tween(songText, {alpha: 0.6}, 0.3, {
+				ease: FlxEase.quartOut,
+				startDelay: 0.1 + (i * 0.04)
+			});
+		}
+
+		changeSelection(0, true);
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// Acciones
+	// ─────────────────────────────────────────────────────────────────────────
+
+	/**
+	 * Resume: si hay video pausado, lo reanuda.
+	 * Solo llama FlxG.sound.resume() si la pausa vino de gameplay normal
+	 * (no de un video), para no arrancar la música en medio de una cutscene.
+	 */
+	function _doResume():Void
+	{
+		if (isCutsceneMode && VideoManager.isPlaying)
+		{
+			// Volvemos a un video: solo reanudar el video.
+			// FlxG.sound.pause/resume NO se llamaron, así que no hay nada que restaurar.
+			VideoManager.resume();
+		}
+		else
+		{
+			// Pausa normal de gameplay: restaurar todos los sonidos.
+			FlxG.sound.resume();
+		}
+
+		close();
+
+		if (PlayState.instance != null)
+			PlayState.instance.paused = false;
+	}
+
+	/**
+	 * Skip cutscene: para el video y reanuda el gameplay.
+	 * La música empezará cuando el countdown termine normalmente.
+	 */
+	function _skipCutscene():Void
+	{
+		// Restaurar estado de PlayState ANTES de stop() para que el callback
+		// de finishCallback (que llama startCountdown) encuentre el estado correcto.
+		if (PlayState.instance != null)
+		{
+			PlayState.instance.inCutscene = false;
+			PlayState.instance.canPause   = true;
+			PlayState.instance.paused     = false;
+		}
+
+		// stop() → kill() → finishCallback() → startCountdown() / continueAfterSong()
+		if (VideoManager.isPlaying)
+			VideoManager.stop();
+
+		close();
+	}
+
+	/**
+	 * Aplica la dificultad elegida del submenú y reinicia la canción.
+	 */
+	function _applyDifficulty(label:String):Void
+	{
+		// Quitar el marcador "  ◀" si aparece
+		var cleanLabel = label.split("  ◀")[0];
+		var idx = CoolUtil.difficultyArray.indexOf(cleanLabel);
+		if (idx == -1) return;
+
+		if (idx == PlayState.storyDifficulty)
+		{
+			// Misma dificultad: restart normal sin recargar chart
+			if (PlayState.instance != null)
+				PlayState.instance.startRewindRestart();
+			close();
+			return;
+		}
+
+		PlayState.storyDifficulty = idx;
+
+		// Recargar chart con la nueva dificultad
+		var songId = PlayState.SONG.song.toLowerCase();
+		PlayState.SONG = Song.loadFromJson(songId + CoolUtil.difficultyPath[idx], songId);
+
+		// Actualizar etiqueta antes de resetear
+		if (levelDifficulty != null)
+			levelDifficulty.text = "Difficulty: " + CoolUtil.difficultyString();
+
+		// Reset completo del state para aplicar el nuevo chart
+		FlxG.resetState();
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// closeSubState override
+	// ─────────────────────────────────────────────────────────────────────────
+
 	override function closeSubState():Void
 	{
 		super.closeSubState();
@@ -232,14 +411,18 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 		}
 	}
 
+	// ─────────────────────────────────────────────────────────────────────────
+	// Destroy
+	// ─────────────────────────────────────────────────────────────────────────
+
 	override function destroy()
 	{
-		if (bg != null)             { FlxTween.cancelTweensOf(bg);             bg = null; }
-		if (levelInfo != null)      { FlxTween.cancelTweensOf(levelInfo);      levelInfo = null; }
+		if (bg != null)             { FlxTween.cancelTweensOf(bg);              bg = null; }
+		if (levelInfo != null)      { FlxTween.cancelTweensOf(levelInfo);       levelInfo = null; }
 		if (levelDifficulty != null){ FlxTween.cancelTweensOf(levelDifficulty); levelDifficulty = null; }
-		if (levelDeaths != null)    { FlxTween.cancelTweensOf(levelDeaths);    levelDeaths = null; }
-		if (levelAuthor != null)    { FlxTween.cancelTweensOf(levelAuthor);    levelAuthor = null; }
-		if (helpText != null)       { FlxTween.cancelTweensOf(helpText);       helpText = null; }
+		if (levelDeaths != null)    { FlxTween.cancelTweensOf(levelDeaths);     levelDeaths = null; }
+		if (levelAuthor != null)    { FlxTween.cancelTweensOf(levelAuthor);     levelAuthor = null; }
+		if (helpText != null)       { FlxTween.cancelTweensOf(helpText);        helpText = null; }
 
 		if (grpMenuShit != null)
 		{
@@ -254,9 +437,6 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 			grpMenuShit = null;
 		}
 
-		// ── 2. Destruir la música de pausa: sacar de FlxG.sound.list ANTES
-		//       de llamar destroy() para que FlxG.sound.resume() de las capas
-		//       superiores no opera sobre un sonido ya destruido.
 		if (pauseMusic != null)
 		{
 			pauseMusic.stop();
@@ -265,23 +445,23 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 			pauseMusic = null;
 		}
 
-		// ── 3. Scripts
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.callOnScripts('onDestroy', []);
 		StateScriptHandler.clearStateScripts();
 		#end
 
-		// ── 4. super.destroy() destruye todos los miembros restantes del grupo.
 		super.destroy();
 
-		// ── 5. Seguridad: si el substate se destruyó sin pasar por Resume/Exit,
-		//       el SoundManager global puede quedarse pausado indefinidamente.
-		FlxG.sound.resume();
+		// Seguridad: si el substate se destruyó sin pasar por Resume/Exit
+		// Solo restaurar sonido si NO hay un video activo (la música la gestiona VideoManager/startSong).
+		if (!VideoManager.isPlaying)
+			FlxG.sound.resume();
 	}
 
-	// ─── Helpers privados ────────────────────────────────────────────────────
+	// ─────────────────────────────────────────────────────────────────────────
+	// Helpers privados
+	// ─────────────────────────────────────────────────────────────────────────
 
-	/** Limpia entradas muertas del sound list para evitar acumulación. */
 	private static function _cleanSoundList():Void
 	{
 		var i = FlxG.sound.list.length - 1;
@@ -296,15 +476,14 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 
 	function changeSelection(change:Int = 0, silent:Bool = false):Void
 	{
-		// Guard: no operar si grpMenuShit ya fue nullificado (ej. durante destroy).
 		if (grpMenuShit == null) return;
 
 		if (!silent)
 			FlxG.sound.play(Paths.sound('menus/scrollMenu'), 0.4);
 
 		curSelected += change;
-		if (curSelected < 0)                  curSelected = menuItems.length - 1;
-		if (curSelected >= menuItems.length)   curSelected = 0;
+		if (curSelected < 0)                 curSelected = menuItems.length - 1;
+		if (curSelected >= menuItems.length) curSelected = 0;
 
 		var bullShit:Int = 0;
 		for (item in grpMenuShit.members)

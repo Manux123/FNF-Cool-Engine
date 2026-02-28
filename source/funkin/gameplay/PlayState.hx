@@ -484,12 +484,20 @@ class PlayState extends funkin.states.MusicBeatState
 	 */
 	private function loadStageAndCharacters():Void
 	{
-		// Crear stage
+		// Crear stage (elementos sin aboveChars se añaden al propio grupo Stage)
 		currentStage = new Stage(curStage);
 		add(currentStage);
 
 		// Crear personajes desde stage
 		loadCharacters();
+
+		// ── Capas por encima de los personajes ───────────────────────────────
+		// Los elementos marcados con aboveChars:true en el JSON del stage se
+		// añaden AQUÍ, después de todos los personajes, para que se rendericen
+		// encima de ellos (cámaras, capas de luz, foreground, bokeh…)
+		// Equivalente a poner sprites DESPUÉS de <boyfriend> en Codename Engine.
+		if (currentStage.aboveCharsGroup != null && currentStage.aboveCharsGroup.length > 0)
+			add(currentStage.aboveCharsGroup);
 
 		if (characterSlots.length > 0)
 			gf = characterSlots[0].character;
@@ -1425,9 +1433,15 @@ class PlayState extends funkin.states.MusicBeatState
 			}
 		}
 
-		if (FlxG.keys.justPressed.ENTER && startedCountdown && canPause)
+		// Abrir menú de pausa con ENTER.
+		// Durante un video (VideoManager.isPlaying) siempre se permite,
+		// sin importar startedCountdown ni canPause, para poder usar "Skip Cutscene".
+		if (FlxG.keys.justPressed.ENTER && !paused)
 		{
-			pauseMenu();
+			if (VideoManager.isPlaying)
+				pauseMenu();
+			else if (startedCountdown && canPause && !inCutscene)
+				pauseMenu();
 		}
 
 		if (FlxG.keys.justPressed.SEVEN)
@@ -1498,7 +1512,18 @@ class PlayState extends funkin.states.MusicBeatState
 		persistentUpdate = false;
 		persistentDraw = true;
 		paused = true;
-		FlxG.sound.pause();
+
+		// Si hay un video activo NO pausamos FlxG.sound.music ni llamamos FlxG.sound.pause()
+		// porque FlxG.sound.pause() pondría _paused=true en music, y luego FlxG.sound.resume()
+		// en _doResume() lo arrancaría automáticamente MIENTRAS el video sigue corriendo.
+		if (VideoManager.isPlaying)
+		{
+			VideoManager.pause(); // baja el bitmap debajo del canvas de Flixel
+		}
+		else
+		{
+			FlxG.sound.pause(); // pausa música + sfx normalmente
+		}
 
 		// 1 / 1000 chance for Gitaroo Man easter egg
 		if (FlxG.random.bool(0.1))
@@ -1507,7 +1532,7 @@ class PlayState extends funkin.states.MusicBeatState
 		}
 		else
 		{
-			openSubState(new PauseSubState());
+			openSubState(new PauseSubState(inCutscene && VideoManager.isPlaying));
 		}
 	}
 
@@ -1960,7 +1985,7 @@ class PlayState extends funkin.states.MusicBeatState
 			if (FlxG.sound.music != null)
 			{
 				FlxG.sound.music.pause();
-				vocals.pause();
+				if (vocals != null) vocals.pause();
 			}
 
 			#if desktop
@@ -1977,7 +2002,8 @@ class PlayState extends funkin.states.MusicBeatState
 	{
 		if (paused)
 		{
-			if (FlxG.sound.music != null && !startingSong)
+			// No intentar sincronizar música si hay un video activo
+			if (FlxG.sound.music != null && !startingSong && !VideoManager.isPlaying)
 			{
 				resyncVocals();
 			}

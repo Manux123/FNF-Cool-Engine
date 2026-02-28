@@ -69,6 +69,14 @@ typedef StageElement =
 
 	// For custom class groups
 	@:optional var instances:Array<CustomClassInstance>;
+
+	/**
+	 * When true, this element renders ON TOP of characters.
+	 * Set this in the stage JSON (or via the Stage Editor) for foreground
+	 * layers like light shafts, front cameras, bokeh overlays, etc.
+	 * Equivalent to placing a sprite node AFTER <boyfriend> in Codename Engine XML.
+	 */
+	@:optional var aboveChars:Bool;
 }
 
 typedef CustomClassInstance =
@@ -146,6 +154,13 @@ class Stage extends FlxTypedGroup<FlxBasic>
 	public var customClasses:Map<String, FlxSprite> = new Map<String, FlxSprite>();
 	public var customClassGroups:Map<String, FlxTypedGroup<FlxSprite>> = new Map<String, FlxTypedGroup<FlxSprite>>();
 	public var sounds:Map<String, FlxSound> = new Map<String, FlxSound>();
+
+	/**
+	 * Elements with aboveChars:true are placed here.
+	 * PlayState adds this group AFTER the characters so they render on top.
+	 * Destroyed together with the Stage in destroy().
+	 */
+	public var aboveCharsGroup:FlxTypedGroup<FlxBasic> = new FlxTypedGroup<FlxBasic>();
 
 	public var defaultCamZoom:Float = 1.05;
 	public var isPixelStage:Bool = false;
@@ -360,6 +375,19 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		}
 	}
 
+	/**
+	 * After creating a sprite/group, decides which group it lives in.
+	 * Elements with aboveChars:true go into aboveCharsGroup (rendered above characters).
+	 * All others stay in the Stage group itself (rendered below characters).
+	 */
+	inline function _addToGroup(element:StageElement, obj:FlxBasic):Void
+	{
+		if (element.aboveChars == true)
+			aboveCharsGroup.add(obj);
+		else
+			add(obj);
+	}
+
 	// ── Sprite estático ───────────────────────────────────────────────────────
 	// Para imágenes sin animación se sigue usando FlxSprite (más ligero).
 
@@ -376,7 +404,7 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		}
 
 		applyElementProperties(sprite, element);
-		add(sprite);
+		_addToGroup(element, sprite);
 
 		if (element.name != null)
 			elements.set(element.name, sprite);
@@ -428,7 +456,7 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		}
 
 		applyElementProperties(sprite, element);
-		add(sprite);
+		_addToGroup(element, sprite);
 
 		if (element.name != null)
 			elements.set(element.name, sprite);
@@ -497,7 +525,7 @@ class Stage extends FlxTypedGroup<FlxBasic>
 			}
 		}
 
-		add(group);
+		_addToGroup(element, group);
 
 		if (element.name != null)
 			groups.set(element.name, group);
@@ -518,7 +546,7 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		if (sprite != null)
 		{
 			applyElementProperties(sprite, element);
-			add(sprite);
+			_addToGroup(element, sprite);
 
 			if (element.name != null)
 				customClasses.set(element.name, sprite);
@@ -593,7 +621,7 @@ class Stage extends FlxTypedGroup<FlxBasic>
 			}
 		}
 
-		add(group);
+		_addToGroup(element, group);
 
 		if (element.name != null)
 			customClassGroups.set(element.name, group);
@@ -927,6 +955,14 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		groups.clear();
 		customClasses.clear();
 		customClassGroups.clear();
+
+		// Destroy the above-characters group (PlayState adds it separately,
+		// but Stage is responsible for cleaning it up).
+		if (aboveCharsGroup != null)
+		{
+			aboveCharsGroup.destroy();
+			aboveCharsGroup = null;
+		}
 
 		super.destroy();
 	}

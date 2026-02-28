@@ -37,7 +37,15 @@ import haxe.Json;
  *     "color":          "FF5599",
  *     "website":        "https://…",
  *     "enabled":        true,
- *     "startupDefault": false    ← true = arranca siempre con este mod
+ *     "startupDefault": false,   ← true = arranca siempre con este mod
+ *     "appTitle":       "Mi Mod — FNF",  ← título de ventana (opcional)
+ *     "appIcon":        "icon",           ← PNG en raíz del mod, sin extensión (opcional)
+ *     "discord": {                        ← config de Discord Rich Presence (opcional)
+ *       "clientId":      "123456789",       ← app ID propio del mod
+ *       "largeImageKey": "mymod_icon",      ← key de imagen en Discord Dev Portal
+ *       "largeImageText": "Mi Mod",         ← tooltip de imagen grande
+ *       "menuDetails":   "Jugando Mi Mod"   ← texto en el menú
+ *     }
  *   }
  */
 class ModManager
@@ -359,6 +367,9 @@ class ModManager
 		var website        = '';
 		var enabledDef     = true;
 		var startupDef     = false;
+		var appTitle:Null<String> = null;
+		var appIcon:Null<String>  = null;
+		var discord:Null<ModDiscordConfig> = null;
 
 		if (FileSystem.exists(jsonPath))
 		{
@@ -373,6 +384,18 @@ class ModManager
 				website    = d.website        ?? '';
 				enabledDef = d.enabled        ?? true;
 				startupDef = d.startupDefault ?? false;
+				if (d.appTitle != null) appTitle = Std.string(d.appTitle);
+				if (d.appIcon  != null) appIcon  = Std.string(d.appIcon);
+				if (d.discord != null)
+				{
+					final dc:Dynamic = d.discord;
+					discord = {
+						clientId:     dc.clientId     != null ? Std.string(dc.clientId)     : null,
+						largeImageKey: dc.largeImageKey != null ? Std.string(dc.largeImageKey) : null,
+						largeImageText: dc.largeImageText != null ? Std.string(dc.largeImageText) : null,
+						menuDetails:  dc.menuDetails  != null ? Std.string(dc.menuDetails)  : null
+					};
+				}
 				if (d.color != null)
 				{
 					try
@@ -391,7 +414,8 @@ class ModManager
 		return {
 			id: id, name: name, description: desc, author: author,
 			version: version, priority: priority, color: color,
-			website: website, enabled: enabled, startupDefault: startupDef, folder: path
+			website: website, enabled: enabled, startupDefault: startupDef, folder: path,
+			appTitle: appTitle, appIcon: appIcon, discord: discord
 		};
 	}
 
@@ -410,6 +434,18 @@ class ModManager
 				enabled:        info.enabled,
 				startupDefault: info.startupDefault
 			};
+			// Solo serializar si están definidos, para no ensuciar mod.json sin esos campos
+			if (info.appTitle != null) Reflect.setField(obj, 'appTitle', info.appTitle);
+			if (info.appIcon  != null) Reflect.setField(obj, 'appIcon',  info.appIcon);
+			if (info.discord  != null)
+			{
+				final dc:Dynamic = {};
+				if (info.discord.clientId      != null) Reflect.setField(dc, 'clientId',      info.discord.clientId);
+				if (info.discord.largeImageKey  != null) Reflect.setField(dc, 'largeImageKey',  info.discord.largeImageKey);
+				if (info.discord.largeImageText != null) Reflect.setField(dc, 'largeImageText', info.discord.largeImageText);
+				if (info.discord.menuDetails   != null) Reflect.setField(dc, 'menuDetails',   info.discord.menuDetails);
+				Reflect.setField(obj, 'discord', dc);
+			}
 			File.saveContent('${info.folder}/mod.json', Json.stringify(obj, null, '\t'));
 		}
 		catch (e:Dynamic) { trace('[ModManager] Error escribiendo mod.json "${info.id}": $e'); }
@@ -465,6 +501,22 @@ class ModManager
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Configuración de Discord Rich Presence por mod.
+ * Todos los campos son opcionales — si no se definen, el engine usa sus valores por defecto.
+ */
+typedef ModDiscordConfig =
+{
+	/** ID de aplicación Discord del mod. Si se define, reinicia RPC con este clientId. */
+	var ?clientId:Null<String>;
+	/** Key de imagen grande en el portal de Discord Developer. Default: "icon". */
+	var ?largeImageKey:Null<String>;
+	/** Texto tooltip de la imagen grande. Default: "FNF\' Cool Engine". */
+	var ?largeImageText:Null<String>;
+	/** Texto de "details" que aparece en el menú. Default: "In the Menu". */
+	var ?menuDetails:Null<String>;
+}
+
 typedef ModInfo =
 {
 	var id:String;
@@ -478,6 +530,12 @@ typedef ModInfo =
 	var enabled:Bool;
 	var startupDefault:Bool;
 	var folder:String;
+	/** Título de ventana personalizado. null = usar el default del engine. */
+	var ?appTitle:Null<String>;
+	/** Nombre del archivo PNG de icono en la raíz del mod, sin extensión. null = icono default. */
+	var ?appIcon:Null<String>;
+	/** Configuración de Discord Rich Presence. null = usar valores por defecto del engine. */
+	var ?discord:Null<ModDiscordConfig>;
 }
 
 enum ModPreviewType { VIDEO; IMAGE; NONE; }

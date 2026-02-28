@@ -41,7 +41,8 @@ class NoteManager
 	// Datos crudos — solo primitivas, cero FlxSprites hasta spawnNotes()
 	private var unspawnNotes:Array<NoteRawData> = [];
 	private var _unspawnIdx:Int = 0;
-	private var _prevSpawnedNote:Note = null;
+	// BUGFIX: trackeado por dirección para evitar cross-chain en holds simultáneos
+	private var _prevSpawnedNote:Map<Int, Note> = new Map();
 
 	// === STRUMS ===
 	private var playerStrums:FlxTypedGroup<FlxSprite>;
@@ -161,7 +162,7 @@ class NoteManager
 	public function generateNotes(SONG:SwagSong):Void
 	{
 		_unspawnIdx = 0;
-		_prevSpawnedNote = null;
+		_prevSpawnedNote.clear();
 		songSpeed = SONG.speed;
 		_scrollSpeed = 0.45 * FlxMath.roundDecimal(songSpeed, 2);
 
@@ -328,7 +329,7 @@ class NoteManager
 		{
 			final raw = unspawnNotes[_unspawnIdx++];
 
-			final note = renderer.getNote(raw.strumTime, raw.noteData, _prevSpawnedNote, raw.isSustainNote, raw.mustHitNote);
+			final note = renderer.getNote(raw.strumTime, raw.noteData, _prevSpawnedNote.get(raw.noteData), raw.isSustainNote, raw.mustHitNote);
 			note.strumsGroupIndex = raw.strumsGroupIndex;
 			note.noteType = raw.noteType;
 			note.sustainLength = raw.sustainLength;
@@ -336,7 +337,7 @@ class NoteManager
 			note.active = true;
 			note.alpha = raw.isSustainNote ? 0.6 : 1.0;
 
-			_prevSpawnedNote = note;
+			_prevSpawnedNote.set(raw.noteData, note);
 			notes.add(note);
 			// Sin splice: el array NoteRawData es ~50 bytes/nota (trivial en RAM).
 			// El splice O(n) causaba un hiccup visible al 75% de la canción.
@@ -568,6 +569,7 @@ class NoteManager
 			if (note.isSustainNote)
 				handleSustainNoteHit(note);
 			else*/
+			if (!note.isSustainNote && FlxG.save.data.notesplashes && renderer != null)
 				createNormalSplash(note, true);
 		}
 		removeNote(note);
@@ -698,7 +700,7 @@ class NoteManager
 			i--;
 		}
 
-		_prevSpawnedNote = null;
+		_prevSpawnedNote.clear();
 		heldNotes.clear();
 		cpuHeldDirs.clear();
 		holdStartTimes.clear();
@@ -732,7 +734,7 @@ class NoteManager
 	{
 		unspawnNotes = [];
 		_unspawnIdx = 0;
-		_prevSpawnedNote = null;
+		_prevSpawnedNote.clear();
 		heldNotes.clear();
 		cpuHeldDirs.clear();
 		holdStartTimes.clear();

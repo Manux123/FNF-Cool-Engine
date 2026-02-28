@@ -16,15 +16,31 @@ using StringTools;
 
 class DiscordClient
 {
+	// ── Valores por defecto del engine (hardcoded) ────────────────────────────
+	static inline var DEFAULT_CLIENT_ID:String    = "886146334451720242";
+	static inline var DEFAULT_LARGE_IMAGE:String  = "icon";
+	static inline var DEFAULT_IMAGE_TEXT:String   = "FNF' Cool Engine";
+	static inline var DEFAULT_MENU_DETAILS:String = "In the Menu";
+
+	// ── Config activa (puede ser sobreescrita por un mod) ─────────────────────
+	public static var activeClientId:String    = DEFAULT_CLIENT_ID;
+	public static var activeLargeImageKey:String  = DEFAULT_LARGE_IMAGE;
+	public static var activeLargeImageText:String = DEFAULT_IMAGE_TEXT;
+	public static var activeMenuDetails:String = DEFAULT_MENU_DETAILS;
+
+	/** true si el RPC fue iniciado al menos una vez. */
+	static var _running:Bool = false;
+
 	public function new()
 	{
 		trace("Discord Client starting...");
 		DiscordRpc.start({
-			clientID: "886146334451720242",
+			clientID: activeClientId,
 			onReady: onReady,
 			onError: onError,
 			onDisconnected: onDisconnected
 		});
+		_running = true;
 		trace("Discord Client started.");
 
 		while (true)
@@ -39,15 +55,16 @@ class DiscordClient
 	public static function shutdown()
 	{
 		DiscordRpc.shutdown();
+		_running = false;
 	}
 
 	static function onReady()
 	{
 		DiscordRpc.presence({
-			details: "In the Menu",
+			details: activeMenuDetails,
 			state: null,
-			largeImageKey: 'icon',
-			largeImageText: "FNF' Cool Engine"
+			largeImageKey: activeLargeImageKey,
+			largeImageText: activeLargeImageText
 		});
 	}
 
@@ -70,6 +87,61 @@ class DiscordClient
 		trace("Discord Client initialized");
 	}
 
+	/**
+	 * Aplica la configuración de Discord de un mod.
+	 * Si info es null, restaura los valores por defecto del engine.
+	 *
+	 * Si el mod define un clientId distinto al actual, reinicia el RPC
+	 * con el nuevo ID de aplicación (requiere que el mod tenga su propia
+	 * app en el Discord Developer Portal con las imágenes subidas).
+	 *
+	 * Llamar desde Main.hx en onModChanged y al arrancar.
+	 */
+	public static function applyModConfig(info:Null<mods.ModManager.ModInfo>):Void
+	{
+		final dc = info?.discord;
+
+		final newClientId    = dc?.clientId      ?? DEFAULT_CLIENT_ID;
+		final newImageKey    = dc?.largeImageKey  ?? DEFAULT_LARGE_IMAGE;
+		final newImageText   = dc?.largeImageText ?? DEFAULT_IMAGE_TEXT;
+		final newMenuDetails = dc?.menuDetails   ?? DEFAULT_MENU_DETAILS;
+
+		final clientChanged = (newClientId != activeClientId);
+
+		activeLargeImageKey  = newImageKey;
+		activeLargeImageText = newImageText;
+		activeMenuDetails    = newMenuDetails;
+
+		if (clientChanged)
+		{
+			// clientId distinto → hay que reiniciar RPC con el nuevo app ID
+			activeClientId = newClientId;
+			trace('[Discord] clientId cambió → reiniciando RPC con "$newClientId"');
+			if (_running)
+			{
+				DiscordRpc.shutdown();
+				_running = false;
+			}
+			// Lanzar nuevo hilo con el clientId actualizado
+			initialize();
+		}
+		else
+		{
+			// Mismo clientId — solo actualizar la presence con los nuevos valores
+			if (_running)
+			{
+				DiscordRpc.presence({
+					details: activeMenuDetails,
+					state: null,
+					largeImageKey: activeLargeImageKey,
+					largeImageText: activeLargeImageText
+				});
+			}
+		}
+
+		trace('[Discord] Config applied → clientId=$activeClientId imageKey=$activeLargeImageKey menuDetails="$activeMenuDetails"');
+	}
+
 	public static function changePresence(details:String, state:Null<String>, ?smallImageKey:String,
 		?hasStartTimestamp:Bool, ?endTimestamp:Float)
 	{
@@ -81,8 +153,8 @@ class DiscordClient
 		DiscordRpc.presence({
 			details: details,
 			state: state,
-			largeImageKey: 'icon',
-			largeImageText: "FNF' Cool Engine",
+			largeImageKey: activeLargeImageKey,
+			largeImageText: activeLargeImageText,
 			smallImageKey: smallImageKey,
 			startTimestamp: Std.int(startTimestamp / 1000),
 			endTimestamp: Std.int(endTimestamp / 1000)
@@ -96,8 +168,13 @@ class DiscordClient
 // Provides the same public API so all imports resolve, but does nothing.
 class DiscordClient
 {
+	public static var activeClientId:String     = "";
+	public static var activeLargeImageKey:String   = "";
+	public static var activeLargeImageText:String  = "";
+	public static var activeMenuDetails:String  = "";
 	public static inline function initialize():Void {}
 	public static inline function shutdown():Void {}
+	public static inline function applyModConfig(?info:mods.ModManager.ModInfo):Void {}
 	public static inline function changePresence(details:String, state:Null<String>,
 		?smallImageKey:String, ?hasStartTimestamp:Bool, ?endTimestamp:Float):Void {}
 }

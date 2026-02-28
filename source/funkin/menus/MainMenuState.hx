@@ -87,7 +87,6 @@ class MainMenuState extends funkin.states.MusicBeatState
 		persistentUpdate = persistentDraw = true;
 
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Bitmap.fromFile(Paths.image('menu/menuBG')));
-		bg.color = 0xFF3E3E3E;
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0.18;
 		bg.screenCenter();

@@ -1902,20 +1902,22 @@ class AnimationDebug extends MusicBeatState
 		}
 
 		// ── Offset adjustment por mouse (click derecho + arrastrar) ───────────
-		// Click derecho: arrastrar para mover el offset de la animación actual.
+		// Click DERECHO: arrastrar para mover el offset de la animación actual.
+		// BUGFIX: antes usaba justPressed (click izquierdo) en lugar de justPressedRight,
+		// causando que cualquier click izquierdo en el área de juego moviese los offsets.
 		// La sensibilidad es 1px de mouse = 1px de offset (SHIFT = x3).
 		if (!isMouseOverHUD())
 		{
 			var mouseMult = FlxG.keys.pressed.SHIFT ? 3 : 1;
 
-			if (FlxG.mouse.justPressed)
+			if (FlxG.mouse.justPressedRight)
 			{
 				isDraggingOffset = true;
 				dragLastX = FlxG.mouse.screenX;
 				dragLastY = FlxG.mouse.screenY;
 			}
 
-			if (isDraggingOffset && FlxG.mouse.pressed)
+			if (isDraggingOffset && FlxG.mouse.pressedRight)
 			{
 				var dx = (FlxG.mouse.screenX - dragLastX) * mouseMult;
 				var dy = (FlxG.mouse.screenY - dragLastY) * mouseMult;
@@ -1951,13 +1953,13 @@ class AnimationDebug extends MusicBeatState
 				}
 			}
 
-			if (FlxG.mouse.justReleased)
+			if (FlxG.mouse.justReleasedRight)
 				isDraggingOffset = false;
 		}
 		else
 		{
 			// Si el mouse está sobre la UI, cancelar drag para no interferir
-			if (FlxG.mouse.justReleased)
+			if (FlxG.mouse.justReleasedRight)
 				isDraggingOffset = false;
 		}
 	} // end update

@@ -222,12 +222,24 @@ class Main extends Sprite
 		// ── Mods ──────────────────────────────────────────────────────────────
 		mods.ModManager.init();
 		mods.ModManager.applyStartupMod(); // activa el startup mod si no hay sesión guardada
+		// Aplicar branding del startup mod (título e icono) si hay uno activo
+		WindowManager.applyModBranding(mods.ModManager.activeInfo());
+		// Aplicar config de Discord del startup mod si hay uno activo
+		#if (desktop && cpp)
+		DiscordClient.applyModConfig(mods.ModManager.activeInfo());
+		#end
 		mods.ModManager.onModChanged = function(newMod:Null<String>)
 		{
 			Paths.forceClearCache();
 			funkin.gameplay.objects.character.CharacterList.reload();
 			MemoryUtil.collectMajor();
-			trace('[Main] Cache limpiado. Mod activo → ${newMod ?? "base"}');
+			trace('[Main] Cache cleaned. Mod active → ${newMod ?? "base"}');
+			// Aplicar título e icono del mod al cambiar de mod (o restaurar al desactivar)
+			WindowManager.applyModBranding(mods.ModManager.activeInfo());
+			// Aplicar config de Discord (clientId, imagen, menuDetails)
+			#if (desktop && cpp)
+			DiscordClient.applyModConfig(mods.ModManager.activeInfo());
+			#end
 		};
 
 		// ── Discord ───────────────────────────────────────────────────────────

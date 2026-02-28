@@ -149,6 +149,102 @@ class WindowManager
 		#end
 	}
 
+	// ══════════════════════════════════════════════════════════════════════════
+	//  BRANDING DE MOD: título e icono en runtime, sin recompilar
+	// ══════════════════════════════════════════════════════════════════════════
+
+	/** Título que usa el engine si no hay mod activo ni título capturado de la ventana. */
+	static inline var DEFAULT_TITLE:String = "Friday Night Funkin\': Cool Engine";
+	/** Título original de la app, guardado la primera vez que se cambia. */
+	static var _defaultTitle:Null<String> = null;
+	/** true si el icono actual fue cargado desde un mod (para restaurarlo). */
+	static var _usingModIcon:Bool = false;
+
+	/**
+	 * Aplica el branding (título e icono) de un ModInfo al arrancar o al cambiar de mod.
+	 * Si info es null, restaura los valores por defecto del engine.
+	 *
+	 * Campos leídos de mod.json:
+	 *   "appTitle": "Mi Mod — FNF"   ← título de la ventana del OS
+	 *   "appIcon":  "icon"            ← PNG en la raíz del mod, sin extensión
+	 *
+	 * Ejemplo de uso en Main.hx:
+	 *   ModManager.onModChanged = function(id) {
+	 *       WindowManager.applyModBranding(ModManager.activeInfo());
+	 *   };
+	 */
+	public static function applyModBranding(info:mods.ModManager.ModInfo):Void
+	{
+		#if !html5
+		final win = lime.app.Application.current?.window;
+		if (win == null) return;
+
+		// ── Guardar título default la primera vez ─────────────────────────────
+		if (_defaultTitle == null)
+			_defaultTitle = win.title;
+
+		// ── Título ───────────────────────────────────────────────────────────
+		if (info != null && info.appTitle != null && info.appTitle.trim() != '')
+			win.title = info.appTitle;
+		else
+			win.title = (_defaultTitle != null && _defaultTitle.trim() != '') ? _defaultTitle : DEFAULT_TITLE;
+
+		// ── Icono ────────────────────────────────────────────────────────────
+		#if sys
+		if (info != null && info.appIcon != null && info.appIcon.trim() != '')
+		{
+			// Buscar el PNG: primero con el nombre tal cual, luego añadiendo .png
+			var iconPath = '${info.folder}/${info.appIcon}';
+			if (!sys.FileSystem.exists(iconPath))
+				iconPath = '$iconPath.png';
+
+			if (sys.FileSystem.exists(iconPath))
+			{
+				try
+				{
+					// lime.graphics.Image.fromFile() carga el PNG directamente en memoria
+					// Application.window.setIcon() lo envía al OS sin recompilar
+					final img = lime.graphics.Image.fromFile(iconPath);
+					if (img != null)
+					{
+						win.setIcon(img);
+						_usingModIcon = true;
+						trace('[WindowManager] Icono de mod aplicado: $iconPath');
+					}
+				}
+				catch (e:Dynamic)
+				{
+					trace('[WindowManager] Error cargando icono de mod "$iconPath": $e');
+				}
+			}
+			else
+			{
+				trace('[WindowManager] Icono de mod no encontrado: $iconPath');
+			}
+		}
+		else if (_usingModIcon)
+		{
+			// No hay icono en este mod/base → restaurar icono del ejecutable (reimportar asset)
+			// Lime no tiene API para "restaurar icono default", pero cargando el asset
+			// embebido del proyecto lo conseguimos.
+			try
+			{
+				final defaultIcon = openfl.Assets.getBitmapData('icon.png', false);
+				if (defaultIcon != null)
+				{
+					final img = lime.graphics.Image.fromBitmapData(defaultIcon);
+					if (img != null) win.setIcon(img);
+				}
+			}
+			catch (_) {} // Si no hay icon.png embebido, simplemente no restaurar
+			_usingModIcon = false;
+		}
+		#end
+
+		trace('[WindowManager] Branding aplicado → título="${win.title}" modIcon=$_usingModIcon');
+		#end
+	}
+
 	public static function setWindowBounds(x:Int, y:Int, w:Int, h:Int):Void
 	{
 		#if !html5

@@ -61,6 +61,14 @@
 		<assets path='mods' rename='mods' embed='false' />
 	</section>
 
+	<!-- Windows -->
+	<prebuild command="cmd /c if exist export\debug\windows\cpp\bin\mods xcopy /E /I /Y /Q export\debug\windows\cpp\bin\mods mods &gt;nul" if="windows &amp;&amp; debug" />
+	<prebuild command="cmd /c if exist export\release\windows\cpp\bin\mods xcopy /E /I /Y /Q export\release\windows\cpp\bin\mods mods &gt;nul" if="windows &amp;&amp; !debug" />
+
+	<!-- Linux -->
+	<prebuild command="bash -c 'if [ -d export/debug/linux/cpp/bin/mods ]; then cp -rn export/debug/linux/cpp/bin/mods/. mods/; fi'" if="linux &amp;&amp; debug" />
+	<prebuild command="bash -c 'if [ -d export/release/linux/cpp/bin/mods ]; then cp -rn export/release/linux/cpp/bin/mods/. mods/; fi'" if="linux &amp;&amp; !debug" />
+
 	<assets path="plugins/" rename="" if="windows" />
 	<assets path="dlls/" rename="" if="windows" />
 	

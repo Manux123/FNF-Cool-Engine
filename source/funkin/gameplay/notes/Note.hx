@@ -38,16 +38,22 @@ class Note extends FlxSprite
 	var animArrows:Array<String> = ['purple', 'blue', 'green', 'red'];
 
 	// ── Estado de skin ────────────────────────────────────────────────────
+
 	/** Nombre de la skin actualmente cargada. Usado para detectar cambios en recycle(). */
 	private var _loadedSkinName:String = '';
+
 	/** Tipo con el que se cargó la skin: true=sustain, false=normal. Si cambia hay que recargar animaciones. */
 	private var _loadedAsSustain:Bool = false;
+
 	/** true si la skin cargada tiene isPixel:true. */
 	private var isPixelNote:Bool = false;
+
 	/** Escala aplicada al sprite, leída del JSON de skin. */
 	private var _noteScale:Float = 1.0;
+
 	/** Offset X extra para notas sustain, leído del JSON de skin. */
 	private var _skinSustainOffset:Float = 0.0;
+
 	/** Multiplicador de scale.y para hold chain, leído del JSON de skin. */
 	private var _skinHoldStretch:Float = 1.0;
 
@@ -55,15 +61,15 @@ class Note extends FlxSprite
 	private var _lastSongPos:Float = -1;
 	private var _hitWindowCache:Float = 0;
 
-	public function new(strumTime:Float, noteData:Int, ?prevNote:Note,
-	                    ?sustainNote:Bool = false, ?mustHitNote:Bool = false)
+	public function new(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?mustHitNote:Bool = false)
 	{
 		super();
 
-		if (prevNote == null) prevNote = this;
-		this.prevNote    = prevNote;
-		isSustainNote    = sustainNote;
-		this.mustPress   = mustHitNote;
+		if (prevNote == null)
+			prevNote = this;
+		this.prevNote = prevNote;
+		isSustainNote = sustainNote;
+		this.mustPress = mustHitNote;
 
 		// BUGFIX: aplicar el offset de dirección aquí mismo — setupNoteDirection
 		// ya no hace x += swagWidth*i para notas sustain (causaba WARNING),
@@ -71,7 +77,7 @@ class Note extends FlxSprite
 		x = _calcBaseX(mustHitNote) + (swagWidth * noteData);
 		y = -2000;
 		this.strumTime = strumTime + FlxG.save.data.offset;
-		this.noteData  = noteData;
+		this.noteData = noteData;
 
 		NoteSkinSystem.init();
 		loadSkin(NoteSkinSystem.getCurrentSkinData());
@@ -99,20 +105,19 @@ class Note extends FlxSprite
 	 */
 	function loadSkin(skinData:NoteSkinSystem.NoteSkinData):Void
 	{
-		if (skinData == null) return;
+		if (skinData == null)
+			return;
 
-		_loadedSkinName      = skinData.name;
-		_loadedAsSustain     = isSustainNote; // rastrear tipo para detectar cambio en recycle
-		isPixelNote          = skinData.isPixel == true;
-		_skinSustainOffset   = skinData.sustainOffset != null ? skinData.sustainOffset : 0.0;
-		_skinHoldStretch     = skinData.holdStretch   != null ? skinData.holdStretch   : 1.0;
+		_loadedSkinName = skinData.name;
+		_loadedAsSustain = isSustainNote; // rastrear tipo para detectar cambio en recycle
+		isPixelNote = skinData.isPixel == true;
+		_skinSustainOffset = skinData.sustainOffset != null ? skinData.sustainOffset : 0.0;
+		_skinHoldStretch = skinData.holdStretch != null ? skinData.holdStretch : 1.0;
 
 		// ── Elegir textura ────────────────────────────────────────────────
 		// Notas cabeza y strums → texture principal
 		// Sustain pieces + tails → holdTexture (si existe) o fallback a texture
-		var tex = (isSustainNote && skinData.holdTexture != null)
-			? skinData.holdTexture
-			: skinData.texture;
+		var tex = (isSustainNote && skinData.holdTexture != null) ? skinData.holdTexture : skinData.texture;
 
 		// ── Cargar frames ─────────────────────────────────────────────────
 		frames = NoteSkinSystem.loadSkinFrames(tex, skinData.folder);
@@ -139,7 +144,8 @@ class Note extends FlxSprite
 
 		// ── Animaciones ───────────────────────────────────────────────────
 		var anims = skinData.animations;
-		if (anims == null) return;
+		if (anims == null)
+			return;
 
 		if (!isSustainNote)
 		{
@@ -151,13 +157,13 @@ class Note extends FlxSprite
 		else
 		{
 			// Hold pieces
-			var holdDefs    = [anims.leftHold,    anims.downHold,    anims.upHold,    anims.rightHold];
+			var holdDefs = [anims.leftHold, anims.downHold, anims.upHold, anims.rightHold];
 			// Hold tails/ends
 			var holdEndDefs = [anims.leftHoldEnd, anims.downHoldEnd, anims.upHoldEnd, anims.rightHoldEnd];
 
 			for (i in 0...animArrows.length)
 			{
-				NoteSkinSystem.addAnimToSprite(this, animArrows[i] + 'hold',    holdDefs[i]);
+				NoteSkinSystem.addAnimToSprite(this, animArrows[i] + 'hold', holdDefs[i]);
 				NoteSkinSystem.addAnimToSprite(this, animArrows[i] + 'holdend', holdEndDefs[i]);
 			}
 		}
@@ -165,30 +171,29 @@ class Note extends FlxSprite
 
 	// ==================== RECYCLE (Object Pooling) ====================
 
-	public function recycle(strumTime:Float, noteData:Int, ?prevNote:Note,
-	                         ?sustainNote:Bool = false, ?mustHitNote:Bool = false):Void
+	public function recycle(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?mustHitNote:Bool = false):Void
 	{
-		this.strumTime       = strumTime + FlxG.save.data.offset;
-		this.noteData        = noteData;
-		this.prevNote        = prevNote != null ? prevNote : this;
-		this.isSustainNote   = sustainNote;
-		this.mustPress       = mustHitNote;
-		this.canBeHit        = false;
-		this.tooLate         = false;
-		this.wasGoodHit      = false;
-		this.noteScore       = 1;
-		this.noteRating      = 'sick';
+		this.strumTime = strumTime + FlxG.save.data.offset;
+		this.noteData = noteData;
+		this.prevNote = prevNote != null ? prevNote : this;
+		this.isSustainNote = sustainNote;
+		this.mustPress = mustHitNote;
+		this.canBeHit = false;
+		this.tooLate = false;
+		this.wasGoodHit = false;
+		this.noteScore = 1;
+		this.noteRating = 'sick';
 		this.strumsGroupIndex = 0;
-		this.noteType        = '';
-		this.alpha           = sustainNote ? 0.6 : 1.0;
-		this.visible         = true;
+		this.noteType = '';
+		this.alpha = sustainNote ? 0.6 : 1.0;
+		this.visible = true;
 
 		x = _calcBaseX(mustHitNote) + (swagWidth * noteData);
 		y = -2000;
 
 		var hitWindowMultiplier = isSustainNote ? 1.05 : 1.0;
 		_hitWindowCache = Conductor.safeZoneOffset * hitWindowMultiplier;
-		_lastSongPos    = -1;
+		_lastSongPos = -1;
 
 		revive();
 
@@ -235,7 +240,8 @@ class Note extends FlxSprite
 		// BUGFIX: las notas sustain NO tienen animación 'purpleScroll' registrada.
 		// Además, la X ya fue calculada en el constructor con swagWidth*noteData,
 		// así que no necesitamos x += aquí.
-		if (isSustainNote) return;
+		if (isSustainNote)
+			return;
 
 		// Solo reproducir la animación de scroll (X ya calculada en constructor)
 		if (animation.exists(animArrows[noteData] + 'Scroll'))
@@ -305,25 +311,67 @@ class Note extends FlxSprite
 		{
 			for (i in 0...dirs.length)
 			{
-				try { animation.addByPrefix(dirs[i] + 'Scroll', dirs[i] + '0'); } catch (_:Dynamic) {}
-				try { animation.addByPrefix(dirs[i] + 'Scroll', dirs[i]);       } catch (_:Dynamic) {}
+				try
+				{
+					animation.addByPrefix(dirs[i] + 'Scroll', dirs[i] + '0');
+				}
+				catch (_:Dynamic)
+				{
+				}
+				try
+				{
+					animation.addByPrefix(dirs[i] + 'Scroll', dirs[i]);
+				}
+				catch (_:Dynamic)
+				{
+				}
 			}
 			for (i in 0...dirs.length)
 				if (noteData == i && animation.exists(dirs[i] + 'Scroll'))
-					{ animation.play(dirs[i] + 'Scroll'); break; }
+				{
+					animation.play(dirs[i] + 'Scroll');
+					break;
+				}
 		}
 		else
 		{
 			for (i in 0...dirs.length)
 			{
-				try { animation.addByPrefix(dirs[i] + 'holdend', dirs[i] + ' hold end');   } catch (_:Dynamic) {}
-				try { animation.addByPrefix(dirs[i] + 'holdend', dirs[i] + 'holdend');     } catch (_:Dynamic) {}
-				try { animation.addByPrefix(dirs[i] + 'hold',    dirs[i] + ' hold piece'); } catch (_:Dynamic) {}
-				try { animation.addByPrefix(dirs[i] + 'hold',    dirs[i] + 'hold');        } catch (_:Dynamic) {}
+				try
+				{
+					animation.addByPrefix(dirs[i] + 'holdend', dirs[i] + ' hold end');
+				}
+				catch (_:Dynamic)
+				{
+				}
+				try
+				{
+					animation.addByPrefix(dirs[i] + 'holdend', dirs[i] + 'holdend');
+				}
+				catch (_:Dynamic)
+				{
+				}
+				try
+				{
+					animation.addByPrefix(dirs[i] + 'hold', dirs[i] + ' hold piece');
+				}
+				catch (_:Dynamic)
+				{
+				}
+				try
+				{
+					animation.addByPrefix(dirs[i] + 'hold', dirs[i] + 'hold');
+				}
+				catch (_:Dynamic)
+				{
+				}
 			}
 			for (i in 0...dirs.length)
 				if (noteData == i && animation.exists(dirs[i] + 'holdend'))
-					{ animation.play(dirs[i] + 'holdend'); break; }
+				{
+					animation.play(dirs[i] + 'holdend');
+					break;
+				}
 		}
 		setGraphicSize(Std.int(width * _noteScale));
 		updateHitbox();
@@ -353,7 +401,7 @@ class Note extends FlxSprite
 			if (mustPress)
 			{
 				canBeHit = (strumTime > Conductor.songPosition - _hitWindowCache
-				         && strumTime < Conductor.songPosition + _hitWindowCache);
+					&& strumTime < Conductor.songPosition + (_hitWindowCache / 2.5));
 			}
 			else
 			{

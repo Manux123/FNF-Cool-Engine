@@ -2,480 +2,189 @@ package funkin.gameplay.notes;
 
 import flixel.FlxG;
 import flixel.FlxSprite;
-import flixel.graphics.frames.FlxAtlasFrames;
-import flixel.util.FlxTimer;
+import funkin.gameplay.notes.NoteSkinSystem;
 import funkin.gameplay.notes.NoteSkinSystem.NoteSplashData;
 
+/**
+ * Splash visual que aparece al golpear una nota normal.
+ *
+ * Basado en el patrón limpio de v-slice (NoteSplash.hx):
+ * - Responsabilidad única: splashes de hit, sin ningún código de hold
+ * - Object pooling con kill()/revive()
+ * - Animaciones registradas una sola vez; se reaprovechan entre reciclajes
+ * - Skin soportada vía NoteSkinSystem
+ *
+ * Para splashes de hold notes, ver NoteHoldCover.hx
+ */
 class NoteSplash extends FlxSprite
 {
-	public var noteDatawea:Int = 0;
-	
-	// OPTIMIZATION: Flag para saber si está en uso
+	/** Dirección de la nota (0=left 1=down 2=up 3=right). */
+	public var noteData:Int = 0;
+
+	/** true mientras el splash está en uso (no en el pool). */
 	public var inUse:Bool = false;
-	
-	// NUEVO: Tipo de splash
-	public var splashType:SplashType = NORMAL;
-	
-	// NUEVO: Para hold splashes
-	public var isHoldSplash:Bool = false;
-	private var holdTimer:FlxTimer = null;
-	private var holdInterval:Float = 0.15; // Intervalo entre splashes de hold (segundos)
-	
-	// NUEVO: Para splashes de release (al soltar la nota)
-	public var isReleaseSplash:Bool = false;
 
-	public function new(x:Float, y:Float, noteData:Int = 0, ?splashName:String = null)
+	/** Nombre del splash skin con el que se cargaron los frames actuales. */
+	private var _loadedSplash:String = "";
+
+	// ─────────────────────────────────────────────────────────────────────────
+
+	public function new()
 	{
-		super(x, y);
-		noteDatawea = noteData;
-		//holdTimer = new FlxTimer();
-		setup(x, y, noteData, splashName);
-	}
-	
-	public function setup(x:Float, y:Float, noteData:Int = 0, ?splashName:String = null, ?type:SplashType = NORMAL)
-	{
-		this.x = x;
-		this.y = y;
-		noteDatawea = noteData;
-		inUse = true;
-		splashType = type;
-		
-		// Configurar según el tipo de splash
-		isHoldSplash = (type == HOLD_START || type == HOLD_CONTINUOUS);
-		isReleaseSplash = (type == HOLD_END);
-
-		// Inicializar sistema
-		NoteSkinSystem.init();
-
-		// Limpiar animaciones anteriores + nullear frames ANTES de recargar.
-		// Si el splash viene del pool y el atlas fue dispuesto (vuelve de
-		// ChartingState), frames puede apuntar a un FlxAtlasFrames inválido.
-		// Nullear aquí fuerza la recarga limpia en loadNormalSplash/loadHoldCoverSplash.
-		if (animation != null)
-		{
-			animation.destroyAnimations();
-		}
-		// Nullear el atlas si el bitmap ya no es válido (sesión anterior)
-		@:privateAccess
-		var isTextureInvalid = (frames == null || frames.parent == null || frames.parent.bitmap == null);
-		
-		if (isTextureInvalid)
-		{
-			trace('[NoteSplash] ERROR: Textura inválida o bitmap destruido de la caché. Abortando splash para evitar crash.');
-			makeGraphic(1, 1, 0x00000000); // Forzar un gráfico vacío seguro
-			visible = false;
-			active = false;
-			exists = false; // <-- CRÍTICO: Evita que el render loop intente procesarlo
-			return; // Abortamos el resto del setup
-		}
-		// NUEVO: Para hold splashes, usar archivos holdCover específicos
-		if (isHoldSplash || isReleaseSplash)
-		{
-			loadHoldCoverSplash(noteData, type);
-		}
-		else
-		{
-			// Obtener datos del splash normal
-			var splashData = NoteSkinSystem.getSplashData(splashName);
-			
-			if (splashData != null)
-			{
-				loadNormalSplash(splashData, noteData);
-			}
-			else
-			{
-				// Fallback a splash por defecto
-				trace('Warning: Could not load splash data, using default');
-				loadDefaultSplash(noteDatawea, type);
-			}
-		}
-
-		updateHitbox();
-		
-		// Centrar el splash
-		offset.x = width * 0.3;
-		offset.y = height * 0.3;
-		
-		// NUEVO: Alpha diferente según tipo
-		if (isHoldSplash)
-			alpha = 0.7; // Hold splashes semi-transparentes
-		else if (isReleaseSplash)
-			alpha = 0.8; // Release splash completamente visible
-		else
-			alpha = 0.8; // Normal splash visible
-
-		// FIX: ASEGURAR QUE EL SPLASH SEA VISIBLE
-		visible = true;
-		active = true;
-		
-		// Revivir el sprite si estaba muerto (para recycle)
-		revive();
-	}
-	
-	/**
-	 * NUEVO: Cargar splash específico para hold covers
-	 * AHORA CON DETECCIÓN AUTOMÁTICA DE SKIN
-	 */
-	function loadHoldCoverSplash(noteData:Int, type:SplashType):Void
-	{
-		// Mapear colores según la dirección de la nota
-		var colorNames:Array<String> = ["Purple", "Blue", "Green", "Red"]; // left, down, up, right
-		var color:String = colorNames[noteData];
-		
-		try
-		{
-			// NUEVO: Verificar si existe holdCover en la skin/splash actual
-			if (!NoteSkinSystem.holdCoverExists(color))
-			{
-				trace('Warning: holdCover$color not found in current splash (${NoteSkinSystem.getCurrentSplashFolder()}), using default splash');
-				loadDefaultSplash(noteData, type);
-				return;
-			}
-			
-			// NUEVO: Cargar frames del holdCover usando el sistema automático
-			frames = NoteSkinSystem.getHoldCoverTexture(color);
-			
-			if (frames == null)
-			{
-				trace('Warning: Could not load holdCover for color $color, using default');
-				loadDefaultSplash(noteData, type);
-				return;
-			}
-			
-			antialiasing = true;
-			
-			// Escala según el tipo
-			if (type == HOLD_START)
-			{
-				scale.set(1.0, 1.0); // Start splash mediano
-			}
-			else if (type == HOLD_CONTINUOUS)
-			{
-				scale.set(1.0, 1.0); // Continuous splash más pequeño
-			}
-			else if (type == HOLD_END)
-			{
-				scale.set(1.0, 1.0); // End splash más grande
-			}
-			
-			// Configurar animaciones según el tipo de hold splash
-			var framerate:Int = 24;
-			
-			if (type == HOLD_START)
-			{
-				// Animación de inicio de hold
-				animation.addByPrefix('holdStart', 'holdCoverStart${color}', framerate, false);
-				animation.play('holdStart', true);
-			}
-			else if (type == HOLD_CONTINUOUS)
-			{
-				// Animación continua mientras se mantiene
-				animation.addByPrefix('holdContinuous', 'holdCover${color}', framerate * 2, true); // Loop
-				animation.play('holdContinuous', true);
-			}
-			else if (type == HOLD_END)
-			{
-				// Animación de release/fin de hold
-				animation.addByPrefix('holdEnd', 'holdCoverEnd${color}', framerate, false);
-				animation.play('holdEnd', true);
-				
-				// Auto-destruirse cuando termine la animación de release
-				animation.finishCallback = function(name:String)
-				{
-					recycleSplash();
-				};
-			}
-			
-			trace('Loaded holdCover splash: $color from ${NoteSkinSystem.getCurrentSplashFolder()} (type: $type)');
-		}
-		catch (e:Dynamic)
-		{
-			trace('Error loading holdCover splash: $e');
-			loadDefaultSplash(noteData, type);
-		}
-	}
-	
-	/**
-	 * Cargar splash normal (no hold)
-	 */
-	function loadNormalSplash(splashData:NoteSplashData, noteData:Int):Void
-	{
-		// Cargar frames
-		frames = NoteSkinSystem.getSplashTexture();
-
-		// BUGFIX: getSplashTexture() puede devolver null si el atlas del splash
-		// (incluso el Default) no existe en disco. Con frames=null el sprite
-		// crashea en FlxDrawQuadsItem::render en el primer fotograma.
-		// makeGraphic() garantiza un BitmapData/frames válido como último recurso.
-		if (frames == null)
-		{
-			trace('[NoteSplash] WARN: getSplashTexture() devolvió null — usando placeholder para evitar crash');
-			makeGraphic(1, 1, 0x00000000);
-			inUse = false;
-			visible = false;
-			return;
-		}
-
-		// Aplicar escala
-		var splashScale:Float = splashData.assets.scale != null ? splashData.assets.scale : 1.0;
-		scale.set(splashScale, splashScale);
-
-		// Configurar antialiasing
-		antialiasing = splashData.assets.antialiasing != null ? splashData.assets.antialiasing : true;
-
-		// Aplicar offset si está configurado
-		if (splashData.assets.offset != null && splashData.assets.offset.length >= 2)
-		{
-			x += splashData.assets.offset[0];
-			y += splashData.assets.offset[1];
-		}
-
-		// Configurar animaciones
-		var anims = splashData.animations;
-		var framerate:Int = anims.framerate != null ? anims.framerate : 24;
-		var randomRange:Int = anims.randomFramerateRange != null ? anims.randomFramerateRange : 0;
-
-		// Ajustar framerate con randomización si está configurado
-		if (randomRange > 0)
-		{
-			framerate += FlxG.random.int(-randomRange, randomRange);
-		}
-
-		// Agregar todas las animaciones para cada dirección
-		var directions:Array<String> = ["left", "down", "up", "right"];
-		
-		for (i in 0...4)
-		{
-			var animList:Array<String> = null;
-			
-			switch (i)
-			{
-				case 0: animList = anims.left;
-				case 1: animList = anims.down;
-				case 2: animList = anims.up;
-				case 3: animList = anims.right;
-			}
-
-			if (animList != null && animList.length > 0)
-			{
-				// Agregar cada variación de animación
-				for (j in 0...animList.length)
-				{
-					var animPrefix:String = animList[j];
-					var animName:String = '${directions[i]}_$j';
-					
-					animation.addByPrefix(animName, animPrefix, framerate, false);
-				}
-			}
-		}
-
-		// Reproducir la animación correcta según la dirección.
-		// BUGFIX: NO llamar a playAnimation() que hace un getSplashData()
-		// independiente — puede devolver datos distintos (otra skin/splash) con
-		// diferente número de variantes, causando que el random pida e.g.
-		// "down_2" cuando solo están registradas "down_0" y "down_1" → WARNING.
-		// Usamos directamente los datos locales con los que se registraron las anims.
-		var dirs:Array<String> = ["left", "down", "up", "right"];
-		var dirName:String = dirs[noteData];
-		var playList:Array<String> = null;
-		switch (noteData)
-		{
-			case 0: playList = anims.left;
-			case 1: playList = anims.down;
-			case 2: playList = anims.up;
-			case 3: playList = anims.right;
-		}
-		if (playList != null && playList.length > 0)
-		{
-			var rndIdx:Int = FlxG.random.int(0, playList.length - 1);
-			var animName:String = '${dirName}_$rndIdx';
-			if (animation.exists(animName))
-				animation.play(animName, true);
-			else
-				trace('[NoteSplash] WARNING: animation "$animName" not found after registration!');
-		}
-
-		// Auto-destruirse cuando termine la animación
-		animation.finishCallback = function(name:String)
-		{
-			recycleSplash();
-		};
-	}
-	
-	/**
-	 * NUEVO: Iniciar splash continuo para hold note
-	 */
-	public function startContinuousSplash(x:Float, y:Float, noteData:Int, ?splashName:String = null):Void
-	{
-		setup(x, y, noteData, splashName, HOLD_CONTINUOUS);
-		
-		// REUTILIZACIÓN DEL TIMER
-		if (holdTimer == null) {
-			holdTimer = new FlxTimer();
-		} else {
-			holdTimer.cancel(); // Lo detenemos si estaba haciendo otra cosa
-		}
-		
-		// Usamos el mismo objeto holdTimer
-		holdTimer.start(holdInterval, function(timer:FlxTimer)
-		{
-			if (animation.curAnim != null)
-			{
-				animation.curAnim.restart();
-			}
-			
-			// Efecto visual
-			this.x = x + FlxG.random.float(-5, 5);
-			this.y = y + FlxG.random.float(-5, 5);
-			
-		}, 0);
-	}
-	
-	/**
-	 * NUEVO: Detener splash continuo
-	 */
-	public function stopContinuousSplash():Void
-	{
-		if (holdTimer != null)
-		{
-			holdTimer.cancel();
-		}
-		
-		recycleSplash();
-	}
-	
-	// OPTIMIZATION: Método para reciclar splash (Object Pooling)
-	public function recycleSplash():Void
-	{
-		// Cancelar timer si existe
-		if (holdTimer != null)
-		{
-			holdTimer.cancel();
-		}
-		
-		inUse = false;
-		visible = false;
-		active = false;
-		isHoldSplash = false;
-		isReleaseSplash = false;
+		super(0, 0);
 		kill();
 	}
 
-	function playAnimation(noteData:Int):Void
+	// ─────────────── API pública ──────────────────────────────────────────────
+
+	/**
+	 * Inicializar/reciclar el splash para una nota.
+	 *
+	 * @param x          Posición X
+	 * @param y          Posición Y
+	 * @param noteData   Columna de la nota (0-3)
+	 * @param splashName Skin de splash (null = currentSplash)
+	 */
+	public function setup(x:Float, y:Float, noteData:Int = 0, ?splashName:String):Void
 	{
-		var splashData = NoteSkinSystem.getSplashData();
-		if (splashData == null) return;
+		this.x = x;
+		this.y = y;
+		this.noteData = noteData;
+		inUse = true;
 
-		var anims = splashData.animations;
-		var animList:Array<String> = null;
-		var directionName:String = "";
+		var targetSplash:String = splashName != null ? splashName : NoteSkinSystem.currentSplash;
 
-		// Obtener la lista de animaciones para esta dirección
-		switch (noteData)
+		// Obtener datos del splash
+		var splashData:NoteSplashData = NoteSkinSystem.getSplashData(targetSplash);
+		if (splashData == null)
 		{
-			case 0: 
-				animList = anims.left;
-				directionName = "left";
-			case 1: 
-				animList = anims.down;
-				directionName = "down";
-			case 2: 
-				animList = anims.up;
-				directionName = "up";
-			case 3: 
-				animList = anims.right;
-				directionName = "right";
-		}
-
-		// Si hay múltiples variaciones, elegir una al azar
-		if (animList != null && animList.length > 0)
-		{
-			var randomIndex:Int = FlxG.random.int(0, animList.length - 1);
-			var animName:String = '${directionName}_$randomIndex';
-			
-			animation.play(animName, true);
-		}
-	}
-
-	function loadDefaultSplash(noteData:Int, ?type:SplashType = NORMAL):Void
-	{
-		// Cargar splash por defecto de FNF
-		frames = Paths.splashSprite('Default/noteSplashes');
-
-		// BUGFIX: si el asset Default/noteSplashes.png no existe (mod incompleto,
-		// instalación rota, etc.) frames queda null → crash en FlxDrawQuadsItem::render.
-		if (frames == null)
-		{
-			trace('[NoteSplash] WARN: Default/noteSplashes no encontrado — usando placeholder para evitar crash');
-			makeGraphic(1, 1, 0x00000000);
-			inUse = false;
-			visible = false;
+			_fallback();
 			return;
 		}
 
-		antialiasing = true;
+		// Solo recargar atlas si el skin cambió o el bitmap fue destruido
+		@:privateAccess
+		var needsReload = (_loadedSplash != targetSplash)
+			|| frames == null
+			|| frames.parent == null
+			|| frames.parent.bitmap == null;
 
-		// NUEVO: Escala según tipo
-		if (type == HOLD_START || type == HOLD_CONTINUOUS)
-			scale.set(0.7, 0.7);
-		else if (type == HOLD_END)
-			scale.set(1.2, 1.2);
-
-		// Configurar animaciones por defecto
-		animation.addByPrefix('purple_0', 'note impact 1 purple', 24, false);
-		animation.addByPrefix('purple_1', 'note impact 2 purple', 24, false);
-		animation.addByPrefix('blue_0', 'note impact 1 blue', 24, false);
-		animation.addByPrefix('blue_1', 'note impact 2 blue', 24, false);
-		animation.addByPrefix('green_0', 'note impact 1 green', 24, false);
-		animation.addByPrefix('green_1', 'note impact 2 green', 24, false);
-		animation.addByPrefix('red_0', 'note impact 1 red', 24, false);
-		animation.addByPrefix('red_1', 'note impact 2 red', 24, false);
-
-		// Reproducir animación aleatoria según dirección
-		var directions:Array<String> = ['purple', 'blue', 'green', 'red'];
-		var randomVar:Int = FlxG.random.int(0, 1);
-		animation.play('${directions[noteData]}_$randomVar', true);
-
-		if (type != HOLD_CONTINUOUS)
+		if (needsReload)
 		{
-			animation.finishCallback = function(name:String)
+			if (!_loadFrames(splashData, targetSplash))
 			{
-				recycleSplash();
-			};
+				_fallback();
+				return;
+			}
+			_loadedSplash = targetSplash;
 		}
+
+		alpha = 0.8;
+		visible = true;
+		revive();
+
+		_playRandomAnim(splashData, noteData);
 	}
 
-	override function update(elapsed:Float)
+	// ─────────────────────────────────────────────────────────────────────────
+
+	override function kill():Void
 	{
-		super.update(elapsed);
-
-		// Auto-reciclarse si la animación no está configurada correctamente
-		if (!isHoldSplash && animation.curAnim != null && animation.curAnim.finished)
-		{
-			recycleSplash();
-		}
+		super.kill();
+		inUse = false;
+		visible = false;
 	}
-	
-	override function destroy()
+
+	override function revive():Void
 	{
-		if (holdTimer != null)
-		{
-			holdTimer.cancel();
-			holdTimer.destroy();
-			holdTimer = null;
-		}
-		
-		super.destroy();
+		super.revive();
+		visible = true;
 	}
-}
 
-/**
- * NUEVO: Enum para tipos de splash
- */
-enum SplashType
-{
-	NORMAL;          // Splash normal al golpear una nota
-	HOLD_START;      // Splash al inicio de una hold note
-	HOLD_CONTINUOUS; // Splash continuo mientras se mantiene la nota
-	HOLD_END;        // Splash al soltar/terminar la hold note
+	// ─────────────── Internos ────────────────────────────────────────────────
+
+	/**
+	 * Cargar el atlas y registrar todas las animaciones.
+	 * Solo se llama cuando el skin realmente cambió.
+	 */
+	private function _loadFrames(splashData:NoteSplashData, splashName:String):Bool
+	{
+		var loaded = NoteSkinSystem.getSplashTexture(splashName);
+		if (loaded == null) return false;
+
+		frames = loaded;
+
+		var assets = splashData.assets;
+		scale.set(assets.scale != null ? assets.scale : 1.0, assets.scale != null ? assets.scale : 1.0);
+		antialiasing = assets.antialiasing != null ? assets.antialiasing : true;
+
+		if (assets.offset != null && assets.offset.length >= 2)
+		{
+			x += assets.offset[0];
+			y += assets.offset[1];
+		}
+
+		// Registrar animaciones para las 4 direcciones
+		if (animation != null) animation.destroyAnimations();
+
+		var anims = splashData.animations;
+		var framerate:Int = anims.framerate != null ? anims.framerate : 24;
+		var dirs = ["left", "down", "up", "right"];
+		var dirAnims = [anims.left, anims.down, anims.up, anims.right];
+
+		for (i in 0...4)
+		{
+			var animList:Array<String> = dirAnims[i];
+			if (animList == null) continue;
+			for (j in 0...animList.length)
+			{
+				animation.addByPrefix('${dirs[i]}_$j', animList[j], framerate, false);
+			}
+		}
+
+		animation.finishCallback = _onAnimationFinished;
+
+		updateHitbox();
+		offset.set(width * 0.3, height * 0.3);
+
+		return true;
+	}
+
+	/**
+	 * Reproducir una variante aleatoria de la dirección indicada.
+	 */
+	private function _playRandomAnim(splashData:NoteSplashData, noteData:Int):Void
+	{
+		var dirs = ["left", "down", "up", "right"];
+		var dirAnims = [splashData.animations.left, splashData.animations.down,
+						splashData.animations.up, splashData.animations.right];
+
+		var animList:Array<String> = dirAnims[noteData];
+		if (animList == null || animList.length == 0) return;
+
+		var variant:Int = FlxG.random.int(0, animList.length - 1);
+		var animName:String = '${dirs[noteData]}_$variant';
+
+		if (animation.exists(animName))
+		{
+			var range:Int = splashData.animations.randomFramerateRange != null ? splashData.animations.randomFramerateRange : 2;
+			var baseFps:Int = splashData.animations.framerate != null ? splashData.animations.framerate : 24;
+
+			animation.play(animName, true);
+			if (animation.curAnim != null)
+				animation.curAnim.frameRate = baseFps + FlxG.random.int(-range, range);
+		}
+	}
+
+	private function _onAnimationFinished(name:String):Void
+	{
+		kill();
+	}
+
+	private function _fallback():Void
+	{
+		makeGraphic(1, 1, 0x00000000);
+		inUse = false;
+		visible = false;
+	}
 }

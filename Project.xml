@@ -68,7 +68,7 @@
 
 	<!-- <template path="mods" /> -->
 	
-	<assets path="CHANGELOG.md" rename="changelog.txt" />
+	<assets path="CHANGELOG.md"/>
 
 	<define name="HSCRIPT_ALLOWED" />
 

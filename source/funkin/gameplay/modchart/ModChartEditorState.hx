@@ -15,6 +15,7 @@ import funkin.gameplay.notes.StrumNote;
 import funkin.gameplay.notes.Note;
 import funkin.transitions.StateTransition;
 import funkin.gameplay.notes.NoteSplash;
+import funkin.gameplay.notes.NoteHoldCover;
 import funkin.gameplay.NoteManager;
 import funkin.gameplay.modchart.ModChartEvent;
 import funkin.gameplay.modchart.ModChartManager;
@@ -95,6 +96,7 @@ class ModChartEditorState extends FlxState
 	private var noteManager  : NoteManager;
 	private var editorNotes  : FlxTypedGroup<Note>;
 	private var editorSplash : FlxTypedGroup<NoteSplash>;
+	private var editorHoldCovers : FlxTypedGroup<NoteHoldCover>;
 
 	// Los grupos de strums que NoteManager necesita
 	private var editorCpuStrums    : FlxTypedGroup<FlxSprite>;
@@ -246,10 +248,12 @@ class ModChartEditorState extends FlxState
 		selBoxGroup   = new FlxGroup(); add(selBoxGroup);
 
 		// Grupos de notas y splashes (añadidos antes que strums para que queden detrás)
-		editorNotes  = new FlxTypedGroup<Note>();
-		editorSplash = new FlxTypedGroup<NoteSplash>();
+		editorNotes      = new FlxTypedGroup<Note>();
+		editorSplash     = new FlxTypedGroup<NoteSplash>();
+		editorHoldCovers = new FlxTypedGroup<NoteHoldCover>();
 		add(editorNotes);
 		add(editorSplash);
+		add(editorHoldCovers);
 
 		tlGroup     = new FlxGroup(); add(tlGroup);
 		windowGroup = new FlxGroup(); add(windowGroup);
@@ -459,6 +463,7 @@ class ModChartEditorState extends FlxState
 			editorPlayerStrums,
 			editorCpuStrums,
 			editorSplash,
+			editorHoldCovers,
 			editorPlayerGroup,
 			editorCpuGroup,
 			editorGroups

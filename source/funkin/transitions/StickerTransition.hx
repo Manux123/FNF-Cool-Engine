@@ -20,7 +20,7 @@ class StickerTransition
 {
 	// Configuración
 	public static var enabled:Bool = true;
-	public static var configPath:String = Paths.resolve('images/transitionSwag/sticker-config.json');
+	public static var configPath:String = Paths.resolveWrite('data/stickers/sticker-config.json');
 
 	private static var config:StickerConfig;
 	private static var onComplete:Void->Void;

@@ -484,7 +484,8 @@ class NoteSkinOptions extends funkin.states.MusicBeatState
 			selectedSplash = null;
 
 		var strum = previewStrums.members[direction];
-		var splash = new NoteSplash(strum.x, strum.y, direction, selectedSplash);
+		var splash = new NoteSplash();
+		splash.setup(strum.x, strum.y, direction, selectedSplash);
 		// CORREGIDO: Centrar el splash correctamente
 		splash.x -= splash.width / 2;
 		splash.y -= splash.height / 2;

@@ -110,21 +110,21 @@ class HealthIcon extends FlxSprite
 
 		if (iconCount >= 3)
 		{
-			animation.add('normal',  [0], 0, false, isPlayer);
-			animation.add('losing',  [1], 0, false, isPlayer);
-			animation.add('winning', [2], 0, false, isPlayer);
+			animation.add('normal',  [0], 0, false);
+			animation.add('losing',  [1], 0, false);
+			animation.add('winning', [2], 0, false);
 		}
 		else if (iconCount == 2)
 		{
-			animation.add('normal',  [0], 0, false, isPlayer);
-			animation.add('losing',  [1], 0, false, isPlayer);
-			animation.add('winning', [0], 0, false, isPlayer);
+			animation.add('normal',  [0], 0, false);
+			animation.add('losing',  [1], 0, false);
+			animation.add('winning', [0], 0, false);
 		}
 		else
 		{
-			animation.add('normal',  [0], 0, false, isPlayer);
-			animation.add('losing',  [0], 0, false, isPlayer);
-			animation.add('winning', [0], 0, false, isPlayer);
+			animation.add('normal',  [0], 0, false);
+			animation.add('losing',  [0], 0, false);
+			animation.add('winning', [0], 0, false);
 		}
 
 		flipX = isPlayer;

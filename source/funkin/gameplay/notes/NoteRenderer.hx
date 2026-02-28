@@ -6,86 +6,88 @@ import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
 import funkin.gameplay.notes.Note;
 import funkin.gameplay.notes.NoteSplash;
+import funkin.gameplay.notes.NoteHoldCover;
 import funkin.gameplay.notes.NoteBatcher;
 
 /**
  * NoteRenderer SUPER OPTIMIZADO
- * 
- * NUEVAS CARACTERÍSTICAS:
- * - Batching de notas para reducir draw calls
- * - Splashes para hold notes (inicio, continuo, fin)
- * - Object pooling mejorado
- * - Gestión automática de splashes continuos
+ *
+ * ARQUITECTURA (patrón v-slice):
+ * - NoteSplash    → solo splashes de hit en notas normales
+ * - NoteHoldCover → covers visuales para hold notes (start → loop → end)
+ * - Object pooling separado para cada tipo
+ * - Cero allocs en los paths calientes (buffers preallocados)
+ *
+ * API pública usada por NoteManager:
+ * - getNote / recycleNote
+ * - spawnSplash        (notas normales)
+ * - recycleSplash
+ * - startHoldCover     (inicio de hold note)
+ * - stopHoldCover      (release o miss)
+ * - updateHoldCovers   (limpiar covers huérfanos, llamar 1×/frame)
+ * - updateBatcher
+ * - clearPools / destroy
  */
 class NoteRenderer
 {
     // Referencias
     private var playerStrums:FlxTypedGroup<FlxSprite>;
     private var cpuStrums:FlxTypedGroup<FlxSprite>;
-    
-    // NUEVO: Batcher para notas
-    public var noteBatcher:NoteBatcher;
-    private var useBatching:Bool = true;
-    
+
+    // BUGFIX: El batcher interno de NoteRenderer NUNCA se añade al FlxState
+    // via add(), por lo que nunca se dibuja. Las notas se renderizan desde el
+    // FlxTypedGroup<Note> que PlayState sí añade a la escena.
+    public var noteBatcher:NoteBatcher = null;
+    private var useBatching:Bool = false;
+
     // Config
     public var downscroll:Bool = false;
     public var strumLineY:Float = 50;
     public var noteSpeed:Float = 1.0;
-    
-    // OPTIMIZATION: Object Pooling para notas
-    // BUGFIX: pools separados para sustain vs normal — mezclarlos causaba que
-    // note.recycle() cambiara isSustainNote sin recargar las animaciones de skin,
-    // disparando WARNING "No animation called 'purpleScroll'" etc. y hold notes
-    // visualmente corruptos.
+
+    // OPTIMIZATION: pools separados para sustain vs normal.
+    // BUGFIX: mezclarlos causaba que note.recycle() cambiara isSustainNote sin
+    // recargar animaciones → WARNING "No animation called 'purpleScroll'" etc.
     private var notePool:Array<Note>    = [];   // notas normales (cabeza)
     private var sustainPool:Array<Note> = [];   // hold pieces + tails
     private var maxPoolSize:Int = 50;
-    
-    // OPTIMIZATION: Object Pooling para splashes
+
+    // OPTIMIZATION: pool de splashes de hit normales
     private var splashPool:Array<NoteSplash> = [];
     private var maxSplashPoolSize:Int = 32;
-    
-    // Tracking de hold notes activas para splashes continuos
-    private var activeHoldSplashes:Map<Note, NoteSplash> = new Map();
-    // Buffer reutilizable para updateHoldSplashes — cero allocs por frame.
-    // Antes: var notesToRemove:Array<Note> = [] dentro del metodo → ~60 new() por seg
-    private var _holdSplashRemoveBuffer:Array<Note> = [];
-    
+
+    // NUEVO (v-slice): pool de NoteHoldCover
+    public var holdCoverPool:Array<NoteHoldCover> = [];
+    private var maxHoldCoverPoolSize:Int = 8;
+
+    // Tracking de hold notes activas → cover asociado (keyed por dirección 0-3)
+    private var activeHoldCovers:Map<Int, NoteHoldCover> = new Map();
+
     // Stats de pooling
     public var pooledNotes:Int = 0;
     public var pooledSplashes:Int = 0;
     public var createdNotes:Int = 0;
     public var createdSplashes:Int = 0;
-    
-    // NUEVO: Configuración de splashes para holds
-    public var holdSplashesEnabled:Bool = true;
-    public var holdSplashInterval:Float = 0.2; // Intervalo entre splashes de hold
-    
+    public var pooledHoldCovers:Int = 0;
+    public var createdHoldCovers:Int = 0;
+
     // Constructor
     public function new(notes:FlxTypedGroup<Note>, playerStrums:FlxTypedGroup<FlxSprite>, cpuStrums:FlxTypedGroup<FlxSprite>)
     {
         this.playerStrums = playerStrums;
         this.cpuStrums = cpuStrums;
-        
-        // NUEVO: Inicializar batcher
-        if (useBatching)
-        {
-            noteBatcher = new NoteBatcher();
-        }
-        
-        trace('[NoteRenderer] Inicializado - Pool: $maxPoolSize notas, $maxSplashPoolSize splashes');
-        trace('[NoteRenderer] Batching: $useBatching | Hold Splashes: $holdSplashesEnabled');
+
+        trace('[NoteRenderer] Inicializado - Pool: $maxPoolSize notas, $maxSplashPoolSize splashes, $maxHoldCoverPoolSize holdCovers');
     }
-    
+
+    // ─────────────────────────── NOTE POOL ───────────────────────────────────
+
     /**
-     * Obtener nota del pool o crear una nueva
+     * Obtener nota del pool o crear una nueva.
      */
     public function getNote(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?mustHitNote:Bool = false):Note
     {
         var note:Note = null;
-
-        // Usar el pool correcto según tipo — evita reciclar una nota sustain
-        // como nota normal (y viceversa) con animaciones de skin incorrectas.
         final pool = sustainNote ? sustainPool : notePool;
 
         if (pool.length > 0)
@@ -99,44 +101,27 @@ class NoteRenderer
             note = new Note(strumTime, noteData, prevNote, sustainNote, mustHitNote);
             createdNotes++;
         }
-        
-        // NUEVO: Agregar al batcher si está habilitado
+
         if (useBatching && noteBatcher != null)
-        {
             noteBatcher.addNoteToBatch(note);
-        }
-        
+
         return note;
     }
-    
+
     /**
-     * Reciclar nota - Devolverla al pool
+     * Reciclar nota — devolverla al pool.
      */
     public function recycleNote(note:Note):Void
     {
         if (note == null) return;
-        
-        // NUEVO: Detener splash continuo si existe
-        if (activeHoldSplashes.exists(note))
-        {
-            var holdSplash = activeHoldSplashes.get(note);
-            if (holdSplash != null)
-            {
-                holdSplash.stopContinuousSplash();
-                recycleSplash(holdSplash);
-            }
-            activeHoldSplashes.remove(note);
-        }
-        
-        // NUEVO: Remover del batcher si está habilitado
+
+        // Hold cover lifecycle is managed by direction in NoteManager.releaseHoldNote()
+
         if (useBatching && noteBatcher != null)
-        {
             noteBatcher.removeNoteFromBatch(note);
-        }
-        
+
         try
         {
-            // Devolver al pool correcto según el tipo de nota
             final pool = note.isSustainNote ? sustainPool : notePool;
             if (pool.length < maxPoolSize)
             {
@@ -156,267 +141,230 @@ class NoteRenderer
             trace('[NoteRenderer] Error reciclando nota: ' + e);
         }
     }
-    
+
+    // ────────────────────────── SPLASH POOL ──────────────────────────────────
+
     /**
-     * Obtener splash del pool o crear uno nuevo
+     * Crear y devolver un splash de hit para una nota normal.
+     * El caller (NoteManager) es quien añade el resultado al FlxGroup de la escena.
      */
-    public function getSplash(x:Float, y:Float, noteData:Int = 0, ?splashName:String = null, ?type:SplashType = NORMAL):NoteSplash
+    public function spawnSplash(x:Float, y:Float, noteData:Int = 0, ?splashName:String):NoteSplash
     {
-        var splash:NoteSplash = null;
-        
         // Buscar splash disponible en el pool
         for (s in splashPool)
         {
             if (!s.inUse)
             {
-                splash = s;
-                splash.setup(x, y, noteData, splashName, type);
+                s.setup(x, y, noteData, splashName);
                 pooledSplashes++;
-                return splash;
+                return s;
             }
         }
-        
-        // Si no hay splashes disponibles, crear uno nuevo o reusar el más viejo
+
+        // Crear nuevo, o reusar el más viejo si el pool está lleno
+        var splash:NoteSplash;
         if (splashPool.length < maxSplashPoolSize)
         {
-            splash = new NoteSplash(x, y, noteData, splashName);
-            splash.splashType = type;
+            splash = new NoteSplash();
             splashPool.push(splash);
             createdSplashes++;
         }
         else
         {
-            // Reusar el primer splash (más viejo)
             splash = splashPool[0];
-            splash.setup(x, y, noteData, splashName, type);
-            pooledSplashes++;
         }
-        
+
+        splash.setup(x, y, noteData, splashName);
         return splash;
     }
-    
+
     /**
-     * NUEVO: Crear splash para inicio de hold note
-     */
-    public function createHoldStartSplash(note:Note, strumX:Float, strumY:Float):NoteSplash
-    {
-        if (!holdSplashesEnabled) return null;
-        
-        var splash = getSplash(strumX, strumY, note.noteData, null, HOLD_START);
-        return splash;
-    }
-    
-    /**
-     * NUEVO: Iniciar splash continuo para hold note
-     */
-    public function startHoldContinuousSplash(note:Note, strumX:Float, strumY:Float):NoteSplash
-    {
-        if (!holdSplashesEnabled) return null;
-        
-        // Si ya existe, no crear otro
-        if (activeHoldSplashes.exists(note))
-            return activeHoldSplashes.get(note);
-        
-        var splash = getSplash(strumX, strumY, note.noteData, null, HOLD_CONTINUOUS);
-        splash.startContinuousSplash(strumX, strumY, note.noteData);
-        
-        activeHoldSplashes.set(note, splash);
-        
-        return splash;
-    }
-    
-    /**
-     * NUEVO: Detener splash continuo y crear splash de release
-     */
-    public function stopHoldSplash(note:Note, strumX:Float, strumY:Float):Void
-    {
-        if (!holdSplashesEnabled) return;
-        
-        // Detener splash continuo si existe
-        if (activeHoldSplashes.exists(note))
-        {
-            var holdSplash = activeHoldSplashes.get(note);
-            if (holdSplash != null)
-            {
-                holdSplash.stopContinuousSplash();
-                recycleSplash(holdSplash);
-            }
-            activeHoldSplashes.remove(note);
-        }
-        
-        // Crear splash de release (final)
-        var releaseSplash = getSplash(strumX, strumY, note.noteData, null, HOLD_END);
-    }
-    
-    /**
-     * NUEVO: Update para gestionar splashes continuos
-     */
-    public function updateHoldSplashes():Void
-    {
-        // Limpiar splashes de notas que ya no existen
-        // Reutilizar buffer preallocado en vez de new Array cada frame
-        _holdSplashRemoveBuffer.resize(0);
-        
-        for (note in activeHoldSplashes.keys())
-        {
-            if (!note.exists || note.wasGoodHit || !note.alive)
-                _holdSplashRemoveBuffer.push(note);
-        }
-        
-        for (note in _holdSplashRemoveBuffer)
-        {
-            var splash = activeHoldSplashes.get(note);
-            if (splash != null)
-            {
-                splash.stopContinuousSplash();
-                recycleSplash(splash);
-            }
-            activeHoldSplashes.remove(note);
-        }
-    }
-    
-    /**
-     * Reciclar splash
+     * Reciclar splash de hit.
      */
     public function recycleSplash(splash:NoteSplash):Void
     {
         if (splash == null) return;
-        
-        try
+        try { splash.kill(); }
+        catch (e:Dynamic) { trace('[NoteRenderer] Error reciclando splash: ' + e); }
+    }
+
+    // ─────────────────────── HOLD COVER POOL (v-slice) ───────────────────────
+
+    private function _getHoldCover(x:Float, y:Float, noteData:Int, ?splashName:String):NoteHoldCover
+    {
+        // Buscar uno libre en el pool
+        for (c in holdCoverPool)
         {
-            splash.recycleSplash();
+            if (!c.inUse)
+            {
+                c.setup(x, y, noteData, splashName);
+                pooledHoldCovers++;
+                return c;
+            }
         }
-        catch (e:Dynamic)
+
+        // Ninguno libre → crear siempre uno nuevo (nunca robar uno activo)
+        // maxHoldCoverPoolSize es un techo suave — 4 dirs × 2 lados = 8 max simultáneos
+        var cover = new NoteHoldCover();
+        holdCoverPool.push(cover);
+        createdHoldCovers++;
+        cover.setup(x, y, noteData, splashName);
+        return cover;
+    }
+
+    // ─────────────────────── API DE HOLD COVERS ──────────────────────────────
+
+    /**
+     * Registrar un cover pre-creado en el pool (usado para prewarm desde PlayState).
+     * El cover debe estar muerto (kill() ya llamado) antes de registrar.
+     */
+    public function registerHoldCoverInPool(cover:NoteHoldCover):Void
+    {
+        if (holdCoverPool.indexOf(cover) < 0)
+            holdCoverPool.push(cover);
+    }
+
+    /**
+     * Iniciar cover visual para una hold note.
+     * Reproduce start → loop (automático) → end (cuando se llama stopHoldCover).
+     *
+     * Solo llamar si FlxG.save.data.notesplashes == true (el check lo hace NoteManager).
+     * El caller debe añadir el resultado al FlxGroup de la escena.
+     *
+     * @return El NoteHoldCover asignado, o null si ya había uno para esta nota.
+     */
+    public function startHoldCover(direction:Int, strumX:Float, strumY:Float, isPlayer:Bool = true):NoteHoldCover
+    {
+        // Player usa claves 0-3, CPU usa 4-7 para evitar colisiones
+        var key:Int = isPlayer ? direction : direction + 4;
+        if (activeHoldCovers.exists(key))
+            return activeHoldCovers.get(key);
+
+        var cover = _getHoldCover(strumX, strumY, direction);
+        cover.playStart();
+        activeHoldCovers.set(key, cover);
+        return cover;
+    }
+
+    /**
+     * Detener el cover de una hold note (release o miss).
+     * Reproduce la animación de fin; NoteHoldCover se mata solo al terminar.
+     */
+    public function stopHoldCover(direction:Int, isPlayer:Bool = true):Void
+    {
+        var key:Int = isPlayer ? direction : direction + 4;
+        if (activeHoldCovers.exists(key))
         {
-            trace('[NoteRenderer] Error reciclando splash: ' + e);
+            var cover = activeHoldCovers.get(key);
+            // Si playEnd() devuelve false → cover en estado "end_pending" (start aún no acabó)
+            // Se eliminará del map igualmente; el cover se autodestruirá al terminar su start
+            if (cover != null) cover.playEnd();
+            activeHoldCovers.remove(key);
         }
     }
-    
+
     /**
-     * NUEVO: Actualizar batcher
+     * Ya no necesario: el ciclo de vida se gestiona explícitamente
+     * por dirección en NoteManager (startHoldCover / stopHoldCover).
+     * Se mantiene por compatibilidad con llamadas existentes.
      */
+    public function updateHoldCovers():Void {}
+
+    // ─────────────────────── TOGGLE / STATS / BATCHER ────────────────────────
+
     public function updateBatcher():Void
     {
         if (useBatching && noteBatcher != null)
-        {
             noteBatcher.update(FlxG.elapsed);
-        }
     }
-    
+
+    public function toggleBatching():Void
+    {
+        useBatching = !useBatching;
+        if (useBatching && noteBatcher == null)
+            noteBatcher = new NoteBatcher();
+        trace('[NoteRenderer] Batching: $useBatching');
+    }
+
     /**
-     * Limpiar pools
+     * Alias mantenido para que NoteManager.toggleHoldSplashes() compile sin cambios.
+     * Los hold covers se habilitan/deshabilitan mediante FlxG.save.data.notesplashes
+     * en NoteManager.handleSustainNoteHit().
      */
+    public function toggleHoldSplashes():Void
+    {
+        trace('[NoteRenderer] Hold covers controlados via FlxG.save.data.notesplashes en NoteManager');
+    }
+
+    public function getPoolStats():String
+    {
+        var stats = 'Notes: ${notePool.length + sustainPool.length}/$maxPoolSize';
+        stats += ' (normal: ${notePool.length} sustain: ${sustainPool.length}';
+        stats += ' pooled: $pooledNotes created: $createdNotes)\n';
+        stats += 'Splashes: ${splashPool.length}/$maxSplashPoolSize';
+        stats += ' (pooled: $pooledSplashes created: $createdSplashes)\n';
+        stats += 'HoldCovers: ${holdCoverPool.length}/$maxHoldCoverPoolSize';
+        stats += ' (active: ${Lambda.count(activeHoldCovers)}';
+        stats += ' pooled: $pooledHoldCovers created: $createdHoldCovers)\n';
+        return stats;
+    }
+
+    // ──────────────────────────── LIMPIEZA ───────────────────────────────────
+
     public function clearPools():Void
     {
-        // Limpiar hold splashes activos
-        // BUGFIX: NO llamar splash.destroy() aquí — estos splashes también están
-        // en grpNoteSplashes (añadidos vía splashes.add()) y super.destroy() de
-        // PlayState los destruirá correctamente. Destruirlos aquí causa un doble
-        // destroy que corrompe FlxG.bitmap cache → crash en el segundo PlayState.
-        for (note in activeHoldSplashes.keys())
+        // Hold covers activos — solo kill, NO destroy
+        // (están en grpHoldCovers que PlayState destruirá correctamente)
+        for (dir in activeHoldCovers.keys())
         {
-            var splash = activeHoldSplashes.get(note);
-            if (splash != null)
-            {
-                splash.stopContinuousSplash(); // solo cancela el timer, no destruye
-            }
+            var cover = activeHoldCovers.get(dir);
+            if (cover != null) cover.kill();
         }
-        activeHoldSplashes.clear();
-        
-        // Limpiar note pool
-        // Las notas del pool fueron sacadas de `notes` con notes.remove() antes de
-        // ser recicladas, así que NO están en ningún FlxGroup → sí hay que destruirlas.
+        activeHoldCovers.clear();
+
+        // Note pool — estas notas NO están en ningún FlxGroup → destruir
         for (note in notePool)
-        {
             if (note != null) note.destroy();
-        }
         notePool = [];
+
         for (note in sustainPool)
-        {
             if (note != null) note.destroy();
-        }
         sustainPool = [];
 
-        // Limpiar splash pool
-        // BUGFIX: igual que activeHoldSplashes — estos splashes están en
-        // grpNoteSplashes. No llamar destroy() para evitar doble destroy.
-        // Basta con limpiar las referencias del pool; el grupo se encarga del resto.
+        // Splash pool — están en grpNoteSplashes → solo kill, NO destroy
         for (splash in splashPool)
-        {
-            if (splash != null)
-                splash.kill(); // marcar inactivo, pero NO destruir
-        }
+            if (splash != null) splash.kill();
         splashPool = [];
-        
-        // Limpiar batcher
+
+        // HoldCover pool — están en grpHoldCovers → solo kill, NO destroy
+        for (cover in holdCoverPool)
+            if (cover != null) cover.kill();
+        holdCoverPool = [];
+
         if (noteBatcher != null)
-        {
             noteBatcher.clearBatches();
-        }
-        
+
         pooledNotes = 0;
         pooledSplashes = 0;
         createdNotes = 0;
         createdSplashes = 0;
-        
+        pooledHoldCovers = 0;
+        createdHoldCovers = 0;
+
         trace('[NoteRenderer] Pools limpiados');
     }
-    
-    /**
-     * Obtener estadísticas completas
-     */
-    public function getPoolStats():String
-    {
-        var stats = 'Notes: ${notePool.length + sustainPool.length}/$maxPoolSize (normal: ${notePool.length} sustain: ${sustainPool.length} pooled: $pooledNotes, created: $createdNotes)
-';
-        stats += 'Splashes: ${splashPool.length}/$maxSplashPoolSize (pooled: $pooledSplashes, created: $createdSplashes)\n';
-        stats += 'Active Hold Splashes: ${Lambda.count(activeHoldSplashes)}\n';
-        
-        return stats;
-    }
-    
-    /**
-     * NUEVO: Toggle batching
-     */
-    public function toggleBatching():Void
-    {
-        useBatching = !useBatching;
-        
-        if (useBatching && noteBatcher == null)
-        {
-            noteBatcher = new NoteBatcher();
-        }
-        
-        trace('[NoteRenderer] Batching: $useBatching');
-    }
-    
-    /**
-     * NUEVO: Toggle hold splashes
-     */
-    public function toggleHoldSplashes():Void
-    {
-        holdSplashesEnabled = !holdSplashesEnabled;
-        trace('[NoteRenderer] Hold Splashes: $holdSplashesEnabled');
-    }
-    
-    /**
-     * Destruir
-     */
+
     public function destroy():Void
     {
         clearPools();
-        
+
         if (noteBatcher != null)
         {
-            // clearBatches() vacía los arrays internos. flushBatch() solo se activa
-            // con >=128 notas del mismo tipo simultáneas (imposible en FNF), así que
-            // el FlxSpriteGroup interno está vacío y super.destroy() no hay miembros
-            // que destruir dos veces.
             noteBatcher.clearBatches();
             noteBatcher.destroy();
             noteBatcher = null;
         }
-        
+
         playerStrums = null;
         cpuStrums = null;
     }

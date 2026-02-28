@@ -1753,10 +1753,10 @@ class AnimationDebug extends MusicBeatState
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
-
+/*
 		// Usar char.hasCurAnim() para ser compatible con FlxAnimate y sprites normales
 		if (char == null || !char.hasCurAnim())
-			return;
+			return;*/
 
 		var curAnimName = char.getCurAnimName();
 

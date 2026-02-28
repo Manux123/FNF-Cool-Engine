@@ -1,0 +1,62 @@
+{
+    "entries": [
+        {
+            "header": "Cool Team",
+            "headerColor": "FF4CA0",
+            "body": [
+                {
+                    "line": "Manux — Main Programmer of Cool Engine"
+                },
+                {
+                    "line": "Juanen100 — Main Programmer of Cool Engine"
+                },
+                {
+                    "line": "JloorMC — Additional Programmer of Cool Engine"
+                },
+                {
+                    "line": "OverchargedDev — Additional Programmer and Dumbass of Cool Engine"
+                },
+                {
+                    "line": "PabloelproxD210 — Cool Engine Android Port"
+                },
+                {
+                    "line": "offi - Artist"
+                },
+                {
+                    "line": "ZERO ANIMATION - Artist"
+                }
+            ]
+        },
+        {
+            "header": "Funkin' Crew",
+            "headerColor": "FF4CA0",
+            "body": [
+                {
+                    "line": "ninjamuffin99 — Programmer"
+                },
+                {
+                    "line": "PhantomArcade — Animator"
+                },
+                {
+                    "line": "Kawai Sprite — Music & Sound"
+                },
+                {
+                    "line": "evilsk8r — Artist"
+                }
+            ]
+        },
+        {
+            "header": "Special Thanks",
+            "headerColor": "FFFFFF",
+            "bodyColor": "AAAAAA",
+            "body": [
+                {
+                    "line": "¡Thanks to everyone who played!"
+                },
+                {
+                    "line": "Made with HaxeFlixel"
+                }
+            ]
+        }
+    ]
+}

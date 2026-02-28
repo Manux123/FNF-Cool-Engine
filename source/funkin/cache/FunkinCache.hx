@@ -141,8 +141,27 @@ class FunkinCache extends AssetCache
 		font2       = new Map();
 		sound2      = new Map();
 
-		// Limpiar gráficos huérfanos (useCount=0, no persist).
-		// Cubre assets cargados via lime.fromFile que no pasan por FunkinCache.
+		// BUGFIX CRÍTICO: clearUnused() aquí destruía bitmaps cargados durante
+		// create() que tenían useCount=0 (FlxG.bitmap.add() no incrementa useCount
+		// en esta versión de HaxeFlixel/OpenFL). El nuevo estado ya los cargó en
+		// create() → están en CURRENT layer (bitmapData, no bitmapData2). Pero
+		// clearUnused() opera sobre TODOS los FlxGraphics independientemente de
+		// capa → destruye los recién cargados → frame.parent.bitmap == null en el
+		// primer draw frame → crash FlxDrawQuadsItem::render.
+		//
+		// El sistema de dos capas de FunkinCache ya cubre los gráficos del estado
+		// anterior (están en bitmapData2 y se destruyen arriba). clearUnused() es
+		// redundante y peligroso aquí. Se puede llamar en momentos seguros, como
+		// antes de cargar una canción, no en postStateSwitch.
+		// try { FlxG.bitmap.clearUnused(); } catch (_:Dynamic) {}
+	}
+
+	/**
+	 * Llama clearUnused() en un momento seguro (p.ej. pantalla de carga).
+	 * NO llamar desde postStateSwitch — destruye gráficos del estado entrante.
+	 */
+	public static function safeCleanup():Void
+	{
 		try { FlxG.bitmap.clearUnused(); } catch (_:Dynamic) {}
 	}
 

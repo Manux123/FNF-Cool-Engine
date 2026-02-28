@@ -34,7 +34,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 
 	var menuItems:FlxTypedGroup<FlxSprite>;
 
-	var optionShit:Array<String> = ['story-mode', 'freeplay' #if !switch, 'options', 'donate' #end];
+	var optionShit:Array<String> = ['storymode', 'freeplay', 'options', 'credits'];
 
 	var canSnap:Array<Float> = [];
 
@@ -54,7 +54,8 @@ class MainMenuState extends funkin.states.MusicBeatState
 		// LOAD CUZ THIS SHIT DONT DO IT SOME IN THE CACHESTATE.HX FUCK
 		PlayerSettings.player1.controls.loadKeyBinds();
 
-		if (StickerTransition.enabled){
+		if (StickerTransition.enabled)
+		{
 			transIn = null;
 			transOut = null;
 		}
@@ -72,7 +73,13 @@ class MainMenuState extends funkin.states.MusicBeatState
 		if (FlxG.sound.music == null || !FlxG.sound.music.playing)
 		{
 			if (FreeplayState.vocals == null)
-				{ final _s = Paths.loadMusic('freakyMenu'); if (_s != null) FlxG.sound.playMusic(_s, 0.7); else FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7); }
+			{
+				final _s = Paths.loadMusic('freakyMenu');
+				if (_s != null)
+					FlxG.sound.playMusic(_s, 0.5);
+				else
+					FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.5);
+			}
 		}
 		musicFreakyisPlaying = true;
 		#end
@@ -112,9 +119,9 @@ class MainMenuState extends funkin.states.MusicBeatState
 		{
 			var offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;
 			var menuItem:FlxSprite = new FlxSprite(70, (i * 140) + offset);
-			menuItem.frames = Paths.getSparrowAtlas('menu/menu_' + optionShit[i]);
-			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
-			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
+			menuItem.frames = Paths.getSparrowAtlas('menu/mainmenu/' + optionShit[i]);
+			menuItem.animation.addByPrefix('idle', optionShit[i] + " idle", 24);
+			menuItem.animation.addByPrefix('selected', optionShit[i] + " selected", 24);
 			menuItem.animation.play('idle');
 			menuItem.ID = i;
 			// menuItem.screenCenter(X);
@@ -139,7 +146,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
 
-		var versionShit2:FlxText = new FlxText(5, FlxG.height - 19, 0, 'Cool Engine - V${Application.current.meta.get('version')}', 12);
+		var versionShit2:FlxText = new FlxText(5, FlxG.height - 19, 0, 'Cool Engine - v${Application.current.meta.get('version')}', 12);
 		versionShit2.scrollFactor.set();
 		versionShit2.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		versionShit2.y -= 20;
@@ -149,12 +156,10 @@ class MainMenuState extends funkin.states.MusicBeatState
 		final _activeMod = mods.ModManager.activeMod;
 		if (_activeMod != null)
 		{
-			final _modInfo  = mods.ModManager.getInfo(_activeMod);
+			final _modInfo = mods.ModManager.getInfo(_activeMod);
 			final _modLabel = _modInfo != null ? _modInfo.name : _activeMod;
-			final _modVer   = _modInfo != null ? ' v${_modInfo.version}' : '';
-			final _modColor:flixel.util.FlxColor = _modInfo != null
-				? new flixel.util.FlxColor(_modInfo.color | 0xFF000000)
-				: FlxColor.fromRGB(255, 170, 0);
+			final _modVer = _modInfo != null ? ' v${_modInfo.version}' : '';
+			final _modColor:flixel.util.FlxColor = _modInfo != null ? new flixel.util.FlxColor(_modInfo.color | 0xFF000000) : FlxColor.fromRGB(255, 170, 0);
 
 			var modActiveText:FlxText = new FlxText(FlxG.width - 270, FlxG.height - 19, 0, '\u25B6 MOD: $_modLabel$_modVer', 16);
 			modActiveText.scrollFactor.set();
@@ -181,8 +186,10 @@ class MainMenuState extends funkin.states.MusicBeatState
 
 	/** Developer Mode — da acceso a los editores (Chart, Stage, Dialogue, AnimDebug). */
 	public static var developerMode(get, set):Bool;
+
 	static inline function get_developerMode():Bool
 		return FlxG.save.data.developerMode == true;
+
 	static inline function set_developerMode(v:Bool):Bool
 	{
 		FlxG.save.data.developerMode = v;
@@ -242,76 +249,49 @@ class MainMenuState extends funkin.states.MusicBeatState
 					super.update(elapsed);
 					return;
 				}
-
 				StateScriptHandler.callOnScripts('onMenuItemSelected', [optionShit[curSelected], curSelected]);
 				#end
 
-				if (optionShit[curSelected] == 'donate')
-				{
-					#if linux
-					Sys.command('/usr/bin/xdg-open', [
-						"https://www.kickstarter.com/projects/funkin/friday-night-funkin-the-full-ass-game",
-						"&"
-					]);
-					#else
-					FlxG.openURL('https://www.kickstarter.com/projects/funkin/friday-night-funkin-the-full-ass-game');
-					#end
-				}
-				else
-				{
-					// FlxTween.tween(menuItem, {x: menuItem.x + 200}, 0.6, {ease: FlxEase.quadInOut, type: ONESHOT});
-					selectedSomethin = true;
-					FlxG.sound.play(Paths.sound('menus/confirmMenu'));
-					if (FlxG.save.data.flashing)
-						FlxG.camera.flash(FlxColor.WHITE);
+				selectedSomethin = true;
+				FlxG.sound.play(Paths.sound('menus/confirmMenu'));
+				if (FlxG.save.data.flashing)
+					FlxG.camera.flash(FlxColor.WHITE);
 
-					menuItems.forEach(function(spr:FlxSprite)
+				menuItems.forEach(function(spr:FlxSprite)
+				{
+					if (curSelected != spr.ID)
 					{
-						if (curSelected != spr.ID)
-						{
-							FlxTween.tween(spr, {alpha: 0}, 0.4, {
-								ease: FlxEase.quadOut,
-								onComplete: function(twn:FlxTween)
-								{
-									spr.kill();
-								}
-							});
-						}
-						else
-						{
-							menuItems.forEach(function(spr:FlxSprite)
+						FlxTween.tween(spr, {alpha: 0}, 0.4, {
+							ease: FlxEase.quadOut,
+							onComplete: function(twn:FlxTween)
 							{
-								if (curSelected != spr.ID)
-								{
-									FlxTween.tween(spr, {alpha: 0}, 0.4, {
-										ease: FlxEase.quadOut,
-										onComplete: function(twn:FlxTween)
-										{
-											spr.kill();
-										}
-									});
-								}
-								else
-								{
-									FlxFlicker.flicker(spr, 1, 0.06, false, false, function(flick:FlxFlicker)
-									{
-										var daChoice:String = optionShit[curSelected];
+								spr.kill();
+							}
+						});
+					}
+					else
+					{
+						menuItems.forEach(function(spr:FlxSprite)
+						{
+							FlxFlicker.flicker(spr, 1, 0.06, false, false, function(flick:FlxFlicker)
+							{
+								var daChoice:String = optionShit[curSelected];
 
-										switch (daChoice)
-										{
-											case 'story-mode':
-												StateTransition.switchState(new StoryMenuState());
-											case 'freeplay':
-												StateTransition.switchState(new FreeplayState());
-											case 'options':
-												StateTransition.switchState(new OptionsMenuState());
-										}
-									});
+								switch (daChoice)
+								{
+									case 'storymode':
+										StateTransition.switchState(new StoryMenuState());
+									case 'freeplay':
+										StateTransition.switchState(new FreeplayState());
+									case 'options':
+										StateTransition.switchState(new OptionsMenuState());
+									case 'credits':
+										StateTransition.switchState(new CreditsState());
 								}
 							});
-						}
-					});
-				}
+						});
+					}
+				});
 			}
 		}
 
@@ -339,15 +319,11 @@ class MainMenuState extends funkin.states.MusicBeatState
 
 			if (spr.ID == curSelected)
 			{
-				FlxTween.tween(spr, {x: 150}, 0.45, {ease: FlxEase.elasticInOut});
 				spr.animation.play('selected');
 				camFollow.setPosition(spr.getGraphicMidpoint().x, spr.getGraphicMidpoint().y);
 				spr.offset.x = 0.15 * (spr.frameWidth / 2 + 180);
 				spr.offset.y = 0.15 * spr.frameHeight;
-				FlxG.log.add(spr.frameWidth);
 			}
-			else
-				FlxTween.tween(spr, {x: 70}, 0.45, {ease: FlxEase.elasticInOut});
 		});
 
 		#if HSCRIPT_ALLOWED

@@ -19,6 +19,7 @@ import funkin.gameplay.objects.character.Character;
 import funkin.gameplay.objects.stages.Stage;
 import funkin.gameplay.notes.Note;
 import funkin.gameplay.notes.NoteSplash;
+import funkin.gameplay.notes.NoteHoldCover;
 import funkin.gameplay.notes.StrumNote;
 import funkin.gameplay.notes.NoteSkinSystem;
 import funkin.gameplay.notes.NotePool;
@@ -159,6 +160,7 @@ class PlayState extends funkin.states.MusicBeatState
 	public static var cpuStrums:FlxTypedGroup<FlxSprite> = null;
 
 	public var grpNoteSplashes:FlxTypedGroup<NoteSplash>;
+	public var grpHoldCovers:FlxTypedGroup<NoteHoldCover>;
 
 	// === AUDIO ===
 	public var vocals:FlxSound;
@@ -217,17 +219,10 @@ class PlayState extends funkin.states.MusicBeatState
 
 	// === NEW: BATCHING AND HOLD NOTES ===
 	private var noteBatcher:NoteBatcher;
-	private var heldNotes:Map<Int, Note> = new Map(); // dirección -> nota
-	private var holdSplashes:Map<Int, NoteSplash> = new Map(); // dirección -> splash continuo
-
-	// ── Pool dedicado para hold splashes (SEPARADO del pool de NoteRenderer) ──
-	// Evita que recycleSplashSafe() robe splashes del NoteRenderer y viceversa.
-	private var _holdSplashPool:Array<NoteSplash> = [];
-	private static inline var _MAX_HOLD_SPLASH_POOL:Int = 8;
+	private var heldNotes:Map<Int, Note> = new Map(); // dirección -> nota (tracking local para la cámara/personajes)
 
 	// NEW: CONFIG OPTIMIZATIONS
 	public var enableBatching:Bool = true;
-	public var enableHoldSplashes:Bool = true;
 
 	private var showDebugStats:Bool = false;
 	private var debugText:FlxText;
@@ -594,6 +589,10 @@ class PlayState extends funkin.states.MusicBeatState
 		grpNoteSplashes = new FlxTypedGroup<NoteSplash>();
 		grpNoteSplashes.cameras = [camHUD];
 		add(grpNoteSplashes);
+
+		grpHoldCovers = new FlxTypedGroup<NoteHoldCover>();
+		grpHoldCovers.cameras = [camHUD];
+		add(grpHoldCovers);
 	}
 
 	private function loadStrums():Void
@@ -719,12 +718,13 @@ class PlayState extends funkin.states.MusicBeatState
 		// Note manager - MEJORADO con splashes
 		// ✅ Pasar referencias a StrumsGroup para animaciones de confirm
 		// ✅ Pasar lista completa de grupos para soporte de personajes extra
-		noteManager = new NoteManager(notes, playerStrums, cpuStrums, grpNoteSplashes, playerStrumsGroup, cpuStrumsGroup, strumsGroups);
+		noteManager = new NoteManager(notes, playerStrums, cpuStrums, grpNoteSplashes, grpHoldCovers, playerStrumsGroup, cpuStrumsGroup, strumsGroups);
+
 		noteManager.strumLineY = strumLiney;
 		noteManager.downscroll = FlxG.save.data.downscroll;
 		noteManager.middlescroll = FlxG.save.data.middlescroll;
 		noteManager.onCPUNoteHit = onCPUNoteHit;
-		noteManager.onNoteHit = onNoteHitCallback; // NUEVO: Callback para gestionar splashes
+		noteManager.onNoteHit = null; // Hold covers now managed by NoteManager internally
 		noteManager.onNoteMiss = onPlayerNoteMiss; // FIX: sin esto missNote() llama a null y la penalización nunca se aplica
 	}
 
@@ -885,9 +885,9 @@ class PlayState extends funkin.states.MusicBeatState
 		{
 			try
 			{
-				var warmSplash = new NoteSplash(0, 0, 0);
+				var warmSplash = new NoteSplash();
 				warmSplash.cameras = [camHUD];
-				warmSplash.recycleSplash(); // matar inmediatamente → queda en pool listo
+				warmSplash.kill(); // matar inmediatamente → queda en pool listo
 				grpNoteSplashes.add(warmSplash);
 			}
 			catch (e:Dynamic)
@@ -896,7 +896,56 @@ class PlayState extends funkin.states.MusicBeatState
 			}
 		}
 
-		trace('[PlayState] Note + Splash textures pre-warmed');
+		// ── Pre-calentar texturas de hold cover (las 4 direcciones) ────────
+		// Sin esto, el primer hold note del juego provoca un hitch mientras
+		// carga el atlas desde disco.
+		var coverColors = ["Purple", "Blue", "Green", "Red"];
+		for (color in coverColors)
+		{
+			try
+			{
+				NoteSkinSystem.getHoldCoverTexture(color);
+			}
+			catch (e:Dynamic)
+			{
+				trace('[PlayState] Warning: could not pre-warm holdCover$color texture: $e');
+			}
+		}
+
+		// ── Pre-poblar el pool de hold covers y registrarlos en el renderer ──
+		// CRÍTICO: los covers se añaden tanto a grpHoldCovers (para que Flixel los
+		// actualice/dibuje) como al holdCoverPool del renderer (para que los
+		// reutilice sin crear nuevos objetos ni recargar animaciones en runtime).
+		if (grpHoldCovers != null && grpHoldCovers.length == 0)
+		{
+			for (i in 0...4)
+			{
+				try
+				{
+					var warmCover = new NoteHoldCover();
+					warmCover.cameras = [camHUD];
+					warmCover.setup(0, 0, i);
+					warmCover.kill();
+					grpHoldCovers.add(warmCover);
+					// Registrar en el pool del renderer para reutilización sin hitch
+					if (noteManager != null && noteManager.renderer != null)
+						noteManager.renderer.holdCoverPool.push(warmCover);
+				}
+				catch (e:Dynamic)
+				{
+					trace('[PlayState] Warning: could not pre-warm holdCover pool dir $i: $e');
+				}
+			}
+		}
+
+		// Registrar los covers pre-creados en el pool interno del renderer
+		if (noteManager != null && noteManager.renderer != null)
+		{
+			for (cover in grpHoldCovers.members)
+				if (cover != null) noteManager.renderer.registerHoldCoverInPool(cover);
+		}
+
+		trace('[PlayState] Note + Splash + HoldCover textures pre-warmed');
 	}
 
 	/**
@@ -1233,7 +1282,10 @@ class PlayState extends funkin.states.MusicBeatState
 	override public function update(elapsed:Float)
 	{
 		if (scriptsEnabled)
-			ScriptHandler._argsUpdate[0] = elapsed; ScriptHandler.callOnScripts('onUpdate', ScriptHandler._argsUpdate);
+		{
+			ScriptHandler._argsUpdate[0] = elapsed;
+			ScriptHandler.callOnScripts('onUpdate', ScriptHandler._argsUpdate);
+		}
 
 		if (currentStage != null)
 			currentStage.update(elapsed);
@@ -1586,178 +1638,14 @@ class PlayState extends funkin.states.MusicBeatState
 			noteManager.releaseHoldNote(direction);
 		}
 
-		// Limpiar tracking local y crear splash de fin
+		// Limpiar tracking local
 		if (heldNotes.exists(direction))
 		{
-			var note = heldNotes.get(direction);
 			heldNotes.remove(direction);
-
-			// NUEVO: Detener splash continuo si existe
-			if (holdSplashes.exists(direction))
-			{
-				var splash = holdSplashes.get(direction);
-				if (splash != null)
-				{
-					try
-					{
-						splash.recycleSplash();
-						// ✅ CAMBIO: NO remover del grupo - dejarlo ahí para reutilizar
-						// grpNoteSplashes.remove(splash, true); ❌ ESTO CAUSABA PROBLEMAS
-						// El splash con exists=false no se renderiza, pero puede reutilizarse
-					}
-					catch (e:Dynamic)
-					{
-					}
-				}
-				holdSplashes.remove(direction);
-			}
-
-			// NUEVO: Crear splash de fin de hold note
-			if (enableHoldSplashes && FlxG.save.data.notesplashes)
-			{
-				// Validar que playerStrums existe y tiene suficientes elementos
-				if (playerStrums == null)
-				{
-					return;
-				}
-
-				if (playerStrums.members == null || playerStrums.members.length <= direction)
-				{
-					return;
-				}
-
-				var strum = playerStrums.members[direction];
-				if (strum != null)
-				{
-					try
-					{
-						var endSplash:NoteSplash = recycleSplashSafe();
-						if (endSplash == null)
-						{
-							return;
-						}
-
-						// ✅ CRÍTICO: cameras ANTES de setup
-						endSplash.cameras = [camHUD];
-
-						endSplash.setup(strum.x, strum.y, note.noteData, null, HOLD_END);
-
-						if (!grpNoteSplashes.members.contains(endSplash))
-						{
-							grpNoteSplashes.add(endSplash);
-						}
-					}
-					catch (e:Dynamic)
-					{
-					}
-				}
-				else
-				{
-				}
-			}
 		}
 		else
 		{
 		}
-	}
-
-	/**
-	 * NUEVO: Callback cuando el jugador golpea una nota (para splashes)
-	 */
-	/**
-	 * NUEVO: Callback cuando el jugador golpea una nota (para splashes)
-	 * MEJORADO: Ahora usa HOLD_START y HOLD_CONTINUOUS
-	 */
-	private function onNoteHitCallback(note:Note):Void
-	{
-		if (!enableHoldSplashes)
-		{
-			return;
-		}
-
-		// Solo para notas del jugador
-		if (!note.mustPress)
-			return;
-
-		// Si es sustain note
-		if (note.isSustainNote)
-		{
-			// Primera parte de la hold note
-			if (!heldNotes.exists(note.noteData))
-			{
-				heldNotes.set(note.noteData, note);
-
-				// Validaciones null-safe
-				if (playerStrums == null)
-				{
-					return;
-				}
-
-				if (playerStrums.members == null || playerStrums.members.length <= note.noteData)
-				{
-					return;
-				}
-
-				// Crear splash de inicio usando HOLD_START
-				var strum = playerStrums.members[note.noteData];
-				if (strum != null && FlxG.save.data.notesplashes)
-				{
-					try
-					{
-						var startSplash:NoteSplash = recycleSplashSafe();
-						if (startSplash == null)
-						{
-							return;
-						}
-
-						// ✅ CRÍTICO: Asignar cameras ANTES de setup
-						startSplash.cameras = [camHUD];
-
-						// Ahora hacer setup con tipo HOLD_START
-						startSplash.setup(strum.x, strum.y, note.noteData, null, HOLD_START);
-
-						if (!grpNoteSplashes.members.contains(startSplash))
-						{
-							grpNoteSplashes.add(startSplash);
-						}
-					}
-					catch (e:Dynamic)
-					{
-					}
-
-					// OPCIONAL: Iniciar splash continuo (descomenta si quieres el efecto continuo)
-					// startContinuousHoldSplash(note.noteData, strum.x, strum.y);
-				}
-				else
-				{
-				}
-			}
-		}
-	}
-
-	/**
-	 * NUEVO: Iniciar splash continuo para hold note
-	 * MEJORADO: Ahora usa HOLD_CONTINUOUS
-	 */
-	private function startContinuousHoldSplash(direction:Int, x:Float, y:Float):Void
-	{
-		if (holdSplashes.exists(direction))
-			return;
-
-		// Si direction >= 4, es CPU. Si no, es Player.
-		var isCPU = direction >= 4;
-		var actualDir = isCPU ? direction - 4 : direction;
-		var strum = isCPU ? cpuStrums.members[actualDir] : playerStrums.members[actualDir];
-
-		if (strum == null)
-			return;
-
-		var continuousSplash:NoteSplash = new NoteSplash(0, 0, 0); // Crear vacío para pool
-		continuousSplash.cameras = [camHUD];
-		continuousSplash.startContinuousSplash(strum.x, strum.y, actualDir);
-
-		grpNoteSplashes.add(continuousSplash);
-		holdSplashes.set(direction, continuousSplash);
 	}
 
 	/**
@@ -1905,36 +1793,6 @@ class PlayState extends funkin.states.MusicBeatState
 		// NoteType: onCPUHit
 		funkin.gameplay.notes.NoteTypeManager.onCPUHit(note, this);
 
-		// ✅ FIX: Splashes del CPU ahora las maneja NoteManager
-		// Código de hold splashes DESACTIVADO para evitar duplicación
-		/*
-			if (enableHoldSplashes && note.isSustainNote)
-			{
-				// Usamos un offset para no colisionar con las IDs de las notas del jugador (0-3)
-				// Las notas de CPU las guardaremos como 4, 5, 6, 7
-				var cpuDir = note.noteData + 4;
-
-				if (!heldNotes.exists(cpuDir))
-				{
-					heldNotes.set(cpuDir, note);
-					var strum = cpuStrums.members[note.noteData];
-					if (strum != null && FlxG.save.data.notesplashes)
-					{
-						// ✅ CAMBIO: Usar recycleSplashSafe() en lugar de recycle() de Flixel
-						var startSplash:NoteSplash = recycleSplashSafe();
-						startSplash.cameras = [camHUD];
-						startSplash.setup(strum.x, strum.y, note.noteData, null, HOLD_START);
-
-						if (!grpNoteSplashes.members.contains(startSplash))
-							grpNoteSplashes.add(startSplash);
-
-						// Iniciar el splash continuo para el oponente
-						startContinuousHoldSplash(cpuDir, strum.x, strum.y);
-					}
-				}
-			}
-		 */
-
 		// Enable zoom
 		if (SONG.song != 'Tutorial')
 			cameraController.zoomEnabled = true;
@@ -2069,36 +1927,6 @@ class PlayState extends funkin.states.MusicBeatState
 			return;
 		snd.volume = 1 + FlxG.random.float(-0.2, 0.2);
 		snd.play(true);
-	}
-
-	/**
-	 * Reciclar splash de forma segura - usa pool DEDICADO para hold splashes.
-	 * SEPARADO del pool de NoteRenderer para evitar conflictos entre ambos sistemas.
-	 */
-	private function recycleSplashSafe():NoteSplash
-	{
-		// Buscar en el pool dedicado de hold splashes
-		for (splash in _holdSplashPool)
-		{
-			if (!splash.inUse && !splash.exists)
-			{
-				return splash;
-			}
-		}
-
-		// No hay ninguno disponible → crear uno nuevo y añadirlo al pool dedicado
-		var newSplash = new NoteSplash(0, 0, 0);
-		newSplash.cameras = [camHUD];
-		newSplash.recycleSplash(); // inicializar como "libre"
-
-		if (_holdSplashPool.length < _MAX_HOLD_SPLASH_POOL)
-			_holdSplashPool.push(newSplash);
-
-		// Añadir al grupo de render si no está ya
-		if (!grpNoteSplashes.members.contains(newSplash))
-			grpNoteSplashes.add(newSplash);
-
-		return newSplash;
 	}
 
 	/**
@@ -2580,7 +2408,7 @@ class PlayState extends funkin.states.MusicBeatState
 
 		// Limpiar hold splashes residuales
 		heldNotes.clear();
-		holdSplashes.clear();
+
 		if (grpNoteSplashes != null)
 			grpNoteSplashes.forEachAlive(function(s)
 			{
@@ -2722,10 +2550,8 @@ class PlayState extends funkin.states.MusicBeatState
 		NoteSkinSystem.restoreGlobalSkin();
 		NoteSkinSystem.restoreGlobalSplash();
 		heldNotes.clear();
-		holdSplashes.clear();
-		// ── Limpiar pool dedicado de hold splashes ───────────────────────────
-		// Los splashes en sí son destruidos por super.destroy() (son miembros de grpNoteSplashes).
-		_holdSplashPool = [];
+
+
 		characterSlots = [];
 		strumsGroups = [];
 		strumsGroupMap.clear();

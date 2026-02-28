@@ -1,174 +1,331 @@
 package funkin.menus;
 
+/**
+ * CreditsState v2 — Friday Night Funkin' v-slice style credits.
+ *
+* ─── Features ───────────────────────────────── ──────────────────────────────────
+* • Smooth and continuous scrolling with variable speed (hold ENTER/SPACE = fast, SHIFT = pause)
+* • Lazy build: Lines are created on demand based on scrolling.
+* • FlxText pool recycled via FlxSpriteGroup.recycle() — zero allocations in-game
+* • Data in JSON (assets/data/credits.json) → editable without recompiling
+* • Mod support: mods/<mod>/data/credits.json adds entries to the end
+* • Scripting: assets/states/CreditsState/ (automatically loaded by MusicBeatState)
+* • Hooks: onCreate, onUpdate (elapsed), onCreditsEnd, onExit
+* • headerColor/bodyColor per entry (hex without # e.g., "FF4CA0", optional)
+ *
+ * ─── Scripts (HScript) ───────────────────────────────────────────────────────
+ *  Variables: creditsState, creditsGroup, bg
+ *  Functions: onCreate(), onUpdate(elapsed), onCreditsEnd(), onExit()
+ *
+ * ─── Credits JSON ────────────────────────────────────────────────────────
+ *  assets/data/credits.json:
+ *  {
+ *    "entries": [
+ *      {
+ *        "header": "Directores",
+ *        "headerColor": "FF4CA0",
+ *        "body": [
+ *          { "line": "ninjamuffin99 — Programación" },
+ *          { "line": "PhantomArcade — Animación" }
+ *        ]
+ *      }
+ *    ]
+ *  }
+ *
+ *  For mods, place in mods/<mod>/data/credits.json
+ *  Entries are added to the END of the database.
+ */
 #if desktop
 import data.Discord.DiscordClient;
 #end
 import flixel.FlxG;
 import flixel.FlxSprite;
-import flixel.group.FlxGroup.FlxTypedGroup;
-import funkin.transitions.StateTransition;
-import flixel.math.FlxMath;
+import flixel.group.FlxSpriteGroup;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
-import ui.Alphabet;
-import extensions.CoolUtil;
+import flixel.util.FlxTimer;
+import funkin.menus.credits.CreditsData;
+import funkin.menus.credits.CreditsDataHandler;
+import funkin.scripting.ScriptHandler;
+import funkin.transitions.StateTransition;
 
 using StringTools;
 
 class CreditsState extends funkin.states.MusicBeatState
 {
-	var curSelected:Int = 0;
+	// ── Layout ─────────────────────────────────────────────────────────────
+	static final SCREEN_PAD       = 140;
+	static final FONT_HEADER      = 40;
+	static final FONT_BODY        = 28;
+	static final LINE_SPACING     = 8;    // px extra entre líneas
+	static final SECTION_GAP      = 60;   // px entre secciones
+	static final COLOR_HEADER_DEF = 0xFFFFFFFF;
+	static final COLOR_BODY_DEF   = 0xFFCCCCCC;
+	static final COLOR_STROKE     = 0xFF000000;
+	static final STROKE_SIZE      = 2.0;
 
-	private var grpOptions:FlxTypedGroup<Alphabet>;
-	private var bg:FlxSprite;
-	private var descText:FlxText;
+	// ── Velocidades de scroll ───────────────────────────────────────────────
+	/** Velocidad base en px/segundo. Los scripts pueden modificar esta variable. */
+	public var scrollSpeed:Float   = 80.0;
+	static final FAST_MULTIPLIER   = 4.0;
 
-	private var creditsStuff:Array<Array<String>> = [];
+	// ── Escena ─────────────────────────────────────────────────────────────
+	public var bg:FlxSprite;
+	public var creditsGroup:FlxSpriteGroup;
 
-	override function create()
+	// ── Construcción lazy ──────────────────────────────────────────────────
+	var _entries:Array<CreditsEntry> = [];
+	var _entryIdx:Int  = 0;   // índice de la entrada actual
+	var _lineIdx:Int   = 0;   // sub-índice dentro de la entrada (0 = header, 1+ = body)
+	var _buildY:Float  = 0;   // Y relativa al grupo donde añadir la próxima línea
+	var _allBuilt:Bool = false;
+
+	// ── Estado interno ─────────────────────────────────────────────────────
+	var _hasEnded:Bool        = false;
+	var _creditsExiting:Bool  = false;
+
+	// ───────────────────────────────────────────────────────────────────────
+
+	override function create():Void
 	{
-		super.create();
+		super.create(); // MusicBeatState carga automáticamente assets/states/CreditsState/
 
 		#if desktop
-		DiscordClient.changePresence("In the Credits", null);
+		DiscordClient.changePresence("Créditos", null);
 		#end
 
-		_loadCreditsFromFile();
-
-		bg = new FlxSprite().loadGraphic(Paths.image('menu/menuDesat'));
+		// ── Fondo oscuro ───────────────────────────────────────────────────
+		bg = new FlxSprite();
+		bg.makeGraphic(FlxG.width, FlxG.height, 0xFF1a1a2e);
+		bg.scrollFactor.set();
 		add(bg);
 
-		grpOptions = new FlxTypedGroup<Alphabet>();
-		add(grpOptions);
+		// ── Borde decorativo inferior ──────────────────────────────────────
+		var bottomBar = new FlxSprite(0, FlxG.height - 4);
+		bottomBar.makeGraphic(FlxG.width, 4, 0x44FFFFFF);
+		bottomBar.scrollFactor.set();
+		add(bottomBar);
 
-		descText = new FlxText(50, 600, 1180, "", 32);
-		descText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER,
-			FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		descText.scrollFactor.set();
-		descText.borderSize = 2.4;
-		add(descText);
+		// ── Grupo de créditos ──────────────────────────────────────────────
+		creditsGroup = new FlxSpriteGroup();
+		creditsGroup.x = SCREEN_PAD;
+		creditsGroup.y = FlxG.height; // empieza debajo del viewport
+		add(creditsGroup);
 
-		for (i in 0...creditsStuff.length)
+		// ── Datos de créditos ──────────────────────────────────────────────
+		CreditsDataHandler.reload();
+		final data = CreditsDataHandler.get();
+		_entries = (data != null && data.entries != null) ? data.entries : [];
+
+		// ── Música ─────────────────────────────────────────────────────────
+		if (FreeplayState.vocals == null)
 		{
-			var isSelectable:Bool = !_unselectableCheck(i);
-			var optionText:Alphabet = new Alphabet(0, 70 * i, creditsStuff[i][0], !isSelectable, false);
-			optionText.isMenuItem = true;
-			optionText.screenCenter(X);
-			if (isSelectable) optionText.x -= 70;
-			optionText.targetY = i;
-			grpOptions.add(optionText);
+			final music = Paths.music('freeplayRandom/freeplayRandom');
+			if (music != null) FlxG.sound.playMusic(music, 0.0);
 		}
+		if (FlxG.sound.music != null) FlxG.sound.music.volume = 0.0;
 
-		curSelected = 0;
-		for (i in 0...creditsStuff.length)
-			if (!_unselectableCheck(i)) { curSelected = i; break; }
-
-		_updateDesc();
+		// ── Exponer vars a scripts ─────────────────────────────────────────
+		ScriptHandler.setOnScripts('creditsState', this);
+		ScriptHandler.setOnScripts('creditsGroup', creditsGroup);
+		ScriptHandler.setOnScripts('bg', bg);
+		ScriptHandler.callOnScripts('onCreate', null);
 	}
 
-	function _loadCreditsFromFile():Void
-	{
-		creditsStuff = [
-			['Cool engine'],
-			['Manux',        'manux',       'Main Programmer of Cool Engine',         'https://twitter.com/Manux',           '0xFFFFDD33'],
-			['Juanen100',    'juan',        'Main Programmer of Cool Engine',         'https://github.com/Juanen100',        '0xAC41FF'],
-			[''],
-			['Engine Contributors'],
-			['Clogsworth',   'clogsworth',  'Programmer and Musician',                'https://youtube.com/c/MrClogsworthYT','0xFFFFFFFF'],
-			['JloorMC',      'jloor',       'Additional Programmer',                  'https://github.com/JloorMC',          '0xFF41CE'],
-			[''],
-			["Funkin' Crew"],
-			['ninjamuffin99', '', 'Programmer of Friday Night Funkin', 'https://twitter.com/ninja_muffin99',  ''],
-			['PhantomArcade', '', 'Animator of Friday Night Funkin',   'https://twitter.com/PhantomArcade3K', ''],
-			['evilsk8r',      '', 'Artist of Friday Night Funkin',     'https://twitter.com/evilsk8r',        ''],
-			['kawaisprite',   '', 'Composer of Friday Night Funkin',   'https://twitter.com/kawaisprite',     '']
-		];
-
-		#if sys
-		try
-		{
-			final txtPath = Paths.txt('creditsList');
-			if (sys.FileSystem.exists(txtPath))
-			{
-				final lines = CoolUtil.coolTextFile(txtPath);
-				if (lines != null && lines.length > 0)
-				{
-					creditsStuff = [];
-					for (line in lines)
-						if (line.trim().length > 0)
-							creditsStuff.push(line.split(':'));
-				}
-			}
-		}
-		catch (e:Dynamic) { trace('[CreditsState] No se pudo cargar creditsList: $e'); }
-		#end
-	}
-
-	function _unselectableCheck(num:Int):Bool
-		return creditsStuff[num].length <= 1;
-
-	function _updateDesc():Void
-	{
-		if (creditsStuff.length == 0 || descText == null) return;
-		final entry = creditsStuff[curSelected];
-		descText.text = (entry.length > 2) ? entry[2] : '';
-	}
-
-	override function update(elapsed:Float)
+	override function update(elapsed:Float):Void
 	{
 		super.update(elapsed);
 
+		// Fade-in de música
 		if (FlxG.sound.music != null && FlxG.sound.music.volume < 0.7)
-			FlxG.sound.music.volume += 0.5 * FlxG.elapsed;
+			FlxG.sound.music.volume = Math.min(0.7, FlxG.sound.music.volume + 0.5 * elapsed);
 
-		if (controls.UP_P)
+		// ── Construcción lazy ──────────────────────────────────────────────
+		if (!_allBuilt) _buildPendingLines();
+
+		// ── Velocidad de scroll ────────────────────────────────────────────
+		var spd:Float;
+		if (controls.PAUSE || FlxG.keys.pressed.SHIFT)
+			spd = 0.0;
+		else if (controls.ACCEPT || FlxG.keys.pressed.SPACE)
+			spd = scrollSpeed * FAST_MULTIPLIER;
+		else
+			spd = scrollSpeed;
+
+		creditsGroup.y -= spd * elapsed;
+
+		// ── Culling + fade-in basado en posición en pantalla ──────────────
+		final fadeZoneBottom = 100.0;
+		creditsGroup.forEachExists(function(s:FlxSprite)
 		{
-			FlxG.sound.play(Paths.sound('menus/scrollMenu'));
-			_changeSelection(-1);
-		}
-		if (controls.DOWN_P)
+			final screenY = creditsGroup.y + s.y;
+
+			if (screenY + s.height <= 0)
+			{
+				s.kill();
+				return;
+			}
+
+			// Fade suave al entrar desde el borde inferior
+			if (screenY > FlxG.height - fadeZoneBottom)
+				s.alpha = Math.max(0, 1 - (screenY - (FlxG.height - fadeZoneBottom)) / fadeZoneBottom);
+			else
+				s.alpha = 1.0;
+		});
+
+		// ── Detectar fin de créditos ───────────────────────────────────────
+		if (!_hasEnded && _allBuilt && creditsGroup.getFirstExisting() == null)
 		{
-			FlxG.sound.play(Paths.sound('menus/scrollMenu'));
-			_changeSelection(1);
+			_hasEnded = true;
+			ScriptHandler.callOnScripts('onCreditsEnd', null);
+			new FlxTimer().start(1.5, function(_) exit());
 		}
+
+		// ── BACK para salir ────────────────────────────────────────────────
 		if (controls.BACK)
 		{
 			FlxG.sound.play(Paths.sound('menus/cancelMenu'));
-			StateTransition.switchState(new funkin.menus.MainMenuState());
+			exit();
 		}
-		if (controls.ACCEPT)
+
+		ScriptHandler.callOnScripts('onUpdate', [elapsed]);
+	}
+
+	// ── Construcción lazy ────────────────────────────────────────────────────
+
+	/**
+	 * Construye líneas mientras el frente del contenido
+	 * esté dentro del viewport (+ prefetch de 200px).
+	 */
+	function _buildPendingLines():Void
+	{
+		final viewBottom = FlxG.height + 200;
+
+		while (!_allBuilt && creditsGroup.y + _buildY <= viewBottom)
 		{
-			final entry = creditsStuff[curSelected];
-			if (entry.length > 3 && entry[3].length > 0)
+			if (_entryIdx >= _entries.length)
 			{
-				#if linux
-				Sys.command('/usr/bin/xdg-open', [entry[3]]);
-				#else
-				FlxG.openURL(entry[3]);
-				#end
+				_allBuilt = true;
+				return;
 			}
+
+			final entry  = _entries[_entryIdx];
+			final hColor = _parseColor(entry.headerColor, COLOR_HEADER_DEF);
+			final bColor = _parseColor(entry.bodyColor,   COLOR_BODY_DEF);
+
+			// ── Header (lineIdx == 0) ──────────────────────────────────────
+			if (_lineIdx == 0)
+			{
+				if (entry.header != null && entry.header.trim() != '')
+				{
+					final t = _makeLine(entry.header, _buildY, true, hColor);
+					_buildY += t.height + LINE_SPACING;
+					_lineIdx = 1;
+					return; // una sola línea por frame
+				}
+				else
+				{
+					_lineIdx = 1; // sin header, pasar directo al body
+				}
+			}
+
+			// ── Body (lineIdx >= 1) ────────────────────────────────────────
+			final body    = entry.body != null ? entry.body : [];
+			final bodyIdx = _lineIdx - 1;
+
+			if (bodyIdx < body.length)
+			{
+				final t = _makeLine(body[bodyIdx].line, _buildY, false, bColor);
+				_buildY += t.height + LINE_SPACING;
+				_lineIdx++;
+				return;
+			}
+
+			// ── Entrada completa → siguiente ──────────────────────────────
+			_buildY  += SECTION_GAP;
+			_entryIdx++;
+			_lineIdx  = 0;
 		}
 	}
 
-	function _changeSelection(change:Int = 0):Void
+	/**
+	 * Crea o recicla un FlxText y lo añade al creditsGroup.
+	 * Usa el objeto pool interno de FlxSpriteGroup.
+	 */
+	function _makeLine(text:String, yPos:Float, isHeader:Bool, color:FlxColor):FlxText
 	{
-		curSelected = FlxMath.wrap(curSelected + change, 0, creditsStuff.length - 1);
-
-		var attempts = 0;
-		while (_unselectableCheck(curSelected) && attempts < creditsStuff.length)
+		var t:FlxText = cast creditsGroup.recycle(() ->
 		{
-			curSelected = FlxMath.wrap(curSelected + (change >= 0 ? 1 : -1), 0, creditsStuff.length - 1);
-			attempts++;
-		}
+			var nt = new FlxText();
+			nt.antialiasing = true;
+			return nt;
+		});
 
-		for (i in 0...grpOptions.length)
-		{
-			final item = grpOptions.members[i];
-			if (item == null) continue;
-			item.targetY = i - curSelected;
-			item.alpha   = (item.targetY == 0) ? 1.0 : 0.6;
-		}
+		t.x           = 0;
+		t.y           = yPos;
+		t.fieldWidth  = FlxG.width - SCREEN_PAD * 2;
+		t.text        = text;
+		t.bold        = isHeader;
+		t.setFormat(
+			Paths.font('Funkin.otf'),
+			isHeader ? FONT_HEADER : FONT_BODY,
+			color,
+			FlxTextAlign.LEFT,
+			FlxTextBorderStyle.OUTLINE,
+			COLOR_STROKE,
+			true
+		);
+		t.borderSize  = STROKE_SIZE;
+		t.alpha       = 0;   // empieza invisible; el update lo va a hacer fade-in
+		t.alive       = true;
+		t.visible     = true;
 
-		_updateDesc();
+		return t;
+	}
+
+	// ── Helpers ──────────────────────────────────────────────────────────────
+
+	static function _parseColor(hex:Null<String>, def:Int):FlxColor
+	{
+		if (hex == null || hex.trim() == '') return def;
+		try   { return FlxColor.fromString('#' + hex.trim()); }
+		catch (_:Dynamic) { return def; }
+	}
+
+	// ── API pública (para scripts) ────────────────────────────────────────────
+
+	/**
+	 * Añade una entrada extra a los créditos (solo funciona antes de _allBuilt).
+	 * Útil para mods que quieran añadir créditos via script en runtime.
+	 */
+	public function addEntry(entry:CreditsEntry):Void
+	{
+		if (_entries != null && !_allBuilt)
+			_entries.push(entry);
+	}
+
+	/** Salta al final de los créditos. */
+	public function skipToEnd():Void
+	{
+		_allBuilt = true;
+		creditsGroup.forEach(function(s:FlxSprite) s.kill(), true);
+	}
+
+	// ── Salida ────────────────────────────────────────────────────────────────
+
+	public function exit():Void
+	{
+		if (_creditsExiting) return;
+		_creditsExiting = true;
+		ScriptHandler.callOnScripts('onExit', null);
+		StateTransition.switchState(new funkin.menus.MainMenuState());
+	}
+
+	// ── Cleanup ───────────────────────────────────────────────────────────────
+
+	override function destroy():Void
+	{
+		_entries = null;
+		super.destroy();
 	}
 }

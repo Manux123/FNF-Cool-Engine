@@ -109,7 +109,7 @@ class CreditsState extends funkin.states.MusicBeatState
 		// ── Grupo de créditos ──────────────────────────────────────────────
 		creditsGroup = new FlxSpriteGroup();
 		creditsGroup.x = SCREEN_PAD;
-		creditsGroup.y = FlxG.height * 2.0; // empieza dos pantallas abajo para que no pop al inicio
+		creditsGroup.y = FlxG.height / 1.5; // empieza dos pantallas abajo para que no pop al inicio
 		add(creditsGroup);
 
 		// ── Datos de créditos ──────────────────────────────────────────────

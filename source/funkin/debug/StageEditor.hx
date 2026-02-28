@@ -2258,9 +2258,9 @@ class StageEditor extends funkin.states.MusicBeatState
 		#if sys
 		var stageName = stageData.name;
 		if (toMod && ModManager.isActive())
-			return '${ModManager.modRoot()}/stages/$stageName/$stageName.json';
+			return '${ModManager.modRoot()}/stages/$stageName.json';
 		else
-			return 'assets/stages/$stageName/$stageName.json';
+			return 'assets/stages/$stageName.json';
 		#else
 		return '';
 		#end

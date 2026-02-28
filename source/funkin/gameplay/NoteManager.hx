@@ -35,6 +35,9 @@ class NoteManager
 {
 	// === GROUPS ===
 	public var notes:FlxTypedGroup<Note>;
+	/** Grupo separado para notas sustain — se dibuja DEBAJO de notes para que
+	 *  las notas normales siempre aparezcan por encima de los holds. */
+	public var sustainNotes:FlxTypedGroup<Note>;
 	public var splashes:FlxTypedGroup<NoteSplash>;
 	public var holdCovers:FlxTypedGroup<NoteHoldCover>;
 
@@ -73,6 +76,19 @@ class NoteManager
 	private var _scrollSpeed:Float = 0.45;
 	var downscrollOff:Float = 0;
 
+	// === SAVE.DATA CACHE (evita acceso Dynamic en hot loop) ===
+	// Se actualizan en generateNotes() y cuando cambia la configuración.
+	private var _cachedNoteSplashes:Bool = false;
+	private var _cachedDownscroll:Bool = false;
+	private var _cachedMiddlescroll:Bool = false;
+
+	/** Actualiza el caché de opciones del jugador. Llamar si el jugador cambia config. */
+	public function refreshSaveDataCache():Void {
+		_cachedNoteSplashes  = FlxG.save.data.notesplashes == true;
+		_cachedDownscroll    = FlxG.save.data.downscroll   == true;
+		_cachedMiddlescroll  = FlxG.save.data.middlescroll == true;
+	}
+
 	// === CALLBACKS ===
 	public var onNoteMiss:Note->Void = null;
 	public var onCPUNoteHit:Note->Void = null;
@@ -90,19 +106,39 @@ class NoteManager
 	public var playerHeld:Array<Bool> = [false, false, false, false];
 
 	/**
-	 * Set de noteData (0-3) cuyos sustains ya contaron un miss este ciclo.
-	 * Evita sumar un miss por CADA pieza del hold; solo se cuenta UNA vez.
+	 * Direcciones (0-3) cuyos sustains ya contaron un miss este ciclo.
+	 * OPTIMIZADO: Bool[4] en lugar de Map<Int,Bool> — elimina allocs de Map.clear()
+	 * que ocurrían 60 veces/seg. Map.clear() en Haxe/C++ resetea el hashmap interno
+	 * y puede hacer pequeñas allocations. Array fijo es O(1) set y O(1) clear.
 	 */
-	private var _missedHoldDir:Map<Int, Bool> = new Map();
-	// Buffer preallocado para autoReleaseFinishedHolds — cero allocs por frame
+	private var _missedHoldDir:Array<Bool> = [false, false, false, false];
+
+	/** Buffer preallocado para autoReleaseFinishedHolds — cero allocs por frame */
 	private var _autoReleaseBuffer:Array<Int> = [];
-	// Tracking de qué direcciones está "manteniendo" el CPU (para hold covers)
-	private var cpuHeldDirs:Map<Int, Bool> = new Map();
+
+	/**
+	 * Tracking de qué direcciones está "manteniendo" el CPU (para hold covers).
+	 * OPTIMIZADO: Bool[4] en lugar de Map<Int,Bool> — mismo razonamiento que _missedHoldDir.
+	 */
+	private var _cpuHeldDirs:Array<Bool> = [false, false, false, false];
+
+	/**
+	 * Set de NoteHoldCovers ya añadidos al grupo holdCovers.
+	 * OPTIMIZADO: reemplaza holdCovers.members.indexOf(cover) O(n) con lookup O(1).
+	 * indexOf se llamaba en cada nota de hold activa (cada frame CPU hit) — con
+	 * canciones densas esto se suma rápidamente.
+	 */
+	private var _holdCoverSet:haxe.ds.ObjectMap<NoteHoldCover, Bool> = new haxe.ds.ObjectMap();
+
+	/** ClipRect reutilizable para sustains en downscroll — elimina `new FlxRect()` por frame */
+	private var _sustainClipRect:flixel.math.FlxRect = new flixel.math.FlxRect();
 
 	public function new(notes:FlxTypedGroup<Note>, playerStrums:FlxTypedGroup<FlxSprite>, cpuStrums:FlxTypedGroup<FlxSprite>,
-			splashes:FlxTypedGroup<NoteSplash>, holdCovers:FlxTypedGroup<NoteHoldCover>, ?playerStrumsGroup:StrumsGroup, ?cpuStrumsGroup:StrumsGroup, ?allStrumsGroups:Array<StrumsGroup>)
+			splashes:FlxTypedGroup<NoteSplash>, holdCovers:FlxTypedGroup<NoteHoldCover>, ?playerStrumsGroup:StrumsGroup, ?cpuStrumsGroup:StrumsGroup, ?allStrumsGroups:Array<StrumsGroup>,
+			?sustainNotes:FlxTypedGroup<Note>)
 	{
 		this.notes = notes;
+		this.sustainNotes = sustainNotes != null ? sustainNotes : notes; // fallback: usar mismo grupo si no se pasa
 		this.playerStrums = playerStrums;
 		this.cpuStrums = cpuStrums;
 		this.splashes = splashes;
@@ -165,6 +201,9 @@ class NoteManager
 		_prevSpawnedNote.clear();
 		songSpeed = SONG.speed;
 		_scrollSpeed = 0.45 * FlxMath.roundDecimal(songSpeed, 2);
+
+		// Cachear opciones del jugador ahora — se usan en el hot loop de notas
+		refreshSaveDataCache();
 
 		// ── v2: pre-calcular capacidad total para evitar resizes del array ────
 		// Cada push() que supera la capacidad interna copia el array completo.
@@ -265,7 +304,8 @@ class NoteManager
 	 */
 	private function autoReleaseFinishedHolds():Void
 	{
-		final members = notes.members;
+		// Sustains están en el grupo separado sustainNotes
+		final members = sustainNotes.members;
 		final len = members.length;
 
 		// ── Jugador ──────────────────────────────────────────────────────────
@@ -282,18 +322,20 @@ class NoteManager
 		}
 
 		// ── CPU ──────────────────────────────────────────────────────────────
-		if (cpuHeldDirs.keys().hasNext())
+		var _anyCpuHeld = false;
+		for (d in 0...4) if (_cpuHeldDirs[d]) { _anyCpuHeld = true; break; }
+		if (_anyCpuHeld)
 		{
 			_autoReleaseBuffer.resize(0);
-			for (dir in cpuHeldDirs.keys())
+			for (dir in 0...4)
 			{
-				if (!_hasPendingSustain(dir, false, members, len))
+				if (_cpuHeldDirs[dir] && !_hasPendingSustain(dir, false, members, len))
 					_autoReleaseBuffer.push(dir);
 			}
 			for (dir in _autoReleaseBuffer)
 			{
 				if (renderer != null) renderer.stopHoldCover(dir, false);
-				cpuHeldDirs.remove(dir);
+				_cpuHeldDirs[dir] = false;
 			}
 		}
 	}
@@ -338,7 +380,12 @@ class NoteManager
 			note.alpha = raw.isSustainNote ? 0.6 : 1.0;
 
 			_prevSpawnedNote.set(raw.noteData, note);
-			notes.add(note);
+			// Sustain notes van al grupo separado (se dibuja ANTES que notes →
+			// las notas normales siempre quedan por encima visualmente).
+			if (raw.isSustainNote)
+				sustainNotes.add(note);
+			else
+				notes.add(note);
 			// Sin splice: el array NoteRawData es ~50 bytes/nota (trivial en RAM).
 			// El splice O(n) causaba un hiccup visible al 75% de la canción.
 		}
@@ -346,13 +393,24 @@ class NoteManager
 
 	private function updateActiveNotes(songPosition:Float):Void
 	{
-		final members = notes.members;
-		final len = members.length;
 		final hitWindow:Float = Conductor.safeZoneOffset;
 
 		// Limpiar el set de miss-por-hold al inicio de cada frame
-		_missedHoldDir.clear();
+		// OPTIMIZADO: asignación directa × 4 vs Map.clear() que rehashea internamente
+		_missedHoldDir[0] = false;
+		_missedHoldDir[1] = false;
+		_missedHoldDir[2] = false;
+		_missedHoldDir[3] = false;
 
+		// Iterar ambos grupos: primero sustains, luego notas normales
+		_updateNoteGroup(sustainNotes.members, sustainNotes.members.length, songPosition, hitWindow);
+		// Evitar doble-iteración si sustainNotes apunta al mismo objeto que notes (fallback)
+		if (sustainNotes != notes)
+			_updateNoteGroup(notes.members, notes.members.length, songPosition, hitWindow);
+	}
+
+	private inline function _updateNoteGroup(members:Array<Note>, len:Int, songPosition:Float, hitWindow:Float):Void
+	{
 		for (i in 0...len)
 		{
 			final note = members[i];
@@ -400,9 +458,9 @@ class NoteManager
 							note.tooLate = true;
 
 							// Contar UN miss por grupo de hold, no uno por pieza
-							if (!_missedHoldDir.exists(dir))
+							if (!_missedHoldDir[dir])
 							{
-								_missedHoldDir.set(dir, true);
+								_missedHoldDir[dir] = true;
 								if (onNoteMiss != null)
 									onNoteMiss(note);
 							}
@@ -442,23 +500,25 @@ class NoteManager
 			onCPUNoteHit(note);
 		// Solo animar el strum en la nota cabeza, NO en las piezas de sustain.
 		handleStrumAnimation(note.noteData, note.strumsGroupIndex, false);
-		if (!note.isSustainNote && !FlxG.save.data.middlescroll && FlxG.save.data.notesplashes && renderer != null)
+		if (!note.isSustainNote && !_cachedMiddlescroll && _cachedNoteSplashes && renderer != null)
 			createNormalSplash(note, false);
 /*
 		// Hold covers para CPU (como v-slice): solo en la primera pieza de sustain
-		if (note.isSustainNote && !FlxG.save.data.middlescroll && FlxG.save.data.notesplashes && renderer != null)
+		if (note.isSustainNote && !_cachedMiddlescroll && _cachedNoteSplashes && renderer != null)
 		{
 			
 			var dir = note.noteData;
-			if (!cpuHeldDirs.exists(dir))
+			if (!_cpuHeldDirs[dir])
 			{
-				cpuHeldDirs.set(dir, true);
+				_cpuHeldDirs[dir] = true;
 				var strum = getStrumForDirection(dir, note.strumsGroupIndex, false);
 				if (strum != null)
 				{
 					var cover = renderer.startHoldCover(dir, strum.x, strum.y, false);
-					if (cover != null && holdCovers.members.indexOf(cover) < 0)
+					if (cover != null && !_holdCoverSet.exists(cover)) {
+						_holdCoverSet.set(cover, true);
 						holdCovers.add(cover);
+					}
 				}
 			}
 		}*/
@@ -510,7 +570,10 @@ class NoteManager
 			noteY = strumLineY + (songPosition - note.strumTime) * _scrollSpeed;
 		else
 			noteY = strumLineY - (songPosition - note.strumTime) * _scrollSpeed;
-		note.y = noteY;
+
+		// Para notas normales, Y es directo
+		if (!note.isSustainNote)
+			note.y = noteY;
 
 		var strum = getStrumForDirection(note.noteData, note.strumsGroupIndex, note.mustPress);
 		if (strum != null)
@@ -530,21 +593,27 @@ class NoteManager
 			note.x = strum.x + (strum.width - note.width) / 2;
 		}
 
+		// Posición Y de sustains: noteY directo (fórmula original).
+		// scale.y fue calculado en setupSustainNote() para que la altura de cada pieza
+		// coincida con el espacio entre strumTimes adyacentes (stepCrochet * scrollSpeed).
+		// Cualquier compensación de offset.y rompe esa alineación cuerpo↔tail.
+		// El bug original era z-order (ya resuelto con grupo sustainNotes), no posición Y.
+		if (note.isSustainNote)
+			note.y = noteY;
+
 		if (note.isSustainNote && downscroll && !note.mustPress)
 		{
 			var strumLineThreshold = (strumLineY + Note.swagWidth / 2);
 			var noteEndPos = note.y - note.offset.y * note.scale.y + note.height;
 			if (noteEndPos >= strumLineThreshold)
 			{
-				var clipRect = note.clipRect;
-				if (clipRect == null)
-					clipRect = new flixel.math.FlxRect();
-				clipRect.width = note.frameWidth * 2;
-				clipRect.height = (strumLineThreshold - note.y) / note.scale.y;
-				if (FlxG.save.data.downscroll)
+				// Reusar _sustainClipRect preallocado — elimina `new FlxRect()` por frame
+				if (_cachedDownscroll)
 					downscrollOff = 10;
-				clipRect.y = note.frameHeight - clipRect.height + downscrollOff;
-				note.clipRect = clipRect;
+				_sustainClipRect.width  = note.frameWidth * 2;
+				_sustainClipRect.height = (strumLineThreshold - note.y) / note.scale.y;
+				_sustainClipRect.y      = note.frameHeight - _sustainClipRect.height + downscrollOff;
+				note.clipRect = _sustainClipRect;
 			}
 		}
 	}
@@ -552,7 +621,11 @@ class NoteManager
 	private function removeNote(note:Note):Void
 	{
 		note.kill();
-		notes.remove(note, true);
+		// Remover del grupo correcto según tipo de nota
+		if (note.isSustainNote && sustainNotes != notes)
+			sustainNotes.remove(note, true);
+		else
+			notes.remove(note, true);
 		if (renderer != null)
 			renderer.recycleNote(note);
 	}
@@ -568,7 +641,7 @@ class NoteManager
 			if (note.isSustainNote)
 				handleSustainNoteHit(note);
 			else*/
-			if (!note.isSustainNote && FlxG.save.data.notesplashes && renderer != null)
+			if (!note.isSustainNote && _cachedNoteSplashes && renderer != null)
 				createNormalSplash(note, true);
 		}
 		removeNote(note);
@@ -585,15 +658,17 @@ class NoteManager
 			holdStartTimes.set(direction, Conductor.songPosition);
 
 			// Hold covers solo si los note splashes están activados en opciones
-			if (FlxG.save.data.notesplashes && renderer != null)
+			if (_cachedNoteSplashes && renderer != null)
 			{
 				var strum = getStrumForDirection(direction, note.strumsGroupIndex, true);
 				if (strum != null)
 				{
 					var cover = renderer.startHoldCover(direction, strum.x, strum.y);
 					// Solo añadir al grupo si no está ya (el pool puede reutilizar objetos)
-					if (cover != null && holdCovers.members.indexOf(cover) < 0)
+					if (cover != null && !_holdCoverSet.exists(cover)) {
+						_holdCoverSet.set(cover, true);
 						holdCovers.add(cover);
+					}
 				}
 			}
 		}
@@ -663,23 +738,26 @@ class NoteManager
 	 */
 	public function updatePositionsForRewind(songPosition:Float):Void
 	{
-		final members = notes.members;
-		final len = members.length;
+		_rewindUpdateGroup(sustainNotes.members, sustainNotes.members.length, songPosition);
+		if (sustainNotes != notes)
+			_rewindUpdateGroup(notes.members, notes.members.length, songPosition);
+		if (renderer != null)
+			renderer.updateBatcher();
+	}
+
+	private inline function _rewindUpdateGroup(members:Array<Note>, len:Int, songPosition:Float):Void
+	{
 		for (i in 0...len)
 		{
 			final note = members[i];
 			if (note == null || !note.alive)
 				continue;
 			updateNotePosition(note, songPosition);
-
-			// Culling suave: ocultar si sale de pantalla, pero no matar
 			if (note.y < -CULL_DISTANCE || note.y > FlxG.height + CULL_DISTANCE)
 				note.visible = false;
 			else
 				note.visible = true;
 		}
-		if (renderer != null)
-			renderer.updateBatcher();
 	}
 
 	/**
@@ -689,7 +767,18 @@ class NoteManager
 	 */
 	public function rewindTo(targetTime:Float):Void
 	{
-		// Matar todas las notas vivas
+		// Matar todas las notas vivas en ambos grupos
+		if (sustainNotes != notes)
+		{
+			var i = sustainNotes.members.length - 1;
+			while (i >= 0)
+			{
+				var n = sustainNotes.members[i];
+				if (n != null && n.alive)
+					removeNote(n);
+				i--;
+			}
+		}
 		var i = notes.members.length - 1;
 		while (i >= 0)
 		{
@@ -701,10 +790,11 @@ class NoteManager
 
 		_prevSpawnedNote.clear();
 		heldNotes.clear();
-		cpuHeldDirs.clear();
+		_cpuHeldDirs[0] = _cpuHeldDirs[1] = _cpuHeldDirs[2] = _cpuHeldDirs[3] = false;
 		holdStartTimes.clear();
-		_missedHoldDir.clear();
+		_missedHoldDir[0] = _missedHoldDir[1] = _missedHoldDir[2] = _missedHoldDir[3] = false;
 		playerHeld = [false, false, false, false];
+		_holdCoverSet.clear();
 
 		// BUGFIX escala pixel: limpiar el pool de notas para que las nuevas se creen
 		// desde cero con la skin activa correcta. Sin esto, notas recicladas del pool
@@ -735,12 +825,14 @@ class NoteManager
 		_unspawnIdx = 0;
 		_prevSpawnedNote.clear();
 		heldNotes.clear();
-		cpuHeldDirs.clear();
+		_cpuHeldDirs[0] = _cpuHeldDirs[1] = _cpuHeldDirs[2] = _cpuHeldDirs[3] = false;
 		holdStartTimes.clear();
-		_missedHoldDir.clear();
+		_missedHoldDir[0] = _missedHoldDir[1] = _missedHoldDir[2] = _missedHoldDir[3] = false;
+		_holdCoverSet.clear();
 		_playerStrumCache = [];
 		_cpuStrumCache = [];
 		_strumGroupCache = [];
+		sustainNotes = null;
 		if (renderer != null)
 		{
 			renderer.clearPools();

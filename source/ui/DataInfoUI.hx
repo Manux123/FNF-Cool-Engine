@@ -258,9 +258,15 @@ class StatsPanel extends TextField
 		lines.push('GPU: DC=$drawCalls  Spr=$sprites  Cull=$culled');
 
 		// ── GC / Memoria ──
+		#if cpp
+		var usedMB   = Math.round(cpp.vm.Gc.memInfo64(cpp.vm.Gc.MEM_INFO_USAGE) / (1024 * 1024));
+		var peakMB   = Math.round(cpp.vm.Gc.memInfo64(cpp.vm.Gc.MEM_INFO_RESERVED) / (1024 * 1024));
+		#else
 		var usedMB   = Math.round(openfl.system.System.totalMemory / (1024 * 1024));
+		var peakMB   = usedMB;
+		#end
 		var gcPaused = funkin.system.MemoryUtil.disableCount > 0;
-		lines.push('Mem: ${usedMB} MB  GC: ${gcPaused ? "paused" : "active"}');
+		lines.push('Mem: ${usedMB}/${peakMB} MB  GC: ${gcPaused ? "paused" : "active"}');
 
 		// ── Audio (OpenAL) ──
 		if (AudioConfig.loaded)

@@ -48,13 +48,16 @@ class NoteRenderer
     // OPTIMIZATION: pools separados para sustain vs normal.
     // BUGFIX: mezclarlos causaba que note.recycle() cambiara isSustainNote sin
     // recargar animaciones → WARNING "No animation called 'purpleScroll'" etc.
+    // 24 + 24 = 48 objetos poolados — suficiente para canciones densas.
+    // El valor anterior (50+50=100) mantenía demasiados FlxSprites vivos con
+    // sus texturas, contribuyendo a la presión de RAM durante gameplay.
     private var notePool:Array<Note>    = [];   // notas normales (cabeza)
     private var sustainPool:Array<Note> = [];   // hold pieces + tails
-    private var maxPoolSize:Int = 50;
+    private var maxPoolSize:Int = 24;
 
     // OPTIMIZATION: pool de splashes de hit normales
     private var splashPool:Array<NoteSplash> = [];
-    private var maxSplashPoolSize:Int = 32;
+    private var maxSplashPoolSize:Int = 16;
 
     // NUEVO (v-slice): pool de NoteHoldCover
     public var holdCoverPool:Array<NoteHoldCover> = [];

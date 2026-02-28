@@ -75,10 +75,12 @@ class Paths
 
 	/**
 	 * Límite de atlases en caché.
-	 * Aumentado a 200 (antes: 80) ya que sin LRU no hay eviction durante
-	 * gameplay — los atlases se limpian en bloque al cambiar de sesión.
+	 * 50 cubre todo lo necesario para gameplay: 3 personajes + stage + notas + UI.
+	 * El valor anterior (200) acumulaba atlas de assets ya sin usar entre canciones
+	 * manteniendo sus BitmapData en RAM — contribución directa a los ~1 GB observados.
+	 * Con LRU (eviction al superar el límite) es seguro bajar este valor.
 	 */
-	public static var maxAtlasCache:Int = 200;
+	public static var maxAtlasCache:Int = 50;
 
 	/** Si false todos los accesos van a disco (útil para depuración). */
 	public static var cacheEnabled:Bool = true;

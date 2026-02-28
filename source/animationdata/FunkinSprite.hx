@@ -71,9 +71,9 @@ class FunkinSprite extends FlxSprite
 	 */
 	static var _atlasResCache:Map<String, Null<String>> = [];
 
-	/** LRU simple para _frameCache (máx. 120 entradas; los frames son ligeros) */
+	/** LRU simple para _frameCache (máx. 30 entradas — suficiente para gameplay activo) */
 	static var _frameLRU:Array<String> = [];
-	static final MAX_FRAME_CACHE = 120;
+	static final MAX_FRAME_CACHE = 30;
 
 	// ── API de invalidación ────────────────────────────────────────────────────
 

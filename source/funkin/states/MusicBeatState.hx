@@ -104,6 +104,25 @@ class MusicBeatState extends FlxUIState
 		// Auto-cargar scripts si el state lo permite y no los cargó manualmente
 		if (autoScriptLoad)
 			_autoLoadScripts();
+
+		// GPU caching: liberar RAM de todas las texturas cargadas en este state
+		// que ya fueron subidas a VRAM. Esto reduce RAM en menús (240 MB → mucho menos).
+		// Se hace 5 frames después para garantizar que todas las texturas tuvieron
+		// al menos un draw call antes de disposeImage().
+		// PlayState tiene su propio mecanismo más granular — no se doble-flush.
+		#if (desktop && cpp && !hl)
+		if (!Std.isOfType(this, funkin.gameplay.PlayState))
+		{
+			var _menuFlushFrames:Int = 0;
+			function _onMenuFlush(_:openfl.events.Event):Void {
+				if (++_menuFlushFrames < 5) return;
+				FlxG.stage.removeEventListener(openfl.events.Event.ENTER_FRAME, _onMenuFlush);
+				funkin.cache.PathsCache.instance.flushGPUCache();
+				cpp.vm.Gc.run(false); // ciclo leve — no compact() para no causar stutter en menús
+			}
+			FlxG.stage.addEventListener(openfl.events.Event.ENTER_FRAME, _onMenuFlush);
+		}
+		#end
 	}
 
 	override function update(elapsed:Float):Void

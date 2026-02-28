@@ -152,6 +152,9 @@ class PlayState extends funkin.states.MusicBeatState {
 
 	// === NOTES ===
 	public var notes:FlxTypedGroup<Note>;
+	/** Grupo de notas sustain — se añade ANTES que notes para que los holds
+	 *  se dibujen DEBAJO de las notas normales (z-order correcto). */
+	public var sustainNotes:FlxTypedGroup<Note>;
 	public var strumLineNotes:FlxTypedGroup<FlxSprite>;
 
 	private var playerStrums:FlxTypedGroup<FlxSprite>;
@@ -433,6 +436,42 @@ class PlayState extends funkin.states.MusicBeatState {
 		Paths.clearPreviousSession();
 
 		super.create();
+
+		// ── GPU flush post-primer-render ─────────────────────────────────────
+		// BUGFIX: el timer anterior se registraba ANTES de super.create() →
+		// los primeros frames de render aún no habían ocurrido cuando disparaba,
+		// por lo que getTexture() podía devolver null o las texturas no estaban
+		// subidas a VRAM todavía → disposeImage() borraba pixels antes del upload.
+		//
+		// SOLUCIÓN: escuchar ENTER_FRAME en el stage nativo de OpenFL.
+		// Esperamos 5 frames para garantizar que context3D procesó TODOS los
+		// draw calls del create() (personajes, stage, strums, HUD, countdown).
+		// En el frame 5 hacemos:
+		//   1. flushGPUCache()  — disposeImage() de todas las texturas subidas
+		//   2. Gc.run(true)     — ciclo GC mayor: recoge los Image.pixels liberados
+		//   3. Gc.compact()     — compacta el heap → System.totalMemory baja realmente
+		//
+		// Gc.compact() es lento (~50-200ms según cantidad de texturas) pero ocurre
+		// UNA SOLA VEZ al inicio de cada canción, donde el jugador ya está viendo
+		// el countdown → el freeze es imperceptible.
+		#if (desktop && cpp && !hl)
+		var _flushFrameCount:Int = 0;
+		final _flushFramesNeeded:Int = 5;
+		var _flushListener:openfl.events.EventDispatcher = null;
+		_flushListener = FlxG.stage;
+		function _onFlushFrame(_:openfl.events.Event):Void {
+			_flushFrameCount++;
+			if (_flushFrameCount < _flushFramesNeeded) return;
+			FlxG.stage.removeEventListener(openfl.events.Event.ENTER_FRAME, _onFlushFrame);
+			// Paso 1: liberar CPU pixels de texturas ya en VRAM
+			funkin.cache.PathsCache.instance.flushGPUCache();
+			// Paso 2 + 3: GC mayor + compactación → System.totalMemory refleja uso real
+			cpp.vm.Gc.run(true);
+			cpp.vm.Gc.compact();
+			trace('[PlayState] GPU flush + GC compact completado tras ${_flushFramesNeeded} frames');
+		}
+		FlxG.stage.addEventListener(openfl.events.Event.ENTER_FRAME, _onFlushFrame);
+		#end
 	}
 
 	/**
@@ -581,6 +620,11 @@ class PlayState extends funkin.states.MusicBeatState {
 		// loadStrums() asigna playerStrums y cpuStrums automáticamente
 		loadStrums();
 
+		// sustainNotes se añade PRIMERO → se dibuja DEBAJO de notes normales
+		sustainNotes = new FlxTypedGroup<Note>();
+		sustainNotes.cameras = [camHUD];
+		add(sustainNotes);
+
 		notes = new FlxTypedGroup<Note>();
 		notes.cameras = [camHUD];
 		add(notes);
@@ -700,7 +744,7 @@ class PlayState extends funkin.states.MusicBeatState {
 		// Note manager - MEJORADO con splashes
 		// ✅ Pasar referencias a StrumsGroup para animaciones de confirm
 		// ✅ Pasar lista completa de grupos para soporte de personajes extra
-		noteManager = new NoteManager(notes, playerStrums, cpuStrums, grpNoteSplashes, grpHoldCovers, playerStrumsGroup, cpuStrumsGroup, strumsGroups);
+		noteManager = new NoteManager(notes, playerStrums, cpuStrums, grpNoteSplashes, grpHoldCovers, playerStrumsGroup, cpuStrumsGroup, strumsGroups, sustainNotes);
 
 		noteManager.strumLineY = strumLiney;
 		noteManager.downscroll = FlxG.save.data.downscroll;
@@ -1294,7 +1338,7 @@ class PlayState extends funkin.states.MusicBeatState {
 			if (boyfriend != null && !boyfriend.stunned) {
 				inputHandler.update();
 				inputHandler.processInputs(notes);
-				inputHandler.processSustains(notes);
+				inputHandler.processSustains(sustainNotes);
 				updatePlayerStrums();
 
 				if (paused)
@@ -1321,16 +1365,9 @@ class PlayState extends funkin.states.MusicBeatState {
 			if (gameState.isDead() || FlxG.keys.anyJustPressed(inputHandler.killBind))
 				gameOver();
 
-			// Limpiar hold splashes de CPU que ya no tienen notas activas
-			for (key in heldNotes.keys()) {
-				if (key >= 4) { // Es una nota de CPU
-					var note = heldNotes.get(key);
-					// Si la canción ya pasó el tiempo de la nota + su duración
-					if (Conductor.songPosition > note.strumTime + note.sustainLength) {
-						onKeyRelease(key); // Reutilizamos la función de limpieza
-					}
-				}
-			}
+			// NOTA: El CPU hold cleanup con key >= 4 fue removido — noteData siempre
+			// es 0-3, por lo que esa condición era dead code. NoteManager gestiona
+			// internamente los holds del CPU.
 		}
 
 		if (vocals != null && SONG.needsVoices && !inCutscene) {
@@ -2240,6 +2277,9 @@ class PlayState extends funkin.states.MusicBeatState {
 		startFromTime = null;
 
 		// Limpiar hold splashes residuales
+		// NOTA: heldNotes solo puede tener keys 0-3 (noteData), nunca >= 4.
+		// El bloque CPU cleanup que chequeaba key >= 4 en update() era código muerto
+		// y fue eliminado — NoteManager maneja internamente los hold notes del CPU.
 		heldNotes.clear();
 
 		if (grpNoteSplashes != null)
@@ -2402,22 +2442,37 @@ class PlayState extends funkin.states.MusicBeatState {
 		// ── 12. Section wrapper cache
 		_cachedSectionClass = null;
 		_cachedSectionClassIdx = -2;
-		
-		super.destroy();
 
-		StickerTransition.invalidateCache();
-
+		// ── 13. Reanudar GC ANTES de super.destroy() ─────────────────────────
+		// CRÍTICO: el GC debe estar activo cuando super.destroy() libera los
+		// FlxSprites/Groups del state, para que los objetos muertos sean
+		// elegibles para recolección sin acumularse en el heap.
+		// Antes se reanudaba DESPUÉS de super.destroy() → el teardown completo
+		// ocurría con el GC deshabilitado → el heap crecía innecesariamente.
 		if (_gcPausedForSong) {
 			_gcPausedForSong = false;
 			MemoryUtil.resumeGC();
 		}
 
-		Paths.clearStoredMemory();
+		super.destroy();
+
+		StickerTransition.invalidateCache();
+
+		// ── 14. Limpieza de memoria ───────────────────────────────────────────
+		// clearStoredMemory() ya no es necesario aquí: FunkinCache.postStateSwitch
+		// llama clearSecondLayer() que usa FlxG.bitmap.removeByKey() (más correcto).
+		// clearUnusedMemory() hace FlxG.bitmap.clearUnused() + Gc.run(true) + compact().
+		// Solo llamarlo UNA vez para evitar el doble stutter.
 		Paths.clearUnusedMemory();
 
 		// Limpiar el atlasCache de Paths de entradas cuyo FlxGraphic fue dispuesto.
 		// Debe hacerse DESPUÉS del GC para que los bitmap == null sean detectables.
 		Paths.pruneAtlasCache();
+
+		// GPU caching post-destroy: liberar RAM de texturas ya subidas a VRAM.
+		// Se llama aquí porque en este punto FunkinCache ya completó su rotación
+		// de capas y context3D debería estar disponible.
+		funkin.cache.PathsCache.instance.flushGPUCache();
 	}
 
 	// ====================================

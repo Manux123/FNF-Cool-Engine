@@ -96,7 +96,16 @@ class FPSCount extends TextField
 
 		if (validCount != cacheCount && visible)
 		{
-			var mem:Float = Math.round(System.totalMemory / (byteValue * byteValue));
+			// OPTIMIZADO: usar cpp.vm.Gc.stats().totalUsed en vez de System.totalMemory.
+			// System.totalMemory = totalAllocated = heap máximo histórico (solo baja con compact()).
+			// totalUsed = bytes de objetos vivos ahora mismo → refleja la liberación real de RAM.
+			// Esto hace que el counter baje correctamente después del flushGPUCache + compact().
+			var mem:Float;
+			#if cpp
+			mem = Math.round(cpp.vm.Gc.memInfo64(cpp.vm.Gc.MEM_INFO_USAGE) / (byteValue * byteValue));
+			#else
+			mem = Math.round(System.totalMemory / (byteValue * byteValue));
+			#end
 			if (mem > memPeak) memPeak = mem;
 			text = 'FPS: $showFps - Memory: ${mem}MB/${memPeak}MB';
 			#if (gl_stats && !disable_cffi && (!html5 || !canvas))

@@ -6,6 +6,7 @@ import openfl.media.Sound;
 import openfl.text.Font;
 import openfl.utils.AssetCache;
 import animationdata.FunkinSprite;
+import funkin.system.MemoryUtil;
 #if lime
 import lime.utils.Assets as LimeAssets;
 #end
@@ -73,11 +74,11 @@ class FunkinCache extends AssetCache
 			// Destruir lo que el nuevo estado no rescató.
 			instance.clearSecondLayer();
 
-			// GC ligero para devolver memoria al OS sin pausa visible
-			try { openfl.system.System.gc(); } catch (_:Dynamic) {}
-			#if cpp
-			try { cpp.vm.Gc.run(false); } catch (_:Dynamic) {}
-			#end
+			// GC ligero post-switch: solo generación joven (rápido, sin stutter).
+			// El GC pesado (run(true) + compact) lo hace PlayState.destroy() via
+			// clearUnusedMemory() cuando sale del gameplay, NO aquí, para evitar
+			// stutters visibles durante las transiciones de estado.
+			funkin.system.MemoryUtil.collectMinor();
 		});
 	}
 

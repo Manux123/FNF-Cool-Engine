@@ -252,7 +252,22 @@ class PathsCache
 			{
 				_currentGraphics.set(key, g);
 				_graphicCount++;
-						return g;
+				// GPU caching: esta textura YA fue dibujada en la sesión anterior →
+				// el upload a VRAM ocurrió. Es seguro llamar disposeImage() ahora.
+				// Nota: a diferencia de _loadGraphic() (carga nueva), aquí no hay
+				// riesgo de disponer antes del primer draw porque ya fue renderizada.
+				#if (cpp && !hl)
+				try {
+					if (FlxG.stage != null && FlxG.stage.context3D != null) {
+						final tex = g.bitmap.getTexture(FlxG.stage.context3D);
+						if (tex != null) {
+							@:privateAccess
+							if (g.bitmap.image != null) g.bitmap.disposeImage();
+						}
+					}
+				} catch (_:Dynamic) {}
+				#end
+				return g;
 			}
 			// Gráfico inválido — caer al _loadGraphic abajo
 		}
@@ -407,32 +422,12 @@ class PathsCache
 
 		g.persist = true;
 
-		// GPU pre-render: primero draw() (paso principal), luego getTexture() como fallback.
-		// Orden correcto según V-Slice forceRender() — draw() primero garantiza que el
-		// sprite quede registrado en el pipeline de OpenFL antes de subir a VRAM.
+		// GPU pre-render: llama getTexture() para registrar la textura en el pipeline de OpenFL.
+		// El upload real de pixels ocurre en el PRIMER DRAW CALL del render thread.
+		// NO llamamos disposeImage() aquí — los pixels deben existir hasta ese primer draw.
+		// flushGPUCache() (llamado 5 frames después via ENTER_FRAME en PlayState.create())
+		// se encarga de liberar los pixels DESPUÉS de confirmar que el render ocurrió.
 		_forceGPURender(g);
-
-		// GPU caching: liberar RAM tras subida a VRAM, SOLO si la textura GPU
-		// fue realmente subida. Si context3D no está listo aún, no disponer —
-		// OpenFL necesita bitmap.image para subir la textura en el primer draw call.
-		if (gpuCaching && !permanent && g.bitmap != null)
-		{
-			#if (cpp || hl)
-			try
-			{
-				if (FlxG.stage != null && FlxG.stage.context3D != null)
-				{
-					final tex = g.bitmap.getTexture(FlxG.stage.context3D);
-					// Solo liberar CPU pixels si la textura GPU existe
-					if (tex != null)
-						g.bitmap.disposeImage();
-				}
-				// Si context3D == null: no disponer. La textura se subirá en el
-				// primer frame de render y bitmap.image debe seguir disponible.
-			}
-			catch (_:Dynamic) {}
-			#end
-		}
 
 		_currentGraphics.set(key, g);
 		_graphicCount++;
@@ -665,6 +660,73 @@ class PathsCache
 		try { cpp.vm.Gc.compact(); } catch (_:Dynamic) {}
 		#end
 		#if hl hl.Gc.major(); #end
+	}
+
+	/**
+	 * GPU caching post-load flush: libera la RAM (imagen CPU) de todos los
+	 * gráficos de la sesión actual que ya hayan sido subidos a VRAM.
+	 *
+	 * Llamar DESPUÉS de que el state haya completado su create() y haya
+	 * renderizado al menos un frame — garantiza que context3D esté listo
+	 * y que todas las texturas hayan sido subidas por OpenFL.
+	 *
+	 * Solo efectivo en desktop C++ (requiere OpenGL context3D).
+	 * Libera típicamente 50-400 MB de RAM en canciones con muchos sprites.
+	 */
+	public function flushGPUCache():Void
+	{
+		#if (cpp && !hl)
+		if (FlxG.stage == null || FlxG.stage.context3D == null) return;
+		final ctx = FlxG.stage.context3D;
+		var released = 0;
+		var skipped  = 0;
+		for (g in _currentGraphics)
+		{
+			if (g == null || g.bitmap == null) continue;
+			// Nunca liberar permanentes — se reutilizan en cada state sin recarga
+			if (_permanentGraphics.exists(g.key)) continue;
+			// Si ya fue dispuesto (bitmap.image == null), saltear
+			@:privateAccess
+			if (g.bitmap.image == null) continue;
+			try
+			{
+				final tex = g.bitmap.getTexture(ctx);
+				if (tex != null)
+				{
+					g.bitmap.disposeImage(); // libera pixels CPU manteniendo textura GPU
+					released++;
+				}
+				else
+				{
+					skipped++;
+				}
+			}
+			catch (_:Dynamic) {}
+		}
+		if (released > 0 || skipped > 0)
+			trace('[PathsCache] flushGPUCache: $released texturas liberadas a VRAM-only, $skipped sin textura GPU aún');
+		#end
+	}
+
+	/**
+	 * Versión selectiva: libera RAM de una textura específica si ya fue subida a VRAM.
+	 * Útil para liberar sprites de personaje/stage individualmente.
+	 */
+	public function flushGPUCacheFor(key:String):Void
+	{
+		#if (cpp && !hl)
+		if (FlxG.stage == null || FlxG.stage.context3D == null) return;
+		var g = _currentGraphics.get(key);
+		if (g == null) g = _previousGraphics.get(key);
+		if (g == null || g.bitmap == null) return;
+		try
+		{
+			final tex = g.bitmap.getTexture(FlxG.stage.context3D);
+			@:privateAccess
+			if (tex != null && g.bitmap.image != null) g.bitmap.disposeImage();
+		}
+		catch (_:Dynamic) {}
+		#end
 	}
 
 	/** Limpieza total — alias de destroy() para cambio de mod / reinicio. */

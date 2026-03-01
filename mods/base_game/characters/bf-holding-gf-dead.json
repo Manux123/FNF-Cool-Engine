@@ -1,0 +1,33 @@
+{
+	"path": "bfHoldingGF-DEAD",
+	"isPlayer": true,
+	"antialiasing": true,
+	"scale": 1.0,
+	"flipX": true,
+	"animations": [
+		{
+			"name": "firstDeath",
+			"prefix": "BF Dies with GF",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 37,
+			"offsetY": 14
+		},
+		{
+			"name": "deathLoop",
+			"prefix": "BF Dead with GF Loop",
+			"framerate": 24,
+			"looped": true,
+			"offsetX": 37,
+			"offsetY": -3
+		},
+		{
+			"name": "deathConfirm",
+			"prefix": "RETRY confirm holding gf",
+			"framerate": 24,
+			"looped": false,
+			"offsetX": 37,
+			"offsetY": 28
+		}
+	]
+}

@@ -1,0 +1,94 @@
+{
+	"animations": [
+		{
+			"name": "shoot1",
+			"prefix": "Pico shoot 1",
+			"framerate": 24,
+			"looped": true,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "shoot2",
+			"prefix": "Pico shoot 2",
+			"framerate": 24,
+			"looped": true,
+			"offsetX": -1,
+			"offsetY": -128
+		},
+		{
+			"name": "shoot3",
+			"prefix": "Pico shoot 3",
+			"framerate": 24,
+			"looped": true,
+			"offsetX": 412,
+			"offsetY": -64
+		},
+		{
+			"name": "shoot4",
+			"prefix": "Pico shoot 4",
+			"framerate": 24,
+			"looped": true,
+			"offsetX": 439,
+			"offsetY": -19
+		},
+		{
+			"name": "shoot3-loop",
+			"prefix": "Pico shoot 3",
+			"indices": [
+				50,
+				51,
+				52
+			],
+			"framerate": 24,
+			"looped": true,
+			"offsetX": 412,
+			"offsetY": -64
+		},
+		{
+			"name": "shoot1-loop",
+			"prefix": "Pico shoot 1",
+			"indices": [
+				23,
+				24,
+				25
+			],
+			"framerate": 24,
+			"looped": true,
+			"offsetX": 0,
+			"offsetY": 0
+		},
+		{
+			"name": "shoot2-loop",
+			"prefix": "Pico shoot 2",
+			"indices": [
+				57,
+				58,
+				59
+			],
+			"framerate": 24,
+			"looped": true,
+			"offsetX": -1,
+			"offsetY": -128
+		},
+		{
+			"name": "shoot4-loop",
+			"prefix": "Pico shoot 4",
+			"indices": [
+				50,
+				51,
+				52
+			],
+			"framerate": 24,
+			"looped": true,
+			"offsetX": 439,
+			"offsetY": -19
+		}
+	],
+	"isPlayer": false,
+	"healthBarColor": "#31B0D1",
+	"healthIcon": "pico",
+	"antialiasing": true,
+	"path": "picoSpeaker",
+	"scale": 1
+}

@@ -1,44 +1,51 @@
 {
-	"healthBarColor": "#191821",
 	"animations": [
 		{
-			"framerate": 24,
 			"offsetX": 0,
+			"framerate": 24,
 			"prefix": "Tankman Idle Dance",
 			"offsetY": 0,
-			"looped": false,
-			"name": "idle"
+			"name": "idle",
+			"looped": false
 		},
 		{
-			"offsetX": 54,
 			"framerate": 24,
+			"offsetX": 54,
 			"offsetY": 45,
 			"prefix": "Tankman UP note",
-			"name": "singUP",
-			"looped": false
+			"looped": false,
+			"name": "singUP"
 		},
 		{
-			"offsetX": 70,
 			"framerate": 24,
+			"offsetX": 70,
 			"prefix": "Tankman DOWN note",
 			"offsetY": -111,
-			"name": "singDOWN",
-			"looped": false
+			"looped": false,
+			"name": "singDOWN"
 		},
 		{
-			"offsetX": 90,
 			"framerate": 24,
+			"offsetX": 90,
 			"offsetY": -9,
 			"prefix": "Tankman Note Left",
-			"name": "singLEFT",
-			"looped": false
+			"looped": false,
+			"name": "singLEFT"
 		},
 		{
-			"offsetX": -18,
 			"framerate": 24,
+			"offsetX": -18,
 			"offsetY": -30,
 			"prefix": "Tankman Right Note",
-			"name": "singRIGHT",
+			"looped": false,
+			"name": "singRIGHT"
+		},
+		{
+			"prefix": "TANKMAN UGH",
+			"offsetX": 0,
+			"offsetY": 0,
+			"name": "ugh",
+			"framerate": 24,
 			"looped": false
 		}
 	],

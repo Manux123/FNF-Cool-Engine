@@ -1,0 +1,532 @@
+{
+	"scripts": [
+		"rolling_tank.hx",
+		"boppers.hx"
+	],
+	"gfPosition": [
+		200,
+		165
+	],
+	"dadPosition": [
+		17.5,
+		292.5
+	],
+	"gfVersion": "gf",
+	"cameraDad": [
+		0,
+		0
+	],
+	"isPixelStage": false,
+	"boyfriendPosition": [
+		792.5,
+		477.5
+	],
+	"name": "tankmen",
+	"hideGirlfriend": false,
+	"defaultZoom": 0.9,
+	"cameraBoyfriend": [
+		0,
+		0
+	],
+	"elements": [
+		{
+			"aboveChars": false,
+			"zIndex": 0,
+			"asset": "tankSky",
+			"position": [
+				-400,
+				-400
+			],
+			"visible": true,
+			"scale": [
+				1,
+				1
+			],
+			"type": "sprite",
+			"color": null,
+			"flipX": false,
+			"name": "sky",
+			"flipY": false,
+			"scrollFactor": [
+				1.38777878078145e-16,
+				1.38777878078145e-16
+			],
+			"antialiasing": true,
+			"alpha": 1,
+			"active": false
+		},
+		{
+			"aboveChars": false,
+			"zIndex": 0,
+			"asset": "tankMountains",
+			"position": [
+				-200,
+				0
+			],
+			"visible": true,
+			"scale": [
+				1,
+				1
+			],
+			"type": "sprite",
+			"color": null,
+			"flipX": false,
+			"name": "tankMountain",
+			"flipY": false,
+			"scrollFactor": [
+				0.2,
+				0.2
+			],
+			"antialiasing": true,
+			"alpha": 1,
+			"active": false
+		},
+		{
+			"aboveChars": false,
+			"zIndex": 0,
+			"asset": "tankBuildings",
+			"position": [
+				-200,
+				0
+			],
+			"visible": true,
+			"type": "sprite",
+			"scale": [
+				1.1,
+				1.1
+			],
+			"flipX": false,
+			"color": null,
+			"name": "tankBuildings",
+			"flipY": false,
+			"scrollFactor": [
+				0.3,
+				0.3
+			],
+			"antialiasing": true,
+			"alpha": 1
+		},
+		{
+			"aboveChars": false,
+			"zIndex": 0,
+			"asset": "tankRuins",
+			"position": [
+				-200,
+				0
+			],
+			"visible": true,
+			"type": "sprite",
+			"scale": [
+				1,
+				1
+			],
+			"flipX": false,
+			"color": null,
+			"name": "tankRuins",
+			"flipY": false,
+			"scrollFactor": [
+				0.35,
+				0.35
+			],
+			"antialiasing": true,
+			"alpha": 1
+		},
+		{
+			"asset": "tankWatchtower",
+			"zIndex": 0,
+			"aboveChars": false,
+			"position": [
+				100,
+				50
+			],
+			"scale": [
+				1,
+				1
+			],
+			"type": "animated",
+			"visible": true,
+			"name": "tankTower",
+			"flipX": false,
+			"color": null,
+			"antialiasing": true,
+			"scrollFactor": [
+				0.5,
+				0.5
+			],
+			"flipY": false,
+			"firstAnimation": "idle",
+			"alpha": 1,
+			"animations": [
+				{
+					"framerate": 24,
+					"prefix": "watchtower gradient color",
+					"indices": null,
+					"name": "idle",
+					"looped": false
+				}
+			]
+		},
+		{
+			"aboveChars": false,
+			"zIndex": 0,
+			"asset": "smokeLeft",
+			"position": [
+				-200,
+				-100
+			],
+			"visible": true,
+			"type": "animated",
+			"scale": [
+				1,
+				1
+			],
+			"color": null,
+			"flipX": false,
+			"name": "smokeLeft",
+			"firstAnimation": "idle",
+			"flipY": false,
+			"scrollFactor": [
+				0.4,
+				0.4
+			],
+			"antialiasing": true,
+			"alpha": 1,
+			"animations": [
+				{
+					"framerate": 24,
+					"prefix": "SmokeBlurLeft",
+					"name": "idle",
+					"looped": true,
+					"indices": null
+				}
+			]
+		},
+		{
+			"aboveChars": false,
+			"zIndex": 0,
+			"asset": "smokeRight",
+			"position": [
+				1100,
+				-100
+			],
+			"visible": true,
+			"type": "animated",
+			"scale": [
+				1,
+				1
+			],
+			"color": null,
+			"flipX": false,
+			"name": "smokeRight",
+			"flipY": false,
+			"firstAnimation": "idle",
+			"scrollFactor": [
+				0.4,
+				0.4
+			],
+			"antialiasing": true,
+			"alpha": 1,
+			"animations": [
+				{
+					"framerate": 24,
+					"prefix": "SmokeRight",
+					"name": "idle",
+					"looped": true,
+					"indices": null
+				}
+			]
+		},
+		{
+			"aboveChars": false,
+			"zIndex": 0,
+			"asset": "tankRolling",
+			"position": [
+				0,
+				0
+			],
+			"visible": true,
+			"type": "animated",
+			"scale": [
+				1,
+				1
+			],
+			"color": null,
+			"flipX": false,
+			"name": "backgroundTank",
+			"flipY": false,
+			"firstAnimation": "idle",
+			"scrollFactor": [
+				0.5,
+				0.5
+			],
+			"antialiasing": true,
+			"alpha": 1,
+			"animations": [
+				{
+					"framerate": 24,
+					"prefix": "BG tank w lighting",
+					"name": "idle",
+					"looped": true,
+					"indices": null
+				}
+			]
+		},
+		{
+			"aboveChars": false,
+			"zIndex": 0,
+			"asset": "tankGround",
+			"position": [
+				-419.999999649506,
+				-149.999999952021
+			],
+			"visible": true,
+			"type": "sprite",
+			"scale": [
+				1.15,
+				1.15
+			],
+			"flipX": false,
+			"color": null,
+			"name": "ground",
+			"flipY": false,
+			"scrollFactor": [
+				1,
+				1
+			],
+			"antialiasing": true,
+			"alpha": 1
+		},
+		{
+			"asset": "tank1",
+			"zIndex": 0,
+			"aboveChars": true,
+			"position": [
+				-300,
+				750
+			],
+			"scale": [
+				1,
+				1
+			],
+			"type": "animated",
+			"visible": true,
+			"name": "tank1",
+			"color": null,
+			"flipX": false,
+			"antialiasing": true,
+			"scrollFactor": [
+				2,
+				0.2
+			],
+			"firstAnimation": "idle",
+			"flipY": false,
+			"alpha": 1,
+			"animations": [
+				{
+					"framerate": 24,
+					"prefix": "fg tankhead 5",
+					"indices": null,
+					"name": "idle",
+					"looped": false
+				}
+			]
+		},
+		{
+			"asset": "tank2",
+			"zIndex": 0,
+			"aboveChars": true,
+			"position": [
+				450,
+				940
+			],
+			"scale": [
+				1,
+				1
+			],
+			"type": "animated",
+			"visible": true,
+			"name": "tank2",
+			"flipX": false,
+			"color": null,
+			"antialiasing": true,
+			"scrollFactor": [
+				1.5,
+				1.5
+			],
+			"firstAnimation": "idle",
+			"flipY": false,
+			"alpha": 1,
+			"animations": [
+				{
+					"framerate": 24,
+					"prefix": "foreground man 3",
+					"indices": null,
+					"name": "idle",
+					"looped": false
+				}
+			]
+		},
+		{
+			"asset": "tank4",
+			"zIndex": 0,
+			"aboveChars": true,
+			"position": [
+				1300,
+				900
+			],
+			"scale": [
+				1,
+				1
+			],
+			"type": "animated",
+			"visible": true,
+			"name": "tank4",
+			"flipX": false,
+			"color": null,
+			"antialiasing": true,
+			"scrollFactor": [
+				1.5,
+				1.5
+			],
+			"flipY": false,
+			"alpha": 1,
+			"animations": [
+				{
+					"prefix": "fg tankman bobbin 3",
+					"looped": true,
+					"framerate": 24,
+					"name": "idle"
+				}
+			]
+		},
+		{
+			"asset": "tank5",
+			"zIndex": 0,
+			"aboveChars": true,
+			"position": [
+				1620,
+				700
+			],
+			"scale": [
+				1,
+				1
+			],
+			"type": "animated",
+			"visible": true,
+			"name": "tank5",
+			"flipX": false,
+			"color": null,
+			"antialiasing": true,
+			"scrollFactor": [
+				1.5,
+				1.5
+			],
+			"firstAnimation": "idle",
+			"flipY": false,
+			"alpha": 1,
+			"animations": [
+				{
+					"framerate": 24,
+					"prefix": "fg tankhead far right",
+					"indices": null,
+					"name": "idle",
+					"looped": false
+				}
+			]
+		},
+		{
+			"asset": "tank3",
+			"zIndex": 0,
+			"aboveChars": true,
+			"position": [
+				1300,
+				1200
+			],
+			"scale": [
+				1,
+				1
+			],
+			"type": "animated",
+			"visible": true,
+			"name": "tank3",
+			"flipX": false,
+			"color": null,
+			"antialiasing": true,
+			"scrollFactor": [
+				3.5,
+				2.5
+			],
+			"flipY": false,
+			"alpha": 1,
+			"animations": [
+				{
+					"prefix": "fg tankhead 4",
+					"looped": true,
+					"framerate": 24,
+					"name": "idle"
+				}
+			]
+		},
+		{
+			"aboveChars": true,
+			"zIndex": 0,
+			"asset": "tank0",
+			"position": [
+				-500,
+				650
+			],
+			"visible": true,
+			"type": "animated",
+			"scale": [
+				1,
+				1
+			],
+			"color": null,
+			"flipX": false,
+			"name": "tank0",
+			"flipY": false,
+			"firstAnimation": "idle",
+			"scrollFactor": [
+				1.7,
+				1.5
+			],
+			"antialiasing": true,
+			"alpha": 1,
+			"animations": [
+				{
+					"framerate": 24,
+					"prefix": "fg tankhead far right",
+					"looped": false,
+					"indices": null,
+					"name": "idle"
+				}
+			]
+		},
+		{
+			"aboveChars": false,
+			"zIndex": 1,
+			"asset": "tankClouds",
+			"position": [
+				-160,
+				-20
+			],
+			"visible": true,
+			"scale": [
+				1,
+				1
+			],
+			"type": "sprite",
+			"color": null,
+			"flipX": false,
+			"name": "tankclouds",
+			"flipY": false,
+			"scrollFactor": [
+				0.1,
+				0.1
+			],
+			"antialiasing": true,
+			"alpha": 1,
+			"active": false
+		}
+	]
+}

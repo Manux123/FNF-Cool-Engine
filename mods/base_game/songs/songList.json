@@ -72,6 +72,34 @@
 			"bpm": [150, 150, 190],
 			"weekCharacters": ["senpai", "bf", "gf"],
 			"locked": false
+		},
+		{
+			"songIcons": [
+				"tankman",
+				"tankman",
+				"tankman"
+			],
+			"weekSongs": [
+				"Ugh",
+				"Guns",
+				"Stress"
+			],
+			"showInStoryMode": [
+				true,
+				true,
+				true
+			],
+			"bpm": [
+				160,
+				185,
+				178
+			],
+			"color": [
+				"0xFFAF66CE",
+				"0xFFAF66CE",
+				"0xFFAF66CE"
+			],
+			"weekName": "Tankman ft. Johnnyutah"
 		}
 	]
 }

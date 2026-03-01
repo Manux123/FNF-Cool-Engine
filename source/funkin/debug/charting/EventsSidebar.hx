@@ -511,10 +511,14 @@ class EventPopup extends FlxGroup
 			switch (p.type)
 			{
 				case PDBool:
-					widget = new FlxUIDropDownMenu(cx + 15, yOff, FlxUIDropDownMenu.makeStrIdLabelArray(["true","false"], true), null);
+					var temp:FlxUIDropDownMenu = new FlxUIDropDownMenu(cx + 15, yOff, FlxUIDropDownMenu.makeStrIdLabelArray(["true","false"], true), null);
+					temp.cameras = [camHUD];
+					widget = temp;
 
 				case PDDropDown(opts):
-					widget = new FlxUIDropDownMenu(cx + 15, yOff, FlxUIDropDownMenu.makeStrIdLabelArray(opts, true), null);
+					var temp:FlxUIDropDownMenu = new FlxUIDropDownMenu(cx + 15, yOff, FlxUIDropDownMenu.makeStrIdLabelArray(opts, true), null);
+					temp.cameras = [camHUD];
+					widget = temp;
 
 				default:
 					var inp = new FlxUIInputText(cx + 15, yOff, FIELD_W, p.defValue, 12);
@@ -525,7 +529,6 @@ class EventPopup extends FlxGroup
 			if (widget != null)
 			{
 				widget.scrollFactor.set();
-				widget.cameras = [camHUD];
 				_dynamicGroup.add(widget);
 				_paramWidgets.push(widget);
 				yOff += 30;

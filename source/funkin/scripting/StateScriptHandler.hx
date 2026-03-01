@@ -291,13 +291,17 @@ class StateScriptHandler
 	 * Útil cuando el state crea objetos DESPUÉS de cargar los scripts
 	 * (ej: TitleState crea logoBl en startIntro(), no en create()).
 	 * Llamar justo antes de 'postCreate' en esos casos.
+	 *
+	 * IMPORTANTE: a diferencia de _reflectStateFields (que respeta variables ya
+	 * existentes para no sobreescribir el API del engine), esta función SÍ
+	 * actualiza todos los campos del state — excepto las variables fijas del API.
 	 */
 	public static function refreshStateFields(state:FlxState):Void
 	{
 		#if HSCRIPT_ALLOWED
 		for (script in scripts)
 			if (script.interp != null)
-				_reflectStateFields(script.interp, state);
+				_reflectStateFields(script.interp, state, true); // true = modo refresh
 		#end
 	}
 
@@ -513,7 +517,7 @@ class StateScriptHandler
 		// ── 5. Re-sincronizar campos del state HACIA el script ─────────────────
 		//    Útil para refrescar valores primitivos que cambiaron desde Haxe.
 		//    Llamar desde el script cuando sea necesario: refreshFields()
-		interp.variables.set('refreshFields', () -> _reflectStateFields(interp, state));
+		interp.variables.set('refreshFields', () -> _reflectStateFields(interp, state, true));
 
 		// ── 6. Control de cancelación ─────────────────────────────────────────
 		interp.variables.set('cancelEvent',   () -> true);
@@ -583,14 +587,26 @@ class StateScriptHandler
 	 * Itera TODOS los campos de instancia del state (y sus superclases)
 	 * y los inyecta en el intérprete del script por reflexión.
 	 *
-	 * • Los campos que ya estén definidos en el intérprete NO se sobreescriben
-	 *   (las variables del API —state, save, etc.— tienen prioridad).
-	 * • Se ignoran los campos que lanzan excepciones al leerlos (propiedades
-	 *   write-only, campos abstract, etc.) para no crashear la carga.
-	 * • Los campos de tipo Function también se exponen, así el script puede
-	 *   hacer add(sprite) igual que en Codename.
+	 * @param refresh  Si true (modo refresh), sobreescribe campos existentes del
+	 *                 state EXCEPTO las variables fijas del API del engine.
+	 *                 Si false (modo init, default), no sobreescribe nada que ya
+	 *                 exista — el API tiene prioridad.
+	 *
+	 * Uso:
+	 *   • Modo init   → llamado desde _exposeStateAPI al cargar el script por primera vez.
+	 *   • Modo refresh → llamado desde refreshStateFields() / refreshFields()
+	 *                    cuando el state crea objetos DESPUÉS de cargar los scripts.
 	 */
-	static function _reflectStateFields(interp:Interp, state:FlxState):Void
+	static final _API_VARS:Array<String> = [
+		'state','save','getField','setField','callMethod','refreshFields',
+		'cancelEvent','continueEvent','setPriority','setTag','getTag',
+		'overrideFunction','removeOverride','toggleOverride','hasOverride',
+		'setShared','getShared','deleteShared','registerHook','broadcast',
+		'hotReload','require','getScript','getScriptTag','createOption','ui','self',
+		'add','remove'
+	];
+
+	static function _reflectStateFields(interp:Interp, state:FlxState, refresh:Bool = false):Void
 	{
 		// Obtener todos los campos de instancia recorriendo la jerarquía completa.
 		// Type.getSuperClass() devuelve Class<Dynamic>, no Class<FlxState>, así que
@@ -610,8 +626,10 @@ class StateScriptHandler
 
 		for (fieldName in fields)
 		{
-			// No sobreescribir las variables del API del engine
-			if (interp.variables.exists(fieldName)) continue;
+			// En modo init: no sobreescribir NADA que ya exista (API tiene prioridad).
+			// En modo refresh: actualizar campos del state SALVO las vars fijas del API.
+			if (!refresh && interp.variables.exists(fieldName)) continue;
+			if (refresh && _API_VARS.contains(fieldName)) continue;
 
 			try
 			{

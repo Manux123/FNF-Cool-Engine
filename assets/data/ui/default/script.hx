@@ -85,14 +85,34 @@ function onUpdate(elapsed)
 	_updateIcons();
 }
 
+function _formatScore(n)
+{
+	var s = Std.string(Std.int(n));
+	var result = '';
+	var count = 0;
+	var i = s.length - 1;
+	while (i >= 0)
+	{
+		if (count > 0 && count % 3 == 0)
+			result = ',' + result;
+		result = s.charAt(i) + result;
+		count++;
+		i--;
+	}
+	return result;
+}
+
 function _updateScoreText()
 {
 	if (scoreTxt == null) return;
 
+	var rawScore = Std.string(Std.int(gameState.score));
+	var formattedScore = _formatScore(gameState.score);
+
 	if (FlxG.save.data.accuracyDisplay)
-		scoreTxt.text = scoreManager.getHUDText(gameState);
+		scoreTxt.text = StringTools.replace(scoreManager.getHUDText(gameState), rawScore, formattedScore);
 	else
-		scoreTxt.text = 'Score: ' + gameState.score + ' - Misses: ' + gameState.misses;
+		scoreTxt.text = 'Score: ' + formattedScore + ' - Misses: ' + gameState.misses;
 }
 
 function _updateIcons()
@@ -106,8 +126,9 @@ function _updateIcons()
 	iconP1.updateHitbox();
 	iconP2.updateHitbox();
 
-	iconP1.x = healthBar.x + (healthBar.width * (FlxMath.remapToRange(healthPercent, 0, 100, 100, 0) * 0.01) - 26);
-	iconP2.x = healthBar.x + (healthBar.width * (FlxMath.remapToRange(healthPercent, 0, 100, 100, 0) * 0.01)) - (iconP2.width - 26);
+	var targetX = healthBar.x + (healthBar.width * (FlxMath.remapToRange(healthPercent, 0, 100, 100, 0) * 0.01));
+	iconP1.x = FlxMath.lerp(iconP1.x, targetX - 26, 0.15 * FlxG.elapsed * 60);
+	iconP2.x = FlxMath.lerp(iconP2.x, targetX - (iconP2.width - 26), 0.15 * FlxG.elapsed * 60);
 
 	var p1Anim = 'normal';
 	if (healthPercent < 20)

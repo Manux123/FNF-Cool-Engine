@@ -315,7 +315,8 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 			songText.alpha      = 0;
 			grpMenuShit.add(songText);
 
-			FlxTween.tween(songText, {alpha: 0.6}, 0.3, {
+			var targetAlpha = (i == curSelected) ? 1.0 : 0.6;
+			FlxTween.tween(songText, {alpha: targetAlpha}, 0.3, {
 				ease: FlxEase.quartOut,
 				startDelay: 0.1 + (i * 0.04)
 			});

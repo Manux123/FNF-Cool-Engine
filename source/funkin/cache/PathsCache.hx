@@ -2,6 +2,7 @@ package funkin.cache;
 
 import flixel.FlxG;
 import flixel.graphics.FlxGraphic;
+import openfl.display.BitmapData;
 import openfl.media.Sound;
 
 #if sys
@@ -407,12 +408,37 @@ class PathsCache
 		// Cargar vía FlxGraphic.fromAssetKey — igual que V-Slice FunkinMemory.cacheTexture().
 		// Es más directo que getBitmapData → fromBitmapData y funciona con todas las
 		// versiones de OpenFL porque delega la resolución al pipeline nativo de Flixel.
+		//
+		// FALLBACK PARA MODS (build no recompilada):
+		// Los assets de mods existen en disco pero NO están en el manifest de OpenFL
+		// (solo se registran en compilación). fromAssetKey → Assets.getBitmapData falla
+		// con "Could not find a BitmapData asset with ID mods/...". 
+		// Solución: si fromAssetKey falla y el archivo existe en disco, cargamos el
+		// BitmapData directamente con BitmapData.fromFile() y construimos el FlxGraphic.
 		var g:FlxGraphic = null;
 		try
 		{
 			g = FlxGraphic.fromAssetKey(key, false, null, true);
 		}
-		catch (e:Dynamic) { trace('[PathsCache] Error cargando "$key": $e'); return null; }
+		catch (e:Dynamic)
+		{
+			#if sys
+			// Intento 2: carga directa desde disco (rutas de mods no compilados)
+			if (FileSystem.exists(key))
+			{
+				trace('[PathsCache] fromAssetKey falló para "$key", intentando carga directa desde disco...');
+				try
+				{
+					final bitmap = BitmapData.fromFile(key);
+					if (bitmap != null)
+						g = FlxGraphic.fromBitmapData(bitmap, false, key, true);
+				}
+				catch (e2:Dynamic) { trace('[PathsCache] Error en carga directa de "$key": $e2'); }
+			}
+			else
+			#end
+			{ trace('[PathsCache] Error cargando "$key": $e'); }
+		}
 
 		if (g == null)
 		{

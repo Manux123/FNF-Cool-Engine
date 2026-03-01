@@ -1260,7 +1260,7 @@ class StageEditor extends funkin.states.MusicBeatState
 			var labels = FlxUIDropDownMenu.makeStrIdLabelArray(_shaderList, true);
 			if (stageShaderDropdown != null)  { stageShaderDropdown.setData(labels);  stageShaderDropdown.selectedLabel  = _shaderList[0]; }
 			if (elemShaderDropdown  != null)  { elemShaderDropdown.setData(labels);   elemShaderDropdown.selectedLabel   = _shaderList[0]; }
-			setStatus('Shaders re-escaneados: ${_shaderList.length - 1} encontrados');
+			setStatus('Shaders re-scanned: ${_shaderList.length - 1} found');
 		});
 		tab.add(refreshBtn);
 		y += 30;
@@ -1288,7 +1288,7 @@ class StageEditor extends funkin.states.MusicBeatState
 			Reflect.setField(stageData.customProperties, 'shader', name == '(none)' ? '' : name);
 			markUnsaved();
 			saveHistory();
-			setStatus(name == '(none)' ? 'Stage shader removido' : 'Stage shader: $name');
+			setStatus(name == '(none)' ? 'Stage shader removed' : 'Stage shader: $name');
 		});
 		stageShaderDropdown.selectedLabel = _shaderList[0];
 		y += 36;
@@ -1328,15 +1328,15 @@ class StageEditor extends funkin.states.MusicBeatState
 				}
 				catch (e:Dynamic)
 				{
-					trace('[StageEditor] Error aplicando shader "$name": $e');
-					setStatus('Error al aplicar shader "$name": $e');
+					trace('[StageEditor] Error applying shader "$name": $e');
+					setStatus('Error applying shader "$name": $e');
 					return;
 				}
 			}
 
 			markUnsaved();
 			saveHistory();
-			setStatus(name == '(none)' ? 'Shader removido del elemento seleccionado' : 'Shader "$name" aplicado en vivo ✓');
+			setStatus(name == '(none)' ? 'Shader removed from selected element' : 'Shader "$name" applied live ✓');
 		});
 		elemShaderDropdown.selectedLabel = _shaderList[0];
 		y += 36;
@@ -1355,18 +1355,18 @@ class StageEditor extends funkin.states.MusicBeatState
 			elemShaderDropdown.selectedLabel = '(none)';
 			markUnsaved();
 			saveHistory();
-			setStatus('Shader removido del elemento seleccionado');
+			setStatus('Shader removed from selected element');
 		});
 		tab.add(removeBtn);
 		y += 30;
 
 		var note = new FlxText(8, y, RIGHT_W - 20,
-			'Shaders en assets/shaders/*.frag y mods/<id>/shaders/*.frag.\nEl preview es en vivo — guarda para que persistan.', 9);
+			'Shaders in assets/shaders/*.frag and mods/<id>/shaders/*.frag.\nThe preview is live — save to make changes persistent.', 9);
 		note.color = T.textDim;
 		tab.add(note);
 
-		tab.add(stageShaderDropdown);
 		tab.add(elemShaderDropdown);
+		tab.add(stageShaderDropdown);
 
 		rightPanel.addGroup(tab);
 	}

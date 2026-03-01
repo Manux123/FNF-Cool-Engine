@@ -533,17 +533,21 @@ class ChartingState extends funkin.states.MusicBeatState
 			totalGridHeight = 16 * GRID_SIZE; // Al menos 16 steps
 		}
 
-		// VALIDACIÓN: Limitar altura máxima para evitar problemas de memoria
-		var MAX_GRID_HEIGHT = 16000; // Máximo ~250 secciones
+		// La altura REAL del grid (para scroll y navegación)
+		var realGridHeight = totalGridHeight;
+
+		// Limitar la altura del GRÁFICO al máximo que soporta la GPU (~16k px)
+		var MAX_GRID_HEIGHT = 16000;
 		if (totalGridHeight > MAX_GRID_HEIGHT)
 		{
-			trace('[GRID WARNING] totalGridHeight muy grande (${totalGridHeight}), limitando a $MAX_GRID_HEIGHT');
+			trace('[GRID WARNING] totalGridHeight muy grande (${totalGridHeight}), limitando gráfico a $MAX_GRID_HEIGHT');
 			totalGridHeight = MAX_GRID_HEIGHT;
 		}
 
-		trace('[GRID] Song: ${_song.song}, totalGridHeight: $totalGridHeight, secciones: ${_song.notes.length}');
+		trace('[GRID] Song: ${_song.song}, realGridHeight: $realGridHeight, graphicHeight: $totalGridHeight, secciones: ${_song.notes.length}');
 
-		maxScroll = totalGridHeight - (FlxG.height - 100);
+		// maxScroll basado en la altura REAL, no la del gráfico
+		maxScroll = realGridHeight - (FlxG.height - 100);
 		if (maxScroll < 0)
 			maxScroll = 0;
 

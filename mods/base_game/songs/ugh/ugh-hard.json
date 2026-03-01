@@ -417,6 +417,16 @@
 						13312.5,
 						1,
 						0
+					],
+					[
+						12281.25,
+						3,
+						0
+					],
+					[
+						12281.25,
+						1,
+						0
 					]
 				],
 				"lengthInSteps": 16,
@@ -2991,9 +3001,59 @@
 				"stepTime": 60
 			},
 			{
+				"type": "Camera Follow",
+				"value": "bf|0.04",
+				"stepTime": 64
+			},
+			{
+				"type": "Camera Follow",
+				"value": "opponent|0.04",
+				"stepTime": 128
+			},
+			{
+				"type": "Camera Follow",
+				"value": "bf|0.04",
+				"stepTime": 192
+			},
+			{
+				"type": "Camera Follow",
+				"value": "opponent|0.04",
+				"stepTime": 256
+			},
+			{
+				"type": "Camera Follow",
+				"value": "bf|0.04",
+				"stepTime": 288
+			},
+			{
+				"type": "Camera Follow",
+				"value": "dad|0.04",
+				"stepTime": 320
+			},
+			{
+				"type": "Camera Follow",
+				"value": "bf|0.04",
+				"stepTime": 352
+			},
+			{
+				"type": "Camera Follow",
+				"value": "dad|0.04",
+				"stepTime": 384
+			},
+			{
 				"type": "Play Anim",
 				"value": "dad|ugh|true",
 				"stepTime": 444
+			},
+			{
+				"stepTime": 448,
+				"value": "bf|0.04",
+				"type": "Camera Follow"
+			},
+			{
+				"stepTime": 512,
+				"value": "opponent|0.04",
+				"type": "Camera Follow"
 			},
 			{
 				"type": "Play Anim",
@@ -3001,9 +3061,34 @@
 				"stepTime": 524
 			},
 			{
+				"stepTime": 576,
+				"value": "bf|0.04",
+				"type": "Camera Follow"
+			},
+			{
+				"stepTime": 640,
+				"value": "opponent|0.04",
+				"type": "Camera Follow"
+			},
+			{
+				"stepTime": 704,
+				"value": "bf|0.04",
+				"type": "Camera Follow"
+			},
+			{
+				"stepTime": 768,
+				"value": "opponent|0.04",
+				"type": "Camera Follow"
+			},
+			{
 				"type": "Play Anim",
 				"value": "dad|ugh|true",
 				"stepTime": 828
+			},
+			{
+				"stepTime": 832,
+				"value": "bf|0.04",
+				"type": "Camera Follow"
 			}
 		],
 		"characters": [
@@ -3019,7 +3104,10 @@
 				"x": 0,
 				"y": 0,
 				"strumsGroup": "cpu_strums_0",
+				"flip": false,
 				"visible": true,
+				"type": "Opponent",
+				"scale": 1,
 				"name": "tankman"
 			},
 			{
@@ -3031,9 +3119,8 @@
 			}
 		],
 		"song": "Ugh",
-		"validScore": true,
 		"needsVoices": true,
-        "stage":"tankmen",
+		"validScore": true,
 		"strumsGroups": [
 			{
 				"cpu": true,
@@ -3069,6 +3156,7 @@
 				"spacing": 110
 			}
 		],
+		"stage": "tankmen",
 		"bpm": 160,
 		"speed": 2.3
 	}

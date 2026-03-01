@@ -625,19 +625,67 @@ class NoteManager
 		if (note.isSustainNote)
 			note.y = noteY;
 
-		if (note.isSustainNote && downscroll && !note.mustPress)
+		// BUGFIX: El clip de sustains debe aplicarse a TODAS las notas largas
+		// (jugador y CPU, upscroll y downscroll). Antes solo se aplicaba a
+		// CPU en downscroll, lo que causaba que los cuerpos de los holds
+		// se vieran "rotos" o solapados con el strum en el resto de casos.
+		// Además, el clipRect nunca se limpiaba cuando dejaba de ser necesario,
+		// dejando el rect viejo de la nota anterior asignado a la nota actual.
+		if (note.isSustainNote)
 		{
 			var strumLineThreshold = (strumLineY + Note.swagWidth / 2);
-			var noteEndPos = note.y - note.offset.y * note.scale.y + note.height;
-			if (noteEndPos >= strumLineThreshold)
+
+			if (downscroll)
 			{
-				// Reusar _sustainClipRect preallocado — elimina `new FlxRect()` por frame
-				if (_cachedDownscroll)
-					downscrollOff = 10;
-				_sustainClipRect.width  = note.frameWidth * 2;
-				_sustainClipRect.height = (strumLineThreshold - note.y) / note.scale.y;
-				_sustainClipRect.y      = note.frameHeight - _sustainClipRect.height + downscrollOff;
-				note.clipRect = _sustainClipRect;
+				// Downscroll: la nota baja de arriba hacia el strum.
+				// Clipeamos la parte que ya pasó (está por debajo del strum).
+				var noteEndPos = note.y - note.offset.y * note.scale.y + note.height;
+				if (noteEndPos >= strumLineThreshold)
+				{
+					if (_cachedDownscroll)
+						downscrollOff = 10;
+					_sustainClipRect.x      = 0;
+					_sustainClipRect.width  = note.frameWidth * 2;
+					_sustainClipRect.height = (strumLineThreshold - note.y) / note.scale.y;
+					_sustainClipRect.y      = note.frameHeight - _sustainClipRect.height + downscrollOff;
+					// Usar copyFrom en lugar de asignar referencia directa para
+					// que cada nota tenga su propio rect y no compartan el mismo objeto.
+					if (note.clipRect == null) note.clipRect = new flixel.math.FlxRect();
+					note.clipRect.copyFrom(_sustainClipRect);
+					note.clipRect = note.clipRect; // forzar update interno de Flixel
+				}
+				else
+				{
+					note.clipRect = null;
+				}
+			}
+			else
+			{
+				// Upscroll: la nota sube hacia el strum (Y decrece).
+				// Clipeamos la parte superior que ya pasó por encima del strum.
+				if (note.y < strumLineThreshold)
+				{
+					var clipY:Float = (strumLineThreshold - note.y) / note.scale.y;
+					var clipH:Float = note.frameHeight - clipY;
+					if (clipH > 0 && clipY >= 0)
+					{
+						_sustainClipRect.x      = 0;
+						_sustainClipRect.width  = note.frameWidth * 2;
+						_sustainClipRect.y      = clipY;
+						_sustainClipRect.height = clipH;
+						if (note.clipRect == null) note.clipRect = new flixel.math.FlxRect();
+						note.clipRect.copyFrom(_sustainClipRect);
+						note.clipRect = note.clipRect; // forzar update interno de Flixel
+					}
+					else
+					{
+						note.clipRect = null;
+					}
+				}
+				else
+				{
+					note.clipRect = null;
+				}
 			}
 		}
 	}

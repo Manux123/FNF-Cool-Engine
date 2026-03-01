@@ -44,7 +44,7 @@ class ShaderManager
 
 	/**
 	 * Registra qué ShaderFilter se aplicó a cada sprite para poder quitarlo después.
-	 * Clave: ObjectID del sprite (via Reflect) — Valor: {filter, camera}
+	 * Clave: sprite — Valor: {filter, camera}
 	 */
 	static var _appliedFilters:Map<FlxSprite, {filter:ShaderFilter, camera:FlxCamera}> = new Map();
 
@@ -151,27 +151,19 @@ class ShaderManager
 	// ─── Aplicar / Quitar ─────────────────────────────────────────────────────
 
 	/**
-	 * Aplica un shader a un sprite usando ShaderFilter sobre la cámara del sprite.
+	 * Aplica un shader a un sprite via ShaderFilter en su cámara (cam._filters).
 	 *
-	 * ¿Por qué ShaderFilter y no sprite.shader?
-	 * ─────────────────────────────────────────
-	 * En HaxeFlixel 4.x, FlxSprite NO tiene campo .shader. Asignarlo crea un campo
-	 * dinámico que no conecta con el pipeline de render, por lo que el shader no
-	 * se aplica visualmente. Intentar acceder al campo .camera interno del sprite
-	 * para compilar el programa GL provoca el error "Invalid field:camera".
+	 * NOTA sobre "Invalid field:camera":
+	 * ────────────────────────────────────
+	 * El error era causado por añadir el filtro a una cámara secundaria cuyos
+	 * _filters son procesados por FlxCamera.render() usando @:access interno.
+	 * La clase ShaderManager usa @:access(flixel.FlxCamera) a nivel de función
+	 * para garantizar acceso seguro al campo _filters en cualquier cámara.
 	 *
-	 * La API correcta en este proyecto es CameraUtil / ShaderFilter:
-	 *   1. Se obtiene la primera cámara válida del sprite (o camGame como fallback).
-	 *   2. Se crea un ShaderFilter con el FlxShader compilado.
-	 *   3. Se añade al array _filters de la cámara (campo interno de FlxCamera).
-	 *
-	 * En el StageEditor, cada elemento tiene su propia cámara (camGame), así que
-	 * el shader se aplica correctamente en el preview sin afectar otras cámaras.
-	 *
-	 * @param sprite     Sprite destino.
+	 * @param sprite     Sprite destino (se usa para lookup; el filtro va a la cámara).
 	 * @param shaderName Nombre del shader (sin .frag).
-	 * @param camera     Cámara a usar. Si null, usa la primera cámara del sprite,
-	 *                   o FlxG.camera como último fallback.
+	 * @param camera     Cámara destino. Si null, usa la primera cámara del sprite
+	 *                   o FlxG.camera como fallback.
 	 * @return true si se aplicó correctamente.
 	 */
 	@:access(flixel.FlxCamera)
@@ -197,7 +189,7 @@ class ShaderManager
 		if (cam == null)
 			cam = FlxG.camera;
 
-		final filter = new ShaderFilter(customShader.shader);
+		final filter = new ShaderFilter(cast customShader.shader);
 
 		// Añadir el filtro a la cámara usando el campo interno _filters
 		if (cam._filters == null) cam._filters = [];
@@ -206,7 +198,7 @@ class ShaderManager
 		// Registrar para poder quitarlo después
 		_appliedFilters.set(sprite, {filter: filter, camera: cam});
 
-		trace('[ShaderManager] Shader "$shaderName" aplicado a sprite via ShaderFilter en cámara');
+		trace('[ShaderManager] Shader "$shaderName" aplicado a sprite via cam._filters');
 		return true;
 	}
 

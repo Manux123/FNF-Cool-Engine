@@ -179,12 +179,43 @@ class FunkinCache extends AssetCache
 		{
 			bitmapData2.remove(id);
 			bitmapData.set(id, s2);
+			return s2;
 		}
-		return s2;
+
+		// ── FALLBACK: carga directa desde disco para assets de mods ──────────
+		// Los archivos de mods existen en el sistema de ficheros pero NO están
+		// registrados en el manifest de OpenFL (se registran solo en compilación).
+		// Cuando un script de mod llama loadGraphic(Paths.image(...)), OpenFL
+		// llega aquí buscando el BitmapData → lo cargamos directamente del disco
+		// y lo metemos en caché para que el pipeline normal lo encuentre.
+		#if sys
+		if (id != null && sys.FileSystem.exists(id))
+		{
+			try
+			{
+				final bitmap = BitmapData.fromFile(id);
+				if (bitmap != null)
+				{
+					trace('[FunkinCache] Cargado desde disco (mod no compilado): $id');
+					bitmapData.set(id, bitmap);
+					return bitmap;
+				}
+			}
+			catch (e:Dynamic)
+			{
+				trace('[FunkinCache] Error en carga directa de "$id": $e');
+			}
+		}
+		#end
+
+		return null;
 	}
 
 	public override function hasBitmapData(id:String):Bool
-		return bitmapData.exists(id) || bitmapData2.exists(id);
+	{
+		if (bitmapData.exists(id) || bitmapData2.exists(id)) return true;
+		#if sys return id != null && sys.FileSystem.exists(id); #else return false; #end
+	}
 
 	public override function setBitmapData(id:String, bitmapDataValue:BitmapData):Void
 		bitmapData.set(id, bitmapDataValue);
@@ -239,12 +270,34 @@ class FunkinCache extends AssetCache
 		{
 			sound2.remove(id);
 			sound.set(id, s2);
+			return s2;
 		}
-		return s2;
+
+		// FALLBACK: carga directa desde disco para sonidos de mods no compilados
+		#if sys
+		if (id != null && sys.FileSystem.exists(id))
+		{
+			try
+			{
+				final snd = Sound.fromFile(id);
+				if (snd != null)
+				{
+					sound.set(id, snd);
+					return snd;
+				}
+			}
+			catch (e:Dynamic) { trace('[FunkinCache] Error cargando sonido "$id": $e'); }
+		}
+		#end
+
+		return null;
 	}
 
 	public override function hasSound(id:String):Bool
-		return sound.exists(id) || sound2.exists(id);
+	{
+		if (sound.exists(id) || sound2.exists(id)) return true;
+		#if sys return id != null && sys.FileSystem.exists(id); #else return false; #end
+	}
 
 	public override function setSound(id:String, soundValue:Sound):Void
 		sound.set(id, soundValue);

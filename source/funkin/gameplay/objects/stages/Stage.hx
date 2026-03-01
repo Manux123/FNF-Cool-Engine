@@ -664,10 +664,11 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 		ScriptHandler.setOnStageScripts('stage', this);
 		ScriptHandler.setOnStageScripts('currentStage', this);
+		ScriptHandler.setOnStageScripts('SONG', PlayState.SONG);
 
 		ScriptHandler.callOnStageScripts('onStageCreate', []);
 
-		trace('[Stage] Scripts cargados: ${scripts.length}');
+		trace('[Stage] Scripts loaded: ${scripts.length}');
 	}
 
 	/**
@@ -681,21 +682,6 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		{
 			switch (className)
 			{
-				case "BackgroundGirls":
-					var bgClass = funkin.gameplay.objects.stages.BackgroundGirls;
-					if (bgClass != null)
-					{
-						sprite = Type.createInstance(bgClass, [x, y]);
-						if (customProps != null && customProps.scared == true)
-						{
-							Reflect.callMethod(sprite, Reflect.field(sprite, "getScared"), []);
-						}
-					}
-					else
-					{
-						trace("BackgroundGirls class not found!");
-					}
-
 				case "BackgroundDancer":
 					var dancerClass = funkin.gameplay.objects.stages.BackgroundDancer;
 					if (dancerClass != null)

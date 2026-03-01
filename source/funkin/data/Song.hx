@@ -24,7 +24,8 @@ typedef CharacterSlotData =
 	var ?visible:Bool; // Visibilidad del personaje
 	// === CAMPOS DEL CHART EDITOR ===
 	var ?type:String; // "Opponent", "Player", "Girlfriend", "Other"
-	var ?strumsGroup:String; // ID del StrumsGroup al que está vinculado
+	var ?strumsGroup:String; // ID del StrumsGroup al que está vinculado (para la cámara y las notas)
+	var ?isGF:Bool;  // true si el personaje es la GF (solo baila, no canta notas)
 }
 
 /**
@@ -39,6 +40,7 @@ typedef StrumsGroupData =
 	var cpu:Bool; // Si es CPU o jugador
 	var ?spacing:Float; // Espaciado entre flechas (default 160)
 	var ?scale:Float; // Escala de las flechas
+	var ?characters:Array<String>; // Personajes vinculados a este grupo (igual que Codename)
 }
 
 /**
@@ -242,33 +244,49 @@ class Song
 				name: swagShit.gfVersion != null ? swagShit.gfVersion : 'gf',
 				x: 0, // Se ajustará en PlayState según el stage
 				y: 0,
-				visible: true
+				visible: true,
+				isGF: true,
+				strumsGroup: 'gf_strums_0'
 			};
 			
 			var dadChar:CharacterSlotData = {
 				name: swagShit.player2 != null ? swagShit.player2 : 'dad',
 				x: 0,
 				y: 0,
-				visible: true
+				visible: true,
+				strumsGroup: 'cpu_strums_0'
 			};
 			
 			var bfChar:CharacterSlotData = {
 				name: swagShit.player1 != null ? swagShit.player1 : 'bf',
 				x: 0,
 				y: 0,
-				visible: true
+				visible: true,
+				strumsGroup: 'player_strums_0'
 			};
 			
 			swagShit.characters = [gfChar, dadChar, bfChar];
 			
 			// Crear grupos de strums por defecto
+			// GF tiene su propio grid (visible: false por defecto — no tiene notas propias)
+			var gfStrums:StrumsGroupData = {
+				id: 'gf_strums_0',
+				x: 400,
+				y: 50,
+				visible: false,  // Las flechas de GF están ocultas por defecto
+				cpu: true,
+				spacing: 110,
+				characters: [gfChar.name]
+			};
+
 			var cpuStrums:StrumsGroupData = {
 				id: 'cpu_strums_0',
 				x: 100,
 				y: 50,
 				visible: true,
 				cpu: true,
-				spacing: 110
+				spacing: 110,
+				characters: [dadChar.name]
 			};
 			
 			var playerStrums:StrumsGroupData = {
@@ -277,10 +295,11 @@ class Song
 				y: 50,
 				visible: true,
 				cpu: false,
-				spacing: 110
+				spacing: 110,
+				characters: [bfChar.name]
 			};
 			
-			swagShit.strumsGroups = [cpuStrums, playerStrums];
+			swagShit.strumsGroups = [gfStrums, cpuStrums, playerStrums];
 			
 			trace('[Song] Migración completa:');
 			trace('[Song]   - characters: ${swagShit.characters.length}');
@@ -300,6 +319,42 @@ class Song
 		return swagShit;
 	}
 	
+	/**
+	 * Garantiza que un SwagSong cargado directamente (sin pasar por parseJSONshit)
+	 * tenga strumsGroups y characters correctos — incluido el grupo de GF.
+	 * Llamar desde ChartingState.onLoadComplete() y al inicializar desde PlayState.SONG.
+	 */
+	public static function ensureMigrated(song:SwagSong):Void
+	{
+		if (song == null) return;
+		if (song.characters != null && song.characters.length > 0 &&
+		    song.strumsGroups != null && song.strumsGroups.length > 0)
+			return; // ya migrado
+
+		// Ejecutar la misma lógica de migración que parseJSONshit
+		var gfName  = (song.gfVersion != null && song.gfVersion != '') ? song.gfVersion : 'gf';
+		var dadName = (song.player2   != null && song.player2   != '') ? song.player2   : 'dad';
+		var bfName  = (song.player1   != null && song.player1   != '') ? song.player1   : 'bf';
+
+		if (song.characters == null || song.characters.length == 0)
+		{
+			song.characters = [
+				{ name: gfName,  x: 0, y: 0, visible: true, isGF: true,  strumsGroup: 'gf_strums_0'     },
+				{ name: dadName, x: 0, y: 0, visible: true,               strumsGroup: 'cpu_strums_0'    },
+				{ name: bfName,  x: 0, y: 0, visible: true,               strumsGroup: 'player_strums_0' }
+			];
+		}
+
+		if (song.strumsGroups == null || song.strumsGroups.length == 0)
+		{
+			song.strumsGroups = [
+				{ id: 'gf_strums_0',     x: 400, y: 50, visible: false, cpu: true,  spacing: 110, characters: [gfName]  },
+				{ id: 'cpu_strums_0',    x: 100, y: 50, visible: true,  cpu: true,  spacing: 110, characters: [dadName] },
+				{ id: 'player_strums_0', x: 740, y: 50, visible: true,  cpu: false, spacing: 110, characters: [bfName]  }
+			];
+		}
+	}
+
 	/**
 	 * NUEVO: Obtener personaje por índice
 	 */

@@ -1,0 +1,15 @@
+{
+  "color": "#CCAAFF",
+  "params": [
+    {
+      "name": "Zoom",
+      "type": "Float(0.1,10.0)",
+      "defaultValue": "1.05"
+    },
+    {
+      "name": "Tween Speed",
+      "type": "Float(0.0,10.0)",
+      "defaultValue": "1.0"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "color": "#FFAA00",
+  "params": [
+    {
+      "name": "New BPM",
+      "type": "Float(1,9999)",
+      "defaultValue": "120"
+    }
+  ]
+}

@@ -558,21 +558,25 @@ class PlayState extends funkin.states.MusicBeatState {
 				name: SONG.gfVersion != null ? SONG.gfVersion : 'gf',
 				x: 0,
 				y: 0,
-				visible: true
+				visible: true,
+				isGF: true,
+				strumsGroup: 'gf_strums_0'
 			});
 
 			SONG.characters.push({
 				name: SONG.player2 != null ? SONG.player2 : 'dad',
 				x: 0,
 				y: 0,
-				visible: true
+				visible: true,
+				strumsGroup: 'cpu_strums_0'
 			});
 
 			SONG.characters.push({
 				name: SONG.player1 != null ? SONG.player1 : 'bf',
 				x: 0,
 				y: 0,
-				visible: true
+				visible: true,
+				strumsGroup: 'player_strums_0'
 			});
 		}
 
@@ -656,32 +660,30 @@ class PlayState extends funkin.states.MusicBeatState {
 
 			// Separar CPU y Player strums (para compatibilidad)
 			if (groupData.cpu && cpuStrums == null) {
-				cpuStrums = group.strums;
-				cpuStrumsGroup = group; // ✅ Guardar referencia al grupo completo
-				if (FlxG.save.data.downscroll) {
-					for (i in 0...cpuStrums.members.length) {
-						cpuStrums.members[i].y = FlxG.height - 150;
+				// El primer grupo CPU que NO es de GF se asigna como cpuStrums principal
+				// Los grupos de GF (visible:false, id empieza con 'gf_') son auxiliares
+				var isGFGroup = groupData.id.startsWith('gf_') || (!groupData.visible && groupData.id.indexOf('gf') >= 0);
+				if (!isGFGroup) {
+					cpuStrums = group.strums;
+					cpuStrumsGroup = group;
+					if (FlxG.save.data.downscroll) {
+						for (i in 0...cpuStrums.members.length)
+							cpuStrums.members[i].y = FlxG.height - 150;
 					}
-				}
-				if (FlxG.save.data.middlescroll) {
-					for (i in 0...cpuStrums.members.length) {
-						cpuStrums.members[i].alpha = 0;
+					if (FlxG.save.data.middlescroll) {
+						for (i in 0...cpuStrums.members.length)
+							cpuStrums.members[i].alpha = 0;
 					}
 				}
 			} else if (!groupData.cpu && playerStrums == null) {
 				playerStrums = group.strums;
-				playerStrumsGroup = group; // ✅ Guardar referencia al grupo completo
+				playerStrumsGroup = group;
 
-				// Verificar posiciones de cada strum
 				for (i in 0...playerStrums.members.length) {
-					var s = playerStrums.members[i];
-
 					if (FlxG.save.data.downscroll)
 						playerStrums.members[i].y = FlxG.height - 150;
-
-					if (FlxG.save.data.middlescroll) {
+					if (FlxG.save.data.middlescroll)
 						playerStrums.members[i].x -= (FlxG.width / 4);
-					}
 				}
 			}
 		}
@@ -1265,6 +1267,19 @@ class PlayState extends funkin.states.MusicBeatState {
 			ScriptHandler.callOnScripts('onUpdate', ScriptHandler._argsUpdate);
 		}
 
+		// ── Anti-lag auto-pause ───────────────────────────────────────────────
+		// Si el frame tardó más de 200ms (≈ bajar de 5fps), pausamos
+		// para evitar que el jugador falle notas por un pico de CPU/GPU.
+		if (!paused && !inCutscene && startedCountdown && !startingSong && generatedMusic
+			&& elapsed > 0.2)
+		{
+			pauseMenu();
+			// Mostramos un aviso en el PauseSubState si podemos, o dejamos un trace
+			trace('[PlayState] Lag detectado (${Math.round(elapsed * 1000)}ms) — juego pausado automáticamente.');
+			return;
+		}
+		// ─────────────────────────────────────────────────────────────────────
+
 		// Update ModChart
 		if (modChartManager != null && !paused && generatedMusic)
 			modChartManager.update(Conductor.songPosition);
@@ -1344,13 +1359,7 @@ class PlayState extends funkin.states.MusicBeatState {
 				if (paused)
 					inputHandler.clearBuffer();
 
-				// ✅ Actualizar animaciones de StrumsGroups
-				for (group in strumsGroups) {
-					if (group != null)
-						group.update();
-				}
-
-				// checkMisses() eliminado: NoteManager.updateActiveNotes() ya detecta tooLate
+					// checkMisses() eliminado: NoteManager.updateActiveNotes() ya detecta tooLate
 				// y llama missNote() en el mismo frame — hacer checkMisses() después
 				// causaba que las notas ya hubieran sido removidas (race condition).
 			}
@@ -1370,12 +1379,10 @@ class PlayState extends funkin.states.MusicBeatState {
 			// internamente los holds del CPU.
 		}
 
-		if (vocals != null && SONG.needsVoices && !inCutscene) {
-			if (vocals.volume < 1) {
-				vocals.volume += elapsed * 2; // Aumenta 2 por segundo
-				if (vocals.volume > 1)
-					vocals.volume = 1;
-			}
+		if (vocals != null && SONG.needsVoices && !inCutscene && vocals.volume < 1) {
+			vocals.volume += elapsed * 2;
+			if (vocals.volume > 1)
+				vocals.volume = 1;
 		}
 
 		// Abrir menú de pausa con ENTER.
@@ -2057,6 +2064,37 @@ class PlayState extends funkin.states.MusicBeatState {
 	// ====================================
 
 	/**
+	 * Devuelve un personaje buscando por nombre de character (e.g. "bf-pixel-enemy"),
+	 * por índice numérico de slot (0=GF, 1=CPU, 2=Player), o por alias (bf/dad/gf).
+	 * Útil para eventos "Play Anim" y scripts.
+	 */
+	public function getCharacterByName(name:String):Null<Character>
+	{
+		if (name == null || name == '') return null;
+		var n = name.toLowerCase().trim();
+
+		// Índice numérico
+		var idx = Std.parseInt(n);
+		if (idx != null && idx >= 0 && idx < characterSlots.length)
+			return characterSlots[idx].character;
+
+		// Alias comunes
+		switch (n)
+		{
+			case 'bf', 'boyfriend', 'player', 'player1': return boyfriend;
+			case 'dad', 'opponent', 'player2': return dad;
+			case 'gf', 'girlfriend', 'player3': return gf;
+		}
+
+		// Nombre exacto de personaje en cualquier slot
+		for (slot in characterSlots)
+			if (slot.character != null && slot.character.curCharacter.toLowerCase() == n)
+				return slot.character;
+
+		return null;
+	}
+
+	/**
 	 * Obtener sección actual (con cache)
 	 */
 	public function getSection(step:Int):SwagSection {
@@ -2307,6 +2345,13 @@ class PlayState extends funkin.states.MusicBeatState {
 				if (Std.isOfType(s, funkin.gameplay.notes.StrumNote))
 					cast(s, funkin.gameplay.notes.StrumNote).playAnim('static', true);
 			});
+			// BUGFIX: re-aplicar visibilidad según data del grupo.
+			// reloadAllStrumSkins() puede dejar los strums visibles si el frameset
+			// fue recargado, haciendo que grupos invisibles (ej. GF) aparezcan.
+			// Forzar la visibilidad correcta desde el dato original del grupo.
+			if (!group.isVisible) {
+				group.strums.forEach(function(s:FlxSprite) { s.visible = false; });
+			}
 		}
 		// Fallback para el caso (improbable) de strums fuera de strumsGroups
 		if (playerStrums != null && strumsGroups.length == 0)

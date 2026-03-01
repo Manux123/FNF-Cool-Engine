@@ -1,0 +1,15 @@
+{
+  "color": "#8888FF",
+  "params": [
+    {
+      "name": "Video Key",
+      "type": "String",
+      "defaultValue": "myVideo"
+    },
+    {
+      "name": "Mid-Song (pause gameplay)",
+      "type": "Bool",
+      "defaultValue": "true"
+    }
+  ]
+}

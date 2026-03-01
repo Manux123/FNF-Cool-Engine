@@ -1,0 +1,10 @@
+{
+  "color": "#FFFF88",
+  "params": [
+    {
+      "name": "Target",
+      "type": "DropDown(both,bf,gf)",
+      "defaultValue": "both"
+    }
+  ]
+}

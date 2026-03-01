@@ -1,0 +1,15 @@
+{
+  "color": "#FF88FF",
+  "params": [
+    {
+      "name": "Function Name",
+      "type": "String",
+      "defaultValue": "myFunction"
+    },
+    {
+      "name": "Argument",
+      "type": "String",
+      "defaultValue": ""
+    }
+  ]
+}

@@ -7,6 +7,8 @@ import funkin.gameplay.objects.StrumsGroup;
 import funkin.gameplay.modchart.ModChartEvent;
 import haxe.Json;
 
+using StringTools;
+
 // ─── Estado interno por strum ─────────────────────────────────────────────────
 
 typedef StrumState =
@@ -195,32 +197,199 @@ class ModChartManager
     /** Carga el modchart de una canción desde assets/modcharts/<song>.json */
     public function loadFromFile(songName:String):Bool
     {
-        var path = Paths.resolve('modcharts/${songName.toLowerCase()}.json');
+        var song = songName.toLowerCase();
 
-        if (!openfl.Assets.exists(path))
+        // ── Función helper: buscar en todas las fuentes posibles ─────────────
+        // Orden de prioridad: mod activo → otros mods habilitados → assets base
+        var searchPaths:Array<String> = [];
+
+        // 1. Mod activo (máxima prioridad)
+        #if sys
+        var activeMod = mods.ModManager.activeMod;
+        if (activeMod != null)
         {
-            trace('[ModChartManager] No hay modchart para "$songName"');
-            return false;
+            searchPaths.push('mods/$activeMod/songs/${song}/modchart.hx');
+            searchPaths.push('mods/$activeMod/songs/${song}/modchart.json');
         }
 
+        // 2. Todos los mods habilitados (en orden)
+        for (mod in mods.ModManager.installedMods)
+        {
+            if (!mod.enabled) continue;
+            if (mod.id == activeMod) continue; // ya añadido arriba
+            searchPaths.push('mods/${mod.id}/songs/${song}/modchart.hx');
+            searchPaths.push('mods/${mod.id}/songs/${song}/modchart.json');
+        }
+        #end
+
+        // 3. Assets base
+        searchPaths.push('assets/songs/${song}/modchart.hx');
+        searchPaths.push('assets/data/modcharts/${song}.hx');
+        searchPaths.push('assets/songs/${song}/modchart.json');
+        searchPaths.push('assets/data/modcharts/${song}.json');
+
+        // ── Buscar y cargar ──────────────────────────────────────────────────
+        for (p in searchPaths)
+        {
+            #if sys
+            var exists = sys.FileSystem.exists(p);
+            #else
+            var exists = openfl.Assets.exists(p);
+            #end
+
+            if (!exists) continue;
+
+            if (p.endsWith('.hx'))
+            {
+                var result = loadFromHScript(p, songName);
+                if (result) return true;
+            }
+            else if (p.endsWith('.json'))
+            {
+                try
+                {
+                    var txt = #if sys sys.io.File.getContent(p) #else openfl.Assets.getText(p) #end;
+                    var loaded:ModChartData = Json.parse(txt);
+                    data = loaded;
+                    data.events.sort((a, b) -> a.beat < b.beat ? -1 : (a.beat > b.beat ? 1 : 0));
+                    pending = data.events.copy();
+                    trace('[ModChartManager] Modchart JSON cargado desde "$p" (${data.events.length} eventos)');
+                    return true;
+                }
+                catch (e:Dynamic)
+                {
+                    trace('[ModChartManager] ERROR al cargar modchart JSON "$p": $e');
+                }
+            }
+        }
+
+        trace('[ModChartManager] No hay modchart para "$songName"');
+        return false;
+    }
+
+    /**
+     * Carga un modchart desde un archivo HScript.
+     *
+     * El script puede usar estas funciones:
+     *   onCreate()             — se llama al cargar el script
+     *   onBeatHit(beat:Int)    — en cada beat
+     *   onStepHit(step:Int)    — en cada step
+     *   onUpdate(pos:Float)    — cada frame (songPosition en ms)
+     *   onNoteHit(note)        — cuando se golpea una nota
+     *
+     * Y estas APIs de modchart (disponibles como variables globales):
+     *   modChart.addEventSimple(beat, target, strumIdx, type, value, dur, ease)
+     *   modChart.clearEvents()
+     *   MOVE_X / MOVE_Y / ANGLE / ALPHA / SCALE / SPIN / RESET / VISIBLE / SET_ABS_X / SET_ABS_Y
+     *   LINEAR / QUAD_IN / QUAD_OUT / QUAD_IN_OUT / CUBE_IN / CUBE_OUT / ELASTIC_OUT / BOUNCE_OUT ...
+     *
+     * Ejemplo de modchart HScript:
+     *   function onCreate() {
+     *     // Rotar todos los strums del jugador 360° en 4 beats a partir del beat 8
+     *     modChart.addEventSimple(8, "player", -1, ANGLE, 360, 4, SINE_IN_OUT);
+     *     // Hacer bounce a un strum individual
+     *     modChart.addEventSimple(16, "cpu", 0, MOVE_Y, -100, 2, BOUNCE_OUT);
+     *   }
+     *   function onBeatHit(beat) {
+     *     if (beat % 4 == 0)
+     *       modChart.addEventSimple(beat, "all", -1, SCALE, 1.2, 0.5, ELASTIC_OUT);
+     *   }
+     */
+    public function loadFromHScript(path:String, songName:String = ''):Bool
+    {
+        #if HSCRIPT_ALLOWED
         try
         {
-            var txt = openfl.Assets.getText(path);
-            var loaded:ModChartData = Json.parse(txt);
+            var src = #if sys sys.io.File.getContent(path) #else openfl.Assets.getText(path) #end;
+            if (src == null || src.length == 0) return false;
 
-            data = loaded;
+            var parser = new hscript.Parser();
+            parser.allowTypes = true;
+            #if (hscript >= "2.5.0")
+            try { parser.allowMetadata = true; } catch(_:Dynamic) {}
+            #end
+            var prog = parser.parseString(src);
+            var interp = new hscript.Interp();
+
+            // ── Exponer constantes de ModEventType ──────────────────────────
+            interp.variables.set('MOVE_X',    ModEventType.MOVE_X);
+            interp.variables.set('MOVE_Y',    ModEventType.MOVE_Y);
+            interp.variables.set('ANGLE',     ModEventType.ANGLE);
+            interp.variables.set('ALPHA',     ModEventType.ALPHA);
+            interp.variables.set('SCALE',     ModEventType.SCALE);
+            interp.variables.set('SCALE_X',   ModEventType.SCALE_X);
+            interp.variables.set('SCALE_Y',   ModEventType.SCALE_Y);
+            interp.variables.set('SPIN',      ModEventType.SPIN);
+            interp.variables.set('RESET',     ModEventType.RESET);
+            interp.variables.set('SET_ABS_X', ModEventType.SET_ABS_X);
+            interp.variables.set('SET_ABS_Y', ModEventType.SET_ABS_Y);
+            interp.variables.set('VISIBLE',   ModEventType.VISIBLE);
+
+            // ── Exponer constantes de ModEase ────────────────────────────────
+            interp.variables.set('LINEAR',      ModEase.LINEAR);
+            interp.variables.set('QUAD_IN',     ModEase.QUAD_IN);
+            interp.variables.set('QUAD_OUT',    ModEase.QUAD_OUT);
+            interp.variables.set('QUAD_IN_OUT', ModEase.QUAD_IN_OUT);
+            interp.variables.set('CUBE_IN',     ModEase.CUBE_IN);
+            interp.variables.set('CUBE_OUT',    ModEase.CUBE_OUT);
+            interp.variables.set('CUBE_IN_OUT', ModEase.CUBE_IN_OUT);
+            interp.variables.set('SINE_IN',     ModEase.SINE_IN);
+            interp.variables.set('SINE_OUT',    ModEase.SINE_OUT);
+            interp.variables.set('SINE_IN_OUT', ModEase.SINE_IN_OUT);
+            interp.variables.set('ELASTIC_IN',  ModEase.ELASTIC_IN);
+            interp.variables.set('ELASTIC_OUT', ModEase.ELASTIC_OUT);
+            interp.variables.set('BOUNCE_OUT',  ModEase.BOUNCE_OUT);
+            interp.variables.set('BACK_IN',     ModEase.BACK_IN);
+            interp.variables.set('BACK_OUT',    ModEase.BACK_OUT);
+            interp.variables.set('INSTANT',     ModEase.INSTANT);
+
+            // ── Exponer API del modchart ─────────────────────────────────────
+            interp.variables.set('modChart', this);
+            interp.variables.set('song', songName);
+
+            // Ejecutar el programa (define funciones)
+            interp.execute(prog);
+
+            // Guardar el intérprete para callbacks en tiempo real
+            _hscriptInterp = interp;
+
+            // Llamar onCreate() si existe
+            if (interp.variables.exists('onCreate'))
+            {
+                try { Reflect.callMethod(null, interp.variables.get('onCreate'), []); }
+                catch (e:Dynamic) { trace('[ModChartManager] Error en onCreate(): $e'); }
+            }
+
             data.events.sort((a, b) -> a.beat < b.beat ? -1 : (a.beat > b.beat ? 1 : 0));
             pending = data.events.copy();
 
-            trace('[ModChartManager] Modchart cargado: "${data.name}" (${data.events.length} eventos)');
+            trace('[ModChartManager] Modchart HScript cargado: "$path" (${data.events.length} eventos pre-generados)');
             return true;
         }
         catch (e:Dynamic)
         {
-            trace('[ModChartManager] ERROR al cargar modchart: $e');
+            trace('[ModChartManager] ERROR al cargar modchart HScript: $e');
             return false;
         }
+        #else
+        trace('[ModChartManager] HScript no disponible (compilar con -D HSCRIPT_ALLOWED)');
+        return false;
+        #end
     }
+
+    #if HSCRIPT_ALLOWED
+    /** Intérprete HScript para el modchart (null si no hay script activo) */
+    private var _hscriptInterp:Null<hscript.Interp> = null;
+
+    /** Llama una función del modchart HScript si existe. */
+    private inline function _callHScript(func:String, args:Array<Dynamic>):Void
+    {
+        if (_hscriptInterp == null) return;
+        if (!_hscriptInterp.variables.exists(func)) return;
+        try { Reflect.callMethod(null, _hscriptInterp.variables.get(func), args); }
+        catch (e:Dynamic) { trace('[ModChartManager] Error en $func(): $e'); }
+    }
+    #end
 
     /** Carga modchart desde string JSON (útil para el editor) */
     public function loadFromJson(json:String):Void
@@ -376,6 +545,11 @@ class ModChartManager
 
         // 4. Escribir valores en los sprites
         applyAllStates();
+
+        // 5. HScript onUpdate hook (para modcharts que quieran lógica por frame)
+        #if HSCRIPT_ALLOWED
+        _callHScript('onUpdate', [songPos]);
+        #end
     }
 
     // ── Disparar eventos ────────────────────────────────────────────────────
@@ -683,10 +857,17 @@ class ModChartManager
     {
         // El update() ya maneja el timing con curBeat float.
         // Este hook es para efectos instantáneos ligados al beat exacto si se necesitan.
+        #if HSCRIPT_ALLOWED
+        _callHScript('onBeatHit', [beat]);
+        #end
     }
 
     /** Llamar desde overrideStepHit() de PlayState */
-    public function onStepHit(step:Int):Void {}
+    public function onStepHit(step:Int):Void {
+        #if HSCRIPT_ALLOWED
+        _callHScript('onStepHit', [step]);
+        #end
+    }
 
     // ─── Destructor ───────────────────────────────────────────────────────────
 
@@ -696,6 +877,9 @@ class ModChartManager
         _pendingIdx = 0; pending = [];
         states.clear();
         strumsGroups = null;
+        #if HSCRIPT_ALLOWED
+        _hscriptInterp = null;
+        #end
         instance = null;
     }
 }

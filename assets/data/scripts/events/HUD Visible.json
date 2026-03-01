@@ -1,0 +1,10 @@
+{
+  "color": "#AABBCC",
+  "params": [
+    {
+      "name": "Visible",
+      "type": "Bool",
+      "defaultValue": "true"
+    }
+  ]
+}

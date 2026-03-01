@@ -35,6 +35,7 @@ import sys.io.File;
 #end
 import funkin.debug.themes.EditorTheme;
 import funkin.debug.themes.ThemePickerSubState;
+import shaders.ShaderManager;
 
 using StringTools;
 
@@ -192,8 +193,9 @@ class StageEditor extends funkin.states.MusicBeatState
 	var gfVersionInput:FlxUIInputText;
 
 	// Shaders tab widgets
-	var stageShaderInput:FlxUIInputText;
-	var elemShaderInput:FlxUIInputText;
+	var stageShaderDropdown:FlxUIDropDownMenu;
+	var elemShaderDropdown:FlxUIDropDownMenu;
+	var _shaderList:Array<String> = [];          // cache de nombres escaneados
 
 	// ── Drag ─────────────────────────────────────────────────────────────────
 	var isDraggingEl:Bool = false;
@@ -421,6 +423,16 @@ class StageEditor extends funkin.states.MusicBeatState
 					elementSprites.set(name, grp.members[0]);
 			for (name => spr in stage.customClasses)
 				elementSprites.set(name, spr);
+
+			// ── Re-aplicar shaders guardados en customProperties ──────────────
+			for (elem in stageData.elements)
+			{
+				if (elem.customProperties == null) continue;
+				var sh = Reflect.field(elem.customProperties, 'shader');
+				if (sh == null || sh == '') continue;
+				if (elem.name != null && elementSprites.exists(elem.name))
+					ShaderManager.applyShader(elementSprites.get(elem.name), Std.string(sh));
+			}
 		}
 		catch (e:Dynamic)
 		{
@@ -1232,68 +1244,118 @@ class StageEditor extends funkin.states.MusicBeatState
 		var T = EditorTheme.current;
 		var y = 8.0;
 
-		var info = new FlxText(8, y, RIGHT_W - 20, 'Shaders are stored in the stage\'s JSON file\nand are applied at runtime via scripts.', 10);
+		// ── Encabezado ────────────────────────────────────────────────────────
+		var info = new FlxText(8, y, RIGHT_W - 20, 'Assign shaders to elements and preview them live.', 10);
 		info.color = T.textSecondary;
 		tab.add(info);
-		y += 40;
+		y += 28;
+
+		// Botón Refresh: re-escanea la carpeta de shaders
+		var refreshBtn = new FlxButton(8, y, '↻ Refresh List', function()
+		{
+			ShaderManager.scanShaders();
+			_shaderList = ['(none)'].concat(ShaderManager.getAvailableShaders());
+			var labels = FlxUIDropDownMenu.makeStrIdLabelArray(_shaderList, true);
+			if (stageShaderDropdown != null)  { stageShaderDropdown.setData(labels);  stageShaderDropdown.selectedLabel  = _shaderList[0]; }
+			if (elemShaderDropdown  != null)  { elemShaderDropdown.setData(labels);   elemShaderDropdown.selectedLabel   = _shaderList[0]; }
+			setStatus('Shaders re-escaneados: ${_shaderList.length - 1} encontrados');
+		});
+		tab.add(refreshBtn);
+		y += 30;
 
 		var sep = new FlxSprite(4, y).makeGraphic(RIGHT_W - 16, 1, T.borderColor);
-		sep.alpha = 0.25;
+		sep.alpha = 0.3;
 		tab.add(sep);
 		y += 8;
 
+		// ── Stage-level shader ────────────────────────────────────────────────
 		var lbl1 = new FlxText(8, y, 0, 'Stage Shader:', 10);
 		lbl1.color = T.accent;
 		tab.add(lbl1);
 		y += 14;
-		stageShaderInput = new FlxUIInputText(8, y, 180, '', 10);
-		tab.add(stageShaderInput);
 
-		y += 28;
-		var applyStageShader = new FlxButton(8, y, 'Set Stage Shader', function()
+		_shaderList = ['(none)'].concat(ShaderManager.getAvailableShaders());
+		var labels  = FlxUIDropDownMenu.makeStrIdLabelArray(_shaderList, true);
+
+		stageShaderDropdown = new FlxUIDropDownMenu(8, y, labels, function(id:String)
 		{
-			var shaderName = stageShaderInput.text.trim();
-			if (stageData.scripts == null)
-				stageData.scripts = [];
-			trace('[StageEditor] Stage shader: $shaderName');
+			var idx = Std.parseInt(id);
+			if (idx == null) return;
+			var name = _shaderList[idx];
+			if (stageData.customProperties == null) stageData.customProperties = {};
+			Reflect.setField(stageData.customProperties, 'shader', name == '(none)' ? '' : name);
 			markUnsaved();
 			saveHistory();
+			setStatus(name == '(none)' ? 'Stage shader removido' : 'Stage shader: $name');
 		});
-		tab.add(applyStageShader);
+		stageShaderDropdown.selectedLabel = _shaderList[0];
+		y += 36;
 
-		y += 34;
 		var sep2 = new FlxSprite(4, y).makeGraphic(RIGHT_W - 16, 1, T.borderColor);
-		sep2.alpha = 0.25;
+		sep2.alpha = 0.3;
 		tab.add(sep2);
 		y += 8;
 
+		// ── Element shader ────────────────────────────────────────────────────
 		var lbl2 = new FlxText(8, y, 0, 'Selected Element Shader:', 10);
 		lbl2.color = T.accentAlt;
 		tab.add(lbl2);
 		y += 14;
-		elemShaderInput = new FlxUIInputText(8, y, 180, '', 10);
-		tab.add(elemShaderInput);
 
-		y += 28;
-		var applyElemShader = new FlxButton(8, y, 'Set Element Shader', function()
+		elemShaderDropdown = new FlxUIDropDownMenu(8, y, labels, function(id:String)
 		{
-			if (selectedIdx < 0 || selectedIdx >= stageData.elements.length)
-				return;
-			var shaderName = elemShaderInput.text.trim();
-			// Store as a custom property on the element
-			if (stageData.elements[selectedIdx].customProperties == null)
-				stageData.elements[selectedIdx].customProperties = {};
-			Reflect.setField(stageData.elements[selectedIdx].customProperties, 'shader', shaderName);
+			if (selectedIdx < 0 || selectedIdx >= stageData.elements.length) return;
+			var idx  = Std.parseInt(id);
+			if (idx == null) return;
+			var name = _shaderList[idx];
+
+			var elem = stageData.elements[selectedIdx];
+			if (elem.customProperties == null) elem.customProperties = {};
+			Reflect.setField(elem.customProperties, 'shader', name == '(none)' ? '' : name);
+
+			// ── Live preview ──────────────────────────────────────────────────
+			if (elem.name != null && elementSprites.exists(elem.name))
+			{
+				var spr = elementSprites.get(elem.name);
+				if (name == '(none)' || name == '')
+					ShaderManager.removeShader(spr);
+				else
+					ShaderManager.applyShader(spr, name);
+			}
+
 			markUnsaved();
 			saveHistory();
-			setStatus('Shader "${shaderName}" assigned to selected element');
+			setStatus(name == '(none)' ? 'Shader removido del elemento' : 'Shader "$name" aplicado en vivo ✓');
 		});
-		tab.add(applyElemShader);
+		elemShaderDropdown.selectedLabel = _shaderList[0];
+		y += 36;
 
-		y += 34;
-		var note = new FlxText(8, y, RIGHT_W - 20, 'To use shaders, add a script to the stage that applies the shader in onStageCreate.', 9);
+		// Botón para quitar shader del elemento seleccionado
+		var removeBtn = new FlxButton(8, y, '✕ Remove Shader', function()
+		{
+			if (selectedIdx < 0 || selectedIdx >= stageData.elements.length) return;
+			var elem = stageData.elements[selectedIdx];
+			if (elem.customProperties != null)
+				Reflect.setField(elem.customProperties, 'shader', '');
+
+			if (elem.name != null && elementSprites.exists(elem.name))
+				ShaderManager.removeShader(elementSprites.get(elem.name));
+
+			elemShaderDropdown.selectedLabel = '(none)';
+			markUnsaved();
+			saveHistory();
+			setStatus('Shader removido del elemento seleccionado');
+		});
+		tab.add(removeBtn);
+		y += 30;
+
+		var note = new FlxText(8, y, RIGHT_W - 20,
+			'Shaders en assets/shaders/*.frag y mods/<id>/shaders/*.frag.\nEl preview es en vivo — guarda para que persistan.', 9);
 		note.color = T.textDim;
 		tab.add(note);
+
+		tab.add(stageShaderDropdown);
+		tab.add(elemShaderDropdown);
 
 		rightPanel.addGroup(tab);
 	}
@@ -2000,11 +2062,13 @@ class StageEditor extends funkin.states.MusicBeatState
 		if (elemColorInput != null)
 			elemColorInput.text = elem.color ?? '#FFFFFF';
 
-		// Shader
-		if (elemShaderInput != null && elem.customProperties != null)
+		// Shader — sincronizar dropdown con el shader del elemento seleccionado
+		if (elemShaderDropdown != null)
 		{
-			var sh = Reflect.field(elem.customProperties, 'shader');
-			elemShaderInput.text = sh != null ? Std.string(sh) : '';
+			var sh = (elem.customProperties != null) ? Reflect.field(elem.customProperties, 'shader') : null;
+			var shName = (sh != null && sh != '') ? Std.string(sh) : '(none)';
+			// Buscar en la lista; si no existe, mostrar (none)
+			elemShaderDropdown.selectedLabel = (_shaderList.contains(shName)) ? shName : '(none)';
 		}
 
 		// Sync animation tab
@@ -2445,8 +2509,6 @@ class StageEditor extends funkin.states.MusicBeatState
 		if (animFirstInput   != null && animFirstInput.hasFocus)   return true;
 		if (stageNameInput   != null && stageNameInput.hasFocus)   return true;
 		if (gfVersionInput   != null && gfVersionInput.hasFocus)   return true;
-		if (stageShaderInput != null && stageShaderInput.hasFocus) return true;
-		if (elemShaderInput  != null && elemShaderInput.hasFocus)  return true;
 		return false;
 	}
 

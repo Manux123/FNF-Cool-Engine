@@ -1,0 +1,15 @@
+{
+  "color": "#AAFF88",
+  "params": [
+    {
+      "name": "Sound Key",
+      "type": "String",
+      "defaultValue": "confirmMenu"
+    },
+    {
+      "name": "Volume",
+      "type": "Float(0.0,1.0)",
+      "defaultValue": "1.0"
+    }
+  ]
+}

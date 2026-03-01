@@ -1,0 +1,20 @@
+{
+  "color": "#FFFFAA",
+  "params": [
+    {
+      "name": "Color (hex)",
+      "type": "Color",
+      "defaultValue": "#FFFFFF"
+    },
+    {
+      "name": "Duration (seconds)",
+      "type": "Float(0.01,10.0)",
+      "defaultValue": "0.5"
+    },
+    {
+      "name": "Camera",
+      "type": "DropDown(camGame,camHUD,both)",
+      "defaultValue": "camGame"
+    }
+  ]
+}

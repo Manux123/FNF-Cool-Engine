@@ -379,13 +379,8 @@ class EventManager
 	static function _resolveChar(game:PlayState,
 	                             slot:String):Null<funkin.gameplay.objects.character.Character>
 	{
-		return switch (slot.toLowerCase())
-		{
-			case 'bf', 'boyfriend', 'player': game.boyfriend;
-			case 'dad', 'opponent':           game.dad;
-			case 'gf', 'girlfriend':          game.gf;
-			default: null;
-		};
+		// Delegar en PlayState.getCharacterByName que soporta aliases, índices y nombres exactos
+		return game.getCharacterByName(slot);
 	}
 
 	static function _parseColor(s:String):flixel.util.FlxColor

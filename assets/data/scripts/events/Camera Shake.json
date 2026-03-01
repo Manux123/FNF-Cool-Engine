@@ -1,0 +1,15 @@
+{
+  "color": "#FF8866",
+  "params": [
+    {
+      "name": "Intensity",
+      "type": "Float(0.0,1.0)",
+      "defaultValue": "0.005"
+    },
+    {
+      "name": "Duration",
+      "type": "Float(0.0,10.0)",
+      "defaultValue": "0.25"
+    }
+  ]
+}

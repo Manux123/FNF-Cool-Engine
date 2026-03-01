@@ -1,0 +1,15 @@
+{
+  "color": "#88FF88",
+  "params": [
+    {
+      "name": "Target",
+      "type": "DropDown(player,opponent,gf,bf,dad)",
+      "defaultValue": "player"
+    },
+    {
+      "name": "Animation",
+      "type": "String",
+      "defaultValue": "singLEFT"
+    }
+  ]
+}

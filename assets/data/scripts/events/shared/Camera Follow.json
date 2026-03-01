@@ -1,0 +1,15 @@
+{
+  "color": "#88CCFF",
+  "params": [
+    {
+      "name": "Target",
+      "type": "DropDown(bf,dad,gf,player,opponent)",
+      "defaultValue": "bf"
+    },
+    {
+      "name": "Lerp Speed",
+      "type": "Float(0.01,1.0)",
+      "defaultValue": "0.04"
+    }
+  ]
+}

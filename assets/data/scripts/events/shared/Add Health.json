@@ -1,0 +1,10 @@
+{
+  "color": "#88FFAA",
+  "params": [
+    {
+      "name": "Amount",
+      "type": "Float(-2.0,2.0)",
+      "defaultValue": "0.1"
+    }
+  ]
+}

@@ -265,6 +265,9 @@ class ChartingState extends funkin.states.MusicBeatState
 			};
 		}
 
+		// Garantizar que strumsGroups y characters existan (incluye grupo de GF)
+		funkin.data.Song.ensureMigrated(_song);
+
 		// CRÍTICO: Crear sección por defecto si el array está vacío
 		if (_song.notes == null || _song.notes.length == 0)
 		{
@@ -3277,6 +3280,9 @@ class ChartingState extends funkin.states.MusicBeatState
 			if (_song.stage == null)
 				_song.stage = CharacterList.getDefaultStageForSong(_song.song);
 
+			// Migrar formato legacy → nuevo (strumsGroups + characters con GF)
+			funkin.data.Song.ensureMigrated(_song);
+
 			// CRÍTICO: Crear sección por defecto si el array está vacío
 			if (_song.notes == null || _song.notes.length == 0)
 			{
@@ -3299,6 +3305,8 @@ class ChartingState extends funkin.states.MusicBeatState
 			// Reload
 			loadSong(_song.song);
 			curSection = 0;
+			// Reconstruir grid con las columnas correctas (incluye GF si el chart la tiene)
+			rebuildGrid();
 			changeSection(0);
 
 			// Update UI

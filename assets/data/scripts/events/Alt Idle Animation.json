@@ -1,0 +1,15 @@
+{
+  "color": "#FF8844",
+  "params": [
+    {
+      "name": "Target Character",
+      "type": "DropDown(bf,dad,gf)",
+      "defaultValue": "bf"
+    },
+    {
+      "name": "Enable",
+      "type": "Bool",
+      "defaultValue": "true"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "color": "#FF88CC",
+  "params": [
+    {
+      "name": "Target",
+      "type": "DropDown(bf,dad,gf)",
+      "defaultValue": "dad"
+    },
+    {
+      "name": "Enabled",
+      "type": "Bool",
+      "defaultValue": "true"
+    }
+  ]
+}

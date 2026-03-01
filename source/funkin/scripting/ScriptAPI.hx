@@ -133,6 +133,7 @@ class ScriptAPI
 		interp.variables.set('NoteTypeManager',    funkin.gameplay.notes.NoteTypeManager);
 		interp.variables.set('ModManager',         mods.ModManager);
 		interp.variables.set('ModPaths',           mods.ModPaths);
+		interp.variables.set('ShaderManager',       shaders.ShaderManager);
 
 		// Modchart classes
 		interp.variables.set('ModChartManager',  funkin.gameplay.modchart.ModChartManager);

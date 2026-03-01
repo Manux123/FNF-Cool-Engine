@@ -1,0 +1,10 @@
+{
+  "color": "#FFAAFF",
+  "params": [
+    {
+      "name": "Speed (beats)",
+      "type": "Int(1,32)",
+      "defaultValue": "2"
+    }
+  ]
+}

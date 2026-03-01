@@ -32,6 +32,7 @@ typedef StageData =
 	@:optional var cameraDad:Array<Float>;
 	@:optional var hideGirlfriend:Bool;
 	@:optional var scripts:Array<String>;
+	@:optional var customProperties:Dynamic;
 }
 
 typedef StageElement =

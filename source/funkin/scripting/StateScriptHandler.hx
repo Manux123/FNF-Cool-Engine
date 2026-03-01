@@ -286,6 +286,21 @@ class StateScriptHandler
 		return s != null && s.hotReload();
 	}
 
+	/**
+	 * Re-sincroniza TODOS los campos del state hacia los scripts activos.
+	 * Útil cuando el state crea objetos DESPUÉS de cargar los scripts
+	 * (ej: TitleState crea logoBl en startIntro(), no en create()).
+	 * Llamar justo antes de 'postCreate' en esos casos.
+	 */
+	public static function refreshStateFields(state:FlxState):Void
+	{
+		#if HSCRIPT_ALLOWED
+		for (script in scripts)
+			if (script.interp != null)
+				_reflectStateFields(script.interp, state);
+		#end
+	}
+
 	// ─── Llamadas ─────────────────────────────────────────────────────────────
 
 	/**
@@ -442,57 +457,103 @@ class StateScriptHandler
 	}
 
 	#if HSCRIPT_ALLOWED
+	/**
+	 * Expone AUTOMÁTICAMENTE todos los campos de instancia del state al script,
+	 * igual que hace Codename Engine — sin necesidad de llamar exposeElement()
+	 * manualmente para cada sprite/variable.
+	 *
+	 * Funcionamiento:
+	 *  • Type.getInstanceFields() recorre toda la jerarquía de clases del state
+	 *    y devuelve los nombres de todos los campos de instancia.
+	 *  • Reflect.getProperty() lee el valor actual de cada campo.
+	 *  • Los objetos (FlxSprite, FlxGroup…) se pasan por referencia — el script
+	 *    puede modificarlos directamente (logoBl.visible = false; etc.).
+	 *  • Los primitivos (Bool, Int, Float, String) se pasan por valor.
+	 *    Para escribirlos de vuelta desde el script usa setField(nombre, valor).
+	 *
+	 * Ejemplo en script:
+	 *   logoBl.visible = false;          // funciona — es referencia al sprite
+	 *   setField('transitioning', true); // escribe un Bool del state
+	 *   var v = getField('curBeat');     // lee cualquier campo
+	 */
 	static function _exposeStateAPI(interp:Interp, state:FlxState, script:HScriptInstance):Void
 	{
-		// Referencia al state
-		interp.variables.set('state',   state);
-		interp.variables.set('save',    FlxG.save.data);
+		// ── 1. AUTO-REFLECT: exponer TODOS los campos de instancia del state ──
+		_reflectStateFields(interp, state);
 
-		// Control de cancelación
+		// ── 2. Referencia principal al state ──────────────────────────────────
+		interp.variables.set('state', state);
+		interp.variables.set('save',  FlxG.save.data);
+
+		// ── 3. Leer/escribir campos primitivos del state desde el script ──────
+		//    Para objetos no hace falta porque son referencias, pero para
+		//    Bool/Int/Float/String la asignación directa no escribe de vuelta.
+		interp.variables.set('getField', (name:String) -> {
+			try   { return Reflect.getProperty(state, name); }
+			catch (e:Dynamic) { trace('[StateScript] getField("$name") falló: $e'); return null; }
+		});
+		interp.variables.set('setField', (name:String, value:Dynamic) -> {
+			try   { Reflect.setProperty(state, name, value); }
+			catch (e:Dynamic) { trace('[StateScript] setField("$name") falló: $e'); }
+		});
+
+		// ── 4. Llamar métodos del state por nombre ────────────────────────────
+		//    callMethod('skipIntro')  →  state.skipIntro()
+		interp.variables.set('callMethod', (name:String, ?args:Array<Dynamic>) -> {
+			try
+			{
+				final fn = Reflect.getProperty(state, name);
+				if (fn != null && Reflect.isFunction(fn))
+					return Reflect.callMethod(state, fn, args ?? []);
+			}
+			catch (e:Dynamic) { trace('[StateScript] callMethod("$name") falló: $e'); }
+			return null;
+		});
+
+		// ── 5. Re-sincronizar campos del state HACIA el script ─────────────────
+		//    Útil para refrescar valores primitivos que cambiaron desde Haxe.
+		//    Llamar desde el script cuando sea necesario: refreshFields()
+		interp.variables.set('refreshFields', () -> _reflectStateFields(interp, state));
+
+		// ── 6. Control de cancelación ─────────────────────────────────────────
 		interp.variables.set('cancelEvent',   () -> true);
 		interp.variables.set('continueEvent', () -> false);
 
-		// Prioridad dinámica
+		// ── 7. Prioridad dinámica ─────────────────────────────────────────────
 		interp.variables.set('setPriority', (p:Int) -> {
 			script.priority = p;
 			_cacheDirty = true;
 		});
 
-		// Tag del script
+		// ── 8. Tag del script ─────────────────────────────────────────────────
 		interp.variables.set('setTag', (t:String) -> { script.tag = t; });
 		interp.variables.set('getTag', () -> script.tag);
 
-		// Overrides de funciones
+		// ── 9. Overrides de funciones ─────────────────────────────────────────
 		interp.variables.set('overrideFunction', (name:String, fn:Dynamic) ->
 			registerOverride(name, script, fn));
 		interp.variables.set('removeOverride',   (name:String) -> unregisterOverride(name));
 		interp.variables.set('toggleOverride',   (name:String, en:Bool) -> toggleOverride(name, en));
 		interp.variables.set('hasOverride',       (name:String) -> hasOverride(name));
 
-		// Datos compartidos
-		interp.variables.set('setShared',    (k:String, v:Dynamic)           -> setShared(k, v));
-		interp.variables.set('getShared',    (k:String, ?def:Dynamic)        -> getShared(k, def));
-		interp.variables.set('deleteShared', (k:String)                      -> deleteShared(k));
+		// ── 10. Datos compartidos ─────────────────────────────────────────────
+		interp.variables.set('setShared',    (k:String, v:Dynamic)    -> setShared(k, v));
+		interp.variables.set('getShared',    (k:String, ?def:Dynamic) -> getShared(k, def));
+		interp.variables.set('deleteShared', (k:String)               -> deleteShared(k));
 
-		// Hooks nativos del state (los scripts pueden "escucharlos")
+		// ── 11. Hooks, broadcast, hot-reload, require ─────────────────────────
 		interp.variables.set('registerHook', (name:String, fn:Dynamic->Void) ->
 			registerHook(name, fn));
-
-		// Broadcast
 		interp.variables.set('broadcast', (ev:String, ?args:Array<Dynamic>) ->
 			broadcast(ev, args ?? []));
-
-		// Hot-reload propio
 		interp.variables.set('hotReload', () -> script.hotReload());
+		interp.variables.set('require',   (path:String) -> script.require(path));
 
-		// Require — importa otro script
-		interp.variables.set('require', (path:String) -> script.require(path));
+		// ── 12. Acceso a otros scripts del mismo state ────────────────────────
+		interp.variables.set('getScript',    (name:String) -> getByName(name));
+		interp.variables.set('getScriptTag', (tag:String)  -> getByTag(tag));
 
-		// Acceso a otros scripts del mismo state
-		interp.variables.set('getScript',    (name:String)  -> getByName(name));
-		interp.variables.set('getScriptTag', (tag:String)   -> getByTag(tag));
-
-		// Helper crear opciones de menú
+		// ── 13. Helper crear opciones de menú ─────────────────────────────────
 		interp.variables.set('createOption',
 			(name:String, getValue:Void->String, onPress:Void->Bool) -> ({
 				name:     name,
@@ -501,11 +562,67 @@ class StateScriptHandler
 			})
 		);
 
-		// Builder de elementos UI (acceso a ScriptBridge)
+		// ── 14. Builder de elementos UI ───────────────────────────────────────
 		interp.variables.set('ui', ScriptBridge.buildUIHelper(state));
 
-		// Referencia al propio script
+		// ── 15. Funciones de stage directas (add/remove) ──────────────────────
+		// IMPORTANTE: add() viene de FlxGroup (padre de FlxState) y NO se refleja
+		// automáticamente por _reflectStateFields porque el bucle para en FlxState.
+		// Se exponen aquí explícitamente para que los scripts puedan llamar
+		// add(sprite) y remove(sprite) igual que en Codename Engine.
+		if (!interp.variables.exists('add'))
+			interp.variables.set('add', function(obj:Dynamic) { state.add(obj); return obj; });
+		if (!interp.variables.exists('remove'))
+			interp.variables.set('remove', function(obj:Dynamic, splice:Bool = false) { return state.remove(obj, splice); });
+
+		// ── 16. Referencia al propio script ───────────────────────────────────
 		interp.variables.set('self', script);
+	}
+
+	/**
+	 * Itera TODOS los campos de instancia del state (y sus superclases)
+	 * y los inyecta en el intérprete del script por reflexión.
+	 *
+	 * • Los campos que ya estén definidos en el intérprete NO se sobreescriben
+	 *   (las variables del API —state, save, etc.— tienen prioridad).
+	 * • Se ignoran los campos que lanzan excepciones al leerlos (propiedades
+	 *   write-only, campos abstract, etc.) para no crashear la carga.
+	 * • Los campos de tipo Function también se exponen, así el script puede
+	 *   hacer add(sprite) igual que en Codename.
+	 */
+	static function _reflectStateFields(interp:Interp, state:FlxState):Void
+	{
+		// Obtener todos los campos de instancia recorriendo la jerarquía completa.
+		// Type.getSuperClass() devuelve Class<Dynamic>, no Class<FlxState>, así que
+		// usamos Dynamic para la variable de iteración y evitamos el error de tipos.
+		var fields:Array<String> = [];
+		var cls:Dynamic = Type.getClass(state);
+		while (cls != null)
+		{
+			for (f in Type.getInstanceFields(cls))
+				if (!fields.contains(f))
+					fields.push(f);
+			cls = Type.getSuperClass(cls);
+			// Parar en FlxState para no exponer internos de Flixel/OpenFL
+			if (cls != null && Type.getClassName(cls) == 'flixel.FlxState')
+				break;
+		}
+
+		for (fieldName in fields)
+		{
+			// No sobreescribir las variables del API del engine
+			if (interp.variables.exists(fieldName)) continue;
+
+			try
+			{
+				final value = Reflect.getProperty(state, fieldName);
+				interp.variables.set(fieldName, value);
+			}
+			catch (e:Dynamic)
+			{
+				// Campo write-only o inaccesible — ignorar silenciosamente
+			}
+		}
 	}
 	#end
 }

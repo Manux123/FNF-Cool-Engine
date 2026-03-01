@@ -143,38 +143,51 @@ class MusicBeatState extends FlxUIState
 		if (oldStep != curStep && curStep > 0)
 			stepHit();
 
+		#if HSCRIPT_ALLOWED
+		if (Lambda.count(StateScriptHandler.scripts) > 0)
+		{
+			StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
+			super.update(elapsed);
+			StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
+			return;
+		}
+		#end
+
 		super.update(elapsed);
 	}
 
 	// ─── Auto-scripting ───────────────────────────────────────────────────────
 
 	/**
-	 * Carga scripts desde assets/states/{ClassName}/ si existen.
-	 * Se llama automáticamente al crear el state. Los states que ya
-	 * gestionan sus scripts manualmente deben poner `autoScriptLoad = false`
-	 * en su `create()` ANTES de llamar a `super.create()`.
+	 * Carga scripts para el state actual desde todas las rutas posibles
+	 * (assets/, mod activo, etc.). StateScriptHandler.loadStateScripts()
+	 * ya maneja todas las rutas — la comprobación FileSystem previa era
+	 * incorrecta porque solo miraba assets/ y perdía los scripts de mods.
+	 *
+	 * Llamado automáticamente al final de create(). Los states que gestionan
+	 * sus scripts manualmente deben poner `autoScriptLoad = false` en su
+	 * create() ANTES de llamar a super.create().
 	 */
 	function _autoLoadScripts():Void
 	{
 		#if HSCRIPT_ALLOWED
+		// Si el state ya cargó scripts manualmente antes de super.create(),
+		// no volver a cargar — evita duplicados en TitleState, MainMenuState, etc.
+		if (Lambda.count(StateScriptHandler.scripts) > 0) return;
+
 		final className = Type.getClassName(Type.getClass(this)).split('.').pop();
-		final folder    = 'assets/states/${className.toLowerCase()}';
 
-		#if sys
-		if (!sys.FileSystem.exists(folder)) return;
-		#end
+		StateScriptHandler.init();
+		StateScriptHandler.loadStateScripts(className, this);
 
-		// Solo cargamos si no hay scripts ya activos para este state
-		if (Lambda.count(StateScriptHandler.scripts) == 0)
+		if (Lambda.count(StateScriptHandler.scripts) > 0)
 		{
-			StateScriptHandler.init();
-			StateScriptHandler.loadStateScripts(className, this);
-
-			if (Lambda.count(StateScriptHandler.scripts) > 0)
-			{
-				StateScriptHandler.callOnScripts('onCreate', []);
-				trace('[MusicBeatState] Auto-scripts cargados para $className.');
-			}
+			// Re-sincronizar campos DESPUÉS de crear todos los objetos del state
+			// para que los scripts vean los sprites/grupos reales, no null.
+			StateScriptHandler.refreshStateFields(this);
+			StateScriptHandler.callOnScripts('onCreate', []);
+			StateScriptHandler.callOnScripts('postCreate', []);
+			trace('[MusicBeatState] Scripts cargados para $className.');
 		}
 		#end
 	}
@@ -185,12 +198,8 @@ class MusicBeatState extends FlxUIState
 		if (soundTray != null)
 			cast(soundTray, SoundTray).forceHide();
 
-		// BUGFIX: Limpiar scripts de HScript al destruir el state.
-		// StateScriptHandler es estático — si los scripts no se limpian aquí,
-		// siguen activos con referencias al state destruido. El nuevo state
-		// nunca carga sus propios scripts (la guarda Lambda.count == 0 es false)
-		// y los scripts viejos crashean al llamar métodos sobre el state muerto.
 		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onDestroy', []);
 		StateScriptHandler.clearStateScripts();
 		#end
 	}

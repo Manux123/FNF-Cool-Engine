@@ -97,7 +97,7 @@
 		}
 	],
 
-	"charDeath": "bf_death",
+	"charDeath": "bf-dead",
 	"gameOverSound": "fnf_loss_sfx",
 	"gameOverMusic": "gameplay/gameOver",
 	"gameOverEnd": "gameplay/gameOverEnd",

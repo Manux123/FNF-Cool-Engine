@@ -7,6 +7,8 @@ import flixel.system.FlxAssets.FlxShader;
 import haxe.Exception;
 import mods.ModManager;
 import openfl.display.ShaderParameter;
+import openfl.filters.BitmapFilter;
+import openfl.filters.ShaderFilter;
 import sys.FileSystem;
 import sys.io.File;
 
@@ -39,6 +41,12 @@ class ShaderManager
 {
 	public static var shaders:Map<String, CustomShader> = new Map();
 	public static var shaderPaths:Map<String, String> = new Map();
+
+	/**
+	 * Registra qué ShaderFilter se aplicó a cada sprite para poder quitarlo después.
+	 * Clave: ObjectID del sprite (via Reflect) — Valor: {filter, camera}
+	 */
+	static var _appliedFilters:Map<FlxSprite, {filter:ShaderFilter, camera:FlxCamera}> = new Map();
 
 	// ─── Init ─────────────────────────────────────────────────────────────────
 
@@ -143,18 +151,30 @@ class ShaderManager
 	// ─── Aplicar / Quitar ─────────────────────────────────────────────────────
 
 	/**
-	 * Aplica un shader a un sprite usando sprite.shader (API nativa de HaxeFlixel 5).
+	 * Aplica un shader a un sprite usando ShaderFilter sobre la cámara del sprite.
 	 *
-	 * FlxSprite expone la propiedad `shader` que Flixel aplica durante el draw call
-	 * en FlxDrawQuadsItem. Esto es el enfoque correcto para sprites individuales ya que
-	 * FlxSprite NO extiende openfl.display.DisplayObject y por tanto no tiene el campo
-	 * `filters` de OpenFL.
+	 * ¿Por qué ShaderFilter y no sprite.shader?
+	 * ─────────────────────────────────────────
+	 * En HaxeFlixel 4.x, FlxSprite NO tiene campo .shader. Asignarlo crea un campo
+	 * dinámico que no conecta con el pipeline de render, por lo que el shader no
+	 * se aplica visualmente. Intentar acceder al campo .camera interno del sprite
+	 * para compilar el programa GL provoca el error "Invalid field:camera".
+	 *
+	 * La API correcta en este proyecto es CameraUtil / ShaderFilter:
+	 *   1. Se obtiene la primera cámara válida del sprite (o camGame como fallback).
+	 *   2. Se crea un ShaderFilter con el FlxShader compilado.
+	 *   3. Se añade al array _filters de la cámara (campo interno de FlxCamera).
+	 *
+	 * En el StageEditor, cada elemento tiene su propia cámara (camGame), así que
+	 * el shader se aplica correctamente en el preview sin afectar otras cámaras.
 	 *
 	 * @param sprite     Sprite destino.
 	 * @param shaderName Nombre del shader (sin .frag).
-	 * @param camera     Ignorado (mantenido por compatibilidad con call sites anteriores).
+	 * @param camera     Cámara a usar. Si null, usa la primera cámara del sprite,
+	 *                   o FlxG.camera como último fallback.
 	 * @return true si se aplicó correctamente.
 	 */
+	@:access(flixel.FlxCamera)
 	public static function applyShader(sprite:FlxSprite, shaderName:String, ?camera:FlxCamera):Bool
 	{
 		if (sprite == null)
@@ -167,21 +187,49 @@ class ShaderManager
 		if (customShader == null || customShader.shader == null)
 			return false;
 
-		// Usar sprite.shader — la API correcta de HaxeFlixel 5 para shaders en sprites.
-		// (FlxSprite no tiene .filters; ese campo es de openfl.display.DisplayObject)
-		sprite.shader = customShader.shader;
+		// Quitar shader previo del sprite si tenía uno
+		removeShader(sprite);
 
-		trace('[ShaderManager] Shader "$shaderName" aplicado a sprite (via sprite.shader)');
+		// Resolver cámara: parámetro → primera cámara del sprite → FlxG.camera
+		var cam:FlxCamera = camera;
+		if (cam == null && sprite.cameras != null && sprite.cameras.length > 0)
+			cam = sprite.cameras[0];
+		if (cam == null)
+			cam = FlxG.camera;
+
+		final filter = new ShaderFilter(customShader.shader);
+
+		// Añadir el filtro a la cámara usando el campo interno _filters
+		if (cam._filters == null) cam._filters = [];
+		cam._filters.push(filter);
+
+		// Registrar para poder quitarlo después
+		_appliedFilters.set(sprite, {filter: filter, camera: cam});
+
+		trace('[ShaderManager] Shader "$shaderName" aplicado a sprite via ShaderFilter en cámara');
 		return true;
 	}
 
 	/**
-	 * Quita el shader de un sprite.
+	 * Quita el shader de un sprite (elimina su ShaderFilter de la cámara).
 	 */
+	@:access(flixel.FlxCamera)
 	public static function removeShader(sprite:FlxSprite):Void
 	{
 		if (sprite == null) return;
-		sprite.shader = null;
+
+		final entry = _appliedFilters.get(sprite);
+		if (entry == null) return;
+
+		final cam = entry.camera;
+		if (cam != null && cam._filters != null)
+		{
+			cam._filters.remove(entry.filter);
+			if (cam._filters.length == 0)
+				cam._filters = null;
+		}
+
+		_appliedFilters.remove(sprite);
 		trace('[ShaderManager] Shader removido del sprite');
 	}
 
@@ -240,6 +288,7 @@ class ShaderManager
 		for (shader in shaders) shader.destroy();
 		shaders.clear();
 		shaderPaths.clear();
+		_appliedFilters.clear();
 		trace('[ShaderManager] Shaders limpiados');
 	}
 }

@@ -73,6 +73,7 @@ class TitleState extends funkin.states.MusicBeatState
 	var gfDance:FlxSprite;
 	var danceLeft:Bool = false;
 	var titleText:FlxSprite;
+	var transitioning:Bool = false;
 
 	function startIntro()
 	{
@@ -163,11 +164,12 @@ class TitleState extends funkin.states.MusicBeatState
 		}
 
 		#if HSCRIPT_ALLOWED
+		// Los sprites se crearon en startIntro() DESPUÉS de loadStateScripts(),
+		// así que hay que re-sincronizar los campos del state ahora que ya existen.
+		StateScriptHandler.refreshStateFields(this);
 		StateScriptHandler.callOnScripts('postCreate', []);
 		#end
 	}
-
-	var transitioning:Bool = false;
 
 	override function update(elapsed:Float)
 	{

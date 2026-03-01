@@ -114,8 +114,7 @@ class GameOverSubstate extends MusicBeatSubstate
 			if (bf.animation.curAnim.finished)
 			{
 				StateScriptHandler.fireRaw('onDeathAnimFinished', []);
-				if (FlxG.sound.music == null || !FlxG.sound.music.playing)
-					FlxG.sound.playMusic(Paths.music(_loopMusic));
+				FlxG.sound.playMusic(Paths.music(_loopMusic));
 			}
 		}
 

@@ -593,6 +593,30 @@ class NoteManager
 			note.x = strum.x + (strum.width - note.width) / 2;
 		}
 
+		// ── V-Slice style fade: desvanecer notas que pasan el strum ─────────
+		// Solo aplica a notas del jugador que no fueron golpeadas
+		if (note.mustPress && !note.wasGoodHit && !note.isSustainNote)
+		{
+			// Distancia desde el centro del strum hacia la dirección "pasada"
+			// En upscroll: las notas vienen de abajo, pasan el strum hacia arriba (Y decrece)
+			// En downscroll: las notas vienen de arriba, pasan el strum hacia abajo (Y crece)
+			var distPast:Float;
+			if (downscroll)
+				distPast = note.y - strumLineY;   // positivo = debajo del strum (pasó)
+			else
+				distPast = strumLineY - note.y;    // positivo = encima del strum (pasó)
+
+			// Empezar a desvanecer a partir de 20px antes del strum, llegar a alpha 0 a 120px después
+			final FADE_START:Float = -20.0;
+			final FADE_END:Float   = 120.0;
+			if (distPast > FADE_START)
+			{
+				var t = FlxMath.bound((distPast - FADE_START) / (FADE_END - FADE_START), 0.0, 1.0);
+				// alpha va de 1.0 → 0.0, pero mantenemos un mínimo de 0.05 para que no sea invisible bruscamente
+				note.alpha = FlxMath.lerp(1.0, 0.05, t);
+			}
+		}
+
 		// Posición Y de sustains: noteY directo (fórmula original).
 		// scale.y fue calculado en setupSustainNote() para que la altura de cada pieza
 		// coincida con el espacio entre strumTimes adyacentes (stepCrochet * scrollSpeed).

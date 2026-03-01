@@ -19,6 +19,8 @@ import ui.Alphabet;
 import funkin.cutscenes.VideoManager;
 import funkin.data.Song;
 
+using StringTools;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Modos del menú de pausa
 // ─────────────────────────────────────────────────────────────────────────────
@@ -72,12 +74,6 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 		// ── Cámara — siempre la última de la lista para estar encima de todo ──
 		_pauseCam = FlxG.cameras.list[FlxG.cameras.list.length - 1];
 		cameras = [_pauseCam];
-
-		#if HSCRIPT_ALLOWED
-		StateScriptHandler.init();
-		StateScriptHandler.loadStateScripts('PauseSubState', this);
-		StateScriptHandler.callOnScripts('onCreate', []);
-		#end
 
 		_cleanSoundList();
 
@@ -164,10 +160,6 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 
 	override function update(elapsed:Float)
 	{
-		#if HSCRIPT_ALLOWED
-		StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
-		#end
-
 		if (pauseMusic != null && pauseMusic.volume < 0.5)
 			pauseMusic.volume += 0.01 * elapsed;
 
@@ -223,6 +215,7 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 
 				case "Exit to menu":
 					PlayState.isPlaying = false;
+					PlayState.isBotPlay = false;
 					// BUGFIX: Poner paused=false ANTES de la transición para que
 					// PlayState.closeSubState() no llame a resyncVocals() durante el
 					// destroy del estado, lo que provocaba un crash al intentar
@@ -247,15 +240,20 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 					switchMode(Standard);
 
 				default:
+					// Toggle Bot Play (devmode)
+					if (daSelected.startsWith("BotPlay:"))
+					{
+						PlayState.isBotPlay = !PlayState.isBotPlay;
+						// Actualizar label en el menú
+						menuItems[curSelected] = PlayState.isBotPlay ? "BotPlay: ON" : "BotPlay: OFF";
+						_rebuildMenu();
+						return;
+					}
 					// Selección de dificultad generada dinámicamente
 					if (currentMode == Difficulty)
 						_applyDifficulty(daSelected);
 			}
 		}
-
-		#if HSCRIPT_ALLOWED
-		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
-		#end
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -274,6 +272,12 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 				// Añadir "Skip Song" en modo historia con playlist > 1
 				if (PlayState.storyPlaylist.length > 1 && PlayState.isStoryMode)
 					menuItems.insert(2, "Skip Song");
+				// Añadir "Bot Play" si el Developer Mode está activo
+				if (funkin.menus.MainMenuState.developerMode)
+				{
+					var botLabel = PlayState.isBotPlay ? "BotPlay: ON" : "BotPlay: OFF";
+					menuItems.insert(menuItems.length - 3, botLabel);
+				}
 
 			case Cutscene:
 				menuItems = ENTRIES_CUTSCENE.copy();
@@ -452,11 +456,6 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 			pauseMusic.destroy();
 			pauseMusic = null;
 		}
-
-		#if HSCRIPT_ALLOWED
-		StateScriptHandler.callOnScripts('onDestroy', []);
-		StateScriptHandler.clearStateScripts();
-		#end
 
 		super.destroy();
 

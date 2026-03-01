@@ -30,7 +30,8 @@ class InputHandler
 	// === CALLBACKS ===
 	public var onNoteHit:Note->Void = null;
 	public var onNoteMiss:funkin.gameplay.notes.Note->Void = null;
-	public var onKeyRelease:Int->Void = null; // NUEVO: Callback cuando se suelta una tecla (para hold notes)
+	public var onKeyRelease:Int->Void = null; // Callback cuando se suelta una tecla (para hold notes)
+	public var onKeyPress:Int->Void   = null; // Callback cuando se presiona una tecla
 
 	// === CONFIG ===
 	public var ghostTapping:Bool = true; // No penalizar teclas incorrectas
@@ -132,6 +133,34 @@ class InputHandler
 	 */
 	public function processInputs(notes:FlxTypedGroup<Note>):Void
 	{
+		// ── Bot Play: el CPU presiona automáticamente las notas del jugador ──
+		if (funkin.gameplay.PlayState.isBotPlay)
+		{
+			// BUGFIX: Limpiar inputs reales del jugador para que no afecten
+			// a los strums ni provoquen miss/ghost-tap en botplay.
+			for (i in 0...4)
+			{
+				pressed[i]  = false;
+				held[i]     = false;
+				released[i] = false;
+			}
+
+			notes.forEachAlive(function(note:Note)
+			{
+				if (note.canBeHit && note.mustPress && !note.tooLate && !note.wasGoodHit
+					&& !note.isSustainNote)
+				{
+					if (onNoteHit != null)
+						onNoteHit(note);
+					// Simular strum confirm solo para notas normales
+					pressed[note.noteData] = true;
+					if (onKeyPress != null)
+						onKeyPress(note.noteData);
+				}
+			});
+			return;
+		}
+
 		// Contar teclas presionadas este frame
 		var keysPressed:Int = 0;
 		for (p in pressed)
@@ -245,6 +274,24 @@ class InputHandler
 	 */
 	public function processSustains(notes:FlxTypedGroup<Note>):Void
 	{
+		// ── Bot Play: mantener pulsadas todas las sustains del jugador ──
+		// BUGFIX: sin esto el bot no sostiene holds y los pierde (tooLate)
+		if (funkin.gameplay.PlayState.isBotPlay)
+		{
+			notes.forEachAlive(function(note:Note)
+			{
+				if (note.mustPress && note.isSustainNote && !note.wasGoodHit
+					&& note.canBeHit && !note.tooLate)
+				{
+					// Simular tecla mantenida para que NoteManager no marque fallo
+					held[note.noteData] = true;
+					if (onNoteHit != null)
+						onNoteHit(note);
+				}
+			});
+			return;
+		}
+
 		// OPTIMIZACIÓN: Una sola pasada, procesar todas las direcciones
 		notes.forEachAlive(function(note:Note)
 		{

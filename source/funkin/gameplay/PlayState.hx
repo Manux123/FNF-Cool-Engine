@@ -176,6 +176,8 @@ class PlayState extends funkin.states.MusicBeatState {
 	public var inCutscene:Bool = false;
 
 	public static var isPlaying:Bool = false;
+	/** Si está activo, el CPU juega en lugar del jugador (solo disponible en Developer Mode). */
+	public static var isBotPlay:Bool = false;
 
 	public var canPause:Bool = true;
 
@@ -1283,10 +1285,12 @@ class PlayState extends funkin.states.MusicBeatState {
 		}
 
 		// ── Anti-lag auto-pause ───────────────────────────────────────────────
-		// Si el frame tardó más de 200ms (≈ bajar de 5fps), pausamos
+		// Si el frame tardó más de 500ms (≈ bajar de 2fps), pausamos
 		// para evitar que el jugador falle notas por un pico de CPU/GPU.
+		// NOTA: El umbral anterior (200ms) era demasiado agresivo y podía
+		// dispararse en frames con carga extra normal (misses, splashes, etc.)
 		if (!paused && !inCutscene && startedCountdown && !startingSong && generatedMusic
-			&& elapsed > 0.2)
+			&& elapsed > 0.5)
 		{
 			pauseMenu();
 			// Mostramos un aviso en el PauseSubState si podemos, o dejamos un trace
@@ -1685,7 +1689,17 @@ class PlayState extends funkin.states.MusicBeatState {
 			// Process miss
 			gameState.processMiss();
 			gameState.modifyHealth(PlayStateConfig.MISS_HEALTH);
-			FlxG.sound.play(Paths.soundRandom('missnote', 1, 3), FlxG.random.float(0.1, 0.2));
+			// Usar el pool de miss sounds pre-cacheados para evitar lag de disco
+			if (_missSounds.length > 0) {
+				var snd = _missSounds[_missSoundIdx % MISS_SOUND_POOL_SIZE];
+				_missSoundIdx++;
+				if (snd != null) {
+					snd.volume = FlxG.random.float(0.1, 0.2);
+					snd.play(true);
+				}
+			} else {
+				FlxG.sound.play(Paths.soundRandom('missnote', 1, 3), FlxG.random.float(0.1, 0.2));
+			}
 		}
 
 		// Animate - USAR ÍNDICE FIJO DEL JUGADOR
@@ -1811,8 +1825,12 @@ class PlayState extends funkin.states.MusicBeatState {
 	// ── Hitsound pool (evita new FlxSound cada golpe) ─────────────────────
 	private var _hitSounds:Array<FlxSound> = [];
 	private var _hitSoundIdx:Int = 0;
+	// ── Miss sound pool (evita lag de disco en el primer miss) ─────────────
+	private var _missSounds:Array<FlxSound> = [];
+	private var _missSoundIdx:Int = 0;
 
 	private static inline var HIT_SOUND_POOL_SIZE:Int = 4;
+	private static inline var MISS_SOUND_POOL_SIZE:Int = 6; // 3 variantes × 2 slots
 
 	private function initHitSoundPool():Void {
 		_hitSounds = [];
@@ -1824,6 +1842,19 @@ class PlayState extends funkin.states.MusicBeatState {
 			snd.looped = false;
 			FlxG.sound.list.add(snd);
 			_hitSounds.push(snd);
+		}
+
+		// ── Pre-cachear sonidos de miss (evita lag de disco en el primer miss) ──
+		_missSounds = [];
+		for (i in 0...MISS_SOUND_POOL_SIZE) {
+			var snd = new FlxSound();
+			final variant = (i % 3) + 1; // missnote1, missnote2, missnote3
+			try {
+				snd.loadEmbedded(Paths.sound('missnote$variant'));
+			} catch (_:Dynamic) {}
+			snd.looped = false;
+			FlxG.sound.list.add(snd);
+			_missSounds.push(snd);
 		}
 	}
 
@@ -2229,6 +2260,14 @@ class PlayState extends funkin.states.MusicBeatState {
 		canPause = false;
 		inCutscene = false;
 
+		// ── Congelar animación de GF para que no se vuelva loca ─────────────
+		if (gf != null && gf.animation != null && gf.animation.curAnim != null)
+			gf.animation.pause();
+		if (dad != null && dad.animation != null && dad.animation.curAnim != null)
+			dad.animation.pause();
+		if (boyfriend != null && boyfriend.animation != null && boyfriend.animation.curAnim != null)
+			boyfriend.animation.pause();
+
 		// Limpiar buffer de inputs y estado de teclas presionadas
 		if (inputHandler != null) {
 			inputHandler.resetMash();
@@ -2486,6 +2525,16 @@ class PlayState extends funkin.states.MusicBeatState {
 			}
 		}
 		_hitSounds = [];
+
+		// ── Pool de miss sounds
+		for (snd in _missSounds) {
+			if (snd != null) {
+				snd.stop();
+				FlxG.sound.list.remove(snd, true);
+				snd.destroy();
+			}
+		}
+		_missSounds = [];
 
 		// ── 11. Hooks
 		onBeatHitHooks.clear();

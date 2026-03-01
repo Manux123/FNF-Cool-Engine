@@ -11,8 +11,8 @@ import flixel.input.actions.FlxActionInput;
 #end
 import funkin.data.Conductor;
 import data.PlayerSettings;
-
 import funkin.gameplay.controls.Controls;
+import funkin.scripting.StateScriptHandler;
 
 class MusicBeatSubstate extends FlxSubState
 {
@@ -30,6 +30,10 @@ class MusicBeatSubstate extends FlxSubState
 
 	// Cache para búsqueda incremental en bpmChangeMap (misma optimización que MusicBeatState)
 	private var _bpmIdx:Int = 0;
+
+	/** Si true, carga automáticamente scripts desde assets/states/{ClassName}/
+	 *  y rutas de mods al crear el substate. */
+	public var autoScriptLoad:Bool = true;
 
 	inline function get_controls():Controls
 		return PlayerSettings.player1.controls;
@@ -59,10 +63,17 @@ class MusicBeatSubstate extends FlxSubState
 	
 	override function destroy() {
 		controls.removeFlxInput(trackedinputs);
+		_onSubDestroy();
 		super.destroy();
 	}
 	#else
 	public function addVirtualPad(?DPad, ?Action){};
+
+	override function destroy():Void
+	{
+		_onSubDestroy();
+		super.destroy();
+	}
 	#end
 
 	override function create()
@@ -71,6 +82,9 @@ class MusicBeatSubstate extends FlxSubState
 		super.create();
 
 		StateTransition.onStateCreated();
+
+		if (autoScriptLoad)
+			_autoLoadSubScripts();
 	}
 
 	override function update(elapsed:Float)
@@ -83,8 +97,58 @@ class MusicBeatSubstate extends FlxSubState
 		if (oldStep != curStep && curStep > 0)
 			stepHit();
 
+		#if HSCRIPT_ALLOWED
+		if (Lambda.count(StateScriptHandler.scripts) > 0)
+		{
+			StateScriptHandler.callOnScripts('onUpdate', [elapsed]);
+			super.update(elapsed);
+			StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
+			return;
+		}
+		#end
+
 		super.update(elapsed);
 	}
+
+	// ─── Auto-scripting ───────────────────────────────────────────────────────
+
+	/**
+	 * Carga scripts para este substate desde todas las rutas posibles.
+	 * Igual que MusicBeatState pero para substates (PauseSubState, GameOverSubstate…).
+	 *
+	 * NOTA: StateScriptHandler es estático. Si el state padre también tiene
+	 * scripts activos, abrirlos aquí los reemplazará. Esto es intencional —
+	 * los substates tienen su propio contexto de scripting mientras están abiertos.
+	 */
+	function _autoLoadSubScripts():Void
+	{
+		#if HSCRIPT_ALLOWED
+		if (Lambda.count(StateScriptHandler.scripts) > 0) return;
+
+		final className = Type.getClassName(Type.getClass(this)).split('.').pop();
+
+		StateScriptHandler.init();
+		StateScriptHandler.loadStateScripts(className, this);
+
+		if (Lambda.count(StateScriptHandler.scripts) > 0)
+		{
+			StateScriptHandler.refreshStateFields(this);
+			StateScriptHandler.callOnScripts('onCreate', []);
+			StateScriptHandler.callOnScripts('postCreate', []);
+			trace('[MusicBeatSubstate] Scripts cargados para $className.');
+		}
+		#end
+	}
+
+	function _onSubDestroy():Void
+	{
+		#if HSCRIPT_ALLOWED
+		StateScriptHandler.callOnScripts('onDestroy', []);
+		StateScriptHandler.clearStateScripts();
+		#end
+	}
+
+	// ─── BPM / Beat ───────────────────────────────────────────────────────────
 
 	/**
 	 * Búsqueda incremental O(1) amortizado — igual que MusicBeatState.
@@ -113,12 +177,21 @@ class MusicBeatSubstate extends FlxSubState
 
 	public function stepHit():Void
 	{
+		#if HSCRIPT_ALLOWED
+		if (Lambda.count(StateScriptHandler.scripts) > 0)
+			StateScriptHandler.fireRaw('onStepHit', [curStep]);
+		#end
+
 		if (curStep % 4 == 0)
 			beatHit();
 	}
 
 	public function beatHit():Void
 	{
-		// override in subclasses
+		#if HSCRIPT_ALLOWED
+		if (Lambda.count(StateScriptHandler.scripts) > 0)
+			StateScriptHandler.fireRaw('onBeatHit', [curBeat]);
+		#end
+		// override en subclases
 	}
 }

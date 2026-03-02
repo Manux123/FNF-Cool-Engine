@@ -4,29 +4,29 @@
 		"boppers.hx"
 	],
 	"gfPosition": [
-		200,
-		165
+		267.015220507241,
+		39.9293772019034
 	],
 	"dadPosition": [
-		17.5,
-		292.5
+		17.5003248020252,
+		276.944291787492
 	],
 	"gfVersion": "gf",
 	"cameraDad": [
-		0,
+		-100,
 		0
 	],
 	"isPixelStage": false,
 	"boyfriendPosition": [
-		792.5,
-		477.5
+		819.999999999963,
+		434.999999999963
 	],
 	"name": "tankmen",
 	"hideGirlfriend": false,
 	"defaultZoom": 0.9,
 	"cameraBoyfriend": [
 		0,
-		-40
+		0
 	],
 	"elements": [
 		{
@@ -160,9 +160,9 @@
 				{
 					"framerate": 24,
 					"prefix": "watchtower gradient color",
-					"indices": null,
 					"name": "idle",
-					"looped": false
+					"looped": false,
+					"indices": null
 				}
 			]
 		},
@@ -195,9 +195,9 @@
 				{
 					"framerate": 24,
 					"prefix": "SmokeBlurLeft",
-					"name": "idle",
 					"looped": true,
-					"indices": null
+					"indices": null,
+					"name": "idle"
 				}
 			]
 		},
@@ -230,9 +230,9 @@
 				{
 					"framerate": 24,
 					"prefix": "SmokeRight",
-					"name": "idle",
 					"looped": true,
-					"indices": null
+					"indices": null,
+					"name": "idle"
 				}
 			]
 		},
@@ -241,8 +241,8 @@
 			"zIndex": 0,
 			"asset": "tankRolling",
 			"position": [
-				0,
-				0
+				1.45510194897724e-05,
+				-6.86531791416201e-06
 			],
 			"visible": true,
 			"type": "animated",
@@ -265,9 +265,9 @@
 				{
 					"framerate": 24,
 					"prefix": "BG tank w lighting",
-					"name": "idle",
 					"looped": true,
-					"indices": null
+					"indices": null,
+					"name": "idle"
 				}
 			]
 		},
@@ -325,9 +325,9 @@
 				{
 					"framerate": 24,
 					"prefix": "fg tankhead 5",
-					"indices": null,
 					"name": "idle",
-					"looped": false
+					"looped": false,
+					"indices": null
 				}
 			]
 		},
@@ -360,9 +360,9 @@
 				{
 					"framerate": 24,
 					"prefix": "foreground man 3",
-					"indices": null,
 					"name": "idle",
-					"looped": false
+					"looped": false,
+					"indices": null
 				}
 			]
 		},
@@ -428,9 +428,9 @@
 				{
 					"framerate": 24,
 					"prefix": "fg tankhead far right",
-					"indices": null,
 					"name": "idle",
-					"looped": false
+					"looped": false,
+					"indices": null
 				}
 			]
 		},
@@ -496,9 +496,9 @@
 				{
 					"framerate": 24,
 					"prefix": "fg tankhead far right",
-					"looped": false,
 					"indices": null,
-					"name": "idle"
+					"name": "idle",
+					"looped": false
 				}
 			]
 		},

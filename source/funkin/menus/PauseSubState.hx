@@ -499,6 +499,9 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 			item.targetY = bullShit - curSelected;
 			bullShit++;
 
+			// Cancelar tweens de alpha pendientes (del _rebuildMenu) para que
+			// no sobreescriban el valor que asignamos al navegar.
+			FlxTween.cancelTweensOf(item);
 			item.alpha = (item.targetY == 0) ? 1.0 : 0.6;
 
 			FlxTween.cancelTweensOf(item.scale);

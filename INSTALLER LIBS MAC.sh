@@ -121,7 +121,7 @@ echo "==============================================="
 echo "Installing Discord RPC and flxanimate..."
 echo "==============================================="
 haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
-haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate
+haxelib git flixel-animate https://github.com/MaybeMaru/flixel-animate
 
 # ── Re-lock library versions ─────────────────────
 echo ""

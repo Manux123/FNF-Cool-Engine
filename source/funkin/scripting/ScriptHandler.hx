@@ -426,6 +426,21 @@ class ScriptHandler
 		_callLayer(stageScripts, funcName, args);
 	}
 
+	/**
+	 * Llama una función en todos los layers EXCEPTO stageScripts.
+	 * Usar cuando los stage scripts ya dispararon el evento en loadStageScripts()
+	 * y no queremos una segunda ejecucion que pise el estado correcto.
+	 */
+	public static function callOnNonStageScripts(funcName:String, args:Array<Dynamic> = null):Void
+	{
+		if (args == null) args = [];
+		_callLayer(globalScripts, funcName, args);
+		_callLayer(songScripts,   funcName, args);
+		_callLayer(uiScripts,     funcName, args);
+		_callLayer(menuScripts,   funcName, args);
+		_callLayer(charScripts,   funcName, args);
+	}
+
 	/** Obtiene el valor de una variable de los scripts activos (primer resultado no-nulo). */
 	public static function getFromScripts(varName:String, defaultValue:Dynamic = null):Dynamic
 	{

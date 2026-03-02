@@ -1,30 +1,120 @@
 {
-	"name": "schoolEvil",
-	"defaultZoom": 1.1,
-	"isPixelStage": true,
+	"gfPosition": [
+		580,
+		426
+	],
+	"dadPosition": [
+		0,
+		150
+	],
+	"defaultZoom": 1.0,
 	"gfVersion": "gf-pixel",
-	"boyfriendPosition": [970, 670],
-	"dadPosition": [0, 150],
-	"gfPosition": [580, 430],
+	"isPixelStage": true,
 	"elements": [
 		{
-			"type": "animated",
-			"name": "animatedEvilSchool",
-			"asset": "animatedEvilSchool",
-			"position": [-900, -1100],
-			"scrollFactor": [0.8, 0.9],
-			"scale": [6, 6],
-			"antialiasing": false,
-			"zIndex": 0,
-			"animations": [
-				{
-					"name": "idle",
-					"prefix": "background 2",
-					"framerate": 24,
-					"looped": true
-				}
+			"aboveChars": false,
+			"flipY": false,
+			"color": null,
+			"flipX": false,
+			"visible": true,
+			"position": [
+				-1059.81639928553,
+				-153.182586664123
 			],
-			"firstAnimation": "idle"
+			"zIndex": 0,
+			"alpha": 1,
+			"asset": "weebBackTrees",
+			"scrollFactor": [
+				0.4,
+				0.4
+			],
+			"antialiasing": false,
+			"name": "weebBackTrees",
+			"type": "sprite",
+			"scale": [
+				6,
+				6
+			]
+		},
+		{
+			"aboveChars": false,
+			"zIndex": 0,
+			"asset": "weebSchool",
+			"position": [
+				-892.289211657526,
+				-91.4272268034294
+			],
+			"visible": true,
+			"type": "sprite",
+			"scale": [
+				6,
+				6
+			],
+			"flipX": false,
+			"color": null,
+			"name": "weebSchool",
+			"flipY": false,
+			"scrollFactor": [
+				0.7,
+				0.7
+			],
+			"antialiasing": false,
+			"alpha": 1
+		},
+		{
+			"aboveChars": false,
+			"zIndex": 0,
+			"asset": "weebStreet",
+			"position": [
+				-732,
+				-48.0000000000001
+			],
+			"visible": true,
+			"type": "sprite",
+			"scale": [
+				6,
+				6
+			],
+			"flipX": false,
+			"color": null,
+			"name": "weebStreet",
+			"flipY": false,
+			"scrollFactor": [
+				1,
+				1
+			],
+			"antialiasing": false,
+			"alpha": 1
+		},
+		{
+			"asset": "weebTrees",
+			"zIndex": 0,
+			"aboveChars": false,
+			"position": [
+				-746.532035095241,
+				0.00300886795389488
+			],
+			"scale": [
+				6,
+				6
+			],
+			"type": "sprite",
+			"visible": true,
+			"name": "weebTrees",
+			"color": null,
+			"flipX": false,
+			"antialiasing": false,
+			"scrollFactor": [
+				1,
+				1
+			],
+			"flipY": false,
+			"alpha": 1
 		}
-	]
+	],
+	"boyfriendPosition": [
+		970.000000008919,
+		669.999999995627
+	],
+	"name": "schoolEvil"
 }

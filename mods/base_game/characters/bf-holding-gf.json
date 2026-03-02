@@ -1,107 +1,103 @@
 {
-	"path": "bfAndGF",
-	"isPlayer": true,
-	"antialiasing": true,
-	"scale": 1.0,
-	"flipX": true,
+	"gameOverEnd": "gameplay/gameOverEnd",
+	"gameOverSound": "fnf_loss_sfx",
+	"healthIcon": "bf",
+	"charDeath": "bf-holding-gf-dead",
+	"gameOverMusic": "gameplay/gameOver",
 	"animations": [
 		{
-			"name": "idle",
-			"prefix": "BF idle dance w gf",
-			"framerate": 24,
-			"looped": false,
 			"offsetX": -5,
-			"offsetY": 0
+			"framerate": 24,
+			"offsetY": 0,
+			"prefix": "BF idle dance w gf",
+			"name": "idle",
+			"looped": false
 		},
 		{
-			"name": "singUP",
-			"prefix": "BF NOTE UP0",
-			"framerate": 24,
-			"looped": false,
 			"offsetX": -47,
-			"offsetY": 30
+			"framerate": 24,
+			"offsetY": 10,
+			"prefix": "BF NOTE UP0",
+			"name": "singUP",
+			"looped": false
 		},
 		{
-			"name": "singLEFT",
+			"offsetX": 2,
+			"framerate": 24,
+			"offsetY": 4,
 			"prefix": "BF NOTE LEFT0",
-			"framerate": 24,
-			"looped": false,
-			"offsetX": 12,
-			"offsetY": -6
+			"name": "singLEFT",
+			"looped": false
 		},
 		{
-			"name": "singRIGHT",
+			"offsetX": -48,
+			"framerate": 24,
+			"offsetY": 23,
 			"prefix": "BF NOTE RIGHT0",
-			"framerate": 24,
-			"looped": false,
-			"offsetX": -38,
-			"offsetY": -7
+			"name": "singRIGHT",
+			"looped": false
 		},
 		{
-			"name": "singDOWN",
+			"offsetX": -20,
+			"framerate": 24,
+			"offsetY": -9,
 			"prefix": "BF NOTE DOWN0",
-			"framerate": 24,
-			"looped": false,
-			"offsetX": -10,
-			"offsetY": -49
+			"name": "singDOWN",
+			"looped": false
 		},
 		{
-			"name": "singUPmiss",
+			"offsetX": -42,
+			"framerate": 24,
+			"offsetY": 7,
 			"prefix": "BF NOTE UP MISS",
-			"framerate": 24,
-			"looped": false,
-			"offsetX": -32,
-			"offsetY": 27
+			"name": "singUPmiss",
+			"looped": false
 		},
 		{
-			"name": "singLEFTmiss",
-			"prefix": "BF NOTE LEFT MISS",
-			"framerate": 24,
-			"looped": false,
 			"offsetX": 9,
-			"offsetY": 18
+			"framerate": 24,
+			"offsetY": -2,
+			"prefix": "BF NOTE LEFT MISS",
+			"name": "singLEFTmiss",
+			"looped": false
 		},
 		{
-			"name": "singRIGHTmiss",
+			"offsetX": -50,
+			"framerate": 24,
+			"offsetY": 41,
 			"prefix": "BF NOTE RIGHT MISS",
-			"framerate": 24,
-			"looped": false,
-			"offsetX": -30,
-			"offsetY": 21
+			"name": "singRIGHTmiss",
+			"looped": false
 		},
 		{
-			"name": "singDOWNmiss",
-			"prefix": "BF NOTE DOWN MISS",
-			"framerate": 24,
-			"looped": false,
 			"offsetX": -11,
-			"offsetY": -19
+			"framerate": 24,
+			"offsetY": -19,
+			"prefix": "BF NOTE DOWN MISS",
+			"name": "singDOWNmiss",
+			"looped": false
 		},
 		{
-			"name": "hey",
-			"prefix": "BF hey w gf",
+			"offsetX": -1,
 			"framerate": 24,
-			"looped": false,
-			"offsetX": -4,
-			"offsetY": 5,
-			"specialAnim": true
-		},
-		{
-			"name": "bfCatch",
-			"prefix": "BF catches GF",
-			"framerate": 24,
-			"looped": false,
-			"offsetX": 0,
+			"specialAnim": true,
 			"offsetY": 90,
-			"specialAnim": true
+			"prefix": "BF hey w gf",
+			"name": "hey",
+			"looped": false
+		},
+		{
+			"offsetX": 9,
+			"framerate": 24,
+			"specialAnim": true,
+			"offsetY": 90,
+			"prefix": "BF catches GF",
+			"name": "bfCatch",
+			"looped": false
 		}
 	],
-
-	"healthIcon":"bf",
-	"charDeath": "bf-holding-gf-dead",
-	"gameOverSound": "fnf_loss_sfx",
-	"gameOverMusic": "gameplay/gameOver",
-	"gameOverEnd": "gameplay/gameOverEnd",
-	"gameOverBpm": 100,
-	"gameOverCamFrame": 12
+	"isPlayer": true,
+	"antialiasing": true,
+	"path": "bfAndGF",
+	"scale": 1
 }

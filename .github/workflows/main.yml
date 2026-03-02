@@ -61,7 +61,7 @@ jobs:
           haxelib install actuate --quiet
           haxelib install hscript --quiet
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
-          haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate
+          haxelib git flixel-animate https://github.com/MaybeMaru/flixel-animate
 
       - name: Lock library versions
         shell: cmd
@@ -149,7 +149,7 @@ jobs:
           haxelib install actuate --quiet
           haxelib install hscript --quiet
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
-          haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate
+          haxelib git flixel-animate https://github.com/MaybeMaru/flixel-animate
 
       - name: Lock library versions
         run: |
@@ -239,7 +239,7 @@ jobs:
           haxelib install actuate --quiet
           haxelib install hscript --quiet
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
-          haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate
+          haxelib git flixel-animate https://github.com/MaybeMaru/flixel-animate
 
       - name: Lock library versions
         run: |

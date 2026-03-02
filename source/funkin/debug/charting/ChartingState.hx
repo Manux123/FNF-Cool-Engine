@@ -88,6 +88,8 @@ class ChartingState extends funkin.states.MusicBeatState
 	var totalGridHeight:Float = 0;
 	var gridScrollY:Float = 0;
 	var maxScroll:Float = 0;
+	var _gridWindowOffset:Int = 0;  // fila absoluta donde empieza la textura
+	var _gridWindowRows:Int   = 0;  // filas que caben en la textura
 
 	var gridBG:FlxSprite;
 	var gridBlackWhite:FlxSprite;
@@ -561,48 +563,14 @@ class ChartingState extends funkin.states.MusicBeatState
 		if (gridWidth > FlxG.width * 0.6)
 			centerX = (FlxG.width - gridWidth) / 2;
 
+		// Ventana deslizante: solo renderizar lo que cabe en pantalla
+		_gridWindowRows   = Std.int((FlxG.height + 200) / GRID_SIZE) + 4;
+		_gridWindowOffset = 0;
+		var windowH = _gridWindowRows * GRID_SIZE;
+
 		gridBG = new FlxSprite();
-		gridBG.makeGraphic(gridWidth, Std.int(totalGridHeight), 0xFF000000, true);
-
-		var numRows = Std.int(totalGridHeight / GRID_SIZE) + 1;
-
-		// Dibujar celdas con colores alternados POR GRUPO
-		for (row in 0...numRows)
-		{
-			for (col in 0...numCols)
-			{
-				var xPos = col * GRID_SIZE;
-				var yPos = row * GRID_SIZE;
-
-				var groupIndex = Math.floor(col / 4);
-				// Alternar tono de fondo por grupo de strums
-				var baseLight = (groupIndex % 2 == 0) ? 0x40 : 0x35;
-				var baseDark = (groupIndex % 2 == 0) ? 0x2A : 0x22;
-
-				var isEven = (row + col) % 2 == 0;
-				var r = isEven ? baseLight : baseDark;
-				var cellColor = (0xFF << 24) | (r << 16) | (r << 8) | r;
-				FlxSpriteUtil.drawRect(gridBG, xPos, yPos, GRID_SIZE, GRID_SIZE, cellColor);
-			}
-		}
-
-		// Líneas horizontales (beats)
-		for (row in 0...numRows)
-		{
-			var yPos = row * GRID_SIZE;
-			var lineColor = (row % 4 == 0) ? 0xFF707070 : 0xFF505050;
-			FlxSpriteUtil.drawRect(gridBG, 0, yPos, gridWidth, 1, lineColor);
-		}
-
-		// Líneas verticales — más gruesas en las divisiones de grupos
-		for (col in 0...(numCols + 1))
-		{
-			var xPos = col * GRID_SIZE;
-			var isGroupBorder = (col % 4 == 0);
-			var lineColor = isGroupBorder ? 0xFFB0B0B0 : 0xFF707070;
-			var lineWidth = isGroupBorder ? 2 : 1;
-			FlxSpriteUtil.drawRect(gridBG, xPos, 0, lineWidth, totalGridHeight, lineColor);
-		}
+		gridBG.makeGraphic(gridWidth, windowH, 0xFF000000, true);
+		_redrawGridBG(gridWidth, numCols);
 
 		gridBG.x = centerX;
 		gridBG.y = 100;
@@ -614,21 +582,8 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		// Overlay divisores de sección
 		gridBlackWhite = new FlxSprite(gridBG.x, gridBG.y);
-		gridBlackWhite.makeGraphic(gridWidth, Std.int(totalGridHeight), 0x00000000, true);
-
-		var currentY:Float = 0;
-		for (i in 0..._song.notes.length)
-		{
-			var steps = (_song.notes[i].lengthInSteps > 0) ? _song.notes[i].lengthInSteps : 16;
-			var sectionHeight = steps * GRID_SIZE;
-
-			// Dibujar solo una LÍNEA al inicio de cada sección
-			var lineColor = (i % 2 == 0) ? 0x80FFFFFF : 0x4000D9FF;
-			var lineHeight = 2;
-			FlxSpriteUtil.drawRect(gridBlackWhite, 0, currentY, GRID_SIZE * getGridColumns(), lineHeight, lineColor);
-
-			currentY += sectionHeight;
-		}
+		gridBlackWhite.makeGraphic(gridWidth, _gridWindowRows * GRID_SIZE, 0x00000000, true);
+		_redrawGridBW(gridWidth);
 
 		gridBlackWhite.scrollFactor.set();
 		gridBlackWhite.cameras = [camGame];
@@ -1815,9 +1770,7 @@ class ChartingState extends funkin.states.MusicBeatState
 			gridScrollY = FlxMath.lerp(gridScrollY, targetScrollY, 0.15);
 			gridScrollY = clamp(gridScrollY, 0, maxScroll);
 
-			gridBG.y = 100 - gridScrollY;
-			gridBlackWhite.y = gridBG.y;
-			strumLine.y = gridBG.y;
+			_applyGridScroll(gridScrollY);
 			_notePositionsDirty = true; // ← grid se movió
 
 			// Actualizar waveform con el scroll
@@ -1837,9 +1790,7 @@ class ChartingState extends funkin.states.MusicBeatState
 			gridScrollY -= scrollAmount;
 			gridScrollY = clamp(gridScrollY, 0, maxScroll);
 
-			gridBG.y = 100 - gridScrollY;
-			gridBlackWhite.y = gridBG.y;
-			strumLine.y = gridBG.y;
+			_applyGridScroll(gridScrollY);
 			_notePositionsDirty = true; // ← scroll manual
 
 			// Actualizar waveform con el scroll
@@ -2702,8 +2653,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		if (gridScrollY > maxScroll)
 			gridScrollY = maxScroll;
 
-		gridBG.y = 100 - gridScrollY;
-		gridBlackWhite.y = gridBG.y;
+		_applyGridScroll(gridScrollY);
 
 		// Mover música al inicio de la sección
 		if (FlxG.sound.music != null)
@@ -3522,6 +3472,99 @@ class ChartingState extends funkin.states.MusicBeatState
 		var ms = Math.floor((seconds % 1) * 1000);
 
 		return '${StringTools.lpad('$minutes', "0", 2)}:${StringTools.lpad('$secs', "0", 2)}.${StringTools.lpad('$ms', "0", 3)}';
+	}
+
+	// ── Ventana deslizante del grid ────────────────────────────────────────
+	/** Redibuja gridBG para la ventana actual de filas */
+	function _redrawGridBG(gridWidth:Int, numCols:Int):Void
+	{
+		var windowH = _gridWindowRows * GRID_SIZE;
+		gridBG.pixels.fillRect(new openfl.geom.Rectangle(0, 0, gridWidth, windowH), 0xFF000000);
+
+		for (row in 0..._gridWindowRows)
+		{
+			var absRow = _gridWindowOffset + row;
+			for (col in 0...numCols)
+			{
+				var xPos = col * GRID_SIZE;
+				var yPos = row * GRID_SIZE;
+				var groupIndex = Math.floor(col / 4);
+				var baseLight = (groupIndex % 2 == 0) ? 0x40 : 0x35;
+				var baseDark  = (groupIndex % 2 == 0) ? 0x2A : 0x22;
+				var isEven = (absRow + col) % 2 == 0;
+				var r = isEven ? baseLight : baseDark;
+				var cellColor = (0xFF << 24) | (r << 16) | (r << 8) | r;
+				FlxSpriteUtil.drawRect(gridBG, xPos, yPos, GRID_SIZE, GRID_SIZE, cellColor);
+			}
+		}
+		// Líneas horizontales
+		for (row in 0..._gridWindowRows)
+		{
+			var absRow = _gridWindowOffset + row;
+			var yPos = row * GRID_SIZE;
+			var lineColor = (absRow % 4 == 0) ? 0xFF707070 : 0xFF505050;
+			FlxSpriteUtil.drawRect(gridBG, 0, yPos, gridWidth, 1, lineColor);
+		}
+		// Líneas verticales
+		for (col in 0...(numCols + 1))
+		{
+			var xPos = col * GRID_SIZE;
+			var isGroupBorder = (col % 4 == 0);
+			var lineColor = isGroupBorder ? 0xFFB0B0B0 : 0xFF707070;
+			var lineWidth = isGroupBorder ? 2 : 1;
+			FlxSpriteUtil.drawRect(gridBG, xPos, 0, lineWidth, _gridWindowRows * GRID_SIZE, lineColor);
+		}
+		gridBG.dirty = true;
+	}
+
+	/** Redibuja gridBlackWhite (divisores de sección) para la ventana actual */
+	function _redrawGridBW(gridWidth:Int):Void
+	{
+		var windowH = _gridWindowRows * GRID_SIZE;
+		gridBlackWhite.pixels.fillRect(new openfl.geom.Rectangle(0, 0, gridWidth, windowH), 0x00000000);
+
+		var absStartY = _gridWindowOffset * GRID_SIZE;
+		var absEndY   = absStartY + windowH;
+		var currentAbsY:Float = 0;
+
+		for (i in 0..._song.notes.length)
+		{
+			var steps = (_song.notes[i].lengthInSteps > 0) ? _song.notes[i].lengthInSteps : 16;
+			var sectionHeight = steps * GRID_SIZE;
+			var lineAbsY = currentAbsY;
+
+			if (lineAbsY >= absStartY && lineAbsY < absEndY)
+			{
+				var lineLocalY = Std.int(lineAbsY - absStartY);
+				var lineColor  = (i % 2 == 0) ? 0x80FFFFFF : 0x4000D9FF;
+				FlxSpriteUtil.drawRect(gridBlackWhite, 0, lineLocalY, gridWidth, 2, lineColor);
+			}
+			currentAbsY += sectionHeight;
+			if (currentAbsY > absEndY + sectionHeight) break;
+		}
+		gridBlackWhite.dirty = true;
+	}
+
+	/** Mueve el grid y redibuja la ventana si es necesario */
+	function _applyGridScroll(scrollY:Float):Void
+	{
+		var numCols = getGridColumns();
+		var gridWidth = GRID_SIZE * numCols;
+
+		var currentRow = Std.int(scrollY / GRID_SIZE);
+		var windowEnd  = _gridWindowOffset + _gridWindowRows;
+		var buffer     = 3; // filas de margen antes de redibujar
+
+		if (currentRow < _gridWindowOffset + buffer || currentRow + Std.int(FlxG.height / GRID_SIZE) > windowEnd - buffer)
+		{
+			_gridWindowOffset = Std.int(Math.max(0, currentRow - buffer));
+			_redrawGridBG(gridWidth, numCols);
+			_redrawGridBW(gridWidth);
+		}
+
+		gridBG.y         = 100 - scrollY + _gridWindowOffset * GRID_SIZE;
+		gridBlackWhite.y = gridBG.y;
+		strumLine.y      = gridBG.y;
 	}
 
 	function clamp(value:Float, min:Float, max:Float):Float

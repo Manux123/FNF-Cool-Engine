@@ -167,8 +167,6 @@ class Character extends FunkinSprite
 		if (isPlayer)
 		{
 			flipX = !flipX;
-			if (!curCharacter.startsWith('bf'))
-				flipAnimations();
 		}
 	}
 

@@ -117,7 +117,7 @@ class PlayState extends funkin.states.MusicBeatState
 	// === CORE SYSTEMS ===
 	public var gameState:GameState;
 
-	private var noteManager:NoteManager;
+	public var noteManager:NoteManager;
 	private var inputHandler:InputHandler;
 
 	public var cameraController:CameraController;
@@ -396,7 +396,11 @@ class PlayState extends funkin.states.MusicBeatState
 			ScriptHandler.setOnScripts('dad', dad);
 			ScriptHandler.setOnScripts('gf', gf);
 			ScriptHandler.setOnScripts('stage', currentStage);
-			ScriptHandler.callOnScripts('onStageCreate', ScriptHandler._argsEmpty);
+			// onStageCreate ya fue disparado por loadStageScripts() una vez que los elementos existen.
+			// Llamarlo aqui de nuevo (via callOnScripts) dispara TODOS los layers incluyendo stage,
+			// causando una segunda ejecucion con los sprites aun no registrados. Solo llamamos
+			// a los scripts que NO son de stage (global, song, ui, etc.).
+			ScriptHandler.callOnNonStageScripts('onStageCreate', ScriptHandler._argsEmpty);
 			ScriptHandler.callOnScripts('postCreate', ScriptHandler._argsEmpty);
 			ScriptHandler.setOnScripts('author', GameState.listAuthor);
 		}
@@ -2484,17 +2488,18 @@ class PlayState extends funkin.states.MusicBeatState
 				if (Std.isOfType(s, funkin.gameplay.notes.StrumNote))
 					cast(s, funkin.gameplay.notes.StrumNote).playAnim('static', true);
 			});
-			// BUGFIX: re-aplicar visibilidad según data del grupo.
-			// reloadAllStrumSkins() puede dejar los strums visibles si el frameset
-			// fue recargado, haciendo que grupos invisibles (ej. GF) aparezcan.
-			// Forzar la visibilidad correcta desde el dato original del grupo.
-			if (!group.isVisible)
+
+			// BUGFIX: re-aplicar visibilidad siempre (no solo ocultar).
+			// reloadAllStrumSkins() puede dejar strums visibles tras recargar el frameset.
+			// Comparar contra `== true` previene fallos cuando isVisible es null
+			// (campo "visible" ausente en el JSON → el typedef lo deja como null en Haxe).
+			// Sin este fix, grupos de GF creados por la migración legacy (visible:false)
+			// reaparecen en pantalla al reiniciar o hacer rewind.
+			final shouldBeVisible:Bool = (group.isVisible == true);
+			group.strums.forEach(function(s:FlxSprite)
 			{
-				group.strums.forEach(function(s:FlxSprite)
-				{
-					s.visible = false;
-				});
-			}
+				s.visible = shouldBeVisible;
+			});
 		}
 		// Fallback para el caso (improbable) de strums fuera de strumsGroups
 		if (playerStrums != null && strumsGroups.length == 0)

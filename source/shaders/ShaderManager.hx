@@ -15,27 +15,16 @@ import sys.io.File;
 using StringTools;
 
 /**
- * Sistema de gestión de shaders.
- * Escanea assets/shaders/*.frag y los hace disponibles globalmente.
+ * Sistema de gestión de shaders — reescrito siguiendo el patrón de Codename Engine.
  *
- * ── POR QUÉ "no camera detected" ──────────────────────────────────────────
+ * CAMBIO CLAVE:
+ *   Antes: applyShader() añadía un ShaderFilter a cam._filters.
+ *          setShaderParam() iteraba un Map<FlxSprite, ...> → crash al destruirse el estado.
  *
- * En Flixel 5, sprite.shader se procesa durante el draw call en
- * FlxDrawQuadsItem. Para compilar el programa GL del shader, Flixel necesita
- * el contexto de al menos una cámara válida (no vacía).
- *
- * El error aparece cuando:
- *   a) El sprite tiene cameras = [] (array vacío, distinto de null).
- *      null → Flixel usa FlxG.cameras.list como fallback (OK).
- *      []   → Flixel itera cero cámaras → no hay contexto → crash.
- *
- *   b) El sprite está dentro de un FlxTypedGroup al que se asignó cameras
- *      a nivel de grupo pero NO se propagó recursivamente a los miembros
- *      (FlxGroup.cameras solo toca el nivel top, no sub-grupos).
- *
- * FIX centralizado aquí:
- *   applyShader() llama a _ensureCameras(sprite) que garantiza que el sprite
- *   tenga al menos una cámara válida ANTES de asignar el shader.
+ *   Ahora: applyShader() crea una FlxShader propia por sprite y la asigna con sprite.shader.
+ *          setShaderParam() actualiza SOLO la instancia FlxShader (sin tocar el sprite nunca).
+ *          Map<String, Array<FlxShader>> → las instancias de shader sobreviven a la destrucción
+ *          de sprites porque son objetos Haxe independientes.
  */
 class ShaderManager
 {
@@ -43,10 +32,10 @@ class ShaderManager
 	public static var shaderPaths:Map<String, String> = new Map();
 
 	/**
-	 * Registra qué ShaderFilter se aplicó a cada sprite para poder quitarlo después.
-	 * Clave: sprite — Valor: {filter, camera}
+	 * Instancias vivas de FlxShader por nombre de shader.
+	 * Se actualiza en setShaderParam sin necesidad de referencias a sprites.
 	 */
-	static var _appliedFilters:Map<FlxSprite, {filter:ShaderFilter, camera:FlxCamera}> = new Map();
+	static var _liveInstances:Map<String, Array<FlxShader>> = new Map();
 
 	// ─── Init ─────────────────────────────────────────────────────────────────
 
@@ -73,7 +62,7 @@ class ShaderManager
 
 		#if sys
 		final mods = ModManager.installedMods.copy();
-		mods.reverse(); // mayor prioridad → registra último → gana
+		mods.reverse();
 		for (mod in mods)
 		{
 			if (!ModManager.isEnabled(mod.id)) continue;
@@ -112,14 +101,10 @@ class ShaderManager
 	public static function loadShader(shaderName:String):CustomShader
 	{
 		if (shaders.exists(shaderName))
-		{
-			trace('[ShaderManager] Shader "$shaderName" ya está cargado');
 			return shaders.get(shaderName);
-		}
 
 		if (!shaderPaths.exists(shaderName))
 		{
-			trace('[ShaderManager] Shader "$shaderName" no encontrado. Reescaneando...');
 			scanShaders();
 			if (!shaderPaths.exists(shaderName))
 			{
@@ -133,7 +118,7 @@ class ShaderManager
 			final fragCode = File.getContent(shaderPaths.get(shaderName));
 			final shader   = new CustomShader(shaderName, fragCode);
 			shaders.set(shaderName, shader);
-			trace('[ShaderManager] Shader "$shaderName" cargado desde: ${shaderPaths.get(shaderName)}');
+			trace('[ShaderManager] Shader "$shaderName" cargado');
 			return shader;
 		}
 		catch (e:Exception)
@@ -151,22 +136,12 @@ class ShaderManager
 	// ─── Aplicar / Quitar ─────────────────────────────────────────────────────
 
 	/**
-	 * Aplica un shader a un sprite via ShaderFilter en su cámara (cam._filters).
+	 * Aplica un shader DIRECTAMENTE al sprite (sprite.shader = instance).
 	 *
-	 * NOTA sobre "Invalid field:camera":
-	 * ────────────────────────────────────
-	 * El error era causado por añadir el filtro a una cámara secundaria cuyos
-	 * _filters son procesados por FlxCamera.render() usando @:access interno.
-	 * La clase ShaderManager usa @:access(flixel.FlxCamera) a nivel de función
-	 * para garantizar acceso seguro al campo _filters en cualquier cámara.
-	 *
-	 * @param sprite     Sprite destino (se usa para lookup; el filtro va a la cámara).
-	 * @param shaderName Nombre del shader (sin .frag).
-	 * @param camera     Cámara destino. Si null, usa la primera cámara del sprite
-	 *                   o FlxG.camera como fallback.
-	 * @return true si se aplicó correctamente.
+	 * Cada sprite recibe su propia FlxShader para no compartir estado.
+	 * La instancia se registra en _liveInstances[shaderName] para que
+	 * setShaderParam pueda actualizarla sin necesidad de tocar el sprite.
 	 */
-	@:access(flixel.FlxCamera)
 	public static function applyShader(sprite:FlxSprite, shaderName:String, ?camera:FlxCamera):Bool
 	{
 		if (sprite == null)
@@ -176,76 +151,110 @@ class ShaderManager
 		}
 
 		final customShader = getShader(shaderName);
-		if (customShader == null || customShader.shader == null)
+		if (customShader == null || customShader.fragmentCode == null)
 			return false;
 
-		// Quitar shader previo del sprite si tenía uno
+		// Quitar instancia anterior del registro si el sprite ya tenía un shader
 		removeShader(sprite);
 
-		// Resolver cámara: parámetro → primera cámara del sprite → FlxG.camera
-		var cam:FlxCamera = camera;
-		if (cam == null && sprite.cameras != null && sprite.cameras.length > 0)
-			cam = sprite.cameras[0];
-		if (cam == null)
-			cam = FlxG.camera;
+		// BUGFIX: glFragmentSource DEBE establecerse ANTES de super() en FlxShader.
+		// Asignarlo DESPUÉS de new FlxShader() no recompila — la GPU ya recibió el fuente vacío.
+		// RuntimeShader pasa el fragmento en su propio constructor correctamente.
+		final instance = new RuntimeShader(customShader.fragmentCode);
 
-		final filter = new ShaderFilter(cast customShader.shader);
+		// Asignar directo al sprite — sin tocar cámaras ni filtros
+		sprite.shader = instance;
 
-		// Añadir el filtro a la cámara usando el campo interno _filters
-		if (cam._filters == null) cam._filters = [];
-		cam._filters.push(filter);
+		// Registrar la instancia por nombre para poder actualizar uniforms
+		if (!_liveInstances.exists(shaderName))
+			_liveInstances.set(shaderName, []);
+		_liveInstances.get(shaderName).push(instance);
 
-		// Registrar para poder quitarlo después
-		_appliedFilters.set(sprite, {filter: filter, camera: cam});
+		// Guardar qué instancia tiene este sprite (para removeShader)
+		_spriteToInstance.set(sprite, {name: shaderName, instance: instance});
 
-		trace('[ShaderManager] Shader "$shaderName" aplicado a sprite via cam._filters');
+		trace('[ShaderManager] Shader "$shaderName" aplicado directo a sprite');
 		return true;
 	}
 
+	/** Mapa auxiliar sprite→instancia solo para removeShader. Solo se lee en remove, nunca en update. */
+	static var _spriteToInstance:Map<FlxSprite, {name:String, instance:FlxShader}> = new Map();
+
 	/**
-	 * Quita el shader de un sprite (elimina su ShaderFilter de la cámara).
+	 * Quita el shader de un sprite y elimina su instancia del registro.
 	 */
-	@:access(flixel.FlxCamera)
 	public static function removeShader(sprite:FlxSprite):Void
 	{
 		if (sprite == null) return;
-
-		final entry = _appliedFilters.get(sprite);
-		if (entry == null) return;
-
-		final cam = entry.camera;
-		if (cam != null && cam._filters != null)
+		try
 		{
-			cam._filters.remove(entry.filter);
-			if (cam._filters.length == 0)
-				cam._filters = null;
-		}
+			final entry = _spriteToInstance.get(sprite);
+			if (entry == null) return;
 
-		_appliedFilters.remove(sprite);
-		trace('[ShaderManager] Shader removido del sprite');
-	}
+			// Quitar la instancia del array de instancias vivas
+			final arr = _liveInstances.get(entry.name);
+			if (arr != null) arr.remove(entry.instance);
 
-	/**
-	 * Garantiza que el sprite tenga al menos una cámara válida.
-	 * Mantenido por compatibilidad; ya no es necesario con el enfoque ShaderFilter.
-	 */
-	@:deprecated("_ensureCameras ya no es necesario con ShaderFilter — se mantiene por compatibilidad")
-	public static function _ensureCameras(sprite:FlxSprite, ?fallback:FlxCamera):Void
-	{
-		if (sprite == null) return;
-		if (sprite.cameras != null && sprite.cameras.length == 0)
-		{
-			final cam = fallback ?? FlxG.camera;
-			sprite.cameras = [cam];
+			// Quitar shader del sprite
+			sprite.shader = null;
+
+			_spriteToInstance.remove(sprite);
 		}
+		catch(_) { _spriteToInstance.remove(sprite); }
 	}
 
 	// ─── Parámetros ───────────────────────────────────────────────────────────
 
+	/**
+	 * Actualiza un uniform en TODAS las instancias vivas de ese shader.
+	 * Solo accede a objetos FlxShader — nunca toca sprites ni cámaras.
+	 * Los FlxShader son objetos Haxe puros, no se destruyen con los sprites.
+	 */
 	public static function setShaderParam(shaderName:String, paramName:String, value:Dynamic):Bool
 	{
-		final shader = getShader(shaderName);
-		return shader != null ? shader.setParam(paramName, value) : false;
+		var updated = false;
+		try
+		{
+			final arr = _liveInstances.get(shaderName);
+			if (arr != null)
+			{
+				for (instance in arr)
+				{
+					try
+					{
+						if (instance == null) continue;
+						final param = Reflect.getProperty(instance.data, paramName);
+						if (param != null && Std.isOfType(param, ShaderParameter))
+						{
+							cast(param, ShaderParameter<Dynamic>).value = value;
+							updated = true;
+						}
+					}
+					catch(_) {}
+				}
+			}
+		}
+		catch(_) {}
+
+		// También actualizar la instancia maestra por compatibilidad
+		try
+		{
+			final master = getShader(shaderName);
+			if (master != null) master.setParam(paramName, value);
+		}
+		catch(_) {}
+
+		return updated;
+	}
+
+	/**
+	 * Limpia todas las instancias registradas (llamar en onDestroy del estado).
+	 * NO toca sprites — solo limpia los arrays internos.
+	 */
+	public static function clearSpriteShaders():Void
+	{
+		_liveInstances.clear();
+		_spriteToInstance.clear();
 	}
 
 	// ─── Utilidades ───────────────────────────────────────────────────────────
@@ -280,8 +289,19 @@ class ShaderManager
 		for (shader in shaders) shader.destroy();
 		shaders.clear();
 		shaderPaths.clear();
-		_appliedFilters.clear();
+		_liveInstances.clear();
+		_spriteToInstance.clear();
 		trace('[ShaderManager] Shaders limpiados');
+	}
+
+	// ─── Compatibilidad: _ensureCameras ───────────────────────────────────────
+
+	@:deprecated("_ensureCameras ya no es necesario — se mantiene por compatibilidad")
+	public static function _ensureCameras(sprite:FlxSprite, ?fallback:FlxCamera):Void
+	{
+		if (sprite == null) return;
+		if (sprite.cameras != null && sprite.cameras.length == 0)
+			sprite.cameras = [fallback ?? FlxG.camera];
 	}
 }
 
@@ -300,8 +320,9 @@ class CustomShader
 
 		try
 		{
-			shader = new FlxShader();
-			shader.glFragmentSource = fragmentCode;
+			// BUGFIX: RuntimeShader establece glFragmentSource ANTES de super() —
+			// única forma correcta de compilar un GLSL dinámico en OpenFL/HaxeFlixel.
+			shader = new RuntimeShader(fragmentCode);
 			trace('[CustomShader] Shader "$name" compilado');
 		}
 		catch (e:Exception)
@@ -317,11 +338,7 @@ class CustomShader
 		try
 		{
 			final param = Reflect.getProperty(shader.data, paramName);
-			if (param == null)
-			{
-				trace('[CustomShader] Parámetro "$paramName" no encontrado en shader "$name"');
-				return false;
-			}
+			if (param == null) return false;
 			if (Std.isOfType(param, ShaderParameter))
 				cast(param, ShaderParameter<Dynamic>).value = value;
 			else
@@ -345,16 +362,38 @@ class CustomShader
 				return cast(param, ShaderParameter<Dynamic>).value;
 			return param;
 		}
-		catch (e:Exception)
-		{
-			trace('[CustomShader] Error al obtener parámetro "$paramName": ${e.message}');
-			return null;
-		}
+		catch (e:Exception) { return null; }
 	}
 
 	public function destroy():Void
 	{
 		shader       = null;
 		fragmentCode = null;
+	}
+}
+
+// ─── RuntimeShader ────────────────────────────────────────────────────────────
+//
+// RAZÓN DE EXISTENCIA:
+//   En OpenFL/HaxeFlixel, FlxShader compila el GLSL en __init() que se llama
+//   automáticamente en super(). Para cargar código dinámico el fragmento DEBE
+//   estar asignado ANTES de que se llame a super() — de lo contrario la GPU
+//   recibe el shader vacío/por defecto y asignarlo después NO lo recompila.
+//
+//   Patrón incorrecto (causa crash / shader ignorado):
+//     var s = new FlxShader();
+//     s.glFragmentSource = myCode;   ← demasiado tarde, ya compiló vacío
+//
+//   Patrón correcto (este helper):
+//     var s = new RuntimeShader(myCode);
+//     // glFragmentSource está seteado antes de super() → se compila bien
+
+class RuntimeShader extends FlxShader
+{
+	public function new(fragmentCode:String)
+	{
+		// Asignar fuente ANTES de super() para que __init() lo compile correctamente
+		glFragmentSource = fragmentCode;
+		super();
 	}
 }

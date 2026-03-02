@@ -98,7 +98,7 @@
 	<haxelib name="actuate" />
 	<haxelib name="discord_rpc" if="cpp" />
 
-	<haxelib name="flxanimate"/>
+	<haxelib name="flixel-animate"/>
 
 	<!-- ______________________________ Haxedefines _____________________________ -->
 
@@ -114,6 +114,8 @@
 	<!-- Performance optimizations for release builds -->
 	<haxedef name="no-deprecation-warnings" unless="debug" />
 	<haxeflag name="-dce" value="std" unless="debug" />
+
+	<haxeflag name="--macro" value="WinMacroFix.apply()" if="windows"/>
 	
 	<!-- Memory / Crash management -->
 	<!--

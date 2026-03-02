@@ -1,4 +1,5 @@
 {
+	"isFlxAnimate": true,
 	"animations": [
 		{
 			"offsetX": 0,
@@ -10,15 +11,15 @@
 		},
 		{
 			"framerate": 24,
-			"offsetX": 54,
-			"offsetY": 45,
+			"offsetX": 44,
+			"offsetY": 55,
 			"prefix": "Tankman UP note",
 			"looped": false,
 			"name": "singUP"
 		},
 		{
 			"framerate": 24,
-			"offsetX": 70,
+			"offsetX": 50,
 			"prefix": "Tankman DOWN note",
 			"offsetY": -111,
 			"looped": false,
@@ -26,26 +27,26 @@
 		},
 		{
 			"framerate": 24,
-			"offsetX": 90,
-			"offsetY": -9,
-			"prefix": "Tankman Note Left",
+			"offsetX": 80,
+			"offsetY": 1,
+			"prefix": "Tankman Right Note",
 			"looped": false,
 			"name": "singLEFT"
 		},
 		{
 			"framerate": 24,
-			"offsetX": -18,
-			"offsetY": -30,
-			"prefix": "Tankman Right Note",
+			"offsetX": -25,
+			"offsetY": -23,
+			"prefix": "Tankman Note Left",
 			"looped": false,
 			"name": "singRIGHT"
 		},
 		{
-			"prefix": "TANKMAN UGH",
 			"offsetX": 0,
+			"framerate": 24,
+			"prefix": "TANKMAN UGH",
 			"offsetY": 0,
 			"name": "ugh",
-			"framerate": 24,
 			"looped": false
 		}
 	],

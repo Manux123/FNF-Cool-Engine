@@ -311,9 +311,61 @@ class Song
 		}
 		else
 		{
-			trace('[Song] Formato nuevo detectado, NO se requiere migración');
+			trace('[Song] Formato nuevo detectado, verificando strumsGroups...');
 			trace('[Song]   - characters: ${swagShit.characters.length}');
 			trace('[Song]   - strumsGroups: ${swagShit.strumsGroups != null ? swagShit.strumsGroups.length : 0}');
+
+			// BUGFIX: El JSON tiene characters pero NO strumsGroups.
+			// Crear grupos por defecto para que loadStrums() pueda construirlos
+			// correctamente, incluyendo el grupo de GF con visible:false.
+			// Sin este bloque, SONG.strumsGroups queda null → loadStrums() hace return
+			// temprano → strumsGroups=[] en PlayState → en _finishRestart el loop de
+			// visibilidad no se ejecuta, dejando posibles strums residuales visibles.
+			if (swagShit.strumsGroups == null || swagShit.strumsGroups.length == 0)
+			{
+				var gfName  = (swagShit.gfVersion != null && swagShit.gfVersion != '') ? swagShit.gfVersion : 'gf';
+				var dadName = 'dad';
+				var bfName  = 'bf';
+
+				// Leer nombres reales desde el array de characters ya presente
+				for (i in 0...swagShit.characters.length)
+				{
+					var c = swagShit.characters[i];
+					if (c == null) continue;
+					if (i == 0) gfName  = c.name;
+					if (i == 1) dadName = c.name;
+					if (i == 2) bfName  = c.name;
+				}
+
+				swagShit.strumsGroups = [
+					{
+						id: 'gf_strums_0',
+						x: 400, y: 50,
+						visible: false, // GF nunca muestra sus strums por defecto
+						cpu: true,
+						spacing: 110,
+						characters: [gfName]
+					},
+					{
+						id: 'cpu_strums_0',
+						x: 100, y: 50,
+						visible: true,
+						cpu: true,
+						spacing: 110,
+						characters: [dadName]
+					},
+					{
+						id: 'player_strums_0',
+						x: 740, y: 50,
+						visible: true,
+						cpu: false,
+						spacing: 110,
+						characters: [bfName]
+					}
+				];
+
+				trace('[Song] strumsGroups generados por defecto (characters existentes, strumsGroups ausentes)');
+			}
 		}
 		
 		return swagShit;

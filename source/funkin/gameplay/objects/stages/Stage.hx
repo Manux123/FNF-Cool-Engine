@@ -223,10 +223,8 @@ class Stage extends FlxTypedGroup<FlxBasic>
 			stageData = cast mods.compat.ModCompatLayer.loadStage(file, stageName);
 			trace('stagefile (cached=${_dataCache.exists(stageName)}): $stageName');
 
-			for (script in ScriptHandler.stageScripts)
-			{
-				script.call('onStageCreate', [this]);
-			}
+			// NOTE: onStageCreate se dispara en loadStageScripts(), DESPUES de buildStage(),
+			// cuando todos los elementos ya existen. No llamarlo aqui.
 
 			if (stageData != null)
 			{

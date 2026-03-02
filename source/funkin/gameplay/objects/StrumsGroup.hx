@@ -42,7 +42,12 @@ class StrumsGroup
 		this.data = groupData;
 		this.id = groupData.id;
 		this.isCPU = groupData.cpu;
-		this.isVisible = groupData.visible;
+		// BUGFIX: si el campo "visible" no está en el JSON, groupData.visible
+		// llega como null (Haxe no inicializa campos de typedef desde JSON).
+		// Normalizar a Bool explícito para que la lógica de visibilidad en
+		// _finishRestart (isVisible == true) funcione correctamente en todos
+		// los targets. GF (id empieza con 'gf_') oculto si no se dice otra cosa.
+		this.isVisible = (groupData.visible == true);
 		this.spacing = groupData.spacing != null ? groupData.spacing : 110;
 		this.scale = groupData.scale != null ? groupData.scale : 1.0;
 		

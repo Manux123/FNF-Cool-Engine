@@ -456,6 +456,14 @@ class OptionsMenuState extends MusicBeatSubstate
 				}
 			},
 			{
+				name: "Shaders",
+				get: function() return FlxG.save.data.shaders ? "ON" : "OFF",
+				toggle: function()
+				{
+					FlxG.save.data.shaders = !FlxG.save.data.shaders;
+				}
+			},
+			{
 				name: "Streamed Music",
 				get: function() return FlxG.save.data.streamedMusic ? "ON" : "OFF",
 				toggle: function()
@@ -1103,6 +1111,9 @@ class OptionsData
 	{
 		if (FlxG.save.data.downscroll == null)
 			FlxG.save.data.downscroll = false;
+
+		if (FlxG.save.data.shaders == null)
+			FlxG.save.data.shaders = true;
 
 		if (FlxG.save.data.accuracyDisplay == null)
 			FlxG.save.data.accuracyDisplay = true;

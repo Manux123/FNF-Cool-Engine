@@ -1,12 +1,5 @@
 {
-	"name": "school",
 	"defaultZoom": 1.1,
-	"isPixelStage": true,
-	"gfVersion": "gf-pixel",
-	"boyfriendPosition": [
-		1070,
-		670
-	],
 	"dadPosition": [
 		300,
 		430
@@ -15,107 +8,138 @@
 		680,
 		430
 	],
+	"gfVersion": "gf-pixel",
+	"isPixelStage": true,
+	"name": "school",
+	"boyfriendPosition": [
+		1070,
+		670
+	],
 	"elements": [
 		{
-			"type": "sprite",
-			"name": "weebSky",
 			"asset": "weebSky",
-			"position": [
-				0,
-				0
-			],
 			"scrollFactor": [
 				0.1,
 				0.1
 			],
 			"antialiasing": false,
+			"zIndex": 0,
+			"position": [
+				0,
+				0
+			],
+			"type": "sprite",
 			"scale": [
 				6,
 				6
 			],
-			"zIndex": 0
+			"name": "weebSky"
 		},
 		{
-			"type": "sprite",
-			"name": "weebSchool",
-			"asset": "weebSchool",
+			"zIndex": 0,
+			"asset": "weebBackTrees",
+			"aboveChars": false,
 			"position": [
-				-200,
-				0
+				-762.666621121581,
+				-26.6666744893934
 			],
+			"visible": true,
+			"type": "sprite",
+			"scale": [
+				6,
+				6
+			],
+			"name": "weebBackTrees",
+			"flipX": false,
+			"color": null,
+			"antialiasing": false,
+			"scrollFactor": [
+				0.4,
+				0.4
+			],
+			"flipY": false,
+			"alpha": 1
+		},
+		{
+			"asset": "weebSchool",
 			"scrollFactor": [
 				0.6,
 				0.9
 			],
 			"antialiasing": false,
-			"scale": [
-				6,
-				6
-			],
-			"zIndex": 1
-		},
-		{
-			"type": "sprite",
-			"name": "weebStreet",
-			"asset": "weebStreet",
+			"zIndex": 1,
 			"position": [
 				-200,
 				0
 			],
+			"type": "sprite",
+			"scale": [
+				6,
+				6
+			],
+			"name": "weebSchool"
+		},
+		{
+			"asset": "weebStreet",
 			"scrollFactor": [
 				0.95,
 				0.95
 			],
 			"antialiasing": false,
+			"zIndex": 2,
+			"position": [
+				-200,
+				0
+			],
+			"type": "sprite",
 			"scale": [
 				6,
 				6
 			],
-			"zIndex": 2
+			"name": "weebStreet"
 		},
 		{
-			"type": "sprite",
-			"name": "weebTreesBack",
 			"asset": "weebTreesBack",
-			"position": [
-				-30,
-				130
-			],
 			"scrollFactor": [
 				0.9,
 				0.9
 			],
 			"antialiasing": false,
+			"zIndex": 3,
+			"position": [
+				-30,
+				130
+			],
+			"type": "sprite",
 			"scale": [
 				6,
 				6
 			],
-			"zIndex": 3
+			"name": "weebTreesBack"
 		},
 		{
-			"type": "animated",
-			"name": "weebTrees",
 			"asset": "weebTrees.txt",
+			"zIndex": 4,
 			"position": [
 				-780,
 				-950
 			],
+			"type": "animated",
+			"scale": [
+				6,
+				6
+			],
+			"name": "weebTrees",
+			"firstAnimation": "treeLoop",
 			"scrollFactor": [
 				0.85,
 				0.85
 			],
 			"antialiasing": false,
-			"scale": [
-				6,
-				6
-			],
-			"zIndex": 4,
 			"animations": [
 				{
-					"name": "treeLoop",
-					"prefix": "trees_",
 					"framerate": 12,
-					"looped": true,
+					"prefix": "trees_",
 					"indices": [
 						0,
 						1,
@@ -136,63 +160,63 @@
 						16,
 						17,
 						18
-					]
+					],
+					"name": "treeLoop",
+					"looped": true
 				}
-			],
-			"firstAnimation": "treeLoop"
+			]
 		},
 		{
-			"type": "animated",
-			"name": "petals",
 			"asset": "petals",
+			"zIndex": 5,
 			"position": [
 				-200,
 				-40
 			],
+			"type": "animated",
+			"scale": [
+				6,
+				6
+			],
+			"name": "petals",
+			"firstAnimation": "leaves",
 			"scrollFactor": [
 				0.85,
 				0.85
 			],
-			"scale": [
-				6,
-				6
-			],
 			"antialiasing": false,
-			"zIndex": 5,
 			"animations": [
 				{
-					"name": "leaves",
 					"prefix": "PETALS ALL",
+					"name": "leaves",
 					"framerate": 24,
 					"looped": true
 				}
-			],
-			"firstAnimation": "leaves"
+			]
 		},
 		{
+			"asset": "bgFreaks",
+			"zIndex": 6,
+			"position": [
+				-100,
+				190
+			],
 			"type": "animated",
+			"scale": [
+				6,
+				6
+			],
 			"name": "crowd",
-			"asset": "bgFreaks",
+			"firstAnimation": "danceLeft",
 			"antialiasing": false,
-			"zIndex": 6,
-			"position": [
-				-100,
-				190
-			],
 			"scrollFactor": [
 				0.9,
 				0.9
 			],
-			"scale": [
-				6,
-				6
-			],
 			"animations": [
 				{
-					"name": "danceLeft",
-					"prefix": "BG girls group",
 					"framerate": 24,
-					"looped": false,
+					"prefix": "BG girls group",
 					"indices": [
 						0,
 						1,
@@ -209,13 +233,13 @@
 						12,
 						13,
 						14
-					]
+					],
+					"name": "danceLeft",
+					"looped": false
 				},
 				{
-					"name": "danceRight",
-					"prefix": "BG girls group",
 					"framerate": 24,
-					"looped": false,
+					"prefix": "BG girls group",
 					"indices": [
 						15,
 						16,
@@ -233,36 +257,36 @@
 						28,
 						29,
 						30
-					]
+					],
+					"name": "danceRight",
+					"looped": false
 				}
-			],
-			"firstAnimation": "danceLeft"
+			]
 		},
 		{
-			"type": "animated",
-			"name": "crowd2",
 			"asset": "bgFreaks",
-			"antialiasing": false,
-			"visible": false,
 			"zIndex": 6,
 			"position": [
 				-100,
 				190
 			],
-			"scrollFactor": [
-				0.9,
-				0.9
-			],
+			"type": "animated",
+			"visible": false,
 			"scale": [
 				6,
 				6
 			],
+			"name": "crowd2",
+			"scrollFactor": [
+				0.9,
+				0.9
+			],
+			"antialiasing": false,
+			"firstAnimation": "danceLeft",
 			"animations": [
 				{
-					"name": "danceLeft",
-					"prefix": "BG fangirls dissuaded",
 					"framerate": 24,
-					"looped": false,
+					"prefix": "BG fangirls dissuaded",
 					"indices": [
 						0,
 						1,
@@ -279,13 +303,13 @@
 						12,
 						13,
 						14
-					]
+					],
+					"name": "danceLeft",
+					"looped": false
 				},
 				{
-					"name": "danceRight",
-					"prefix": "BG fangirls dissuaded",
 					"framerate": 24,
-					"looped": false,
+					"prefix": "BG fangirls dissuaded",
 					"indices": [
 						15,
 						16,
@@ -303,10 +327,11 @@
 						28,
 						29,
 						30
-					]
+					],
+					"name": "danceRight",
+					"looped": false
 				}
-			],
-			"firstAnimation": "danceLeft"
+			]
 		}
 	]
 }

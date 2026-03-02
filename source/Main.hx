@@ -87,7 +87,7 @@ class Main extends Sprite
 
 	// ── Versiones ─────────────────────────────────────────────────────────────
 
-	public static inline var ENGINE_VERSION:String = "0.5.0";
+	public static inline var ENGINE_VERSION:String = "0.6.0";
 
 	// ── Entry point ───────────────────────────────────────────────────────────
 

@@ -15,6 +15,7 @@ var iconP2Name = 'dad';
 var lastScore = -1;
 var lastMisses = -1;
 var lastAccuracy = -1.0;
+var lastHealth = -1.0;
 
 // ── Pools (mismos 3 del original + miss) ──────────────────────────────────
 var ratingPool = [];
@@ -126,9 +127,22 @@ function _updateIcons()
 	iconP1.updateHitbox();
 	iconP2.updateHitbox();
 
+	// ── Lerp de posición X: solo cuando la salud cambia ────────────────────────
+	// Si se aplica cada frame, el lerp persigue un targetX que se mueve con el
+	// scale del beat bounce, haciendo que los iconos tiemblen horizontalmente.
 	var targetX = healthBar.x + (healthBar.width * (FlxMath.remapToRange(healthPercent, 0, 100, 100, 0) * 0.01));
-	iconP1.x = FlxMath.lerp(iconP1.x, targetX - 26, 0.15 * FlxG.elapsed * 60);
-	iconP2.x = FlxMath.lerp(iconP2.x, targetX - (iconP2.width - 26), 0.15 * FlxG.elapsed * 60);
+	if (gameState.health != lastHealth)
+	{
+		iconP1.x = FlxMath.lerp(iconP1.x, targetX - 26,                  0.15 * FlxG.elapsed * 60);
+		iconP2.x = FlxMath.lerp(iconP2.x, targetX - (iconP2.width - 26), 0.15 * FlxG.elapsed * 60);
+		lastHealth = gameState.health;
+	}
+	else
+	{
+		// Salud estable: fijar X directamente para no interferir con el scale bounce
+		iconP1.x = targetX - 26;
+		iconP2.x = targetX - (iconP2.width - 26);
+	}
 
 	var p1Anim = 'normal';
 	if (healthPercent < 20)

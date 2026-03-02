@@ -1,48 +1,49 @@
 {
-	"path": "week1/DADDY_DEAREST",
-	"isPlayer": false,
-	"antialiasing": true,
-	"scale": 1.0,
+	"isFlxAnimate": true,
 	"animations": [
 		{
-			"name": "idle",
+			"offsetX": 0,
+			"framerate": 24,
 			"prefix": "Dad idle dance",
-			"framerate": 24,
-			"looped": false,
-			"offsetX": 0,
-			"offsetY": 0
+			"offsetY": 0,
+			"name": "idle",
+			"looped": false
 		},
 		{
-			"name": "singUP",
-			"prefix": "Dad Sing Note UP",
+			"offsetX": -40,
 			"framerate": 24,
-			"looped": false,
-			"offsetX": -6,
-			"offsetY": 50
-		},
-		{
-			"name": "singDOWN",
 			"prefix": "Dad Sing Note DOWN",
-			"framerate": 24,
-			"looped": false,
-			"offsetX": 0,
-			"offsetY": -30
+			"offsetY": -1,
+			"name": "singDOWN",
+			"looped": false
 		},
 		{
-			"name": "singLEFT",
+			"offsetX": -49,
+			"framerate": 24,
 			"prefix": "Dad Sing Note LEFT",
-			"framerate": 24,
-			"looped": false,
-			"offsetX": -10,
-			"offsetY": 10
+			"offsetY": 14,
+			"name": "singLEFT",
+			"looped": false
 		},
 		{
-			"name": "singRIGHT",
-			"prefix": "Dad Sing Note RIGHT",
+			"offsetX": 22,
 			"framerate": 24,
-			"looped": false,
+			"prefix": "dad sing note right",
+			"offsetY": 2,
+			"name": "singRIGHT",
+			"looped": false
+		},
+		{
 			"offsetX": 0,
-			"offsetY": 27
+			"framerate": 24,
+			"prefix": "Dad Sing note UP",
+			"offsetY": 30,
+			"name": "singUP",
+			"looped": false
 		}
-	]
+	],
+	"isPlayer": false,
+	"antialiasing": true,
+	"path": "dad",
+	"scale": 1
 }

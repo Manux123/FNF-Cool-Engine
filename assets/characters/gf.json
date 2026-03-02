@@ -1,5 +1,6 @@
 {
-	"path": "GF_assets",
+	"isFlxAnimate": true,
+	"path": "gf",
 	"isPlayer": false,
 	"antialiasing": true,
 	"scale": 1.0,
@@ -91,7 +92,7 @@
 		},
 		{
 			"name": "scared",
-			"prefix": "GF FEAR",
+			"prefix": "GF FEAR ",
 			"framerate": 24,
 			"looped": true,
 			"offsetX": -2,

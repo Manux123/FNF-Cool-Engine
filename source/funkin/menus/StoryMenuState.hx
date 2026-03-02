@@ -110,10 +110,16 @@ class StoryMenuState extends funkin.states.MusicBeatState
 			transOut = null;
 		}
 
-		if (!MainMenuState.musicFreakyisPlaying)
+		if (FlxG.sound.music == null || !FlxG.sound.music.playing)
 		{
-			{ final _s = Paths.loadMusic('freakyMenu'); if (_s != null) FlxG.sound.playMusic(_s, 0.7); else FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7); }
-			MainMenuState.musicFreakyisPlaying = true;
+			if (FreeplayState.vocals == null)
+			{
+				final _s = Paths.loadMusic('freakyMenu');
+				if (_s != null)
+					FlxG.sound.playMusic(_s, 0.5);
+				else
+					FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.5);
+			}
 		}
 
 		persistentUpdate = persistentDraw = true;

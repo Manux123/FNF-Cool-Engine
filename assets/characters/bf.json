@@ -1,106 +1,114 @@
 {
-	"path": "BOYFRIEND",
-	"isPlayer": true,
-	"antialiasing": true,
-	"scale": 1.0,
+	"gameOverEnd": "gameplay/gameOverEnd",
+	"gameOverSound": "fnf_loss_sfx",
+	"isFlxAnimate": true,
+	"charDeath": "bf-dead",
+	"cameraOffset": [
+		-50,
+		-40
+	],
 	"flipX": true,
+	"gameOverMusic": "gameplay/gameOver",
 	"animations": [
 		{
-			"name": "idle",
+			"framerate": 24,
+			"offsetX": 13,
 			"prefix": "BF idle dance",
-			"framerate": 24,
+			"offsetY": 4,
 			"looped": false,
-			"offsetX": -5,
-			"offsetY": 0
+			"name": "idle"
 		},
 		{
-			"name": "singUP",
-			"prefix": "BF NOTE UP0",
 			"framerate": 24,
+			"offsetX": 10,
+			"prefix": "BF NOTE LEFT",
+			"offsetY": 7,
 			"looped": false,
-			"offsetX": -47,
-			"offsetY": 30
+			"name": "singLEFT"
 		},
 		{
-			"name": "singLEFT",
-			"prefix": "BF NOTE LEFT0",
 			"framerate": 24,
-			"looped": false,
-			"offsetX": 12,
-			"offsetY": -6
-		},
-		{
-			"name": "singRIGHT",
-			"prefix": "BF NOTE RIGHT0",
-			"framerate": 24,
-			"looped": false,
-			"offsetX": -38,
-			"offsetY": -7
-		},
-		{
-			"name": "singDOWN",
-			"prefix": "BF NOTE DOWN0",
-			"framerate": 24,
-			"looped": false,
-			"offsetX": -10,
-			"offsetY": -49
-		},
-		{
-			"name": "singUPmiss",
-			"prefix": "BF NOTE UP MISS",
-			"framerate": 24,
-			"looped": false,
-			"offsetX": -32,
-			"offsetY": 27
-		},
-		{
-			"name": "singLEFTmiss",
+			"offsetX": 13,
 			"prefix": "BF NOTE LEFT MISS",
-			"framerate": 24,
+			"offsetY": 18,
 			"looped": false,
-			"offsetX": 9,
-			"offsetY": 18
+			"name": "singLEFTmiss"
 		},
 		{
-			"name": "singRIGHTmiss",
-			"prefix": "BF NOTE RIGHT MISS",
 			"framerate": 24,
+			"offsetX": -32,
+			"prefix": "BF NOTE RIGHT",
+			"offsetY": 11,
 			"looped": false,
+			"name": "singRIGHT"
+		},
+		{
+			"framerate": 24,
 			"offsetX": -30,
-			"offsetY": 21
+			"prefix": "BF NOTE RIGHT MISS",
+			"offsetY": 24,
+			"looped": false,
+			"name": "singRIGHTmiss"
 		},
 		{
-			"name": "singDOWNmiss",
+			"framerate": 24,
+			"offsetX": -1,
+			"prefix": "BF NOTE UP",
+			"offsetY": 76,
+			"looped": false,
+			"name": "singUP"
+		},
+		{
+			"framerate": 24,
+			"offsetX": -10,
+			"prefix": "BF NOTE UP MISS",
+			"offsetY": 70,
+			"looped": false,
+			"name": "singUPmiss"
+		},
+		{
+			"framerate": 24,
+			"offsetX": -2,
+			"prefix": "BF NOTE DOWN",
+			"offsetY": -34,
+			"looped": false,
+			"name": "singDOWN"
+		},
+		{
+			"framerate": 24,
+			"offsetX": 0,
 			"prefix": "BF NOTE DOWN MISS",
-			"framerate": 24,
+			"offsetY": -23,
 			"looped": false,
-			"offsetX": -11,
-			"offsetY": -19
+			"name": "singDOWNmiss"
 		},
 		{
-			"name": "hey",
-			"prefix": "BF HEY",
 			"framerate": 24,
+			"offsetX": 12,
+			"prefix": "BF HEY!!",
+			"offsetY": 14,
 			"looped": false,
-			"offsetX": -4,
-			"offsetY": 5,
-			"specialAnim": true
+			"name": "hey"
 		},
 		{
-			"name": "scared",
+			"framerate": 24,
+			"offsetX": -30,
+			"prefix": "Boyfriend YEAH cheer",
+			"offsetY": 20,
+			"looped": false,
+			"name": "yeah cheer"
+		},
+		{
+			"framerate": 24,
+			"offsetX": 0,
 			"prefix": "BF idle shaking",
-			"framerate": 24,
-			"looped": true,
-			"offsetX": -4,
 			"offsetY": 0,
-			"specialAnim": true
+			"looped": false,
+			"name": "scared"
 		}
 	],
-
-	"charDeath": "bf-dead",
-	"gameOverSound": "fnf_loss_sfx",
-	"gameOverMusic": "gameplay/gameOver",
-	"gameOverEnd": "gameplay/gameOverEnd",
-	"gameOverBpm": 100,
-	"gameOverCamFrame": 12
+	"isPlayer": true,
+	"antialiasing": true,
+	"path": "bf",
+	"scale": 1
 }

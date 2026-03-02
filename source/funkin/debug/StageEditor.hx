@@ -99,9 +99,11 @@ class StageEditor extends funkin.states.MusicBeatState
 	var stageData:StageData;
 	var currentFilePath:String = '';
 	var hasUnsavedChanges:Bool = false;
+
 	/** True once stageData has been populated from disk or from loadJSON.
 	 *  When true, reloadStageView uses __fromData__ (in-memory) instead of disk. */
 	var _stageDataReady:Bool = false;
+
 	var selectedIdx:Int = -1;
 	var selectedCharId:String = null;
 	var history:Array<String> = [];
@@ -113,17 +115,29 @@ class StageEditor extends funkin.states.MusicBeatState
 	// ── Canvas objects (camGame) ──────────────────────────────────────────────
 	var stage:Stage;
 	var elementSprites:Map<String, FlxSprite> = new Map();
+
 	/** Group containing aboveChars:true sprites — rendered ABOVE characters. */
 	var stageAboveGroup:FlxTypedGroup<FlxBasic>;
+
 	var charGroup:FlxTypedGroup<Character>;
 	var characters:Map<String, Character> = new Map();
 	var gridSprite:FlxSprite;
 	var selBox:FlxSprite;
+	/** Malla (checkerboard) superpuesta al sprite seleccionado para diferenciarlo mejor */
+	var selMesh:FlxSprite;
 	var charLabels:FlxTypedGroup<FlxText>;
 
 	/** Cached selection-box pixel dimensions – avoids rebuilding BitmapData every frame. */
 	var _selBoxW:Int = 0;
+	var _selMeshW:Int = 0;
+
 	var _selBoxH:Int = 0;
+	var _selMeshH:Int = 0;
+
+	/** Tooltip que aparece sobre el mouse al hacer hover en elementos/personajes */
+	var hoverTooltipBg:FlxSprite;
+	var hoverTooltipTxt:FlxText;
+	var _hoverName:String = '';
 
 	// ── HUD: title + toolbar + status ────────────────────────────────────────
 	var titleText:FlxText;
@@ -195,7 +209,7 @@ class StageEditor extends funkin.states.MusicBeatState
 	// Shaders tab widgets
 	var stageShaderDropdown:FlxUIDropDownMenu;
 	var elemShaderDropdown:FlxUIDropDownMenu;
-	var _shaderList:Array<String> = [];          // cache de nombres escaneados
+	var _shaderList:Array<String> = []; // cache de nombres escaneados
 
 	// ── Drag ─────────────────────────────────────────────────────────────────
 	var isDraggingEl:Bool = false;
@@ -242,9 +256,9 @@ class StageEditor extends funkin.states.MusicBeatState
 		camUI = new FlxCamera();
 		camUI.bgColor.alpha = 0;
 
-		FlxG.cameras.reset(camUI);           // cameras[0] → FlxG.camera = camUI (zoom 1 fijo)
-		FlxG.cameras.add(camGame, false);    // canvas, encima de camUI
-		FlxG.cameras.add(camHUD,  false);    // HUD, encima de todo
+		FlxG.cameras.reset(camUI); // cameras[0] → FlxG.camera = camUI (zoom 1 fijo)
+		FlxG.cameras.add(camGame, false); // canvas, encima de camUI
+		FlxG.cameras.add(camHUD, false); // HUD, encima de todo
 
 		camGame.zoom = camZoom;
 
@@ -395,7 +409,7 @@ class StageEditor extends funkin.states.MusicBeatState
 				stage = new Stage(stageData.name);
 				if (stage.stageData != null)
 				{
-					stageData = stage.stageData;   // safe: nothing in memory yet
+					stageData = stage.stageData; // safe: nothing in memory yet
 					_stageDataReady = true;
 				}
 			}
@@ -404,9 +418,9 @@ class StageEditor extends funkin.states.MusicBeatState
 				// ── Subsequent reloads: build from in-memory stageData ───────────
 				// __fromData__ sentinel skips loadStage() / disk I/O entirely.
 				stage = new Stage('__fromData__');
-				stage.curStage  = stageData.name ?? 'stage';
+				stage.curStage = stageData.name ?? 'stage';
 				stage.stageData = stageData;
-				stage.buildStage();  // routes aboveChars:true → stage.aboveCharsGroup
+				stage.buildStage(); // routes aboveChars:true → stage.aboveCharsGroup
 			}
 
 			stage.cameras = [camGame];
@@ -429,9 +443,11 @@ class StageEditor extends funkin.states.MusicBeatState
 			// puede usarlo si el sprite tiene cameras vacío.
 			for (elem in stageData.elements)
 			{
-				if (elem.customProperties == null) continue;
+				if (elem.customProperties == null)
+					continue;
 				var sh = Reflect.field(elem.customProperties, 'shader');
-				if (sh == null || sh == '') continue;
+				if (sh == null || sh == '')
+					continue;
 				if (elem.name != null && elementSprites.exists(elem.name))
 					ShaderManager.applyShader(elementSprites.get(elem.name), Std.string(sh), camGame);
 			}
@@ -443,9 +459,9 @@ class StageEditor extends funkin.states.MusicBeatState
 		}
 
 		// ── Characters ────────────────────────────────────────────────────────
-		charGroup  = new FlxTypedGroup<Character>();
+		charGroup = new FlxTypedGroup<Character>();
 		charLabels = new FlxTypedGroup<FlxText>();
-		charGroup.cameras  = [camGame];
+		charGroup.cameras = [camGame];
 		charLabels.cameras = [camGame];
 		add(charGroup);
 		add(charLabels);
@@ -527,6 +543,31 @@ class StageEditor extends funkin.states.MusicBeatState
 		selBox.visible = false;
 		selBox.cameras = [camGame];
 		add(selBox);
+
+		// Malla semitransparente sobre el sprite seleccionado (patrón checkerboard)
+		selMesh = new FlxSprite();
+		selMesh.makeGraphic(1, 1, FlxColor.TRANSPARENT);
+		selMesh.visible = false;
+		selMesh.alpha = 0.35;
+		selMesh.cameras = [camGame];
+		add(selMesh);
+
+		// Tooltip de hover — vive en camHUD para que siempre esté encima de todo
+		hoverTooltipBg = new FlxSprite();
+		hoverTooltipBg.makeGraphic(4, 18, 0xCC000000);
+		hoverTooltipBg.visible = false;
+		hoverTooltipBg.scrollFactor.set();
+		hoverTooltipBg.cameras = [camHUD];
+		add(hoverTooltipBg);
+
+		hoverTooltipTxt = new FlxText(0, 0, 0, '', 11);
+		hoverTooltipTxt.setFormat(Paths.font('vcr.ttf'), 11, FlxColor.WHITE, LEFT);
+		hoverTooltipTxt.borderStyle = OUTLINE;
+		hoverTooltipTxt.borderColor = FlxColor.BLACK;
+		hoverTooltipTxt.visible = false;
+		hoverTooltipTxt.scrollFactor.set();
+		hoverTooltipTxt.cameras = [camHUD];
+		add(hoverTooltipTxt);
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -684,8 +725,12 @@ class StageEditor extends funkin.states.MusicBeatState
 		var T = EditorTheme.current;
 
 		// ── Clear existing rows ───────────────────────────────────────────────
-		for (s in layerRowsGroup.members)  if (s != null) s.visible = false;
-		for (t in layerTextsGroup.members) if (t != null) t.visible = false;
+		for (s in layerRowsGroup.members)
+			if (s != null)
+				s.visible = false;
+		for (t in layerTextsGroup.members)
+			if (t != null)
+				t.visible = false;
 		layerRowsGroup.clear();
 		layerTextsGroup.clear();
 		layerHitData = [];
@@ -694,18 +739,38 @@ class StageEditor extends funkin.states.MusicBeatState
 
 		// ── LAYERS header ─────────────────────────────────────────────────────
 		var headerBg = new FlxSprite(0, rowY).makeGraphic(LEFT_W, 28, T.bgPanelAlt);
-		headerBg.cameras = [camHUD]; headerBg.scrollFactor.set(); add(headerBg); layerRowsGroup.add(headerBg);
+		headerBg.cameras = [camHUD];
+		headerBg.scrollFactor.set();
+		add(headerBg);
+		layerRowsGroup.add(headerBg);
 		var headerTxt = new FlxText(10, rowY + 6, 0, '\u25A3 LAYERS', 12);
 		headerTxt.setFormat(Paths.font('vcr.ttf'), 12, T.accent, LEFT);
-		headerTxt.cameras = [camHUD]; headerTxt.scrollFactor.set(); add(headerTxt); layerTextsGroup.add(headerTxt);
+		headerTxt.cameras = [camHUD];
+		headerTxt.scrollFactor.set();
+		add(headerTxt);
+		layerTextsGroup.add(headerTxt);
 
 		// [+] button in header
 		var addBg = new FlxSprite(LEFT_W - 26, rowY + 4).makeGraphic(22, 20, T.bgHover);
-		addBg.cameras = [camHUD]; addBg.scrollFactor.set(); add(addBg); layerRowsGroup.add(addBg);
+		addBg.cameras = [camHUD];
+		addBg.scrollFactor.set();
+		add(addBg);
+		layerRowsGroup.add(addBg);
 		var addTxt = new FlxText(LEFT_W - 26, rowY + 5, 22, '+', 12);
 		addTxt.setFormat(Paths.font('vcr.ttf'), 12, T.success, CENTER);
-		addTxt.cameras = [camHUD]; addTxt.scrollFactor.set(); add(addTxt); layerTextsGroup.add(addTxt);
-		layerHitData.push({ x: LEFT_W - 26, w: 22, y: rowY + 4, h: 20, idx: -2, charId: null, zone: 'add_element' });
+		addTxt.cameras = [camHUD];
+		addTxt.scrollFactor.set();
+		add(addTxt);
+		layerTextsGroup.add(addTxt);
+		layerHitData.push({
+			x: LEFT_W - 26,
+			w: 22,
+			y: rowY + 4,
+			h: 20,
+			idx: -2,
+			charId: null,
+			zone: 'add_element'
+		});
 		rowY += 28;
 
 		// ── Layer rows (top of list = topmost on screen = last in array) ──────
@@ -715,94 +780,204 @@ class StageEditor extends funkin.states.MusicBeatState
 		var i = totalRows - 1;
 		while (i >= 0)
 		{
-			if (drawnCount < layerScrollStart) { drawnCount++; i--; continue; }
-			if (drawnCount >= layerScrollStart + MAX_VISIBLE_LAYERS) { i--; continue; }
+			if (drawnCount < layerScrollStart)
+			{
+				drawnCount++;
+				i--;
+				continue;
+			}
+			if (drawnCount >= layerScrollStart + MAX_VISIBLE_LAYERS)
+			{
+				i--;
+				continue;
+			}
 			drawnCount++;
 
 			var elemIdx = i;
-			var elem    = elements[elemIdx];
-			var isSelected  = (elemIdx == selectedIdx);
-			var isVisible   = !(elem.visible == false);
-			var isAbove     = (elem.aboveChars == true);
+			var elem = elements[elemIdx];
+			var isSelected = (elemIdx == selectedIdx);
+			var isVisible = !(elem.visible == false);
+			var isAbove = (elem.aboveChars == true);
 
 			// Row background — tinted amber if aboveChars
+			var isHovered = (elemIdx == layerHoverIdx && !isSelected);
 			var rowBgColor = isSelected ? T.rowSelected
-				: isAbove ? 0xFF2A1A00          // warm amber tint = above-chars layer
+				: isHovered  ? (T.rowSelected & 0x00FFFFFF | 0x55000000) // hover = 33% selection tint
+				: isAbove ? 0xFF2A1A00 // warm amber tint = above-chars layer
 				: (drawnCount % 2 == 0 ? T.rowEven : T.rowOdd);
 			var rowBg = new FlxSprite(0, rowY).makeGraphic(LEFT_W, ROW_H, rowBgColor);
-			rowBg.cameras = [camHUD]; rowBg.scrollFactor.set(); add(rowBg); layerRowsGroup.add(rowBg);
-			layerHitData.push({ x: 0, w: LEFT_W, y: rowY, h: ROW_H, idx: elemIdx, charId: null, zone: 'row' });
+			rowBg.cameras = [camHUD];
+			rowBg.scrollFactor.set();
+			add(rowBg);
+			layerRowsGroup.add(rowBg);
+			layerHitData.push({
+				x: 0,
+				w: LEFT_W,
+				y: rowY,
+				h: ROW_H,
+				idx: elemIdx,
+				charId: null,
+				zone: 'row'
+			});
 
 			// Eye toggle
 			var eyeColor = isVisible ? T.success : T.textDim;
 			var eyeTxt = new FlxText(4, rowY + 5, 16, isVisible ? '\u25CF' : '\u2013', 10);
 			eyeTxt.setFormat(Paths.font('vcr.ttf'), 10, eyeColor, CENTER);
-			eyeTxt.cameras = [camHUD]; eyeTxt.scrollFactor.set(); add(eyeTxt); layerTextsGroup.add(eyeTxt);
-			layerHitData.push({ x: 0, w: 22, y: rowY, h: ROW_H, idx: elemIdx, charId: null, zone: 'eye' });
+			eyeTxt.cameras = [camHUD];
+			eyeTxt.scrollFactor.set();
+			add(eyeTxt);
+			layerTextsGroup.add(eyeTxt);
+			layerHitData.push({
+				x: 0,
+				w: 22,
+				y: rowY,
+				h: ROW_H,
+				idx: elemIdx,
+				charId: null,
+				zone: 'eye'
+			});
 
 			// Layer name
 			var nameStr = elem.name ?? ('elem_' + elemIdx);
-			if (nameStr.length > 14) nameStr = nameStr.substr(0, 12) + '..';
+			if (nameStr.length > 14)
+				nameStr = nameStr.substr(0, 12) + '..';
 			var nameColor = isSelected ? T.accent : (isAbove ? 0xFFFFAA00 : T.textPrimary);
 			var nameTxt = new FlxText(22, rowY + 6, 90, nameStr, 10);
 			nameTxt.setFormat(Paths.font('vcr.ttf'), 10, nameColor, LEFT);
-			nameTxt.cameras = [camHUD]; nameTxt.scrollFactor.set(); add(nameTxt); layerTextsGroup.add(nameTxt);
+			nameTxt.cameras = [camHUD];
+			nameTxt.scrollFactor.set();
+			add(nameTxt);
+			layerTextsGroup.add(nameTxt);
 
 			// Type badge
-			var typeStr = switch (elem.type.toLowerCase()) {
-				case 'sprite': 'SPR'; case 'animated': 'ANI'; case 'group': 'GRP';
-				case 'custom_class': 'CLS'; case 'custom_class_group': 'CGP'; case 'sound': 'SND';
+			var typeStr = switch (elem.type.toLowerCase())
+			{
+				case 'sprite': 'SPR';
+				case 'animated': 'ANI';
+				case 'group': 'GRP';
+				case 'custom_class': 'CLS';
+				case 'custom_class_group': 'CGP';
+				case 'sound': 'SND';
 				default: elem.type.toUpperCase().substr(0, 3);
 			}
-			var typeBgColor = switch (elem.type.toLowerCase()) {
-				case 'animated': T.accentAlt; case 'group', 'custom_class_group': T.warning;
-				case 'sound': T.success; default: T.bgHover;
+			var typeBgColor = switch (elem.type.toLowerCase())
+			{
+				case 'animated': T.accentAlt;
+				case 'group', 'custom_class_group': T.warning;
+				case 'sound': T.success;
+				default: T.bgHover;
 			}
 			var typeBg = new FlxSprite(116, rowY + 5).makeGraphic(28, 16, typeBgColor);
-			typeBg.cameras = [camHUD]; typeBg.scrollFactor.set(); add(typeBg); layerRowsGroup.add(typeBg);
+			typeBg.cameras = [camHUD];
+			typeBg.scrollFactor.set();
+			add(typeBg);
+			layerRowsGroup.add(typeBg);
 			var typeTxt = new FlxText(116, rowY + 5, 28, typeStr, 8);
 			typeTxt.setFormat(Paths.font('vcr.ttf'), 8, 0xFF000000, CENTER);
-			typeTxt.cameras = [camHUD]; typeTxt.scrollFactor.set(); add(typeTxt); layerTextsGroup.add(typeTxt);
+			typeTxt.cameras = [camHUD];
+			typeTxt.scrollFactor.set();
+			add(typeTxt);
+			layerTextsGroup.add(typeTxt);
 
 			// ▲ Above-Chars toggle — the KEY button for foreground layers
 			// Shows "AB" (amber) when enabled, "ab" (dim) when disabled.
 			var abBgColor = isAbove ? 0xFFFF8800 : T.bgHover;
 			var abBg = new FlxSprite(148, rowY + 4).makeGraphic(20, 18, abBgColor);
-			abBg.cameras = [camHUD]; abBg.scrollFactor.set(); add(abBg); layerRowsGroup.add(abBg);
+			abBg.cameras = [camHUD];
+			abBg.scrollFactor.set();
+			add(abBg);
+			layerRowsGroup.add(abBg);
 			var abTxt = new FlxText(148, rowY + 5, 20, isAbove ? 'AB' : 'ab', 8);
 			abTxt.setFormat(Paths.font('vcr.ttf'), 8, isAbove ? 0xFF000000 : T.textDim, CENTER);
-			abTxt.cameras = [camHUD]; abTxt.scrollFactor.set(); add(abTxt); layerTextsGroup.add(abTxt);
-			layerHitData.push({ x: 145, w: 26, y: rowY, h: ROW_H, idx: elemIdx, charId: null, zone: 'above' });
+			abTxt.cameras = [camHUD];
+			abTxt.scrollFactor.set();
+			add(abTxt);
+			layerTextsGroup.add(abTxt);
+			layerHitData.push({
+				x: 145,
+				w: 26,
+				y: rowY,
+				h: ROW_H,
+				idx: elemIdx,
+				charId: null,
+				zone: 'above'
+			});
 
 			// ▲ Up
 			var upBg = new FlxSprite(172, rowY + 4).makeGraphic(16, 18, T.bgHover);
-			upBg.cameras = [camHUD]; upBg.scrollFactor.set(); add(upBg); layerRowsGroup.add(upBg);
+			upBg.cameras = [camHUD];
+			upBg.scrollFactor.set();
+			add(upBg);
+			layerRowsGroup.add(upBg);
 			var upTxt = new FlxText(172, rowY + 4, 16, '\u25B2', 9);
 			upTxt.setFormat(Paths.font('vcr.ttf'), 9, T.textSecondary, CENTER);
-			upTxt.cameras = [camHUD]; upTxt.scrollFactor.set(); add(upTxt); layerTextsGroup.add(upTxt);
-			layerHitData.push({ x: 169, w: 22, y: rowY, h: ROW_H, idx: elemIdx, charId: null, zone: 'up' });
+			upTxt.cameras = [camHUD];
+			upTxt.scrollFactor.set();
+			add(upTxt);
+			layerTextsGroup.add(upTxt);
+			layerHitData.push({
+				x: 169,
+				w: 22,
+				y: rowY,
+				h: ROW_H,
+				idx: elemIdx,
+				charId: null,
+				zone: 'up'
+			});
 
 			// ▼ Down
 			var downBg = new FlxSprite(191, rowY + 4).makeGraphic(16, 18, T.bgHover);
-			downBg.cameras = [camHUD]; downBg.scrollFactor.set(); add(downBg); layerRowsGroup.add(downBg);
+			downBg.cameras = [camHUD];
+			downBg.scrollFactor.set();
+			add(downBg);
+			layerRowsGroup.add(downBg);
 			var downTxt = new FlxText(191, rowY + 4, 16, '\u25BC', 9);
 			downTxt.setFormat(Paths.font('vcr.ttf'), 9, T.textSecondary, CENTER);
-			downTxt.cameras = [camHUD]; downTxt.scrollFactor.set(); add(downTxt); layerTextsGroup.add(downTxt);
-			layerHitData.push({ x: 188, w: 22, y: rowY, h: ROW_H, idx: elemIdx, charId: null, zone: 'down' });
+			downTxt.cameras = [camHUD];
+			downTxt.scrollFactor.set();
+			add(downTxt);
+			layerTextsGroup.add(downTxt);
+			layerHitData.push({
+				x: 188,
+				w: 22,
+				y: rowY,
+				h: ROW_H,
+				idx: elemIdx,
+				charId: null,
+				zone: 'down'
+			});
 
 			// ✕ Delete
 			var delBg = new FlxSprite(211, rowY + 4).makeGraphic(22, 18, T.bgHover);
-			delBg.cameras = [camHUD]; delBg.scrollFactor.set(); add(delBg); layerRowsGroup.add(delBg);
+			delBg.cameras = [camHUD];
+			delBg.scrollFactor.set();
+			add(delBg);
+			layerRowsGroup.add(delBg);
 			var delTxt = new FlxText(211, rowY + 5, 22, '\u2715', 9);
 			delTxt.setFormat(Paths.font('vcr.ttf'), 9, T.error, CENTER);
-			delTxt.cameras = [camHUD]; delTxt.scrollFactor.set(); add(delTxt); layerTextsGroup.add(delTxt);
-			layerHitData.push({ x: 208, w: 26, y: rowY, h: ROW_H, idx: elemIdx, charId: null, zone: 'del' });
+			delTxt.cameras = [camHUD];
+			delTxt.scrollFactor.set();
+			add(delTxt);
+			layerTextsGroup.add(delTxt);
+			layerHitData.push({
+				x: 208,
+				w: 26,
+				y: rowY,
+				h: ROW_H,
+				idx: elemIdx,
+				charId: null,
+				zone: 'del'
+			});
 
 			// Sprite-loaded indicator dot
 			if (elem.name != null && elementSprites.exists(elem.name))
 			{
 				var dot = new FlxSprite(237, rowY + 9).makeGraphic(6, 6, T.success);
-				dot.cameras = [camHUD]; dot.scrollFactor.set(); add(dot); layerRowsGroup.add(dot);
+				dot.cameras = [camHUD];
+				dot.scrollFactor.set();
+				add(dot);
+				layerRowsGroup.add(dot);
 			}
 
 			rowY += ROW_H;
@@ -812,36 +987,63 @@ class StageEditor extends funkin.states.MusicBeatState
 		// ── CHARACTERS section ────────────────────────────────────────────────
 		rowY += 6;
 		var charHeaderBg = new FlxSprite(0, rowY).makeGraphic(LEFT_W, 24, T.bgPanelAlt);
-		charHeaderBg.cameras = [camHUD]; charHeaderBg.scrollFactor.set(); add(charHeaderBg); layerRowsGroup.add(charHeaderBg);
+		charHeaderBg.cameras = [camHUD];
+		charHeaderBg.scrollFactor.set();
+		add(charHeaderBg);
+		layerRowsGroup.add(charHeaderBg);
 		var charHeaderTxt = new FlxText(10, rowY + 5, 0, '\u25B6 CHARACTERS', 11);
 		charHeaderTxt.setFormat(Paths.font('vcr.ttf'), 11, T.accentAlt, LEFT);
-		charHeaderTxt.cameras = [camHUD]; charHeaderTxt.scrollFactor.set(); add(charHeaderTxt); layerTextsGroup.add(charHeaderTxt);
+		charHeaderTxt.cameras = [camHUD];
+		charHeaderTxt.scrollFactor.set();
+		add(charHeaderTxt);
+		layerTextsGroup.add(charHeaderTxt);
 
 		// Legend: AB = above chars
 		var legendTxt = new FlxText(LEFT_W - 68, rowY + 6, 62, 'AB=above chars', 8);
 		legendTxt.setFormat(Paths.font('vcr.ttf'), 8, 0xFFFF8800, RIGHT);
-		legendTxt.cameras = [camHUD]; legendTxt.scrollFactor.set(); add(legendTxt); layerTextsGroup.add(legendTxt);
+		legendTxt.cameras = [camHUD];
+		legendTxt.scrollFactor.set();
+		add(legendTxt);
+		layerTextsGroup.add(legendTxt);
 		rowY += 24;
 
 		var charDefs = [
-			{id: 'bf',  label: 'BF',  color: 0xFF00D9FF},
-			{id: 'gf',  label: 'GF',  color: 0xFFFF88FF},
+			{id: 'bf', label: 'BF', color: 0xFF00D9FF},
+			{id: 'gf', label: 'GF', color: 0xFFFF88FF},
 			{id: 'dad', label: 'Dad', color: 0xFFFFAA00}
 		];
 		for (cd in charDefs)
 		{
 			var c = characters.get(cd.id);
 			var pos = '---';
-			if (c != null) pos = 'x:${Std.int(c.x)}  y:${Std.int(c.y)}';
+			if (c != null)
+				pos = 'x:${Std.int(c.x)}  y:${Std.int(c.y)}';
 			var cRowBg = new FlxSprite(0, rowY).makeGraphic(LEFT_W, ROW_H, selectedCharId == cd.id ? T.rowSelected : T.rowOdd);
-			cRowBg.cameras = [camHUD]; cRowBg.scrollFactor.set(); add(cRowBg); layerRowsGroup.add(cRowBg);
-			layerHitData.push({ x: 0, w: LEFT_W, y: rowY, h: ROW_H, idx: -1, charId: cd.id, zone: 'char' });
+			cRowBg.cameras = [camHUD];
+			cRowBg.scrollFactor.set();
+			add(cRowBg);
+			layerRowsGroup.add(cRowBg);
+			layerHitData.push({
+				x: 0,
+				w: LEFT_W,
+				y: rowY,
+				h: ROW_H,
+				idx: -1,
+				charId: cd.id,
+				zone: 'char'
+			});
 			var cLbl = new FlxText(8, rowY + 7, 35, cd.label, 10);
 			cLbl.setFormat(Paths.font('vcr.ttf'), 10, cd.color, LEFT);
-			cLbl.cameras = [camHUD]; cLbl.scrollFactor.set(); add(cLbl); layerTextsGroup.add(cLbl);
+			cLbl.cameras = [camHUD];
+			cLbl.scrollFactor.set();
+			add(cLbl);
+			layerTextsGroup.add(cLbl);
 			var cPos = new FlxText(48, rowY + 7, 190, pos, 9);
 			cPos.setFormat(Paths.font('vcr.ttf'), 9, T.textSecondary, LEFT);
-			cPos.cameras = [camHUD]; cPos.scrollFactor.set(); add(cPos); layerTextsGroup.add(cPos);
+			cPos.cameras = [camHUD];
+			cPos.scrollFactor.set();
+			add(cPos);
+			layerTextsGroup.add(cPos);
 			rowY += ROW_H;
 		}
 	}
@@ -1004,7 +1206,8 @@ class StageEditor extends funkin.states.MusicBeatState
 		tab.add(elemVisibleCheck);
 
 		y += 50;
-		sep(y); y += 6;
+		sep(y);
+		y += 6;
 
 		// ── Above-characters layer ────────────────────────────────────────────
 		// When checked, this element renders ON TOP of characters (like a front
@@ -1258,8 +1461,16 @@ class StageEditor extends funkin.states.MusicBeatState
 			ShaderManager.scanShaders();
 			_shaderList = ['(none)'].concat(ShaderManager.getAvailableShaders());
 			var labels = FlxUIDropDownMenu.makeStrIdLabelArray(_shaderList, true);
-			if (stageShaderDropdown != null)  { stageShaderDropdown.setData(labels);  stageShaderDropdown.selectedLabel  = _shaderList[0]; }
-			if (elemShaderDropdown  != null)  { elemShaderDropdown.setData(labels);   elemShaderDropdown.selectedLabel   = _shaderList[0]; }
+			if (stageShaderDropdown != null)
+			{
+				stageShaderDropdown.setData(labels);
+				stageShaderDropdown.selectedLabel = _shaderList[0];
+			}
+			if (elemShaderDropdown != null)
+			{
+				elemShaderDropdown.setData(labels);
+				elemShaderDropdown.selectedLabel = _shaderList[0];
+			}
 			setStatus('Shaders re-scanned: ${_shaderList.length - 1} found');
 		});
 		tab.add(refreshBtn);
@@ -1277,14 +1488,16 @@ class StageEditor extends funkin.states.MusicBeatState
 		y += 14;
 
 		_shaderList = ['(none)'].concat(ShaderManager.getAvailableShaders());
-		var labels  = FlxUIDropDownMenu.makeStrIdLabelArray(_shaderList, true);
+		var labels = FlxUIDropDownMenu.makeStrIdLabelArray(_shaderList, true);
 
 		stageShaderDropdown = new FlxUIDropDownMenu(8, y, labels, function(id:String)
 		{
 			var idx = Std.parseInt(id);
-			if (idx == null) return;
+			if (idx == null)
+				return;
 			var name = _shaderList[idx];
-			if (stageData.customProperties == null) stageData.customProperties = {};
+			if (stageData.customProperties == null)
+				stageData.customProperties = {};
 			Reflect.setField(stageData.customProperties, 'shader', name == '(none)' ? '' : name);
 			markUnsaved();
 			saveHistory();
@@ -1306,19 +1519,27 @@ class StageEditor extends funkin.states.MusicBeatState
 
 		elemShaderDropdown = new FlxUIDropDownMenu(8, y, labels, function(id:String)
 		{
-			if (selectedIdx < 0 || selectedIdx >= stageData.elements.length) return;
-			var idx  = Std.parseInt(id);
-			if (idx == null) return;
+			if (selectedIdx < 0 || selectedIdx >= stageData.elements.length)
+				return;
+			var idx = Std.parseInt(id);
+			if (idx == null)
+				return;
 			var name = _shaderList[idx];
 
 			var elem = stageData.elements[selectedIdx];
-			if (elem.customProperties == null) elem.customProperties = {};
+			if (elem.customProperties == null)
+				elem.customProperties = {};
 			Reflect.setField(elem.customProperties, 'shader', name == '(none)' ? '' : name);
 
 			// ── Live preview ──────────────────────────────────────────────────
 			if (elem.name != null && elementSprites.exists(elem.name))
 			{
 				var spr = elementSprites.get(elem.name);
+
+				// FIX cameras=0: garantizar que el sprite tenga cámara antes del shader
+				if (spr.cameras == null || spr.cameras.length == 0)
+					spr.cameras = [camGame];
+
 				try
 				{
 					if (name == '(none)' || name == '')
@@ -1344,7 +1565,8 @@ class StageEditor extends funkin.states.MusicBeatState
 		// Botón para quitar shader del elemento seleccionado
 		var removeBtn = new FlxButton(8, y, '✕ Remove Shader', function()
 		{
-			if (selectedIdx < 0 || selectedIdx >= stageData.elements.length) return;
+			if (selectedIdx < 0 || selectedIdx >= stageData.elements.length)
+				return;
 			var elem = stageData.elements[selectedIdx];
 			if (elem.customProperties != null)
 				Reflect.setField(elem.customProperties, 'shader', '');
@@ -1412,7 +1634,8 @@ class StageEditor extends funkin.states.MusicBeatState
 	function handleKeyboard():Void
 	{
 		// Si el usuario está escribiendo en un input, no disparar shortcuts ni nudge
-		if (isTyping()) return;
+		if (isTyping())
+			return;
 
 		if (FlxG.keys.pressed.CONTROL)
 		{
@@ -1461,7 +1684,8 @@ class StageEditor extends funkin.states.MusicBeatState
 			var moved = false;
 
 			// Guardia: position puede ser null si el elemento se cargó de un JSON incompleto
-			if (elem.position == null) elem.position = [0.0, 0.0];
+			if (elem.position == null)
+				elem.position = [0.0, 0.0];
 
 			if (FlxG.keys.justPressed.LEFT)
 			{
@@ -1564,6 +1788,31 @@ class StageEditor extends funkin.states.MusicBeatState
 			layerScrollStart = Std.int(Math.max(0, Math.min(stageData.elements.length - 1, layerScrollStart - Std.int(FlxG.mouse.wheel))));
 			refreshLayerPanel();
 			return;
+		}
+
+		// ── Hover highlight — actualiza layerHoverIdx y refresca filas si cambia ──
+		if (mx >= 0 && mx < LEFT_W && my >= TOP_H && my < FlxG.height - STATUS_H)
+		{
+			var newHover = -1;
+			for (hit in layerHitData)
+			{
+				if (hit.zone == 'row' && hit.idx >= 0 && my >= hit.y && my <= hit.y + hit.h
+					&& mx >= hit.x && mx <= hit.x + hit.w)
+				{
+					newHover = hit.idx;
+					break;
+				}
+			}
+			if (newHover != layerHoverIdx)
+			{
+				layerHoverIdx = newHover;
+				refreshLayerPanel();
+			}
+		}
+		else if (layerHoverIdx != -1)
+		{
+			layerHoverIdx = -1;
+			refreshLayerPanel();
 		}
 
 		if (!FlxG.mouse.justPressed || mx > LEFT_W || my < TOP_H || my > FlxG.height - STATUS_H)
@@ -1832,26 +2081,37 @@ class StageEditor extends funkin.states.MusicBeatState
 		if (selBox == null)
 			return;
 
-		if (selectedIdx < 0 || selectedIdx >= stageData.elements.length)
+		// ── Determinar sprite seleccionado (elemento O personaje) ─────────────
+		var spr:FlxSprite = null;
+		var selName:String = null;
+
+		if (selectedIdx >= 0 && selectedIdx < stageData.elements.length)
+		{
+			var elem = stageData.elements[selectedIdx];
+			if (elem.name != null && elementSprites.exists(elem.name))
+			{
+				spr = elementSprites.get(elem.name);
+				selName = elem.name;
+			}
+		}
+		else if (selectedCharId != null && characters.exists(selectedCharId))
+		{
+			spr = characters.get(selectedCharId);
+			selName = selectedCharId;
+		}
+
+		if (spr == null)
 		{
 			selBox.visible = false;
+			selMesh.visible = false;
 			return;
 		}
 
-		var elem = stageData.elements[selectedIdx];
-		if (elem.name == null || !elementSprites.exists(elem.name))
-		{
-			selBox.visible = false;
-			return;
-		}
-
-		var spr = elementSprites.get(elem.name);
 		var pad = 3;
 		var needW = Std.int(spr.width  + pad * 2);
 		var needH = Std.int(spr.height + pad * 2);
 
-		// ── Only rebuild the BitmapData when dimensions change ────────────────
-		// Calling makeGraphic + pixel-fill every frame was the main memory/CPU spike.
+		// ── Borde de selección (solo rebuildear si cambió tamaño) ─────────────
 		if (needW != _selBoxW || needH != _selBoxH)
 		{
 			_selBoxW = needW;
@@ -1860,19 +2120,19 @@ class StageEditor extends funkin.states.MusicBeatState
 			selBox.makeGraphic(needW, needH, FlxColor.TRANSPARENT, true);
 
 			var pix = selBox.pixels;
-			var c   = EditorTheme.current.selection;
+			var c = EditorTheme.current.selection;
 
 			for (xi in 0...needW)
 			{
-				pix.setPixel32(xi, 0,         c);
-				pix.setPixel32(xi, 1,         c);
+				pix.setPixel32(xi, 0, c);
+				pix.setPixel32(xi, 1, c);
 				pix.setPixel32(xi, needH - 1, c);
 				pix.setPixel32(xi, needH - 2, c);
 			}
 			for (yi in 0...needH)
 			{
-				pix.setPixel32(0,         yi, c);
-				pix.setPixel32(1,         yi, c);
+				pix.setPixel32(0, yi, c);
+				pix.setPixel32(1, yi, c);
 				pix.setPixel32(needW - 1, yi, c);
 				pix.setPixel32(needW - 2, yi, c);
 			}
@@ -1880,8 +2140,114 @@ class StageEditor extends funkin.states.MusicBeatState
 			selBox.dirty = true;
 		}
 
+		// ── Malla checkerboard (diferencia visualmente el sprite activo) ──────
+		var mw = Std.int(spr.width);
+		var mh = Std.int(spr.height);
+		if (mw < 1) mw = 1;
+		if (mh < 1) mh = 1;
+
+		if (mw != _selMeshW || mh != _selMeshH)
+		{
+			_selMeshW = mw;
+			_selMeshH = mh;
+
+			selMesh.makeGraphic(mw, mh, FlxColor.TRANSPARENT, true);
+			var mp = selMesh.pixels;
+			var cA = EditorTheme.current.selection | 0xFF000000;  // color sólido
+			var tile = 8; // tamaño de cada cuadro del damero
+
+			for (yi in 0...mh)
+			{
+				for (xi in 0...mw)
+				{
+					var tx = Std.int(xi / tile);
+					var ty = Std.int(yi / tile);
+					if ((tx + ty) % 2 == 0)
+						mp.setPixel32(xi, yi, (cA & 0x00FFFFFF) | 0x55000000); // 33% alpha
+				}
+			}
+			selMesh.dirty = true;
+		}
+
 		selBox.setPosition(spr.x - pad, spr.y - pad);
 		selBox.visible = true;
+		selMesh.setPosition(spr.x, spr.y);
+		selMesh.visible = true;
+
+		// ── Hover tooltip — detectar elemento/personaje bajo el mouse ─────────
+		_updateHoverTooltip();
+	}
+
+	/** Muestra el nombre del elemento/personaje que está bajo el cursor del mouse. */
+	function _updateHoverTooltip():Void
+	{
+		var worldPos = FlxG.mouse.getWorldPosition(camGame);
+		var wx = worldPos.x;
+		var wy = worldPos.y;
+		worldPos.put();
+
+		var foundName:String = null;
+
+		// Chequear personajes primero (están encima)
+		for (cid => c in characters)
+		{
+			if (c.overlapsPoint(new FlxPoint(wx, wy)))
+			{
+				foundName = cid;
+				break;
+			}
+		}
+
+		// Chequear elementos si no cayó en personaje
+		if (foundName == null)
+		{
+			var i = stageData.elements.length - 1;
+			while (i >= 0)
+			{
+				var elem = stageData.elements[i];
+				if (elem.name != null && elementSprites.exists(elem.name))
+				{
+					var espr = elementSprites.get(elem.name);
+					if (espr.overlapsPoint(new FlxPoint(wx, wy)))
+					{
+						foundName = elem.name;
+						break;
+					}
+				}
+				i--;
+			}
+		}
+
+		if (foundName == null || FlxG.mouse.x < LEFT_W || FlxG.mouse.x > FlxG.width - RIGHT_W)
+		{
+			hoverTooltipBg.visible  = false;
+			hoverTooltipTxt.visible = false;
+			return;
+		}
+
+		// Solo rebuild texto si cambió el nombre
+		if (foundName != _hoverName)
+		{
+			_hoverName = foundName;
+			hoverTooltipTxt.text = foundName;
+		}
+
+		// Posición: ligeramente por encima y a la derecha del cursor (HUD space)
+		var tx = FlxG.mouse.x + 12;
+		var ty = FlxG.mouse.y - 20;
+		var tw = Std.int(hoverTooltipTxt.width) + 8;
+		var th = 18;
+
+		// Evitar salirse por la derecha
+		if (tx + tw > FlxG.width - RIGHT_W - 2)
+			tx = FlxG.mouse.x - tw - 4;
+
+		hoverTooltipBg.setPosition(tx, ty);
+		hoverTooltipBg.makeGraphic(tw, th, 0xCC000000);
+		hoverTooltipTxt.setPosition(tx + 4, ty + 3);
+
+		hoverTooltipBg.visible  = true;
+		hoverTooltipTxt.visible = true;
 	}
 
 	function updateCharLabels():Void
@@ -2011,7 +2377,7 @@ class StageEditor extends funkin.states.MusicBeatState
 		elem.flipX = elemFlipXCheck.checked;
 		elem.flipY = elemFlipYCheck.checked;
 		elem.antialiasing = elemAntialiasingCheck.checked;
-		elem.visible    = elemVisibleCheck.checked;
+		elem.visible = elemVisibleCheck.checked;
 		elem.aboveChars = elemAboveCharsCheck.checked;
 
 		var colorStr = elemColorInput.text.trim();
@@ -2422,16 +2788,24 @@ class StageEditor extends funkin.states.MusicBeatState
 
 				// Set asset key (strip extension, use relative path for asset system)
 				var assetKey = filename;
-				if (assetKey.endsWith('.png'))  assetKey = assetKey.substr(0, assetKey.length - 4);
-				else if (assetKey.endsWith('.jpg')) assetKey = assetKey.substr(0, assetKey.length - 4);
+				if (assetKey.endsWith('.png'))
+					assetKey = assetKey.substr(0, assetKey.length - 4);
+				else if (assetKey.endsWith('.jpg'))
+					assetKey = assetKey.substr(0, assetKey.length - 4);
 
 				if (elemAssetInput != null)
 					elemAssetInput.text = '$assetKey';
 			});
 			_fileRef.load();
 		});
-		_fileRef.addEventListener(Event.CANCEL, function(_) { setStatus('Browse cancelled.'); });
-		_fileRef.addEventListener(IOErrorEvent.IO_ERROR, function(_) { setStatus('Error opening file browser.'); });
+		_fileRef.addEventListener(Event.CANCEL, function(_)
+		{
+			setStatus('Browse cancelled.');
+		});
+		_fileRef.addEventListener(IOErrorEvent.IO_ERROR, function(_)
+		{
+			setStatus('Error opening file browser.');
+		});
 		_fileRef.browse([new openfl.net.FileFilter('Images/XML', '*.png;*.jpg;*.xml')]);
 		#end
 	}
@@ -2490,8 +2864,12 @@ class StageEditor extends funkin.states.MusicBeatState
 		loadStageIntoCanvas();
 		_selBoxW = 0;
 		_selBoxH = 0;
+		_selMeshW = 0;
+		_selMeshH = 0;
 		if (selBox != null)
 			selBox.visible = false;
+		if (selMesh != null)
+			selMesh.visible = false;
 	}
 
 	function markUnsaved():Void
@@ -2511,15 +2889,24 @@ class StageEditor extends funkin.states.MusicBeatState
 	 *  Mientras el usuario escribe, las flechas/delete NO deben mover el elemento. */
 	function isTyping():Bool
 	{
-		if (elemNameInput    != null && elemNameInput.hasFocus)    return true;
-		if (elemAssetInput   != null && elemAssetInput.hasFocus)   return true;
-		if (elemColorInput   != null && elemColorInput.hasFocus)   return true;
-		if (animNameInput    != null && animNameInput.hasFocus)    return true;
-		if (animPrefixInput  != null && animPrefixInput.hasFocus)  return true;
-		if (animIndicesInput != null && animIndicesInput.hasFocus) return true;
-		if (animFirstInput   != null && animFirstInput.hasFocus)   return true;
-		if (stageNameInput   != null && stageNameInput.hasFocus)   return true;
-		if (gfVersionInput   != null && gfVersionInput.hasFocus)   return true;
+		if (elemNameInput != null && elemNameInput.hasFocus)
+			return true;
+		if (elemAssetInput != null && elemAssetInput.hasFocus)
+			return true;
+		if (elemColorInput != null && elemColorInput.hasFocus)
+			return true;
+		if (animNameInput != null && animNameInput.hasFocus)
+			return true;
+		if (animPrefixInput != null && animPrefixInput.hasFocus)
+			return true;
+		if (animIndicesInput != null && animIndicesInput.hasFocus)
+			return true;
+		if (animFirstInput != null && animFirstInput.hasFocus)
+			return true;
+		if (stageNameInput != null && stageNameInput.hasFocus)
+			return true;
+		if (gfVersionInput != null && gfVersionInput.hasFocus)
+			return true;
 		return false;
 	}
 
@@ -2539,7 +2926,6 @@ class StageEditor extends funkin.states.MusicBeatState
 	// DESTROY
 	// ─────────────────────────────────────────────────────────────────────────
 
-
 	/**
 	 * Propaga una lista de cámaras a TODOS los FlxBasic dentro de un grupo,
 	 * bajando recursivamente a sub-grupos (FlxTypedGroup dentro de FlxTypedGroup).
@@ -2554,7 +2940,8 @@ class StageEditor extends funkin.states.MusicBeatState
 	{
 		for (member in group.members)
 		{
-			if (member == null) continue;
+			if (member == null)
+				continue;
 			member.cameras = cams;
 			// Si el miembro es a su vez un grupo, bajar recursivamente
 			if (Std.isOfType(member, flixel.group.FlxGroup))
@@ -2598,17 +2985,19 @@ class AddElementSubState extends flixel.FlxSubState
 
 	var _camSub:flixel.FlxCamera;
 	var _fileRef:FileReference;
+
 	/** The stage name (passed from the editor) so we know where to copy assets. */
 	var _stageName:String;
+
 	/** Whether to copy to the active mod folder (true) or base assets (false). */
 	var _toMod:Bool;
 
 	public function new(cb:StageElement->Void, stageName:String = 'stage', toMod:Bool = false)
 	{
 		super();
-		onConfirm  = cb;
+		onConfirm = cb;
 		_stageName = stageName;
-		_toMod     = toMod;
+		_toMod = toMod;
 	}
 
 	override function create():Void
@@ -2621,7 +3010,7 @@ class AddElementSubState extends flixel.FlxSubState
 		cameras = [_camSub];
 
 		var T = EditorTheme.current;
-		var panX = (FlxG.width  - W) * 0.5;
+		var panX = (FlxG.width - W) * 0.5;
 		var panY = (FlxG.height - H) * 0.5;
 
 		var overlay = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, 0xBB000000);
@@ -2687,9 +3076,8 @@ class AddElementSubState extends flixel.FlxSubState
 		add(browseBtn);
 
 		// Copy-destination info
-		var destRoot = _toMod && ModManager.isActive()
-			? '${ModManager.modRoot()}/stages/$_stageName/images'
-			: 'assets/stages/$_stageName/images';
+		var destRoot = _toMod
+			&& ModManager.isActive() ? '${ModManager.modRoot()}/stages/$_stageName/images' : 'assets/stages/$_stageName/images';
 		var destInfo = new FlxText(panX + 12, y + 30, W - 28, '\u2192 copies to: $destRoot', 9);
 		destInfo.color = T.textDim;
 		destInfo.scrollFactor.set();
@@ -2701,28 +3089,28 @@ class AddElementSubState extends flixel.FlxSubState
 		// Confirm / Cancel
 		var confirmBtn = new FlxButton(panX + 12, y, 'Add Element', function()
 		{
-			var types2  = ['sprite', 'animated', 'group', 'custom_class', 'sound'];
+			var types2 = ['sprite', 'animated', 'group', 'custom_class', 'sound'];
 			var typeIdx = Std.parseInt(typeDropdown.selectedId);
 			var typeName = (typeIdx != null && typeIdx >= 0 && typeIdx < types2.length) ? types2[typeIdx] : 'sprite';
 			var newElem:StageElement = {
-				type:         typeName,
-				name:         nameInput.text.trim(),
-				asset:        assetInput.text.trim(),
-				position:     [100.0, 100.0],
+				type: typeName,
+				name: nameInput.text.trim(),
+				asset: assetInput.text.trim(),
+				position: [100.0, 100.0],
 				scrollFactor: [1.0, 1.0],
-				scale:        [1.0, 1.0],
-				alpha:        1.0,
-				visible:      true,
+				scale: [1.0, 1.0],
+				alpha: 1.0,
+				visible: true,
 				antialiasing: true,
-				zIndex:       0
+				zIndex: 0
 			};
 			if (typeName == 'animated')
 				newElem.animations = [
 					{
-						name:      'idle',
-						prefix:    'idle0',
+						name: 'idle',
+						prefix: 'idle0',
 						framerate: 24,
-						looped:    true
+						looped: true
 					}
 				];
 			onConfirm(newElem);
@@ -2755,9 +3143,8 @@ class AddElementSubState extends flixel.FlxSubState
 				var filename = _fileRef.name;
 
 				// Determine destination
-				var destDir:String = _toMod && ModManager.isActive()
-					? '${ModManager.modRoot()}/stages/$_stageName/images'
-					: 'assets/stages/$_stageName/images';
+				var destDir:String = _toMod
+					&& ModManager.isActive() ? '${ModManager.modRoot()}/stages/$_stageName/images' : 'assets/stages/$_stageName/images';
 
 				try
 				{
@@ -2776,9 +3163,12 @@ class AddElementSubState extends flixel.FlxSubState
 
 				// Strip extension → asset key
 				var assetKey = filename;
-				if (assetKey.endsWith('.png'))       assetKey = assetKey.substr(0, assetKey.length - 4);
-				else if (assetKey.endsWith('.jpg'))  assetKey = assetKey.substr(0, assetKey.length - 4);
-				else if (assetKey.endsWith('.jpeg')) assetKey = assetKey.substr(0, assetKey.length - 5);
+				if (assetKey.endsWith('.png'))
+					assetKey = assetKey.substr(0, assetKey.length - 4);
+				else if (assetKey.endsWith('.jpg'))
+					assetKey = assetKey.substr(0, assetKey.length - 4);
+				else if (assetKey.endsWith('.jpeg'))
+					assetKey = assetKey.substr(0, assetKey.length - 5);
 
 				// If name input is still the default, auto-fill it
 				if (nameInput.text == 'new_element' || nameInput.text == '')
@@ -2788,7 +3178,9 @@ class AddElementSubState extends flixel.FlxSubState
 			});
 			_fileRef.load();
 		});
-		_fileRef.addEventListener(Event.CANCEL, function(_) {});
+		_fileRef.addEventListener(Event.CANCEL, function(_)
+		{
+		});
 		_fileRef.addEventListener(IOErrorEvent.IO_ERROR, function(_)
 		{
 			trace('[AddElementSubState] File browse IO error');

@@ -9,10 +9,10 @@ import funkin.data.Section;
 /**
  * VSliceConverter
  * ─────────────────────────────────────────────────────────────────────────────
- * Convierte el formato de chart de Friday Night Funkin' v0.5+ (V-Slice / "2.0.0")
- * al SwagSong nativo de Cool Engine.
+ * Converts the Friday Night Funkin' v0.5+ chart format (V-Slice / "2.0.0")
+ * into the native Cool Engine SwagSong format.
  *
- * ── Estructura del chart V-Slice ─────────────────────────────────────────────
+ * ── V-Slice Chart Structure ──────────────────────────────────────────────────
  *
  *  {
  *    "version": "2.0.0",
@@ -33,35 +33,35 @@ import funkin.data.Section;
  *    }
  *  }
  *
- * ── Codificación de la dirección/carril (campo "d") ──────────────────────────
+ * ── Direction/Lane Encoding (field "d") ──────────────────────────────────────
  *
  *  d = direction + (strumlineIndex * 4)
  *
- *    d 0-3  → strumline 0 (player / BF)   → lane 0-3  en Cool Engine
- *    d 4-7  → strumline 1 (opponent / Dad) → lane 4-7  en Cool Engine
- *    d 8-11 → strumline 2 (extra)          → lane 8-11 en Cool Engine
+ *    d 0-3  → strumline 0 (player / BF)    → lane 0-3  in Cool Engine
+ *    d 4-7  → strumline 1 (opponent / Dad) → lane 4-7  in Cool Engine
+ *    d 8-11 → strumline 2 (extra)          → lane 8-11 in Cool Engine
  *
- *  Dentro de cada strumline:
+ *  Inside each strumline:
  *    %4 == 0 → Left  (0)
  *    %4 == 1 → Down  (1)
  *    %4 == 2 → Up    (2)
  *    %4 == 3 → Right (3)
  *
- *  El valor "d" de V-Slice coincide directamente con el rawNoteData que Cool Engine
- *  espera en sectionNotes[1], por lo que NO necesita transformación.
+ *  The V-Slice "d" value directly matches the rawNoteData expected by
+ *  Cool Engine in sectionNotes[1], so NO transformation is required.
  *
- * ── Archivo de metadata (separado) ───────────────────────────────────────────
+ * ── Metadata File (separate) ─────────────────────────────────────────────────
  *
- *  V-Slice separa el chart de la metadata. Si se conoce el path del chart
- *  (pasado como `chartFilePath`), el converter busca automáticamente:
+ *  V-Slice separates the chart from the metadata. If the chart path
+ *  is known (passed as `chartFilePath`), the converter automatically searches:
  *
  *    songs/{folder}/{folder}-metadata.json
  *    songs/{folder}/metadata.json
- *    songs/{folder}/{folder}-metadata-{variation}.json  (ej: erect)
+ *    songs/{folder}/{folder}-metadata-{variation}.json  (e.g. erect)
  *
- *  La metadata contiene: BPM (timeChanges), characters, stage, etc.
+ *  Metadata contains: BPM (timeChanges), characters, stage, etc.
  *
- *  Ejemplo de metadata:
+ *  Metadata example:
  *  {
  *    "version": "2.2.0",
  *    "songName": "Senpai",
@@ -74,14 +74,14 @@ import funkin.data.Section;
  *    }
  *  }
  *
- * ── Eventos V-Slice soportados ────────────────────────────────────────────────
+ * ── Supported V-Slice Events ─────────────────────────────────────────────────
  *
  *  FocusCamera  → Camera Follow   (char 0=bf, 1=dad, 2=gf)
  *  ZoomCamera   → Camera Zoom     (zoom|duration)
  *  SetCameraBop → Camera Bop Rate (rate)
  *  PlayAnimation → Play Anim      (target:anim)
  *  SetCharacter  → Change Character
- *  (otros)      → pass-through
+ *  (others)      → pass-through
  */
 class VSliceConverter
 {

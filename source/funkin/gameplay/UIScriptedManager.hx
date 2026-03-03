@@ -172,6 +172,7 @@ class UIScriptedManager extends FlxGroup
 		uiScript.set('gameState', gameState);
 		uiScript.set('uiGroup', this);
 		uiScript.set('metaData', metaData);
+		uiScript.set('SONG', PlayState.SONG);
 
 		// ── Clases que el script necesita para replicar UIManager ──────────
 

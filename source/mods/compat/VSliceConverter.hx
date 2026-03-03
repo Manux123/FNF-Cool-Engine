@@ -153,8 +153,17 @@ class VSliceConverter
 		}
 
 		// ── 3. Construir SwagSong base ────────────────────────────────────────
+		// IMPORTANTE: song.song debe ser el nombre de CARPETA (ej: "senpai", "high")
+		// y NO el display name del metadata (ej: "Senpai Erect", "High Erect").
+		// Se usa en _resolveSongFolder() para buscar Inst.ogg, Voices.ogg, etc.
+		// Si tenemos el path del chart, derivamos el folder name desde ahí.
+		// Si no, usamos el songName en lowercase como fallback.
+		final songFolder:String = (chartFilePath != null && chartFilePath != '')
+			? _folderName(_parentDir(chartFilePath)).toLowerCase()
+			: meta.songName.toLowerCase();
+
 		final song:SwagSong = {
-			song: meta.songName,
+			song: songFolder,
 			bpm: bpm,
 			speed: speed,
 			needsVoices: true,
@@ -167,7 +176,10 @@ class VSliceConverter
 			gfVersion: gf,
 			characters: null,
 			strumsGroups: null,
-			events: []
+			events: [],
+			// V-Slice audio variation override
+			instSuffix: (meta.instrumental != null && meta.instrumental != '') ? meta.instrumental : null,
+			artist: (meta.artist != null && meta.artist != '') ? meta.artist : null
 		};
 
 		// ── 4. Obtener las notas para esta dificultad ─────────────────────────
@@ -500,6 +512,8 @@ class VSliceConverter
 			gf: 'gf',
 			opponent: 'dad',
 			songName: 'Unknown',
+			artist: '',
+			instrumental: '',   // V-Slice: playData.characters.instrumental
 			timeChanges: new Array<{t:Float, bpm:Float}>()
 		};
 
@@ -639,6 +653,10 @@ class VSliceConverter
 		if (meta.songName != null)
 			result.songName = _str(meta.songName, result.songName);
 
+		// ── Artista ───────────────────────────────────────────────────────────
+		if (meta.artist != null)
+			result.artist = _str(meta.artist, result.artist);
+
 		// ── BPM / timeChanges ─────────────────────────────────────────────────
 		final tcRaw:Dynamic = meta.timeChanges;
 		if (tcRaw != null && Std.isOfType(tcRaw, Array))
@@ -660,6 +678,10 @@ class VSliceConverter
 					result.gf = _str(chars.girlfriend, result.gf);
 				if (chars.opponent != null)
 					result.opponent = _str(chars.opponent, result.opponent);
+				// V-Slice: campo "instrumental" → variante de audio a usar
+				// (puede diferir de la dificultad; ej: nightmare usa audio "erect")
+				if (chars.instrumental != null)
+					result.instrumental = _str(chars.instrumental, result.instrumental);
 			}
 		}
 	}

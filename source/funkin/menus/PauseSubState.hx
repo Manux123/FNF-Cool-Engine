@@ -119,7 +119,7 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 		levelDeaths.cameras = [_pauseCam];
 		add(levelDeaths);
 
-		levelAuthor = new FlxText(FlxG.width - 400, 125, 380, "Author: " + GameState.listAuthor, 20);
+		levelAuthor = new FlxText(FlxG.width - 400, 125, 380, "Artist: " + GameState.listArtist, 20);
 		levelAuthor.scrollFactor.set();
 		levelAuthor.setFormat(Paths.font('vcr.ttf'), 20, FlxColor.WHITE, RIGHT, OUTLINE, FlxColor.BLACK);
 		levelAuthor.borderSize = 1.5;

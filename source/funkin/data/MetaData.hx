@@ -57,6 +57,8 @@ typedef SongMetaData =
 	@:optional var introVideo:Null<String>;
 	@:optional var outroVideo:Null<String>;
 	@:optional var midSongVideo:Null<Bool>;
+	/** Si true, la cámara no hace zoom al ritmo (reemplaza el hardcode SONG.song == "Tutorial"). */
+	@:optional var disableCameraZoom:Null<Bool>;
 }
 
 class MetaData
@@ -80,6 +82,8 @@ class MetaData
 	public var introVideo:Null<String> = null;
 	public var outroVideo:Null<String> = null;
 	public var midSongVideo:Bool = false;
+	/** Si true, deshabilita zoom de cámara al ritmo de notas (reemplaza hardcode "Tutorial"). */
+	public var disableCameraZoom:Bool = false;
 
 	/** Raw leído del JSON, útil para re-guardar sin perder campos */
 	public var raw:SongMetaData;
@@ -158,6 +162,7 @@ class MetaData
 		meta.introVideo   = rawData?.introVideo  ?? null;
 		meta.outroVideo   = rawData?.outroVideo  ?? null;
 		meta.midSongVideo = resolveBool(rawData?.midSongVideo, false);
+		meta.disableCameraZoom = resolveBool(rawData?.disableCameraZoom, false);
 
 		trace('[MetaData] Resuelto — ui="${meta.ui}" noteSkin="${meta.noteSkin}" noteSplash="${meta.noteSplash}"');
 		return meta;

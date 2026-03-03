@@ -18,7 +18,7 @@ function onUpdate(elapsed:Float)
         _sineTime += elapsed;
         dad.y += Math.sin(_sineTime * 2.0) * 3.0 * elapsed * 60.0 / 2.8;
     }
-    catch(_) { _destroyed = true; }
+    catch(e:Dynamic) { _destroyed = true; }
 }
 
 function onDestroy()
@@ -35,5 +35,5 @@ function onDestroy()
             _evilTrail = null;
         }
     }
-    catch(_) {}
+    catch(e:Dynamic) {}
 }

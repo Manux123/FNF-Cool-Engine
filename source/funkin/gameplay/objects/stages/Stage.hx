@@ -145,6 +145,30 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		trace('[Stage] Todos los cachés de Stage limpiados.');
 	}
 
+	/**
+	 * Carga y devuelve solo el StageData de un stage SIN construir sprites.
+	 * Usa el mismo caché que Stage.new() — I/O de disco ocurre como máximo una vez.
+	 * Útil para leer campos como isPixelStage antes de que currentStage exista.
+	 */
+	public static function getStageData(stageName:String):Null<StageData>
+	{
+		if (stageName == null || stageName == '') return null;
+		try
+		{
+			var file:String = null;
+			if (_dataCache.exists(stageName))
+				file = _dataCache.get(stageName);
+			else
+			{
+				file = mods.compat.ModCompatLayer.readStageFile(stageName);
+				if (file != null) _dataCache.set(stageName, file);
+			}
+			if (file == null) return null;
+			return cast mods.compat.ModCompatLayer.loadStage(file, stageName);
+		}
+		catch (_:Dynamic) { return null; }
+	}
+
 	public var stageData:StageData;
 	public var curStage:String;
 

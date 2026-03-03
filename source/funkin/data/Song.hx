@@ -78,6 +78,18 @@ typedef SwagSong =
 	
 	var stage:String;
 	var validScore:Bool;
+
+	// === V-SLICE AUDIO VARIATION ===
+	/**
+	 * Variante de audio forzada por el metadata V-Slice (playData.characters.instrumental).
+	 * Si está definida, Paths.inst() / Paths.voices() usan este sufijo en lugar del
+	 * sufijo de dificultad. Ej: "erect" → carga Inst-erect.ogg para TODAS las dificultades.
+	 * Null = comportamiento normal (usar sufijo de dificultad).
+	 */
+	@:optional var instSuffix:Null<String>;
+
+	/** Artista de la canción (leído del campo "artist" del metadata V-Slice). */
+	@:optional var artist:Null<String>;
 }
 
 class Song

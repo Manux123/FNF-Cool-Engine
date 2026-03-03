@@ -155,7 +155,8 @@ class EventsSidebar extends FlxGroup
 			// Ocultar el que se está arrastrando
 			if (_dragging && _dragEvt == evt) continue;
 
-			var evtY = gridY + (evt.stepTime * GRID_SIZE);
+			// Subtract gridScrollY so events scroll with the grid (same as note Y formula).
+			var evtY = (gridY - gridScrollY) + (evt.stepTime * GRID_SIZE);
 			if (evtY < 80 || evtY > FlxG.height - 30) continue;
 
 			var evtColor = _eventColor(evt.type);
@@ -219,7 +220,7 @@ class EventsSidebar extends FlxGroup
 
 			if (FlxG.mouse.justReleased)
 			{
-				var relY    = (_dragSprite.y + EVENT_H / 2) - gridY;
+				var relY    = (_dragSprite.y + EVENT_H / 2) - (gridY - gridScrollY);
 				var newStep = Math.max(0, Math.round(relY / GRID_SIZE));
 				_saveEvtHistory();
 				_dragEvt.stepTime = newStep;
@@ -236,9 +237,9 @@ class EventsSidebar extends FlxGroup
 
 		if (isHoveringBorder)
 		{
-			var relY     = my - gridY;
+			var relY     = my - (gridY - gridScrollY);
 			var beatSize = GRID_SIZE * 4;
-			hoverBeatY   = gridY + (Math.floor(relY / beatSize) * beatSize);
+			hoverBeatY   = (gridY - gridScrollY) + (Math.floor(relY / beatSize) * beatSize);
 
 			var justShown = !addEventBtn.visible;
 			addEventBtn.x     = gridX - 24;
@@ -260,7 +261,7 @@ class EventsSidebar extends FlxGroup
 			addEventBtn.alpha = overBtn ? 1.0 : 0.75;
 
 			if (FlxG.mouse.justPressed && overBtn)
-				eventPopup.openAtStep((hoverBeatY - gridY) / GRID_SIZE);
+				eventPopup.openAtStep((hoverBeatY - (gridY - gridScrollY)) / GRID_SIZE);
 		}
 		else if (addEventBtn.visible && !FlxG.mouse.overlaps(addEventBtn, camHUD))
 		{
@@ -284,7 +285,7 @@ class EventsSidebar extends FlxGroup
 		if (_song.events == null) return;
 		for (evt in _song.events)
 		{
-			var evtY = gridY + (evt.stepTime * GRID_SIZE);
+			var evtY = (gridY - gridScrollY) + (evt.stepTime * GRID_SIZE);
 			var evtX = gridX - SIDEBAR_WIDTH - 5;
 			if (mx >= evtX && mx <= gridX - 5 && my >= evtY - EVENT_H && my <= evtY + EVENT_H)
 			{
@@ -322,7 +323,7 @@ class EventsSidebar extends FlxGroup
 		if (_song.events == null) return;
 		for (evt in _song.events)
 		{
-			var evtY = gridY + (evt.stepTime * GRID_SIZE);
+			var evtY = (gridY - gridScrollY) + (evt.stepTime * GRID_SIZE);
 			var evtX = gridX - SIDEBAR_WIDTH - 5;
 			if (mx >= evtX && mx <= gridX && my >= evtY - EVENT_H && my <= evtY + EVENT_H)
 			{

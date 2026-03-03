@@ -1,0 +1,38 @@
+[
+  {
+    "name": "sick",
+    "window": 45,
+    "score": 350,
+    "accuracyWeight": 1.0,
+    "health": 0.10,
+    "breakCombo": false,
+    "showPopup": true
+  },
+  {
+    "name": "good",
+    "window": 90,
+    "score": 200,
+    "accuracyWeight": 0.75,
+    "health": 0.05,
+    "breakCombo": false,
+    "showPopup": true
+  },
+  {
+    "name": "bad",
+    "window": 135,
+    "score": 100,
+    "accuracyWeight": 0.50,
+    "health": -0.03,
+    "breakCombo": false,
+    "showPopup": true
+  },
+  {
+    "name": "shit",
+    "window": 166,
+    "score": 50,
+    "accuracyWeight": 0.25,
+    "health": -0.03,
+    "breakCombo": true,
+    "showPopup": true
+  }
+]

@@ -15,27 +15,36 @@ import sys.io.File;
 using StringTools;
 
 /**
- * Sistema de gestión de shaders — reescrito siguiendo el patrón de Codename Engine.
+ * ShaderManager — Sistema centralizado de shaders runtime.
  *
- * CAMBIO CLAVE:
- *   Antes: applyShader() añadía un ShaderFilter a cam._filters.
- *          setShaderParam() iteraba un Map<FlxSprite, ...> → crash al destruirse el estado.
+ * ── RuntimeShader extiende FlxShader ──────────────────────────────────────
+ * FlxSprite.shader espera FlxShader. RuntimeShader extiende FlxShader con un
+ * passthrough como @:glFragmentSource. Después de super() la fuente real se
+ * escribe via @:privateAccess directamente al campo interno __glFragmentSrc,
+ * evitando que el setter dispare __init__() sobre el ShaderData viejo.
+ * OpenFL recompila en el primer draw; pending-params cubre ese delay de 1 frame.
  *
- *   Ahora: applyShader() crea una FlxShader propia por sprite y la asigna con sprite.shader.
- *          setShaderParam() actualiza SOLO la instancia FlxShader (sin tocar el sprite nunca).
- *          Map<String, Array<FlxShader>> → las instancias de shader sobreviven a la destrucción
- *          de sprites porque son objetos Haxe independientes.
+ * ── Pending Params ──────────────────────────────────────────────────────────
+ * Los uniforms (uTime etc.) no existen en data hasta el primer draw call.
+ * setShaderParam() guarda valores en _pendingParams cuando no están listos,
+ * y los reintenta automáticamente en cada llamada posterior (onUpdate).
  */
 class ShaderManager
 {
 	public static var shaders:Map<String, CustomShader> = new Map();
-	public static var shaderPaths:Map<String, String> = new Map();
+	public static var shaderPaths:Map<String, String>   = new Map();
+
+	/** Instancias Shader vivas, indexadas por nombre de shader. */
+	static var _liveInstances:Map<String, Array<FlxShader>> = new Map();
+
+	/** Mapeo inverso: sprite → {shaderName, instance}. */
+	static var _spriteToInstance:Map<FlxSprite, {name:String, instance:FlxShader}> = new Map();
 
 	/**
-	 * Instancias vivas de FlxShader por nombre de shader.
-	 * Se actualiza en setShaderParam sin necesidad de referencias a sprites.
+	 * Params pendientes: shaderName → Map(paramName → value).
+	 * Se guardan cuando el uniform no existe aún y se reintenta en el siguiente frame.
 	 */
-	static var _liveInstances:Map<String, Array<FlxShader>> = new Map();
+	static var _pendingParams:Map<String, Map<String, Dynamic>> = new Map();
 
 	// ─── Init ─────────────────────────────────────────────────────────────────
 
@@ -80,7 +89,7 @@ class ShaderManager
 			{
 				trace('[ShaderManager] Carpeta $folderPath no encontrada. Creando...');
 				try { FileSystem.createDirectory(folderPath); }
-				catch (e:Exception) { trace('[ShaderManager] Error al crear carpeta: ${e.message}'); }
+				catch (e:Dynamic) { trace('[ShaderManager] Error al crear carpeta: $e'); }
 			}
 			return;
 		}
@@ -121,9 +130,9 @@ class ShaderManager
 			trace('[ShaderManager] Shader "$shaderName" cargado');
 			return shader;
 		}
-		catch (e:Exception)
+		catch (e:Dynamic)
 		{
-			trace('[ShaderManager] Error al cargar shader "$shaderName": ${e.message}');
+			trace('[ShaderManager] Error al cargar shader "$shaderName": $e');
 			return null;
 		}
 	}
@@ -135,13 +144,6 @@ class ShaderManager
 
 	// ─── Aplicar / Quitar ─────────────────────────────────────────────────────
 
-	/**
-	 * Aplica un shader DIRECTAMENTE al sprite (sprite.shader = instance).
-	 *
-	 * Cada sprite recibe su propia FlxShader para no compartir estado.
-	 * La instancia se registra en _liveInstances[shaderName] para que
-	 * setShaderParam pueda actualizarla sin necesidad de tocar el sprite.
-	 */
 	public static function applyShader(sprite:FlxSprite, shaderName:String, ?camera:FlxCamera):Bool
 	{
 		if (sprite == null)
@@ -154,35 +156,34 @@ class ShaderManager
 		if (customShader == null || customShader.fragmentCode == null)
 			return false;
 
-		// Quitar instancia anterior del registro si el sprite ya tenía un shader
 		removeShader(sprite);
 
-		// BUGFIX: glFragmentSource DEBE establecerse ANTES de super() en FlxShader.
-		// Asignarlo DESPUÉS de new FlxShader() no recompila — la GPU ya recibió el fuente vacío.
-		// RuntimeShader pasa el fragmento en su propio constructor correctamente.
-		final instance = new RuntimeShader(customShader.fragmentCode);
+				var instance:FlxShader;
+		try
+		{
+			instance = new RuntimeShader(customShader.fragmentCode);
+		}
+		catch (e:Dynamic)
+		{
+			trace('[ShaderManager] Error al crear RuntimeShader "$shaderName": $e');
+			return false;
+		}
 
-		// Asignar directo al sprite — sin tocar cámaras ni filtros
 		sprite.shader = instance;
 
-		// Registrar la instancia por nombre para poder actualizar uniforms
 		if (!_liveInstances.exists(shaderName))
 			_liveInstances.set(shaderName, []);
 		_liveInstances.get(shaderName).push(instance);
 
-		// Guardar qué instancia tiene este sprite (para removeShader)
 		_spriteToInstance.set(sprite, {name: shaderName, instance: instance});
 
-		trace('[ShaderManager] Shader "$shaderName" aplicado directo a sprite');
+		// Los params pendientes se aplicarán en el próximo onUpdate (post primer draw).
+		_flushPendingForShader(shaderName);
+
+		trace('[ShaderManager] Shader "$shaderName" aplicado a sprite');
 		return true;
 	}
 
-	/** Mapa auxiliar sprite→instancia solo para removeShader. Solo se lee en remove, nunca en update. */
-	static var _spriteToInstance:Map<FlxSprite, {name:String, instance:FlxShader}> = new Map();
-
-	/**
-	 * Quita el shader de un sprite y elimina su instancia del registro.
-	 */
 	public static function removeShader(sprite:FlxSprite):Void
 	{
 		if (sprite == null) return;
@@ -191,73 +192,127 @@ class ShaderManager
 			final entry = _spriteToInstance.get(sprite);
 			if (entry == null) return;
 
-			// Quitar la instancia del array de instancias vivas
 			final arr = _liveInstances.get(entry.name);
 			if (arr != null) arr.remove(entry.instance);
 
-			// Quitar shader del sprite
 			sprite.shader = null;
-
 			_spriteToInstance.remove(sprite);
 		}
-		catch(_) { _spriteToInstance.remove(sprite); }
+		catch(e:Dynamic) { _spriteToInstance.remove(sprite); }
 	}
 
 	// ─── Parámetros ───────────────────────────────────────────────────────────
 
 	/**
-	 * Actualiza un uniform en TODAS las instancias vivas de ese shader.
-	 * Solo accede a objetos FlxShader — nunca toca sprites ni cámaras.
-	 * Los FlxShader son objetos Haxe puros, no se destruyen con los sprites.
+	 * Establece un parámetro uniform en todas las instancias vivas de shaderName.
+	 * Si el uniform no está disponible aún (pre-primer draw), el valor se guarda
+	 * y se reintenta automáticamente en la siguiente llamada.
 	 */
 	public static function setShaderParam(shaderName:String, paramName:String, value:Dynamic):Bool
 	{
+		_flushPendingForShader(shaderName);
+
 		var updated = false;
-		try
+		var hadInstances = false;
+
+		final arr = _liveInstances.get(shaderName);
+		if (arr != null && arr.length > 0)
 		{
-			final arr = _liveInstances.get(shaderName);
-			if (arr != null)
+			hadInstances = true;
+			for (instance in arr)
 			{
-				for (instance in arr)
-				{
-					try
-					{
-						if (instance == null) continue;
-						// FIX: Reflect.getProperty() busca getters/setters explícitos.
-					// Los uniforms de OpenFL ShaderData son campos dinámicos (@:data),
-					// por eso getProperty devuelve null. Reflect.field() los encuentra.
-					final param = Reflect.field(instance.data, paramName);
-						if (param != null && Std.isOfType(param, ShaderParameter))
-						{
-							cast(param, ShaderParameter<Dynamic>).value = value;
-							updated = true;
-						}
-					}
-					catch(_) {}
-				}
+				if (instance == null) continue;
+				if (_writeParam(instance, paramName, value))
+					updated = true;
+				else
+					_storePending(shaderName, paramName, value);
 			}
 		}
-		catch(_) {}
 
-		// También actualizar la instancia maestra por compatibilidad
-		try
-		{
-			final master = getShader(shaderName);
-			if (master != null) master.setParam(paramName, value);
-		}
-		catch(_) {}
+		if (!hadInstances)
+			_storePending(shaderName, paramName, value);
 
 		return updated;
 	}
 
+	public static function flushPending():Void
+	{
+		for (name in _pendingParams.keys())
+			_flushPendingForShader(name);
+	}
+
+	// ─── Helpers internos ─────────────────────────────────────────────────────
+
 	/**
-	 * Limpia todas las instancias registradas (llamar en onDestroy del estado).
-	 * NO toca sprites — solo limpia los arrays internos.
+	 * Intenta escribir un uniform en una instancia openfl.display.Shader.
+	 * Devuelve false (sin lanzar) si el uniform no existe aún.
+	 *
+	 * openfl.errors.Error("Invalid field:X") es lanzado por ShaderData.__get
+	 * cuando el uniform no está registrado todavía (pre-primer draw call).
+	 * Ese tipo de excepción ES catcheable con catch(e:Dynamic) en C++.
 	 */
+	static function _writeParam(instance:FlxShader, paramName:String, value:Dynamic):Bool
+	{
+		var param:Dynamic = null;
+
+		// ShaderData.__get lanza openfl.errors.Error si el campo no existe.
+		try { param = Reflect.field(instance.data, paramName); }
+		catch (e:Dynamic) { return false; }
+
+		if (param == null || !Std.isOfType(param, ShaderParameter))
+			return false;
+
+		final uploadVal:Array<Dynamic> = Std.isOfType(value, Array) ? cast value : [value];
+		try
+		{
+			// Acceso dinámico en vez de cast para evitar type-mismatch C++ entre
+			// ShaderParameter_Float y ShaderParameter<Dynamic>.
+			var p:Dynamic = param;
+			p.value = uploadVal;
+			return true;
+		}
+		catch (e:Dynamic)
+		{
+			trace('[ShaderManager] Error al setear "$paramName": $e');
+			return false;
+		}
+	}
+
+	static function _storePending(shaderName:String, paramName:String, value:Dynamic):Void
+	{
+		if (!_pendingParams.exists(shaderName))
+			_pendingParams.set(shaderName, new Map());
+		_pendingParams.get(shaderName).set(paramName, value);
+	}
+
+	static function _flushPendingForShader(shaderName:String):Void
+	{
+		final pending = _pendingParams.get(shaderName);
+		if (pending == null || Lambda.count(pending) == 0) return;
+
+		final arr = _liveInstances.get(shaderName);
+		if (arr == null || arr.length == 0) return;
+
+		final toRemove:Array<String> = [];
+		for (paramName => value in pending)
+		{
+			var ok = false;
+			for (instance in arr)
+				if (instance != null && _writeParam(instance, paramName, value))
+					ok = true;
+			if (ok) toRemove.push(paramName);
+		}
+		for (p in toRemove) pending.remove(p);
+		if (Lambda.count(pending) == 0) _pendingParams.remove(shaderName);
+	}
+
+	// ─── Limpieza ─────────────────────────────────────────────────────────────
+
 	public static function clearSpriteShaders():Void
 	{
 		_liveInstances.clear();
 		_spriteToInstance.clear();
+		_pendingParams.clear();
 	}
 
 	// ─── Utilidades ───────────────────────────────────────────────────────────
@@ -289,15 +344,13 @@ class ShaderManager
 
 	public static function clear():Void
 	{
-		for (shader in shaders) shader.destroy();
 		shaders.clear();
 		shaderPaths.clear();
 		_liveInstances.clear();
 		_spriteToInstance.clear();
+		_pendingParams.clear();
 		trace('[ShaderManager] Shaders limpiados');
 	}
-
-	// ─── Compatibilidad: _ensureCameras ───────────────────────────────────────
 
 	@:deprecated("_ensureCameras ya no es necesario — se mantiene por compatibilidad")
 	public static function _ensureCameras(sprite:FlxSprite, ?fallback:FlxCamera):Void
@@ -313,92 +366,63 @@ class ShaderManager
 class CustomShader
 {
 	public var name:String;
-	public var shader:FlxShader;
 	public var fragmentCode:String;
+
+	/** Instancia lazy para CameraUtil.addShader() y otras APIs externas.
+	 *  Las instancias por-sprite viven en ShaderManager._liveInstances. */
+	var _shader:FlxShader;
+	public var shader(get, never):FlxShader;
+	function get_shader():FlxShader
+	{
+		if (_shader == null && fragmentCode != null)
+			_shader = new RuntimeShader(fragmentCode);
+		return _shader;
+	}
 
 	public function new(name:String, fragmentCode:String)
 	{
 		this.name         = name;
 		this.fragmentCode = fragmentCode;
-
-		try
-		{
-			// BUGFIX: RuntimeShader establece glFragmentSource ANTES de super() —
-			// única forma correcta de compilar un GLSL dinámico en OpenFL/HaxeFlixel.
-			shader = new RuntimeShader(fragmentCode);
-			trace('[CustomShader] Shader "$name" compilado');
-		}
-		catch (e:Exception)
-		{
-			trace('[CustomShader] Error al compilar shader "$name": ${e.message}');
-			shader = null;
-		}
-	}
-
-	public function setParam(paramName:String, value:Dynamic):Bool
-	{
-		if (shader == null) return false;
-		try
-		{
-			// FIX: Reflect.field() para campos dinámicos (@:data) de ShaderData
-			final param = Reflect.field(shader.data, paramName);
-			if (param == null) return false;
-			if (Std.isOfType(param, ShaderParameter))
-				cast(param, ShaderParameter<Dynamic>).value = value;
-			else
-				Reflect.setField(shader.data, paramName, value);
-			return true;
-		}
-		catch (e:Exception)
-		{
-			trace('[CustomShader] Error al establecer parámetro "$paramName": ${e.message}');
-			return false;
-		}
-	}
-
-	public function getParam(paramName:String):Dynamic
-	{
-		if (shader == null) return null;
-		try
-		{
-			// FIX: Reflect.field() para campos dinámicos de ShaderData
-			final param = Reflect.field(shader.data, paramName);
-			if (param != null && Std.isOfType(param, ShaderParameter))
-				return cast(param, ShaderParameter<Dynamic>).value;
-			return param;
-		}
-		catch (e:Exception) { return null; }
 	}
 
 	public function destroy():Void
 	{
-		shader       = null;
+		_shader      = null;
 		fragmentCode = null;
 	}
 }
 
 // ─── RuntimeShader ────────────────────────────────────────────────────────────
+// Extends FlxShader so FlxSprite.shader accepts it.
 //
-// RAZÓN DE EXISTENCIA:
-//   En OpenFL/HaxeFlixel, FlxShader compila el GLSL en __init() que se llama
-//   automáticamente en super(). Para cargar código dinámico el fragmento DEBE
-//   estar asignado ANTES de que se llame a super() — de lo contrario la GPU
-//   recibe el shader vacío/por defecto y asignarlo después NO lo recompila.
-//
-//   Patrón incorrecto (causa crash / shader ignorado):
-//     var s = new FlxShader();
-//     s.glFragmentSource = myCode;   ← demasiado tarde, ya compiló vacío
-//
-//   Patrón correcto (este helper):
-//     var s = new RuntimeShader(myCode);
-//     // glFragmentSource está seteado antes de super() → se compila bien
+// The only reliable cross-version approach:
+//  1. @:glFragmentSource compiles a valid passthrough at build time so super()
+//     initialises ShaderData without touching any custom uniforms.
+//  2. We store the real source in a static var BEFORE calling super(), then
+//     in the constructor we call the public glFragmentSource setter.
+//     In OpenFL 9+, the setter only sets a dirty flag — it does NOT call
+//     __init__() immediately, so no "Invalid field" is thrown.
+//     (If a version does call __init__() in the setter, the passthrough ShaderData
+//      is already set up, so at worst the custom source gets compiled twice —
+//      still no crash.)
+//  3. ShaderManager's pending-params retries uniforms after the first draw call,
+//     covering any one-frame delay.
 
+@:glFragmentSource('
+	#pragma header
+	void main() {
+		gl_FragColor = flixel_texture2D(bitmap, openfl_TextureCoordv);
+	}
+')
 class RuntimeShader extends FlxShader
 {
 	public function new(fragmentCode:String)
 	{
-		// Asignar fuente ANTES de super() para que __init() lo compile correctamente
-		glFragmentSource = fragmentCode;
 		super();
+		// Assign via the public property AFTER super(). The FlxShader/OpenFL
+		// setter marks the shader dirty and schedules a recompile on next draw.
+		// We avoid @:privateAccess because internal field names differ across
+		// OpenFL versions and cause "Unknown identifier" compile errors.
+		glFragmentSource = fragmentCode;
 	}
 }

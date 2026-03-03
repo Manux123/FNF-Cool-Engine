@@ -446,74 +446,95 @@ class CharacterList
     public static function getDefaultStageForSong(songName:String):String
     {
         if (!initialized) init();
-        
-        songName = songName.toLowerCase();
-        
-        // Mapeo conocido de canciones a stages
-        var songToStage:Map<String, String> = [
-            'bopeebo' => 'stage_week1',
-            'fresh' => 'stage_week1',
-            'dadbattle' => 'stage_week1',
-            'test' => 'stage_week1',
-            
-            'spookeez' => 'spooky',
-            'south' => 'spooky',
-            'monster' => 'spooky',
-            
-            'pico' => 'philly',
-            'philly' => 'philly',
-            'blammed' => 'philly',
-            
-            'milf' => 'limo',
-            'satin-panties' => 'limo',
-            'high' => 'limo',
-            
-            'cocoa' => 'mall',
-            'eggnog' => 'mall',
-            
-            'winter-horrorland' => 'mallEvil',
-            
-            'senpai' => 'school',
-            'roses' => 'school',
-            
-            'thorns' => 'schoolEvil'
-        ];
-        
-        if (songToStage.exists(songName))
+
+        // El stage correcto debe venir del metadata del chart (campo "stage"
+        // en el JSON de la canción). Este método es solo el último recurso
+        // cuando ningún sistema ya lo resolvió.
+        // El antiguo mapa hardcodeado (bopeebo→stage_week1, senpai→school…)
+        // fue eliminado: era frágil frente a mods con canciones del mismo nombre.
+
+        // Intentar leer stage desde el stage JSON de la canción si existe
+        #if sys
+        final key = songName.toLowerCase();
+        for (modBase in _getModBases())
         {
-            var stage = songToStage.get(songName);
-            if (stages.contains(stage))
-                return stage;
+            for (metaName in ['$key-metadata.json', '$key-metadata-default.json', '$key-metadata-erect.json'])
+            {
+                final path = '$modBase/songs/$key/$metaName';
+                if (sys.FileSystem.exists(path))
+                {
+                    try
+                    {
+                        final raw:Dynamic = haxe.Json.parse(sys.io.File.getContent(path));
+                        final stage:String = raw?.playData?.stage ?? raw?.stage ?? null;
+                        if (stage != null && stage != '') return stage;
+                    }
+                    catch(_) {}
+                }
+            }
         }
-        
-        // Fallback al primer stage disponible o 'stage_week1'
-        if (stages.length > 0)
-            return stages[0];
+        #end
+
+        // Fallback: primer stage disponible
+        if (stages.length > 0) return stages[0];
         return 'stage_week1';
     }
-    
+
     /**
-     * Obtiene la GF por defecto para un stage
+     * Obtiene la GF por defecto para un stage.
+     * Lee el campo "gfVersion" del JSON del stage si existe.
+     * El antiguo mapeo hardcodeado (limo→gf-car, school→gf-pixel…) fue eliminado.
      */
     public static function getDefaultGFForStage(stage:String):String
     {
         if (!initialized) init();
-        
-        stage = stage.toLowerCase();
-        
-        // Mapeo conocido de stages a GFs
-        if (stage.contains("limo"))
-            return girlfriends.contains('gf-car') ? 'gf-car' : girlfriends[0];
-        else if (stage.contains("mall"))
-            return girlfriends.contains('gf-christmas') ? 'gf-christmas' : girlfriends[0];
-        else if (stage.contains("school"))
-            return girlfriends.contains('gf-pixel') ? 'gf-pixel' : girlfriends[0];
-        
-        // Fallback a primera GF o 'gf'
-        if (girlfriends.length > 0)
-            return girlfriends[0];
+
+        #if sys
+        // Leer gfVersion desde el stage JSON
+        final gf = _readGFFromStageJSON(stage);
+        if (gf != null && gf != '') return gf;
+        #end
+
+        if (girlfriends.length > 0) return girlfriends[0];
         return 'gf';
     }
+
+    #if sys
+    /** Devuelve las bases de rutas a buscar (mod activo primero, luego assets). */
+    private static function _getModBases():Array<String>
+    {
+        final bases:Array<String> = [];
+        final activeMod = mods.ModManager.activeMod;
+        if (activeMod != null)
+            bases.push('${mods.ModManager.MODS_FOLDER}/$activeMod');
+        bases.push('assets');
+        return bases;
+    }
+
+    /** Lee el campo gfVersion del stage JSON sin construir el Stage entero. */
+    private static function _readGFFromStageJSON(stageName:String):Null<String>
+    {
+        try
+        {
+            for (base in _getModBases())
+            {
+                for (sub in ['stages', 'data/stages'])
+                {
+                    final path = '$base/$sub/$stageName.json';
+                    if (sys.FileSystem.exists(path))
+                    {
+                        final raw:Dynamic = haxe.Json.parse(sys.io.File.getContent(path));
+                        final gf:String = raw?.gfVersion ?? raw?.girlfriend ?? null;
+                        if (gf != null && gf != '') return gf;
+                        return null; // archivo existe pero no define gf
+                    }
+                }
+            }
+        }
+        catch(_) {}
+        return null;
+    }
+    #end
     
     /**
      * Devuelve TODOS los personajes (bf + opponents + gf) en una sola lista ordenada.

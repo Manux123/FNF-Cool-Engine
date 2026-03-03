@@ -3,117 +3,139 @@ package funkin.gameplay;
 import flixel.FlxG;
 
 /**
- * GameState - Gestión centralizada del estado del juego
- * Maneja: Score, Health, Combo, Accuracy, Stats
+ * GameState - Gestión centralizada del estado del juego.
+ * Ahora usa RatingManager para soportar ratings softcodeados.
  */
 class GameState
 {
 	// === SINGLETON ===
 	private static var _instance:GameState;
-	
+
 	public static function get():GameState
 	{
 		if (_instance == null)
 			_instance = new GameState();
 		return _instance;
 	}
-	
+
 	// === STATS ===
 	public var score:Int = 0;
 	public var combo:Int = 0;
 	public var health:Float = 1.0;
 	public var accuracy:Float = 0.00;
-	
-	// === COUNTERS ===
+
+	// === COUNTERS LEGACY (compatibilidad con scripts/HUD existentes) ===
 	public var sicks:Int = 0;
 	public var goods:Int = 0;
 	public var bads:Int = 0;
 	public var shits:Int = 0;
 	public var misses:Int = 0;
-	
+
+	/**
+	 * Contador genérico por nombre de rating.
+	 * Incluye los 4 legacy + cualquier rating custom del mod.
+	 * Ejemplo: ratingCounts['perfect'], ratingCounts['sick'], etc.
+	 */
+	public var ratingCounts:Map<String, Int> = new Map();
+
 	// === INTERNAL ===
 	private var totalNotesHit:Float = 0;
 	private var totalNotesPlayed:Int = 0;
-	
+
 	// === CONSTANTS ===
 	private static inline var MAX_HEALTH:Float = 2.0;
 	private static inline var MIN_HEALTH:Float = 0.0;
 
-	public static var listAuthor:String = 'KawaiSprite';
-
+	public static var listArtist:String = 'Kawai Sprite';
 	public static var deathCounter:Int = 0;
-	
-	public function new() 
+
+	public function new()
 	{
 		reset();
 	}
-	
-	/**
-	 * Resetear todo el estado
-	 */
+
+	// ─── Reset ───────────────────────────────────────────────────────────────
+
 	public function reset():Void
 	{
-		score = 0;
-		combo = 0;
-		health = 1.0;
-		accuracy = 0.0;
-		sicks = 0;
-		goods = 0;
-		bads = 0;
-		shits = 0;
-		misses = 0;
-		totalNotesHit = 0;
+		score     = 0;
+		combo     = 0;
+		health    = 1.0;
+		accuracy  = 0.0;
+		sicks     = 0;
+		goods     = 0;
+		bads      = 0;
+		shits     = 0;
+		misses    = 0;
+		totalNotesHit    = 0;
 		totalNotesPlayed = 0;
+		ratingCounts.clear();
+		// Sembrar contadores para ratings conocidos (evita null-check en HUD)
+		for (r in RatingManager.ratings)
+			ratingCounts.set(r.name, 0);
 	}
-	
+
+	// ─── Note hit ────────────────────────────────────────────────────────────
+
 	/**
-	 * Procesar hit de nota
+	 * Procesar hit de nota.
+	 * Retorna el nombre del rating obtenido (ej. "sick", "perfect", "good"…).
 	 */
 	public function processNoteHit(noteDiff:Float, isSustain:Bool):String
 	{
 		if (isSustain)
 		{
+			// Los sustains no afectan al combo ni al rating visual.
+			// Se puntúan como el rating más bajo que no rompe combo.
 			totalNotesHit += 1.0;
 			totalNotesPlayed++;
 			updateAccuracy();
-			//thanks juanen
-			updateScore('shit');
-			return "sick";	
+			score += 50; // puntuación fija para sustains (ajustable)
+			return RatingManager.topRatingName; // devolver 'sick' / top rating para compatibilidad
 		}
-		
-		var rating:String = getRating(noteDiff);
-		
-		// Actualizar counters
-		switch (rating)
+
+		var ratingData = RatingManager.getRating(noteDiff);
+		if (ratingData == null)
 		{
-			case 'sick':
-				sicks++;
-				totalNotesHit += 1.0;
-				combo++;
-			case 'good':
-				goods++;
-				totalNotesHit += 0.75;
-				combo++;
-			case 'bad':
-				bads++;
-				totalNotesHit += 0.5;
-				combo++;
-			case 'shit':
-				shits++;
-				totalNotesHit += 0.25;
-				combo = 0;
+			// noteDiff > missWindow — debería haberlo capturado NoteManager,
+			// pero si llega aquí lo tratamos como el peor rating.
+			ratingData = RatingManager.ratings[RatingManager.ratings.length - 1];
 		}
-		
+
+		var name = ratingData.name;
+
+		// ── Counters ──────────────────────────────────────────────────────────
+		ratingCounts.set(name, (ratingCounts.get(name) ?? 0) + 1);
+
+		// Legacy compat (solo los 4 estándar de FNF)
+		switch (name)
+		{
+			case 'sick':  sicks++;
+			case 'good':  goods++;
+			case 'bad':   bads++;
+			case 'shit':  shits++;
+			// ratings custom no tienen variable propia, solo ratingCounts
+		}
+
+		// ── Combo ─────────────────────────────────────────────────────────────
+		if (ratingData.breakCombo)
+			combo = 0;
+		else
+			combo++;
+
+		// ── Accuracy ─────────────────────────────────────────────────────────
+		totalNotesHit += ratingData.accuracyWeight;
 		totalNotesPlayed++;
 		updateAccuracy();
-		updateScore(rating);
-		
-		return rating;
+
+		// ── Score ─────────────────────────────────────────────────────────────
+		score += ratingData.score;
+
+		return name;
 	}
-	
-	/**
-	 * Procesar miss
-	 */
+
+	// ─── Miss ────────────────────────────────────────────────────────────────
+
 	public function processMiss():Void
 	{
 		misses++;
@@ -121,102 +143,63 @@ class GameState
 		totalNotesPlayed++;
 		updateAccuracy();
 	}
-	
-	/**
-	 * Obtener rating según diferencia de tiempo
-	 */
-	private function getRating(noteDiff:Float):String
-	{
-		if (noteDiff <= 45)
-			return 'sick';
-		else if (noteDiff <= 90)
-			return 'good';
-		else if (noteDiff <= 135)
-			return 'bad';
-		else
-			return 'shit';
-	}
-	
-	/**
-	 * Actualizar accuracy
-	 */
-	private function updateAccuracy():Void
-	{
-		if (totalNotesPlayed > 0)
-			accuracy = (totalNotesHit / totalNotesPlayed) * 100;
-		else
-			accuracy = 0;
 
-		accuracy = Math.fround(accuracy * 100) / 100;
-	}
-	
-	/**
-	 * Actualizar score
-	 */
-	private function updateScore(rating:String):Void
-	{
-		switch (rating)
-		{
-			case 'sick':
-				score += 350;
-			case 'good':
-				score += 200;
-			case 'bad':
-				score += 100;
-			case 'shit':
-				score += 50;
-		}
-	}
-	
-	/**
-	 * Modificar health (con límites)
-	 */
+	// ─── Health ──────────────────────────────────────────────────────────────
+
 	public function modifyHealth(amount:Float):Void
 	{
-		health += amount;
-		health = Math.max(MIN_HEALTH, Math.min(MAX_HEALTH, health));
+		health = Math.max(MIN_HEALTH, Math.min(MAX_HEALTH, health + amount));
 	}
-	
-	/**
-	 * Verificar si está muerto
-	 */
+
 	public function isDead():Bool
-	{
 		return health <= MIN_HEALTH;
-	}
-	
-	/**
-	 * Obtener porcentaje de accuracy formateado
-	 */
-	public function getAccuracyString():String
+
+	// ─── Accuracy ────────────────────────────────────────────────────────────
+
+	private function updateAccuracy():Void
 	{
-		return Std.string(Math.floor(accuracy * 100) / 100) + '%';
+		accuracy = totalNotesPlayed > 0
+			? Math.fround((totalNotesHit / totalNotesPlayed) * 10000) / 100
+			: 0.0;
 	}
-	
+
+	public function getAccuracyString():String
+		return Std.string(accuracy) + '%';
+
+	// ─── FC / Sick detection ─────────────────────────────────────────────────
+
 	/**
-	 * Verificar si es Full Combo
+	 * Full Combo: sin misses y sin ningún rating que rompa combo.
+	 * Funciona con ratings custom que tengan breakCombo:true.
 	 */
 	public function isFullCombo():Bool
 	{
-		return misses == 0 && bads == 0 && shits == 0;
+		if (misses > 0) return false;
+		for (r in RatingManager.ratings)
+			if (r.breakCombo && (ratingCounts.get(r.name) ?? 0) > 0)
+				return false;
+		return true;
 	}
-	
+
 	/**
-	 * Verificar si es Sick Mode (solo sicks)
+	 * Sick/Perfect: solo hits del rating más estricto (menor window).
+	 * Con un ratings.json custom que tenga "perfect" antes de "sick",
+	 * isSickMode() devuelve true solo si TODOS son "perfect".
 	 */
 	public function isSickMode():Bool
 	{
-		return goods == 0 && bads == 0 && shits == 0 && misses == 0;
-	}
-	
-	/**
-	 * Destruir singleton
-	 */
-	public static function destroy():Void
-	{
-		if (_instance != null)
+		if (!isFullCombo()) return false;
+		for (r in RatingManager.ratings)
 		{
-			_instance = null;
+			// El primer rating (menor window) es el "top" — se permite
+			if (r.name == RatingManager.topRatingName) continue;
+			if ((ratingCounts.get(r.name) ?? 0) > 0) return false;
 		}
+		return true;
 	}
+
+	// ─── Singleton destroy ────────────────────────────────────────────────────
+
+	public static function destroy():Void
+		_instance = null;
 }

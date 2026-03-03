@@ -5,6 +5,7 @@ import flixel.graphics.frames.FlxAtlasFrames;
 import funkin.gameplay.notes.NoteSkinSystem;
 
 using StringTools;
+
 /**
  * Cover visual para notas largas (hold notes).
  *
@@ -14,10 +15,9 @@ using StringTools;
  * - Object pooling limpio con kill()/revive()
  * - Skin de splash determinada por NoteSkinSystem.currentSplash
  *
- * Animaciones esperadas en el atlas (por color: Purple, Blue, Green, Red):
- *   holdCoverStart{Color}   — inicio  (no looping)
- *   holdCover{Color}        — loop continuo
- *   holdCoverEnd{Color}     — fin/release (no looping → kill)
+ * FIX: _loadFrames ahora solo registra animaciones del color correspondiente
+ * al noteData cargado. Antes registraba los 4 colores sobre un atlas de 1 color,
+ * lo que producía warnings "no frames were found" para los 3 restantes.
  */
 class NoteHoldCover extends FlxSprite
 {
@@ -41,7 +41,6 @@ class NoteHoldCover extends FlxSprite
 	public function new()
 	{
 		super(0, 0);
-		// Empezamos muerto/invisible hasta que se recicle del pool
 		kill();
 	}
 
@@ -51,10 +50,10 @@ class NoteHoldCover extends FlxSprite
 	 * Inicializar/reciclar el cover para una nota.
 	 * Carga el atlas si el splash skin cambió o si los frames son inválidos.
 	 *
-	 * @param x         Posición X (centro del strum)
-	 * @param y         Posición Y (centro del strum)
-	 * @param noteData  Columna de la nota (0-3)
-	 * @param splashName  Skin de splash a usar (null = currentSplash)
+	 * @param x          Posición X (centro del strum)
+	 * @param y          Posición Y (centro del strum)
+	 * @param noteData   Columna de la nota (0-3)
+	 * @param splashName Skin de splash a usar (null = currentSplash)
 	 */
 	public function setup(x:Float, y:Float, noteData:Int, ?splashName:String):Void
 	{
@@ -65,7 +64,6 @@ class NoteHoldCover extends FlxSprite
 
 		var targetSplash:String = splashName != null ? splashName : NoteSkinSystem.currentSplash;
 
-		// Solo recargar si el skin cambió o el bitmap fue destruido
 		@:privateAccess
 		var needsReload = (_loadedSplash != targetSplash)
 			|| frames == null
@@ -76,7 +74,6 @@ class NoteHoldCover extends FlxSprite
 		{
 			if (!_loadFrames(noteData, targetSplash))
 			{
-				// Sin assets → cover invisible, no crashea
 				makeGraphic(1, 1, 0x00000000);
 				inUse = false;
 				visible = false;
@@ -104,12 +101,13 @@ class NoteHoldCover extends FlxSprite
 		_playAnim('holdCover${COLOR_NAMES[noteData]}');
 	}
 
-	/** Reproducir animación de release; al terminar, el cover se mata solo.
-	 *  Si el cover está todavía en "start", espera a que termine antes de hacer end.
-	 *  Devuelve false si se pospuso (todavía en start). */
+	/**
+	 * Reproducir animación de release; al terminar, el cover se mata solo.
+	 * Si el cover está todavía en "start", espera a que termine antes de hacer end.
+	 * Devuelve false si se pospuso (todavía en start).
+	 */
 	public function playEnd():Bool
 	{
-		// No interrumpir la animación de inicio — se resolverá en _onAnimationFinished
 		if (coverState == "start")
 		{
 			coverState = "end_pending";
@@ -138,7 +136,6 @@ class NoteHoldCover extends FlxSprite
 		super.kill();
 		inUse = false;
 		visible = false;
-		// Limpiar estado de animación para que no quede un frame fantasma al reciclar
 		coverState = "idle";
 		if (animation != null && animation.curAnim != null)
 			animation.stop();
@@ -153,20 +150,21 @@ class NoteHoldCover extends FlxSprite
 	// ─────────────── Internos ────────────────────────────────────────────────
 
 	/**
-	 * Cargar frames del atlas para todos los colores del splash skin.
+	 * Cargar frames del atlas para el color de esta nota.
+	 *
+	 * FIX: Solo se registran las animaciones del color cargado (COLOR_NAMES[noteData]).
+	 * Antes se iteraban los 4 colores sobre un atlas de 1 color, generando warnings
+	 * "no frames were found with prefix holdCover{OtroColor}" para los 3 restantes.
+	 *
 	 * Devuelve false si el skin no tiene holdCover assets.
 	 */
 	private function _loadFrames(noteData:Int, splashName:String):Bool
 	{
-		// Intentar cargar con el splash name indicado
 		var color:String = COLOR_NAMES[noteData];
 		var loaded:FlxAtlasFrames = NoteSkinSystem.getHoldCoverTexture(color, splashName);
 
 		if (loaded == null)
-		{
-			// Fallback: intentar con el splash por defecto
 			loaded = NoteSkinSystem.getHoldCoverTexture(color);
-		}
 
 		if (loaded == null) return false;
 
@@ -174,16 +172,14 @@ class NoteHoldCover extends FlxSprite
 		antialiasing = true;
 		scale.set(1.0, 1.0);
 
-		// Registrar animaciones para los 4 colores (el atlas puede tener todas)
 		if (animation != null) animation.destroyAnimations();
 
-		for (i in 0...4)
-		{
-			var c:String = COLOR_NAMES[i];
-			animation.addByPrefix('holdCoverStart$c', 'holdCoverStart$c', FRAMERATE_DEFAULT, false);
-			animation.addByPrefix('holdCover$c', 'holdCover$c', FRAMERATE_DEFAULT * 2, true);
-			animation.addByPrefix('holdCoverEnd$c', 'holdCoverEnd$c', FRAMERATE_DEFAULT, false);
-		}
+		// FIX: registrar SOLO las animaciones del color de esta nota.
+		// El atlas solo contiene prefijos de ese color — registrar otros
+		// causa los warnings "no frames were found with prefix holdCover*".
+		animation.addByPrefix('holdCoverStart$color', 'holdCoverStart$color', FRAMERATE_DEFAULT, false);
+		animation.addByPrefix('holdCover$color',      'holdCover$color',      FRAMERATE_DEFAULT * 2, true);
+		animation.addByPrefix('holdCoverEnd$color',   'holdCoverEnd$color',   FRAMERATE_DEFAULT, false);
 
 		animation.finishCallback = _onAnimationFinished;
 
@@ -208,7 +204,7 @@ class NoteHoldCover extends FlxSprite
 		if (name.startsWith('holdCoverStart'))
 		{
 			if (coverState == "end_pending")
-				playEnd();   // se pidió end mientras estaba en start → ejecutar ahora
+				playEnd();
 			else
 				playContinue();
 		}

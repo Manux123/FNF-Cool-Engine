@@ -2,6 +2,7 @@ package shaders;
 
 // STOLEN FROM HAXEFLIXEL DEMO LOL
 import flixel.system.FlxAssets.FlxShader;
+import openfl.display.ShaderParameter;
 
 enum WiggleEffectType
 {
@@ -22,40 +23,67 @@ class WiggleEffect
 
 	public function new():Void
 	{
-		shader.uTime.value = [0];
+		// Uniforms are initialized in WiggleShader.new() after super().
+		// Do NOT access shader.uXxx here — ShaderData.__get throws
+		// "Invalid field:X" if OpenGL hasn't finished linking the program yet.
 	}
 
 	public function update(elapsed:Float):Void
 	{
-		shader.uTime.value[0] += elapsed;
+		_safeAdd(shader.uTime, elapsed, 0.0);
 	}
 
 	function set_effectType(v:WiggleEffectType):WiggleEffectType
 	{
 		effectType = v;
-		shader.effectType.value = [WiggleEffectType.getConstructors().indexOf(Std.string(v))];
+		_safeSet(shader.effectType, WiggleEffectType.getConstructors().indexOf(Std.string(v)));
 		return v;
 	}
 
 	function set_waveSpeed(v:Float):Float
 	{
 		waveSpeed = v;
-		shader.uSpeed.value = [waveSpeed];
+		_safeSet(shader.uSpeed, v);
 		return v;
 	}
 
 	function set_waveFrequency(v:Float):Float
 	{
 		waveFrequency = v;
-		shader.uFrequency.value = [waveFrequency];
+		_safeSet(shader.uFrequency, v);
 		return v;
 	}
 
 	function set_waveAmplitude(v:Float):Float
 	{
 		waveAmplitude = v;
-		shader.uWaveAmplitude.value = [waveAmplitude];
+		_safeSet(shader.uWaveAmplitude, v);
 		return v;
+	}
+
+	/** Writes a single value into a ShaderParameter safely. Never throws. */
+	static inline function _safeSet(param:Dynamic, v:Dynamic):Void
+	{
+		try
+		{
+			if (param.value != null) param.value[0] = v;
+			else                     param.value    = [v];
+		}
+		catch (_:Dynamic) {}
+	}
+
+	/**
+	 * Adds `delta` to value[0] of a ShaderParameter.
+	 * If value is null, initialises it to [fallback + delta].
+	 */
+	static inline function _safeAdd(param:Dynamic, delta:Float, fallback:Float):Void
+	{
+		try
+		{
+			if (param.value != null) param.value[0] = (param.value[0] : Float) + delta;
+			else                     param.value    = [fallback + delta];
+		}
+		catch (_:Dynamic) {}
 	}
 }
 
@@ -101,12 +129,12 @@ class WiggleShader extends FlxShader
 
 				pt.y = floor(pt.y / h) * h;
 				float offsetX = sin(pt.y * uFrequency + uTime * uSpeed) * uWaveAmplitude;
-                pt.x += offsetX; // * (pt.y - 1.0); // <- Uncomment to stop bottom part of the screen from moving
+                pt.x += offsetX;
 			}
 			else if (effectType == EFFECT_TYPE_WAVY) 
 			{
 				float offsetY = sin(pt.x * uFrequency + uTime * uSpeed) * uWaveAmplitude;
-				pt.y += offsetY; // * (pt.y - 1.0); // <- Uncomment to stop bottom part of the screen from moving
+				pt.y += offsetY;
 			}
 			else if (effectType == EFFECT_TYPE_HEAT_WAVE_HORIZONTAL)
 			{
@@ -130,8 +158,16 @@ class WiggleShader extends FlxShader
 			vec2 uv = sineWave(openfl_TextureCoordv);
 			gl_FragColor = texture2D(bitmap, uv);
 		}')
+
 	public function new()
 	{
 		super();
+		// After super(), the GLSL is compiled and uniforms are registered
+		// in ShaderData. Safe to initialise default values here.
+		try { uTime.value        = [0.0]; } catch (_:Dynamic) {}
+		try { effectType.value   = [0];   } catch (_:Dynamic) {}
+		try { uSpeed.value       = [0.0]; } catch (_:Dynamic) {}
+		try { uFrequency.value   = [0.0]; } catch (_:Dynamic) {}
+		try { uWaveAmplitude.value = [0.0]; } catch (_:Dynamic) {}
 	}
 }

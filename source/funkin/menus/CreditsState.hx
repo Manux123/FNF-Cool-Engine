@@ -91,7 +91,7 @@ class CreditsState extends funkin.states.MusicBeatState
 		super.create(); // MusicBeatState carga automáticamente assets/states/CreditsState/
 
 		#if desktop
-		DiscordClient.changePresence("Créditos", null);
+		DiscordClient.changePresence("In the Credits", null);
 		#end
 
 		// ── Fondo oscuro ───────────────────────────────────────────────────

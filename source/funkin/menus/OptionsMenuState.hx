@@ -58,6 +58,14 @@ class OptionsMenuState extends MusicBeatSubstate
 	var curSelected:Int = 0;
 	var currentOptions:Array<Dynamic> = [];
 
+	// ── Scroll de opciones ────────────────────────────────────────────────
+	// Desplazamiento vertical en píxeles para cuando hay más opciones que espacio
+	var _optScrollY:Float = 0.0;
+	// Área visible de opciones: desde startY hasta el footer
+	static inline var OPT_START_Y:Int  = 180;
+	static inline var OPT_SPACING:Int  = 55;
+	static inline var OPT_VISIBLE_H:Int = 370; // FlxG.height(720) - footer(100) - startY(180) - margen(70)
+
 	// Keybind state
 	var bindingState:String = "select"; // "select", "binding"
 	var tempKey:String = "";
@@ -202,6 +210,12 @@ class OptionsMenuState extends MusicBeatSubstate
 		helpText.scrollFactor.set();
 		add(helpText);
 
+		// Indicador de scroll (flecha abajo) — solo visible cuando hay más opciones
+		var scrollHint = new FlxText(0, FlxG.height - 108, FlxG.width, "▲ ▼  Scroll", 16);
+		scrollHint.setFormat(Paths.font("Funkin.otf"), 16, 0xFF555555, CENTER, NONE);
+		scrollHint.scrollFactor.set();
+		add(scrollHint);
+
 		loadCategory(curCategory);
 
 		// Configurar cámaras si se abre desde pause menu
@@ -272,6 +286,7 @@ class OptionsMenuState extends MusicBeatSubstate
 		optionValues.clear();
 		currentOptions = [];
 		curSelected = 0;
+		_optScrollY  = 0.0;
 		bindingState = "select";
 		bindingIndicator.visible = false;
 
@@ -428,8 +443,12 @@ class OptionsMenuState extends MusicBeatSubstate
 	{
 		FlxG.save.data.fpsTarget = fps;
 		FlxG.save.flush();
+		// Flixel tiene su propio limitador interno independiente del stage:
+		// updateFramerate = lógica/física, drawFramerate = render
+		FlxG.updateFramerate = fps;
+		FlxG.drawFramerate   = fps;
 		openfl.Lib.current.stage.frameRate = fps;
-		trace('[Options] FPS cap -> $fps');
+		trace('[Options] FPS cap -> $fps (update=$fps draw=$fps stage=$fps)');
 	}
 
 	function loadGraphicsOptions()
@@ -633,25 +652,57 @@ class OptionsMenuState extends MusicBeatSubstate
 
 	function createOptionTexts()
 	{
-		var startY = 180; // Más abajo para dar espacio a las pestañas
-		var spacing = 55; // Más espaciado para mejor lectura
-
 		for (i in 0...currentOptions.length)
 		{
-			var nameText:FlxText = new FlxText(90, startY + (i * spacing), 600, currentOptions[i].name, 26);
+			var nameText:FlxText = new FlxText(90, OPT_START_Y + (i * OPT_SPACING), 600, currentOptions[i].name, 26);
 			nameText.setFormat(Paths.font("Funkin.otf"), 26, FlxColor.WHITE, LEFT, OUTLINE, FlxColor.BLACK);
 			nameText.borderSize = 2;
 			nameText.ID = i;
 			nameText.scrollFactor.set();
 			optionNames.add(nameText);
 
-			var valueText:FlxText = new FlxText(FlxG.width - 400, startY + (i * spacing), 320, currentOptions[i].get(), 26);
+			var valueText:FlxText = new FlxText(FlxG.width - 400, OPT_START_Y + (i * OPT_SPACING), 320, currentOptions[i].get(), 26);
 			valueText.setFormat(Paths.font("Funkin.otf"), 26, FlxColor.CYAN, RIGHT, OUTLINE, FlxColor.BLACK);
 			valueText.borderSize = 2;
 			valueText.ID = i;
 			valueText.scrollFactor.set();
 			optionValues.add(valueText);
 		}
+	}
+
+	// Recalcula _optScrollY para que curSelected siempre sea visible
+	function _updateScroll()
+	{
+		if (currentOptions.length == 0) return;
+
+		// Posición Y del item seleccionado (relativa al area, sin scroll)
+		var itemY:Float = curSelected * OPT_SPACING;
+
+		// Asegurar que el item seleccionado esté dentro del área visible
+		if (itemY < _optScrollY)
+			_optScrollY = itemY;
+		if (itemY + OPT_SPACING > _optScrollY + OPT_VISIBLE_H)
+			_optScrollY = itemY + OPT_SPACING - OPT_VISIBLE_H;
+
+		// Clamp: no desplazar más allá del contenido
+		var maxScroll:Float = Math.max(0, currentOptions.length * OPT_SPACING - OPT_VISIBLE_H);
+		if (_optScrollY < 0)   _optScrollY = 0;
+		if (_optScrollY > maxScroll) _optScrollY = maxScroll;
+
+		// Aplicar scroll a los textos
+		var clip = new flixel.math.FlxRect(0, OPT_START_Y, FlxG.width, OPT_VISIBLE_H);
+
+		optionNames.forEach(function(txt:FlxText)
+		{
+			txt.y = OPT_START_Y + (txt.ID * OPT_SPACING) - _optScrollY;
+			txt.visible = (txt.y >= OPT_START_Y - OPT_SPACING) && (txt.y < OPT_START_Y + OPT_VISIBLE_H);
+		});
+
+		optionValues.forEach(function(txt:FlxText)
+		{
+			txt.y = OPT_START_Y + (txt.ID * OPT_SPACING) - _optScrollY;
+			txt.visible = (txt.y >= OPT_START_Y - OPT_SPACING) && (txt.y < OPT_START_Y + OPT_VISIBLE_H);
+		});
 	}
 
 	function updateCategoryDisplay()
@@ -905,6 +956,7 @@ class OptionsMenuState extends MusicBeatSubstate
 			curSelected = 0;
 
 		updateOptionDisplay();
+		_updateScroll();
 	}
 
 	// === KEYBIND FUNCTIONS ===

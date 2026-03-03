@@ -19,8 +19,31 @@ class CoolUtil
 	// ─── Dificultad ───────────────────────────────────────────────────────────
 
 	/** Nombre de la dificultad actual en mayúsculas. */
-	public static inline function difficultyString():String
-		return difficultyArray[funkin.gameplay.PlayState.storyDifficulty];
+	public static function difficultyString():String
+	{
+		final diff = funkin.gameplay.PlayState.storyDifficulty;
+		final diffs = funkin.menus.FreeplayState.difficultyStuff;
+		if (diff >= 0 && diff < diffs.length)
+			return diffs[diff][0].toUpperCase();
+		if (diff >= 0 && diff < difficultyArray.length)
+			return difficultyArray[diff];
+		return 'NORMAL';
+	}
+
+	/**
+	 * Devuelve el sufijo de dificultad actual (ej: "-hard", "-nightmare", "").
+	 * Útil para cargar charts y audio en PlayState.
+	 */
+	public static function difficultySuffix():String
+	{
+		final diff = funkin.gameplay.PlayState.storyDifficulty;
+		final diffs = funkin.menus.FreeplayState.difficultyStuff;
+		if (diff >= 0 && diff < diffs.length)
+			return diffs[diff][1];
+		if (diff >= 0 && diff < difficultyPath.length)
+			return difficultyPath[diff];
+		return '';
+	}
 
 	// ─── Lectura de archivos ──────────────────────────────────────────────────
 

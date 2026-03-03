@@ -284,15 +284,18 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 
 			case Difficulty:
 				menuItems = [];
-				for (i in 0...CoolUtil.difficultyArray.length)
+				// Usar las dificultades reales de la canción actual (detectadas por
+				// FreeplayState/Song.getAvailableDifficulties), no las 3 hardcodeadas.
+				final diffs = funkin.menus.FreeplayState.difficultyStuff;
+				for (i in 0...diffs.length)
 				{
-					// Marcar la dificultad activa con un indicador visual
-					var label = CoolUtil.difficultyArray[i];
+					// diffs[i][0] = label de display (ej: "Easy", "Nightmare")
+					var label:String = diffs[i][0];
 					if (i == PlayState.storyDifficulty)
-						label += "  ◀";
+						label += '  ◀';
 					menuItems.push(label);
 				}
-				menuItems.push("Back");
+				menuItems.push('Back');
 		}
 
 		_rebuildMenu();
@@ -383,7 +386,10 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 	{
 		// Quitar el marcador "  ◀" si aparece
 		var cleanLabel = label.split("  ◀")[0];
-		var idx = CoolUtil.difficultyArray.indexOf(cleanLabel);
+		final diffs = funkin.menus.FreeplayState.difficultyStuff;
+		var idx = -1;
+		for (i in 0...diffs.length)
+			if (diffs[i][0] == cleanLabel) { idx = i; break; }
 		if (idx == -1) return;
 
 		if (idx == PlayState.storyDifficulty)
@@ -397,9 +403,12 @@ class PauseSubState extends funkin.states.MusicBeatSubstate
 
 		PlayState.storyDifficulty = idx;
 
+		// Sufijo real de la dificultad elegida (ej: "-nightmare", "", "-hard")
+		final suffix = diffs[idx][1];
+
 		// Recargar chart con la nueva dificultad
 		var songId = PlayState.SONG.song.toLowerCase();
-		PlayState.SONG = Song.loadFromJson(songId + CoolUtil.difficultyPath[idx], songId);
+		PlayState.SONG = Song.loadFromJson(songId + suffix, songId);
 
 		// Actualizar etiqueta antes de resetear
 		if (levelDifficulty != null)

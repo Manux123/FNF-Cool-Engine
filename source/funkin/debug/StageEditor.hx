@@ -405,12 +405,34 @@ class StageEditor extends funkin.states.MusicBeatState
 		{
 			if (!_stageDataReady)
 			{
-				// ── First load: read from disk ──────────────────────────────────
-				stage = new Stage(stageData.name);
-				if (stage.stageData != null)
+				// FIX: Verificar si el archivo del stage existe en disco ANTES de crear Stage().
+				// Si no existe, Stage.loadStage() caía a loadDefaultStage() → cargaba los assets
+				// de stage_week1 aunque el usuario no los pidiera, ensuciando el canvas vacío.
+				final stageFileExists = mods.compat.ModCompatLayer.readStageFile(stageData.name) != null;
+
+				if (stageFileExists)
 				{
-					stageData = stage.stageData; // safe: nothing in memory yet
+					// ── First load: read from disk ──────────────────────────────
+					stage = new Stage(stageData.name);
+					stage.isEditorPreview = true;
+					if (stage.stageData != null)
+					{
+						stageData = stage.stageData; // safe: nothing in memory yet
+						_stageDataReady = true;
+					}
+				}
+				else
+				{
+					// ── Stage nuevo sin archivo: canvas vacío ───────────────────
+					// Usar __fromData__ con stageData vacío (elements:[]) en lugar de
+					// new Stage(nombre) para evitar completamente el fallback a stage_week1.
+					trace('[StageEditor] Stage "${stageData.name}" no encontrado en disco — canvas vacío.');
 					_stageDataReady = true;
+					stage = new Stage('__fromData__');
+					stage.isEditorPreview = true;
+					stage.curStage = stageData.name ?? 'stage';
+					stage.stageData = stageData;
+					stage.buildStage();
 				}
 			}
 			else
@@ -418,6 +440,7 @@ class StageEditor extends funkin.states.MusicBeatState
 				// ── Subsequent reloads: build from in-memory stageData ───────────
 				// __fromData__ sentinel skips loadStage() / disk I/O entirely.
 				stage = new Stage('__fromData__');
+				stage.isEditorPreview = true;
 				stage.curStage = stageData.name ?? 'stage';
 				stage.stageData = stageData;
 				stage.buildStage(); // routes aboveChars:true → stage.aboveCharsGroup

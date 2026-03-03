@@ -52,8 +52,8 @@ class WindowManager
 	// ── Configuración ──────────────────────────────────────────────────────────
 
 	public static var scaleMode(default, null):ScaleMode = LETTERBOX;
-	public static var minWidth:Int     = 640;
-	public static var minHeight:Int    = 360;
+	public static var minWidth:Int     = 960;
+	public static var minHeight:Int    = 540;
 	public static var repositionHUD:Bool = true;
 	public static var initialized(default, null):Bool = false;
 
@@ -219,7 +219,7 @@ class WindowManager
 			}
 			else
 			{
-				trace('[WindowManager] Icono de mod no encontrado: $iconPath');
+				trace('[WindowManager] Icono de mod not found: $iconPath');
 			}
 		}
 		else if (_usingModIcon)

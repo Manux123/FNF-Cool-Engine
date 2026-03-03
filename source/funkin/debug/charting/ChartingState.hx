@@ -106,6 +106,19 @@ class ChartingState extends funkin.states.MusicBeatState
 	var curSelectedNote:Array<Dynamic>;
 	var tempBpm:Float = 0;
 	var vocals:FlxSound;
+	/** Vocal track del BF (si existen Voices-bf.ogg) */
+	var vocalsBf:FlxSound;
+	/** Vocal track del Dad (si existen Voices-dad.ogg) */
+	var vocalsDad:FlxSound;
+	/** true cuando se cargaron vocals por personaje */
+	var _chartPerCharVocals:Bool = false;
+
+	/**
+	 * Sufijo de dificultad actual para guardar el chart con el nombre correcto.
+	 * Ej: '' → song.json, '-nightmare' → song-nightmare.json
+	 * Equivale al CoolUtil.difficultySuffix() del momento en que se abrió el editor.
+	 */
+	public var curDiffSuffix:String = '';
 
 	// UI PRINCIPAL
 	var UI_box:FlxUITabMenu;
@@ -266,6 +279,9 @@ class ChartingState extends funkin.states.MusicBeatState
 				validScore: false
 			};
 		}
+
+		// Capturar dificultad actual para guardar el chart con el nombre correcto
+		curDiffSuffix = funkin.data.CoolUtil.difficultySuffix();
 
 		// Garantizar que strumsGroups y characters existan (incluye grupo de GF)
 		funkin.data.Song.ensureMigrated(_song);
@@ -965,11 +981,65 @@ class ChartingState extends funkin.states.MusicBeatState
 		sep2.color = TEXT_GRAY;
 		tab_group_settings.add(sep2);
 
+		// ── Selector de dificultad dinámica ─────────────────────────────────
+		// Permite guardar el chart como song.json, song-easy.json, song-nightmare.json, etc.
+		var diffLabel = new FlxText(10, 178, 270, 'Difficulty suffix (for saving):', 9);
+		diffLabel.color = TEXT_GRAY;
+		tab_group_settings.add(diffLabel);
+
+		// Construir la lista de dificultades disponibles
+		// Incluye 'normal' (sin sufijo) + las de FreeplayState si existen
+		var diffOptions:Array<String> = ['normal (no suffix)'];
+		var diffSuffixes:Array<String> = [''];
+		// difficultyStuff es Array<[nombre, sufijo]>, ej: [['Easy','-easy'],['Normal',''],['Hard','-hard']]
+		var fDiffs = funkin.menus.FreeplayState.difficultyStuff;
+		if (fDiffs != null && fDiffs.length > 0)
+		{
+			for (i in 0...fDiffs.length)
+			{
+				final pair:Array<Dynamic> = cast fDiffs[i];
+				final diffName:String  = pair != null && pair.length > 0 ? Std.string(pair[0]) : '';
+				final suffix:String    = pair != null && pair.length > 1 ? Std.string(pair[1]) : '';
+				if (suffix == '' || diffName == '') continue; // 'normal' ya está
+				diffOptions.push(diffName.toLowerCase());
+				diffSuffixes.push(suffix);
+			}
+		}
+		// Asegurar que el sufijo actual esté representado
+		if (!diffSuffixes.contains(curDiffSuffix))
+		{
+			if (curDiffSuffix != '' && curDiffSuffix != null)
+			{
+				diffOptions.push(curDiffSuffix.substr(1)); // quitar '-'
+				diffSuffixes.push(curDiffSuffix);
+			}
+		}
+		final diffDropdown = new FlxUIDropDownMenu(10, 192, FlxUIDropDownMenu.makeStrIdLabelArray(diffOptions, true),
+			function(selected:String)
+			{
+				final idx = Std.parseInt(selected);
+				if (idx != null && idx >= 0 && idx < diffSuffixes.length)
+				{
+					curDiffSuffix = diffSuffixes[idx];
+					// Recargar vocals con la nueva dificultad
+					loadSong(_song.song);
+					showMessage('📂 Difficulty: ${diffOptions[idx]} → reloading audio...', ACCENT_CYAN);
+				}
+			});
+		diffDropdown.selectedLabel = diffOptions[0];
+		// Preseleccionar la dificultad actual
+		if (diffSuffixes.contains(curDiffSuffix))
+		{
+			final curIdx = diffSuffixes.indexOf(curDiffSuffix);
+			if (curIdx >= 0) diffDropdown.selectedLabel = diffOptions[curIdx];
+		}
+		tab_group_settings.add(diffDropdown);
+
 		// Save/Load
-		var saveBtn = new FlxButton(10, 180, "Save Chart", saveChart);
+		var saveBtn = new FlxButton(10, 225, "Save Chart", saveChart);
 		tab_group_settings.add(saveBtn);
 
-		var loadBtn = new FlxButton(10, 210, "Load Chart", loadChart);
+		var loadBtn = new FlxButton(10, 255, "Load Chart", loadChart);
 		tab_group_settings.add(loadBtn);
 
 		UI_box.addGroup(tab_group_settings);
@@ -1412,30 +1482,63 @@ class ChartingState extends funkin.states.MusicBeatState
 		}
 
 		// Vocals
+		_destroyChartVocals();
 		if (_song.needsVoices)
 		{
-			try
+			// Intentar cargar vocals por personaje primero
+			var bfName  = (_song.player1  != null && _song.player1  != '') ? _song.player1  : 'bf';
+			var dadName = (_song.player2  != null && _song.player2  != '') ? _song.player2  : 'dad';
+			if (_song.characters != null && _song.characters.length >= 3)
 			{
-				vocals = Paths.loadVoices(daSong);
-				vocals.volume = 0.6; // Mismo volumen que la música
-				vocals.looped = false;
-				vocals.pause();
-				FlxG.sound.list.add(vocals);
+				bfName  = _song.characters[2].name;
+				dadName = _song.characters[1].name;
 			}
-			catch (e:Dynamic)
+
+			final bfVocals  = Paths.loadVoicesForChar(daSong, bfName,  curDiffSuffix);
+			final dadVocals = Paths.loadVoicesForChar(daSong, dadName, curDiffSuffix);
+
+			if (bfVocals != null || dadVocals != null)
 			{
-				trace('Error loading vocals: $e');
+				_chartPerCharVocals = true;
+				if (bfVocals != null)
+				{
+					vocalsBf = bfVocals;
+					vocalsBf.volume = 0.6;
+					vocalsBf.looped = false;
+					vocalsBf.pause();
+					FlxG.sound.list.add(vocalsBf);
+				}
+				if (dadVocals != null)
+				{
+					vocalsDad = dadVocals;
+					vocalsDad.volume = 0.6;
+					vocalsDad.looped = false;
+					vocalsDad.pause();
+					FlxG.sound.list.add(vocalsDad);
+				}
+				trace('[ChartingState] Per-char vocals cargadas: bf=${bfVocals != null}, dad=${dadVocals != null}');
+			}
+			else
+			{
+				// Fallback al Voices.ogg genérico
+				_chartPerCharVocals = false;
+				try
+				{
+					vocals = Paths.loadVoices(daSong, curDiffSuffix);
+					vocals.volume = 0.6;
+					vocals.looped = false;
+					vocals.pause();
+					FlxG.sound.list.add(vocals);
+				}
+				catch (e:Dynamic)
+				{
+					trace('Error loading vocals: $e');
+				}
 			}
 		}
 		else
 		{
-			// Asegurar que no haya vocals si no son necesarias
-			if (vocals != null)
-			{
-				vocals.stop();
-				vocals.destroy();
-				vocals = null;
-			}
+			_chartPerCharVocals = false;
 		}
 
 		Conductor.changeBPM(_song.bpm);
@@ -1445,29 +1548,29 @@ class ChartingState extends funkin.states.MusicBeatState
 	// ✨ FUNCIÓN NUEVA: Sincronizar vocales con la música
 	function syncVocals():Void
 	{
-		if (vocals != null && FlxG.sound.music != null)
+		if (FlxG.sound.music == null) return;
+
+		if (_chartPerCharVocals)
 		{
-			// Solo ajustar tiempo si la diferencia es significativa (>50ms)
+			// Sincronizar ambos tracks por personaje
+			for (v in [vocalsBf, vocalsDad])
+			{
+				if (v == null) continue;
+				if (Math.abs(v.time - FlxG.sound.music.time) > 50)
+					v.time = FlxG.sound.music.time;
+				v.volume = FlxG.sound.music.volume;
+				if (FlxG.sound.music.playing) { if (!v.playing) v.play(); }
+				else { if (v.playing) v.pause(); }
+			}
+		}
+		else if (vocals != null)
+		{
 			var timeDiff = Math.abs(vocals.time - FlxG.sound.music.time);
 			if (timeDiff > 50)
-			{
 				vocals.time = FlxG.sound.music.time;
-			}
-
-			// Sincronizar volumen
 			vocals.volume = FlxG.sound.music.volume;
-
-			// Controlar reproducción
-			if (FlxG.sound.music.playing)
-			{
-				if (!vocals.playing)
-					vocals.play();
-			}
-			else
-			{
-				if (vocals.playing)
-					vocals.pause();
-			}
+			if (FlxG.sound.music.playing) { if (!vocals.playing) vocals.play(); }
+			else { if (vocals.playing) vocals.pause(); }
 		}
 	}
 
@@ -1722,14 +1825,14 @@ class ChartingState extends funkin.states.MusicBeatState
 			var sectionHeight = _song.notes[i].lengthInSteps * GRID_SIZE;
 
 			// Línea divisora
-			var divider = new FlxSprite(gridBG.x, gridBG.y + currentY);
+			var divider = new FlxSprite(gridBG.x, (100 - gridScrollY) + currentY);
 			divider.makeGraphic(Std.int(gridBG.width), 2, (i == curSection ? ACCENT_CYAN : 0x80FFFFFF));
 			divider.scrollFactor.set();
 			divider.cameras = [camGame];
 			sectionIndicators.add(divider);
 
 			// Número de sección
-			var numText = new FlxText(gridBG.x - 30, gridBG.y + currentY + 5, 0, '${i + 1}', 12);
+			var numText = new FlxText(gridBG.x - 30, (100 - gridScrollY) + currentY + 5, 0, '${i + 1}', 12);
 			numText.setFormat(Paths.font("vcr.ttf"), 12, (i == curSection ? ACCENT_CYAN : TEXT_GRAY), LEFT);
 			numText.scrollFactor.set();
 			numText.cameras = [camGame];
@@ -1775,7 +1878,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 			// Actualizar waveform con el scroll
 			if (waveformSprite != null && waveformSprite.visible)
-				waveformSprite.y = gridBG.y;
+				waveformSprite.y = 100 - gridScrollY;
 
 			// Actualizar sidebar de eventos con nuevo scroll
 			if (eventsSidebar != null)
@@ -1795,7 +1898,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 			// Actualizar waveform con el scroll
 			if (waveformSprite != null && waveformSprite.visible)
-				waveformSprite.y = gridBG.y;
+				waveformSprite.y = 100 - gridScrollY;
 
 			// Actualizar sidebar de eventos con nuevo scroll
 			if (eventsSidebar != null)
@@ -2097,24 +2200,22 @@ class ChartingState extends funkin.states.MusicBeatState
 		// PLAYBACK
 		if (FlxG.keys.justPressed.SPACE)
 		{
-			if (FlxG.sound.music.playing)
+			if (FlxG.sound.music != null && FlxG.sound.music.playing)
 			{
 				FlxG.sound.music.pause();
-				vocals.pause();
+				syncVocals(); // FIX: usar syncVocals() en vez de vocals.pause() directo (vocals puede ser null)
 			}
-			else
+			else if (FlxG.sound.music != null)
 			{
 				// ✨ Reproducir desde la sección actual basado en el scroll del grid
 				FlxG.sound.music.time = getSectionStartTime(curSection);
-				vocals.time = FlxG.sound.music.time;
-
 				FlxG.sound.music.play();
-				vocals.play();
+				syncVocals(); // FIX: sincronizar vocals correctamente (per-char o generic)
 				showMessage('▶ Playing from Section ${curSection + 1}', ACCENT_CYAN);
 			}
 		}
 
-		if (FlxG.keys.justPressed.ENTER)
+		if (FlxG.keys.justPressed.ENTER && FlxG.sound.music != null)
 		{
 			FlxG.sound.music.time = getSectionStartTime(curSection);
 			FlxG.sound.music.play();
@@ -2131,6 +2232,8 @@ class ChartingState extends funkin.states.MusicBeatState
 		}
 
 		// NAVEGACIÓN
+		if (FlxG.sound.music != null)
+		{
 		if (FlxG.keys.pressed.W || FlxG.keys.pressed.UP)
 		{
 			FlxG.sound.music.time -= 100 * FlxG.elapsed;
@@ -2150,6 +2253,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		{
 			FlxG.sound.music.time += Conductor.stepCrochet;
 		}
+		} // end music != null
 
 		// SECCIONES
 		if (FlxG.keys.justPressed.PAGEUP)
@@ -2239,7 +2343,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		// Play button
 		if (FlxG.mouse.overlaps(playBtn, camHUD) && FlxG.mouse.justPressed)
 		{
-			if (!FlxG.sound.music.playing)
+			if (FlxG.sound.music != null && !FlxG.sound.music.playing)
 			{
 				// ✨ Reproducir desde la sección actual basado en el scroll del grid
 				FlxG.sound.music.time = getSectionStartTime(curSection);
@@ -2252,7 +2356,7 @@ class ChartingState extends funkin.states.MusicBeatState
 		// Pause button
 		if (FlxG.mouse.overlaps(pauseBtn, camHUD) && FlxG.mouse.justPressed)
 		{
-			if (FlxG.sound.music.playing)
+			if (FlxG.sound.music != null && FlxG.sound.music.playing)
 			{
 				FlxG.sound.music.pause();
 				syncVocals(); // ✨ SINCRONIZAR VOCALES
@@ -2262,8 +2366,11 @@ class ChartingState extends funkin.states.MusicBeatState
 		// Stop button
 		if (FlxG.mouse.overlaps(stopBtn, camHUD) && FlxG.mouse.justPressed)
 		{
-			FlxG.sound.music.stop();
-			FlxG.sound.music.time = 0;
+			if (FlxG.sound.music != null)
+			{
+				FlxG.sound.music.stop();
+				FlxG.sound.music.time = 0;
+			}
 			syncVocals(); // ✨ SINCRONIZAR VOCALES
 		}
 
@@ -2415,25 +2522,25 @@ class ChartingState extends funkin.states.MusicBeatState
 				// Para noteData ≥ 8 (grupos extra): visualColumn = daNoteData sin cambios
 
 				var note:Note = new Note(daStrumTime, visualColumn % 4);
+				// FIX: Forzar un gráfico sólido para la vista del editor.
+				// Note.loadSkin() puede dejar el sprite transparente (0x00000000) si la
+				// skin no está disponible en el contexto del editor, haciendo la nota invisible.
+				// note.color sobre pixels transparentes no tiene efecto — se necesita makeGraphic.
 				note.setGraphicSize(GRID_SIZE, GRID_SIZE);
 				note.updateHitbox();
 				note.x = gridBG.x + (GRID_SIZE * visualColumn);
-				note.y = gridBG.y + sectionY + (noteStep * GRID_SIZE);
+				note.y = (100 - gridScrollY) + sectionY + (noteStep * GRID_SIZE);
 
-				// Color base
+				// Color base — note.color sobre un gráfico blanco funciona correctamente
 				var baseColor = NOTE_COLORS[visualColumn % 8];
 
 				// ✨ Aplicar efecto pulsante si es la nota seleccionada
 				if (curSelectedNote != null && noteData == curSelectedNote)
 				{
-					// Crear efecto pulsante: oscila entre 0.4 y 1.0
 					var pulseAmount = 0.4 + (Math.sin(selectedNotePulse) * 0.5 + 0.5) * 0.6;
-
-					// Oscurecer el color multiplicando cada componente
 					var r = Std.int((baseColor >> 16 & 0xFF) * pulseAmount);
-					var g = Std.int((baseColor >> 8 & 0xFF) * pulseAmount);
-					var b = Std.int((baseColor & 0xFF) * pulseAmount);
-
+					var g = Std.int((baseColor >> 8  & 0xFF) * pulseAmount);
+					var b = Std.int((baseColor        & 0xFF) * pulseAmount);
 					note.color = (0xFF << 24) | (r << 16) | (g << 8) | b;
 				}
 				else
@@ -2546,7 +2653,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 				// REMAPEAR POSICIÓN VISUAL (igual que en updateGrid)
 				var swappedCol = daNoteData;
-				if (section.mustHitSection)
+				if (daNoteData < 8 && section.mustHitSection)
 				{
 					if (daNoteData < 4)
 						swappedCol = daNoteData + 4;
@@ -2557,7 +2664,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 				// ACTUALIZAR posición X e Y
 				note.x = gridBG.x + (GRID_SIZE * visualColumn);
-				note.y = gridBG.y + sectionY + (noteStep * GRID_SIZE);
+				note.y = (100 - gridScrollY) + sectionY + (noteStep * GRID_SIZE);
 
 				// ✨ Aplicar efecto pulsante si es la nota seleccionada
 				var baseColor = NOTE_COLORS[visualColumn % 8];
@@ -2565,8 +2672,8 @@ class ChartingState extends funkin.states.MusicBeatState
 				{
 					var pulseAmount = 0.4 + (Math.sin(selectedNotePulse) * 0.5 + 0.5) * 0.6;
 					var r = Std.int((baseColor >> 16 & 0xFF) * pulseAmount);
-					var g = Std.int((baseColor >> 8 & 0xFF) * pulseAmount);
-					var b = Std.int((baseColor & 0xFF) * pulseAmount);
+					var g = Std.int((baseColor >> 8  & 0xFF) * pulseAmount);
+					var b = Std.int((baseColor        & 0xFF) * pulseAmount);
 					note.color = (0xFF << 24) | (r << 16) | (g << 8) | b;
 				}
 				else
@@ -2973,16 +3080,17 @@ class ChartingState extends funkin.states.MusicBeatState
 		try
 		{
 			// Guardar en la carpeta del mod activo si existe, si no en assets/
-			final songKey = _song.song.toLowerCase();
+			final songKey   = _song.song.toLowerCase();
+			final diffSuffix = (curDiffSuffix != null && curDiffSuffix != '') ? curDiffSuffix : '';
 			var path:String;
 			if (mods.ModManager.isActive())
 			{
 				final modRoot = mods.ModManager.modRoot();
-				path = '$modRoot/songs/$songKey/autosave-$songKey.json';
+				path = '$modRoot/songs/$songKey/autosave-$songKey$diffSuffix.json';
 			}
 			else
 			{
-				path = Paths.resolveWrite('songs/$songKey/autosave-$songKey.json');
+				path = Paths.resolveWrite('songs/$songKey/autosave-$songKey$diffSuffix.json');
 			}
 			// Asegurar que el directorio existe
 			final dir = HaxePath.directory(path);
@@ -3013,11 +3121,15 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		if (data.length > 0)
 		{
+			// Nombre del archivo con sufijo de dificultad dinámica
+			// '' → song.json | '-nightmare' → song-nightmare.json
+			final diffSuffix = (curDiffSuffix != null && curDiffSuffix != '') ? curDiffSuffix : '';
+			final fileName = _song.song.toLowerCase() + diffSuffix + ".json";
 			_file = new FileReference();
 			_file.addEventListener(Event.COMPLETE, onSaveComplete);
 			_file.addEventListener(Event.CANCEL, onSaveCancel);
 			_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
-			_file.save(data, _song.song.toLowerCase() + ".json");
+			_file.save(data, fileName);
 		}
 
 		showMessage('💾 Saving chart...', ACCENT_CYAN);
@@ -3145,8 +3257,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		// Detener audio
 		FlxG.sound.music.stop();
-		if (vocals != null)
-			vocals.stop();
+		_stopChartVocals();
 
 		// Actualizar PlayState.SONG con el chart actual
 		PlayState.SONG = _song;
@@ -3178,8 +3289,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		// Detener audio
 		FlxG.sound.music.stop();
-		if (vocals != null)
-			vocals.stop();
+		_stopChartVocals();
 
 		// Actualizar PlayState.SONG con el chart actual
 		PlayState.SONG = _song;
@@ -3374,15 +3484,49 @@ class ChartingState extends funkin.states.MusicBeatState
 		return true;
 	}
 
-	override function destroy():Void
+	// ══════════════════════════════════════════════════════════════════
+	// HELPERS DE VOCALES
+	// ══════════════════════════════════════════════════════════════════
+
+	/** Para (pausa) todos los tracks de vocales activos. */
+	function _stopChartVocals():Void
 	{
-		// ── Audio ──────────────────────────────────────────────────────────
+		if (vocals != null) vocals.stop();
+		if (vocalsBf != null) vocalsBf.stop();
+		if (vocalsDad != null) vocalsDad.stop();
+	}
+
+	/** Destruye y libera todos los tracks de vocales del editor. */
+	function _destroyChartVocals():Void
+	{
 		if (vocals != null)
 		{
+			FlxG.sound.list.remove(vocals, true);
 			vocals.stop();
 			vocals.destroy();
 			vocals = null;
 		}
+		if (vocalsBf != null)
+		{
+			FlxG.sound.list.remove(vocalsBf, true);
+			vocalsBf.stop();
+			vocalsBf.destroy();
+			vocalsBf = null;
+		}
+		if (vocalsDad != null)
+		{
+			FlxG.sound.list.remove(vocalsDad, true);
+			vocalsDad.stop();
+			vocalsDad.destroy();
+			vocalsDad = null;
+		}
+		_chartPerCharVocals = false;
+	}
+
+	override function destroy():Void
+	{
+		// ── Audio ──────────────────────────────────────────────────────────
+		_destroyChartVocals();
 
 		// ── Waveform ───────────────────────────────────────────────────────
 		if (waveformSprite != null)
@@ -3564,7 +3708,7 @@ class ChartingState extends funkin.states.MusicBeatState
 
 		gridBG.y         = 100 - scrollY + _gridWindowOffset * GRID_SIZE;
 		gridBlackWhite.y = gridBG.y;
-		strumLine.y      = gridBG.y;
+		strumLine.y      = 100; // fija en el borde superior visible — el grid scrollea debajo (NO usar gridBG.y, tiene windowing offset)
 	}
 
 	function clamp(value:Float, min:Float, max:Float):Float

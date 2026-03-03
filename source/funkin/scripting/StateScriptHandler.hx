@@ -107,7 +107,7 @@ class StateScriptHandler
 		#if HSCRIPT_ALLOWED
 		if (!FileSystem.exists(scriptPath))
 		{
-			trace('[StateScriptHandler] No encontrado: $scriptPath');
+			trace('[StateScriptHandler] not found: $scriptPath');
 			return null;
 		}
 

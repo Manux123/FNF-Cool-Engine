@@ -34,7 +34,7 @@ import flixel.ui.FlxButton;
 import flixel.ui.FlxSpriteButton;
 import funkin.gameplay.objects.character.Character;
 import funkin.menus.FreeplayState;
-import extensions.CoolUtil;
+import funkin.data.CoolUtil;
 import funkin.states.LoadingState;
 import haxe.Json;
 import funkin.menus.MainMenuState;
@@ -88,6 +88,10 @@ class AnimationDebug extends MusicBeatState
 	var animPrefixInput:FlxUIInputText;
 	var animFramerateStepper:FlxUINumericStepper;
 	var animLoopedCheckbox:FlxUICheckBox;
+	var animFlipXCheckbox:FlxUICheckBox;
+	// Multi-atlas: campos de sub-atlas por animación
+	var animAssetPathInput:FlxUIInputText;
+	var animRenderTypeInput:FlxUIInputText;
 	var offsetXStepper:FlxUINumericStepper;
 	var offsetYStepper:FlxUINumericStepper;
 
@@ -529,6 +533,16 @@ class AnimationDebug extends MusicBeatState
 		tab.add(prefixHint);
 		yPos += 35;
 
+		// Separador visual para la sección multi-atlas
+		var atlasSection = new FlxSprite(10, yPos);
+		atlasSection.makeGraphic(290, 1, 0x55FF90D0);
+		tab.add(atlasSection);
+		var atlasSectionLabel = new FlxText(14, yPos - 1, 0, "─ Multi-Atlas", 8);
+		atlasSectionLabel.color = 0xFFFF90D0;
+		atlasSectionLabel.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 1);
+		tab.add(atlasSectionLabel);
+		yPos += 12;
+
 		tab.add(new FlxText(10, yPos, 0, "Framerate:", 10));
 		yPos += 15;
 		animFramerateStepper = new FlxUINumericStepper(10, yPos, 1, 24, 1, 60, 0);
@@ -538,6 +552,41 @@ class AnimationDebug extends MusicBeatState
 		animLoopedCheckbox = new FlxUICheckBox(10, yPos, null, null, "Looped", 100);
 		animLoopedCheckbox.checked = false;
 		tab.add(animLoopedCheckbox);
+
+		animFlipXCheckbox = new FlxUICheckBox(160, yPos, null, null, "FlipX (anim)", 120);
+		animFlipXCheckbox.checked = false;
+		tab.add(animFlipXCheckbox);
+		yPos += 24;
+
+		// ── Multi-Atlas: Asset Path (opcional) ───────────────────────────────
+		// Si se deja vacío, la animación pertenece al atlas principal del personaje.
+		// Si se rellena, esta animación se cargará del sub-atlas indicado.
+		// Ejemplo: "tankman/bloody" → assets/characters/images/tankman/bloody/
+		var atlasLabel = new FlxText(10, yPos, 0, "Sub-Atlas Path:", 10);
+		atlasLabel.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 1);
+		tab.add(atlasLabel);
+		yPos += 14;
+		animAssetPathInput = new FlxUIInputText(10, yPos, 290, '', 8);
+		tab.add(animAssetPathInput);
+		yPos += 14;
+		var atlasHint = new FlxText(10, yPos, 290, "empty = main atlas  |  e.g: tankman/bloody", 8);
+		atlasHint.color = FlxColor.fromRGB(100, 180, 255);
+		tab.add(atlasHint);
+		yPos += 20;
+
+		// ── Render Type (opcional) ────────────────────────────────────────────
+		// "animateatlas" para Adobe Animate, "sparrow" para XML atlas.
+		// Dejar vacío para que el engine lo detecte automáticamente.
+		var rtLabel = new FlxText(10, yPos, 0, "Render Type:", 10);
+		rtLabel.setBorderStyle(FlxTextBorderStyle.OUTLINE, FlxColor.BLACK, 1);
+		tab.add(rtLabel);
+		yPos += 14;
+		animRenderTypeInput = new FlxUIInputText(10, yPos, 200, '', 8);
+		tab.add(animRenderTypeInput);
+		yPos += 14;
+		var rtHint = new FlxText(10, yPos, 290, "animateatlas | sparrow | empty=auto", 8);
+		rtHint.color = FlxColor.fromRGB(200, 200, 100);
+		tab.add(rtHint);
 		yPos += 20;
 
 		tab.add(new FlxText(10, yPos, 0, "Offset X:", 10));
@@ -569,6 +618,9 @@ class AnimationDebug extends MusicBeatState
 			animLoopedCheckbox.checked = false;
 			offsetXStepper.value = 0;
 			offsetYStepper.value = 0;
+			if (animAssetPathInput != null) animAssetPathInput.text = "";
+			if (animRenderTypeInput != null) animRenderTypeInput.text = "";
+			if (animFlipXCheckbox != null) animFlipXCheckbox.checked = false;
 			if (addAnimBtn != null)
 				addAnimBtn.text = "Add Animation";
 			setHelp("Cleared fields — Add mode", FlxColor.CYAN);
@@ -928,6 +980,20 @@ class AnimationDebug extends MusicBeatState
 			offsetY: offsetYStepper.value
 		};
 
+		// Sub-atlas path (opcional): solo se guarda si se especificó algo
+		var rawAssetPath = animAssetPathInput != null ? animAssetPathInput.text.trim() : "";
+		if (rawAssetPath != "")
+			newAnim.assetPath = rawAssetPath;
+
+		// Render type (opcional): solo se guarda si no está vacío
+		var rawRenderType = animRenderTypeInput != null ? animRenderTypeInput.text.trim().toLowerCase() : "";
+		if (rawRenderType == "animateatlas" || rawRenderType == "sparrow")
+			newAnim.renderType = rawRenderType;
+
+		// flipX por animacion
+		if (animFlipXCheckbox != null && animFlipXCheckbox.checked)
+			newAnim.flipX = true;
+
 		if (editingAnimName != null)
 		{
 			// ── Modo EDIT: actualizar la animación cuyo nombre original es editingAnimName ──
@@ -1018,6 +1084,14 @@ class AnimationDebug extends MusicBeatState
 				animLoopedCheckbox.checked = anim.looped;
 				offsetXStepper.value = anim.offsetX;
 				offsetYStepper.value = anim.offsetY;
+
+				// Cargar sub-atlas path y render type (nuevos campos opcionales)
+				if (animAssetPathInput != null)
+					animAssetPathInput.text = anim.assetPath != null ? anim.assetPath : "";
+				if (animRenderTypeInput != null)
+					animRenderTypeInput.text = anim.renderType != null ? anim.renderType : "";
+				if (animFlipXCheckbox != null)
+					animFlipXCheckbox.checked = anim.flipX == true;
 
 				// Entrar en modo EDIT — guardar qué anim estamos modificando
 				editingAnimName = animName;
@@ -1422,11 +1496,29 @@ class AnimationDebug extends MusicBeatState
 				dumbTexts.add(cast dot);
 			}
 
-			var label = anim + "  [" + offsets[0] + ", " + offsets[1] + "]";
+			// Buscar si esta animación tiene sub-atlas propio para mostrar indicador ◈
+			var animAssetTag = "";
+			for (ad in currentAnimData)
+			{
+				if (ad.name == anim && ad.assetPath != null && ad.assetPath != "")
+				{
+					var parts = ad.assetPath.split("/");
+					animAssetTag = " ◈" + parts[parts.length - 1];
+					break;
+				}
+			}
+			var label = anim + animAssetTag + "  [" + offsets[0] + ", " + offsets[1] + "]";
 			var text = new FlxText(10, rowY + 3, 328, label, 11);
 			text.scrollFactor.set();
 			text.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF0A0A0F, 1);
-			text.color = isCur ? 0xFF00E5FF : 0xFFCCCCCC;
+			// Si tiene sub-atlas, tintarlo levemente diferente (magenta suave)
+			var hasCustomAtlas = animAssetTag != "";
+			if (isCur)
+				text.color = 0xFF00E5FF;
+			else if (hasCustomAtlas)
+				text.color = 0xFFFF90D0; // magenta suave = indica sub-atlas
+			else
+				text.color = 0xFFCCCCCC;
 			text.cameras = [camHUD];
 			text.alpha = 0;
 			dumbTexts.add(text);
@@ -2024,6 +2116,10 @@ class AnimationDebug extends MusicBeatState
 		if (healthIconInput != null && healthIconInput.hasFocus)
 			return true;
 		if (healthBarColorInput != null && healthBarColorInput.hasFocus)
+			return true;
+		if (animAssetPathInput != null && animAssetPathInput.hasFocus)
+			return true;
+		if (animRenderTypeInput != null && animRenderTypeInput.hasFocus)
 			return true;
 		return false;
 	}

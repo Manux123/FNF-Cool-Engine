@@ -8,6 +8,7 @@ import haxe.Json;
 import funkin.data.Song;
 import mods.compat.ModFormat;
 import mods.compat.ModFormat.ModFormatDetector;
+import mods.compat.VSliceConverter;
 
 using StringTools;
 
@@ -71,8 +72,14 @@ class ModCompatLayer
 	/**
 	 * Parses a chart JSON string → SwagSong (Cool Engine format).
 	 * Drop-in replacement for Song.parseJSONshit(rawJson).
+	 *
+	 * @param rawJson      Contenido crudo del JSON del chart.
+	 * @param difficulty   Nombre de dificultad (para convertidores que necesitan saberlo).
+	 * @param chartFilePath  Path físico al archivo (para que VSliceConverter pueda
+	 *                       buscar el archivo de metadata separado).
 	 */
-	public static function loadChart(rawJson:String, ?difficulty:String = 'hard'):SwagSong
+	public static function loadChart(rawJson:String, ?difficulty:String = 'hard',
+	                                 ?chartFilePath:String = null):SwagSong
 	{
 		final fmt = ModFormatDetector.detectFromChartJson(rawJson);
 		trace('[ModCompatLayer] Chart format: $fmt');
@@ -80,6 +87,7 @@ class ModCompatLayer
 		{
 			case ModFormat.PSYCH_ENGINE:    PsychConverter.convertChart(rawJson, difficulty);
 			case ModFormat.CODENAME_ENGINE: CodenameConverter.convertChart(rawJson, difficulty);
+			case ModFormat.VSLICE_ENGINE:   VSliceConverter.convertChart(rawJson, difficulty, chartFilePath);
 			default:
 				final _root:Dynamic = Json.parse(rawJson);
 				// root.song can be a nested chart object OR just a song-name String

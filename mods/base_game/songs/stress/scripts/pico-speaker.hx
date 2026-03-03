@@ -4,7 +4,7 @@ var chart:SwagSong = null;
 function onCreate()
 {
     trace("[Pico Speaker] Loaded script");
-    chart = Song.loadFromJson("picospeaker", SONG.song);
+    chart = Song.loadFromJson("extra/picospeaker", SONG.song);
     if(chart != null)
 		for (section in chart.notes)
 			for (songNotes in section.sectionNotes)

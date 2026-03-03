@@ -143,7 +143,7 @@ class ModManager
 			return;
 		}
 		#if sys
-		if (!isInstalled(modId)) { trace('[ModManager] Mod "$modId" no encontrado.'); return; }
+		if (!isInstalled(modId)) { trace('[ModManager] Mod "$modId" not found.'); return; }
 		#end
 		activeMod = modId;
 		trace('[ModManager] Mod activo: "$activeMod"');

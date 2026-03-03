@@ -87,7 +87,7 @@ class MenuCharacter extends FlxSprite
 		var atlas = Paths.getSparrowAtlas('menu/storymenu/props/' + character);
 		if (atlas == null)
 		{
-			trace('[MenuCharacter] Atlas no encontrado para: $character');
+			trace('[MenuCharacter] Atlas not found para: $character');
 			visible = false;
 			return;
 		}
@@ -171,7 +171,7 @@ class MenuCharacter extends FlxSprite
 
 		if (raw == null)
 		{
-			trace('[MenuCharacter] JSON no encontrado para "$character", usando defaults.');
+			trace('[MenuCharacter] JSON not found para "$character", usando defaults.');
 			return {};
 		}
 

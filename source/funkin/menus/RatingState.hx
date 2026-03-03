@@ -92,32 +92,30 @@ import flixel.effects.particles.FlxParticle;
 class RatingState extends FlxSubState
 {
 	// ─── Elementos visuales ───────────────────────────────────────────────────
+	public var comboText:FlxText;
+	public var bf:animationdata.FunkinSprite;
+	public var bg:FlxSprite;
+	public var bgGradient:FlxSprite;
+	public var bgPattern:FlxSprite;
 
-	public var comboText    : FlxText;
-	public var bf           : FlxSprite;
-	public var bg           : FlxSprite;
-	public var bgGradient   : FlxSprite;
-	public var bgPattern    : FlxSprite;
-
-	public var scoreDisplay : FlxTypedGroup<FlxText>;
-	public var rankSprite   : FlxSprite;
-	public var fcBadge      : FlxSprite;
-	public var accuracyText : FlxText;
-	public var ratingText   : FlxText;
-	public var glowOverlay  : FlxSprite;
-	public var particles    : FlxEmitter;
-	public var confetti     : FlxEmitter;
-	public var statBars     : FlxTypedGroup<StatBar>;
+	public var scoreDisplay:FlxTypedGroup<FlxText>;
+	public var rankSprite:FlxSprite;
+	public var fcBadge:FlxSprite;
+	public var accuracyText:FlxText;
+	public var ratingText:FlxText;
+	public var glowOverlay:FlxSprite;
+	public var particles:FlxEmitter;
+	public var confetti:FlxEmitter;
+	public var statBars:FlxTypedGroup<StatBar>;
 
 	// ─── Estado interno ───────────────────────────────────────────────────────
+	public var canExit:Bool = false;
+	public var isExiting:Bool = false;
+	public var introComplete:Bool = false;
+	public var beatTimer:Float = 0;
+	public var currentRank:String;
 
-	public var canExit        : Bool   = false;
-	public var isExiting      : Bool   = false;
-	public var introComplete  : Bool   = false;
-	public var beatTimer      : Float  = 0;
-	public var currentRank    : String;
-
-	var pulseElements : Array<FlxSprite> = [];
+	var pulseElements:Array<FlxSprite> = [];
 
 	// ─── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -180,7 +178,7 @@ class RatingState extends FlxSubState
 		if (FlxG.sound.music != null && FlxG.sound.music.playing)
 		{
 			beatTimer += elapsed * 1000;
-			final bpm          = 120.0;
+			final bpm = 120.0;
 			final beatInterval = (60 / bpm) * 1000;
 
 			if (beatTimer >= beatInterval)
@@ -190,22 +188,26 @@ class RatingState extends FlxSubState
 			}
 		}
 
-		if (bgPattern != null) bgPattern.angle += elapsed * 2;
+		if (bgPattern != null)
+			bgPattern.angle += elapsed * 2;
 
 		// Idle de BF
 		if (bf != null && (bf.animation.finished || bf.animation.curAnim.name == 'idle'))
 			bf.animation.play('idle', true);
 
-		var pressedEnter : Bool = FlxG.keys.justPressed.ENTER;
-		var pressedRetry : Bool = FlxG.keys.justPressed.R;
+		var pressedEnter:Bool = FlxG.keys.justPressed.ENTER;
+		var pressedRetry:Bool = FlxG.keys.justPressed.R;
 
 		#if mobile
 		for (touch in FlxG.touches.list)
-			if (touch.justPressed) pressedEnter = true;
+			if (touch.justPressed)
+				pressedEnter = true;
 		#end
 
-		if (pressedEnter && canExit && !isExiting) exitState(false);
-		if (pressedRetry && canExit && !isExiting) exitState(true);
+		if (pressedEnter && canExit && !isExiting)
+			exitState(false);
+		if (pressedRetry && canExit && !isExiting)
+			exitState(true);
 
 		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
 	}
@@ -223,8 +225,7 @@ class RatingState extends FlxSubState
 		final defaultColor = _getCustomBgColor(currentRank);
 		bg.color = defaultColor;
 
-		bgGradient = FlxGradient.createGradientFlxSprite(FlxG.width, FlxG.height,
-			[FlxColor.TRANSPARENT, 0x88000000]);
+		bgGradient = FlxGradient.createGradientFlxSprite(FlxG.width, FlxG.height, [FlxColor.TRANSPARENT, 0x88000000]);
 		bgGradient.alpha = 0;
 		add(bgGradient);
 
@@ -241,14 +242,14 @@ class RatingState extends FlxSubState
 	{
 		particles = new FlxEmitter(0, 0, 100);
 		particles.makeParticles(4, 4, FlxColor.WHITE, 100);
-		particles.launchMode     = FlxEmitterMode.SQUARE;
+		particles.launchMode = FlxEmitterMode.SQUARE;
 		particles.velocity.set(-100, -200, 100, -400);
 		particles.lifespan.set(3, 6);
 		particles.alpha.set(0.3, 0.6, 0, 0);
 		particles.scale.set(1, 1.5, 0.2, 0.5);
-		particles.width  = FlxG.width;
+		particles.width = FlxG.width;
 		particles.height = 100;
-		particles.y      = FlxG.height;
+		particles.y = FlxG.height;
 		add(particles);
 
 		if (currentRank == 'S' || currentRank == 'SS')
@@ -271,14 +272,14 @@ class RatingState extends FlxSubState
 	function createBFCharacter():Void
 	{
 		// Hook: los scripts pueden reemplazar la ruta del personaje
-		var bfChar = StateScriptHandler.callOnScriptsReturn('getBFCharacter', [], 'BOYFRIEND');
+		var bfChar = StateScriptHandler.callOnScriptsReturn('getBFCharacter', [], 'bf');
 
-		bf = new FlxSprite(-100, FlxG.height + 100);
-		bf.frames = Paths.characterSprite(bfChar);
-		bf.animation.addByPrefix('idle', 'BF idle dance', 24, false);
-		bf.animation.addByPrefix('hey',  'BF HEY!!',      24, false);
+		bf = new animationdata.FunkinSprite(-100, FlxG.height + 100);
+		bf.loadCharacterSparrow(bfChar);
+		bf.addAnim('idle', 'BF idle dance', 24, false);
+		bf.addAnim('hey', 'BF HEY!!', 24, false);
 		bf.animation.play('idle', true);
-		bf.antialiasing = true;
+		bf.antialiasing = FlxG.save.data.antialiasing;
 		bf.scale.set(1.2, 1.2);
 		add(bf);
 
@@ -302,7 +303,7 @@ class RatingState extends FlxSubState
 		rankSprite = new FlxSprite(FlxG.width / 2 + 350, -300);
 		rankSprite.loadGraphic(Paths.image('menu/ratings/${currentRank}'));
 		rankSprite.scale.set(1.7, 1.7);
-		rankSprite.antialiasing = true;
+		rankSprite.antialiasing = FlxG.save.data.antialiasing;
 		rankSprite.alpha = 0;
 		rankSprite.updateHitbox();
 		rankSprite.screenCenter(X);
@@ -317,7 +318,7 @@ class RatingState extends FlxSubState
 			fcBadge = new FlxSprite(rankSprite.x - 100, rankSprite.y + 200);
 			fcBadge.loadGraphic(Paths.image('menu/ratings/FC'));
 			fcBadge.scale.set(1.2, 1.2);
-			fcBadge.antialiasing = true;
+			fcBadge.antialiasing = FlxG.save.data.antialiasing;
 			fcBadge.alpha = 0;
 			fcBadge.updateHitbox();
 			add(fcBadge);
@@ -336,7 +337,8 @@ class RatingState extends FlxSubState
 				FlxG.camera.shake(0.01, 0.2);
 				glowOverlay.alpha = 0.3;
 				FlxTween.tween(glowOverlay, {alpha: 0}, 0.5);
-				if (confetti != null) confetti.start(false, 0.05, 0);
+				if (confetti != null)
+					confetti.start(false, 0.05, 0);
 				StateScriptHandler.callOnScripts('onRankLanded', [rankSprite, currentRank]);
 			}
 		});
@@ -353,17 +355,18 @@ class RatingState extends FlxSubState
 
 		// Stats base
 		var statsData:Array<Dynamic> = [
-			{label: 'SCORE',  value: '${PlayState.songScore}', color: FlxColor.YELLOW},
-			{label: 'SICKS',  value: '${PlayState.sicks}',     color: FlxColor.CYAN},
-			{label: 'GOODS',  value: '${PlayState.goods}',     color: FlxColor.LIME},
-			{label: 'BADS',   value: '${PlayState.bads}',      color: FlxColor.ORANGE},
-			{label: 'SHITS',  value: '${PlayState.shits}',     color: FlxColor.fromRGB(139, 69, 19)},
-			{label: 'MISSES', value: '${PlayState.misses}',    color: FlxColor.RED}
+			{label: 'SCORE', value: '${PlayState.songScore}', color: FlxColor.YELLOW},
+			{label: 'SICKS', value: '${PlayState.sicks}', color: FlxColor.CYAN},
+			{label: 'GOODS', value: '${PlayState.goods}', color: FlxColor.LIME},
+			{label: 'BADS', value: '${PlayState.bads}', color: FlxColor.ORANGE},
+			{label: 'SHITS', value: '${PlayState.shits}', color: FlxColor.fromRGB(139, 69, 19)},
+			{label: 'MISSES', value: '${PlayState.misses}', color: FlxColor.RED}
 		];
 
 		// Stats adicionales desde scripts
 		final customStats = StateScriptHandler.collectArrays('getCustomStats');
-		for (cs in customStats) statsData.push(cs);
+		for (cs in customStats)
+			statsData.push(cs);
 
 		final startX = 50.0;
 		final startY = 30.0;
@@ -374,20 +377,18 @@ class RatingState extends FlxSubState
 			final stat = statsData[i];
 
 			final label:FlxText = new FlxText(startX - 100, startY + (i * spacing), 150, stat.label, 24);
-			label.setFormat(Paths.font('vcr.ttf'), 24, stat.color, LEFT,
-				FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			label.setFormat(Paths.font('vcr.ttf'), 24, stat.color, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			label.borderSize = 2;
 			label.alpha = 0;
 			scoreDisplay.add(label);
 
 			final value:FlxText = new FlxText(startX + 60, startY + (i * spacing), 200, stat.value, 32);
-			value.setFormat(Paths.font('vcr.ttf'), 32, FlxColor.WHITE, LEFT,
-				FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			value.setFormat(Paths.font('vcr.ttf'), 32, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			value.borderSize = 2;
 			value.alpha = 0;
 			scoreDisplay.add(value);
 
-			FlxTween.tween(label, {x: startX, alpha: 1},      0.5, {ease: FlxEase.backOut, startDelay: 0.8  + (i * 0.1)});
+			FlxTween.tween(label, {x: startX, alpha: 1}, 0.5, {ease: FlxEase.backOut, startDelay: 0.8 + (i * 0.1)});
 			FlxTween.tween(value, {x: startX + 160, alpha: 1}, 0.5, {ease: FlxEase.backOut, startDelay: 0.85 + (i * 0.1)});
 		}
 
@@ -401,24 +402,25 @@ class RatingState extends FlxSubState
 		add(statBars);
 
 		var total:Int = PlayState.sicks + PlayState.goods + PlayState.bads + PlayState.shits + PlayState.misses;
-		if (total == 0) total = 1;
+		if (total == 0)
+			total = 1;
 
 		final barData = [
-			{notes: PlayState.sicks,  color: FlxColor.CYAN,                    yOffset: 0},
-			{notes: PlayState.goods,  color: FlxColor.LIME,                    yOffset: 1},
-			{notes: PlayState.bads,   color: FlxColor.ORANGE,                  yOffset: 2},
-			{notes: PlayState.shits,  color: FlxColor.fromRGB(139, 69, 19),    yOffset: 3},
-			{notes: PlayState.misses, color: FlxColor.RED,                     yOffset: 4}
+			{notes: PlayState.sicks, color: FlxColor.CYAN, yOffset: 0},
+			{notes: PlayState.goods, color: FlxColor.LIME, yOffset: 1},
+			{notes: PlayState.bads, color: FlxColor.ORANGE, yOffset: 2},
+			{notes: PlayState.shits, color: FlxColor.fromRGB(139, 69, 19), yOffset: 3},
+			{notes: PlayState.misses, color: FlxColor.RED, yOffset: 4}
 		];
 
-		final startY  = 95.0;
+		final startY = 95.0;
 		final spacing = 60.0;
 
 		for (i in 0...barData.length)
 		{
-			final data   = barData[i];
-			final pct    = data.notes / total;
-			final bar    = new StatBar(500, startY + (data.yOffset * spacing), pct, data.color);
+			final data = barData[i];
+			final pct = data.notes / total;
+			final bar = new StatBar(500, startY + (data.yOffset * spacing), pct, data.color);
 			statBars.add(bar);
 
 			FlxTween.tween(bar, {alpha: 1}, 0.3, {
@@ -436,25 +438,23 @@ class RatingState extends FlxSubState
 		final accuracy = PlayState.accuracy;
 
 		// Texto de precisión — overrideable desde scripts
-		final ratingTxt  = _getRatingText(accuracy);
-		final ratingClr  = _getRatingColor(accuracy);
+		final ratingTxt = _getRatingText(accuracy);
+		final ratingClr = _getRatingColor(accuracy);
 
 		accuracyText = new FlxText(0, FlxG.height, FlxG.width, Std.int(accuracy) + '%', 72);
-		accuracyText.setFormat(Paths.font('vcr.ttf'), 72, FlxColor.WHITE, CENTER,
-			FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		accuracyText.setFormat(Paths.font('vcr.ttf'), 72, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		accuracyText.borderSize = 4;
 		accuracyText.alpha = 0;
 		add(accuracyText);
 
 		ratingText = new FlxText(0, FlxG.height, FlxG.width, ratingTxt, 32);
-		ratingText.setFormat(Paths.font('vcr.ttf'), 32, ratingClr, CENTER,
-			FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		ratingText.setFormat(Paths.font('vcr.ttf'), 32, ratingClr, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		ratingText.borderSize = 2;
 		ratingText.alpha = 0;
 		add(ratingText);
 
 		FlxTween.tween(accuracyText, {y: FlxG.height - 180, alpha: 1}, 0.8, {ease: FlxEase.backOut, startDelay: 1.4});
-		FlxTween.tween(ratingText,   {y: FlxG.height - 110, alpha: 1}, 0.8, {ease: FlxEase.backOut, startDelay: 1.5});
+		FlxTween.tween(ratingText, {y: FlxG.height - 110, alpha: 1}, 0.8, {ease: FlxEase.backOut, startDelay: 1.5});
 
 		pulseElements.push(cast accuracyText);
 
@@ -465,12 +465,10 @@ class RatingState extends FlxSubState
 	function createHelpText():Void
 	{
 		// Los scripts pueden personalizar el texto de ayuda
-		final helpMsg = StateScriptHandler.callOnScriptsReturn('getHelpText', [],
-			'[ENTER] Continue  •  [R] Retry');
+		final helpMsg = StateScriptHandler.callOnScriptsReturn('getHelpText', [], '[ENTER] Continue  •  [R] Retry');
 
 		final helpText:FlxText = new FlxText(0, FlxG.height - 50, FlxG.width, helpMsg, 24);
-		helpText.setFormat(Paths.font('vcr.ttf'), 24, FlxColor.WHITE, CENTER,
-			FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		helpText.setFormat(Paths.font('vcr.ttf'), 24, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		helpText.borderSize = 2;
 		helpText.alpha = 0;
 		add(helpText);
@@ -494,13 +492,17 @@ class RatingState extends FlxSubState
 		else
 		{
 			rankMusic = currentRank;
-			if (currentRank == 'C' || currentRank == 'D') rankMusic = 'B';
+			if (currentRank == 'C' || currentRank == 'D')
+				rankMusic = 'B';
 		}
 
 		FlxG.sound.playMusic(Paths.music('results$rankMusic/results$rankMusic'), 0);
 		FlxTween.tween(FlxG.sound.music, {volume: 0.7}, 2, {
 			ease: FlxEase.quadOut,
-			onComplete: function(_) { introComplete = true; }
+			onComplete: function(_)
+			{
+				introComplete = true;
+			}
 		});
 	}
 
@@ -509,10 +511,10 @@ class RatingState extends FlxSubState
 	function playIntroAnimation():Void
 	{
 		FlxG.camera.fade(FlxColor.BLACK, 1, true);
-		FlxTween.tween(bg,         {alpha: 0.4}, 1.2, {ease: FlxEase.quadOut});
+		FlxTween.tween(bg, {alpha: 0.4}, 1.2, {ease: FlxEase.quadOut});
 		FlxTween.tween(bgGradient, {alpha: 0.7}, 1.5, {ease: FlxEase.quadOut});
-		FlxTween.tween(bgPattern,  {alpha: 0.3}, 1.8, {ease: FlxEase.quadOut});
-		FlxTween.tween(bf,         {x: 120, y: 320}, 1.2, {ease: FlxEase.expoOut, startDelay: 0.4});
+		FlxTween.tween(bgPattern, {alpha: 0.3}, 1.8, {ease: FlxEase.quadOut});
+		FlxTween.tween(bf, {x: 120, y: 320}, 1.2, {ease: FlxEase.expoOut, startDelay: 0.4});
 
 		new FlxTimer().start(0.8, function(_)
 		{
@@ -530,7 +532,8 @@ class RatingState extends FlxSubState
 
 		for (el in pulseElements)
 		{
-			if (el == null) continue;
+			if (el == null)
+				continue;
 			FlxTween.cancelTweensOf(el.scale);
 			el.scale.set(el.scale.x * 1.05, el.scale.y * 1.05);
 			FlxTween.tween(el.scale, {x: el.scale.x / 1.05, y: el.scale.y / 1.05}, 0.3, {ease: FlxEase.quadOut});
@@ -543,19 +546,25 @@ class RatingState extends FlxSubState
 	function exitState(retry:Bool = false):Void
 	{
 		// Los scripts pueden cancelar el exit devolviendo true
-		if (StateScriptHandler.callOnScripts('onExit', [retry])) return;
+		if (StateScriptHandler.callOnScripts('onExit', [retry]))
+			return;
 
 		isExiting = true;
-		if (bf != null) bf.animation.play('hey', true);
+		if (bf != null)
+			bf.animation.play('hey', true);
 
-		if (FlxG.save.data.flashing) FlxG.camera.flash(FlxColor.WHITE, 0.5);
+		if (FlxG.save.data.flashing)
+			FlxG.camera.flash(FlxColor.WHITE, 0.5);
 		FlxG.camera.shake(0.005, 0.3);
 
 		FlxTween.tween(FlxG.sound.music, {volume: 0}, 0.8, {ease: FlxEase.quadIn});
 
-		if (rankSprite != null) FlxTween.tween(rankSprite,   {y: rankSprite.y - 100, alpha: 0}, 0.6, {ease: FlxEase.backIn});
-		if (bf != null)         FlxTween.tween(bf,           {x: -200, alpha: 0},               0.8, {ease: FlxEase.expoIn});
-		if (accuracyText != null) FlxTween.tween(accuracyText, {y: FlxG.height + 100, alpha: 0}, 0.7, {ease: FlxEase.backIn});
+		if (rankSprite != null)
+			FlxTween.tween(rankSprite, {y: rankSprite.y - 100, alpha: 0}, 0.6, {ease: FlxEase.backIn});
+		if (bf != null)
+			FlxTween.tween(bf, {x: -200, alpha: 0}, 0.8, {ease: FlxEase.expoIn});
+		if (accuracyText != null)
+			FlxTween.tween(accuracyText, {y: FlxG.height + 100, alpha: 0}, 0.7, {ease: FlxEase.backIn});
 
 		for (text in scoreDisplay)
 			FlxTween.tween(text, {x: text.x - 150, alpha: 0}, 0.5, {ease: FlxEase.quadIn});
@@ -582,8 +591,7 @@ class RatingState extends FlxSubState
 				if (PlayState.isStoryMode)
 					StateTransition.switchState(new funkin.menus.StoryMenuState());
 				else
-					StickerTransition.start(function()
-						StateTransition.switchState(new funkin.menus.FreeplayState()));
+					StickerTransition.start(function() StateTransition.switchState(new funkin.menus.FreeplayState()));
 			}
 		});
 	}
@@ -594,44 +602,59 @@ class RatingState extends FlxSubState
 	{
 		// Dar oportunidad al script de overridear
 		final ratingOverride = StateScriptHandler.callOnScriptsReturn('getRatingText', [accuracy], null);
-		if (ratingOverride != null) return ratingOverride;
+		if (ratingOverride != null)
+			return ratingOverride;
 
-		if (accuracy == 100) return 'PERFECT!!';
-		if (accuracy >= 95)  return 'AMAZING!';
-		if (accuracy >= 90)  return 'EXCELLENT!';
-		if (accuracy >= 85)  return 'GREAT!';
-		if (accuracy >= 80)  return 'GOOD!';
-		if (accuracy >= 70)  return 'NICE!';
-		if (accuracy >= 60)  return 'OK';
+		if (accuracy == 100)
+			return 'PERFECT!!';
+		if (accuracy >= 95)
+			return 'AMAZING!';
+		if (accuracy >= 90)
+			return 'EXCELLENT!';
+		if (accuracy >= 85)
+			return 'GREAT!';
+		if (accuracy >= 80)
+			return 'GOOD!';
+		if (accuracy >= 70)
+			return 'NICE!';
+		if (accuracy >= 60)
+			return 'OK';
 		return 'KEEP TRYING';
 	}
 
 	function _getRatingColor(accuracy:Float):Int
 	{
 		final colorOverride = StateScriptHandler.callOnScriptsReturn('getRatingColor', [accuracy], null);
-		if (colorOverride != null) return colorOverride;
+		if (colorOverride != null)
+			return colorOverride;
 
-		if (accuracy == 100) return FlxColor.fromRGB(255, 215, 0);
-		if (accuracy >= 95)  return FlxColor.fromRGB(100, 255, 100);
-		if (accuracy >= 85)  return FlxColor.CYAN;
-		if (accuracy >= 70)  return FlxColor.YELLOW;
-		if (accuracy >= 60)  return FlxColor.ORANGE;
+		if (accuracy == 100)
+			return FlxColor.fromRGB(255, 215, 0);
+		if (accuracy >= 95)
+			return FlxColor.fromRGB(100, 255, 100);
+		if (accuracy >= 85)
+			return FlxColor.CYAN;
+		if (accuracy >= 70)
+			return FlxColor.YELLOW;
+		if (accuracy >= 60)
+			return FlxColor.ORANGE;
 		return FlxColor.RED;
 	}
 
 	function _getCustomBgColor(rank:String):Int
 	{
 		final bgcolorOverride = StateScriptHandler.callOnScriptsReturn('getCustomBgColor', [rank], null);
-		if (bgcolorOverride != null) return bgcolorOverride;
+		if (bgcolorOverride != null)
+			return bgcolorOverride;
 
 		return switch (rank)
 		{
 			case 'S' | 'SS': FlxColor.fromRGB(255, 215, 0);
-			case 'A':        FlxColor.fromRGB(100, 255, 100);
-			case 'B':        FlxColor.fromRGB(100, 200, 255);
-			case 'C' | 'D':  FlxColor.fromRGB(255, 150, 100);
-			case 'F':        FlxColor.fromRGB(200, 100, 100);
-			default:         FlxColor.fromRGB(100, 100, 200);
+			case 'A': FlxColor.fromRGB(100, 255, 100);
+			case 'B': FlxColor.fromRGB(100, 200, 255);
+			case 'C' | 'D': FlxColor.fromRGB(255, 150, 100);
+			case 'F': FlxColor.fromRGB(200, 100, 100);
+			default: FlxColor.fromRGB(100, 100, 200);
 		};
 	}
 
@@ -640,17 +663,17 @@ class RatingState extends FlxSubState
 	function _exposePlayStateData():Void
 	{
 		StateScriptHandler.exposeAll([
-			'songScore'   => PlayState.songScore,
-			'accuracy'    => PlayState.accuracy,
-			'misses'      => PlayState.misses,
-			'sicks'       => PlayState.sicks,
-			'goods'       => PlayState.goods,
-			'bads'        => PlayState.bads,
-			'shits'       => PlayState.shits,
-			'maxCombo'    => PlayState.maxCombo,
+			'songScore' => PlayState.songScore,
+			'accuracy' => PlayState.accuracy,
+			'misses' => PlayState.misses,
+			'sicks' => PlayState.sicks,
+			'goods' => PlayState.goods,
+			'bads' => PlayState.bads,
+			'shits' => PlayState.shits,
+			'maxCombo' => PlayState.maxCombo,
 			'isStoryMode' => PlayState.isStoryMode,
-			'songName'    => PlayState.SONG?.song ?? '',
-			'difficulty'  => PlayState.storyDifficulty
+			'songName' => PlayState.SONG?.song ?? '',
+			'difficulty' => PlayState.storyDifficulty
 		]);
 	}
 }
@@ -659,16 +682,16 @@ class RatingState extends FlxSubState
 
 class StatBar extends FlxSpriteGroup
 {
-	var targetWidth : Float;
-	var maxWidth    : Float = 400;
-	var barColor    : Int;
-	var bgBar       : FlxSprite;
-	var fillBar     : FlxSprite;
+	var targetWidth:Float;
+	var maxWidth:Float = 400;
+	var barColor:Int;
+	var bgBar:FlxSprite;
+	var fillBar:FlxSprite;
 
 	public function new(x:Float, y:Float, percentage:Float, color:Int)
 	{
 		super(x, y);
-		barColor    = color;
+		barColor = color;
 		targetWidth = maxWidth * percentage;
 
 		bgBar = new FlxSprite(x, y);

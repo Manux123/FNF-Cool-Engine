@@ -2,44 +2,44 @@
 	"isFlxAnimate": true,
 	"animations": [
 		{
-			"offsetX": 0,
 			"framerate": 24,
+			"offsetX": 0,
 			"prefix": "Dad idle dance",
 			"offsetY": 0,
-			"name": "idle",
-			"looped": false
+			"looped": false,
+			"name": "idle"
 		},
 		{
-			"offsetX": -40,
 			"framerate": 24,
+			"offsetX": -40,
 			"prefix": "Dad Sing Note DOWN",
 			"offsetY": -1,
-			"name": "singDOWN",
-			"looped": false
+			"looped": false,
+			"name": "singDOWN"
 		},
 		{
-			"offsetX": -49,
 			"framerate": 24,
-			"prefix": "Dad Sing Note LEFT",
-			"offsetY": 14,
-			"name": "singLEFT",
-			"looped": false
-		},
-		{
-			"offsetX": 22,
-			"framerate": 24,
+			"offsetX": 21,
 			"prefix": "dad sing note right",
-			"offsetY": 2,
-			"name": "singRIGHT",
-			"looped": false
+			"offsetY": 4,
+			"looped": false,
+			"name": "singLEFT"
 		},
 		{
-			"offsetX": 0,
 			"framerate": 24,
+			"offsetX": -48,
+			"prefix": "Dad Sing Note LEFT",
+			"offsetY": 12,
+			"looped": false,
+			"name": "singRIGHT"
+		},
+		{
+			"framerate": 24,
+			"offsetX": -4,
 			"prefix": "Dad Sing note UP",
 			"offsetY": 30,
-			"name": "singUP",
-			"looped": false
+			"looped": false,
+			"name": "singUP"
 		}
 	],
 	"isPlayer": false,

@@ -141,9 +141,24 @@ class Song
 		final folderVars = _nameVariants(folder.toLowerCase());
 		final diffVars   = _nameVariants(diff.toLowerCase());
 
+		// Buscar en TODOS los mods habilitados (no solo el activo).
+		// Esto permite que songs de mods como "base_game" sean encontradas
+		// aunque el mod activo sea otro (p.ej. "zone-tan").
+		final modsToSearch:Array<String> = [];
 		if (mods.ModManager.isActive())
+			modsToSearch.push(mods.ModManager.modRoot());
+		#if sys
+		for (mod in mods.ModManager.installedMods)
 		{
-			final modRoot = mods.ModManager.modRoot();
+			if (!mods.ModManager.isEnabled(mod.id)) continue;
+			final root = '${mods.ModManager.MODS_FOLDER}/${mod.id}';
+			if (!modsToSearch.contains(root))
+				modsToSearch.push(root);
+		}
+		#end
+
+		for (modRoot in modsToSearch)
+		{
 			for (fv in folderVars)
 				for (dv in diffVars)
 				{
@@ -151,6 +166,12 @@ class Song
 					for (base in ['$modRoot/songs', '$modRoot/assets/songs'])
 					{
 						final p = '$base/$fv/$dv.json';
+						if (FileSystem.exists(p)) return p;
+					}
+					// V-Slice: songs/name/name-chart.json  (todos los diffs en un archivo)
+					for (base in ['$modRoot/songs', '$modRoot/assets/songs'])
+					{
+						final p = '$base/$fv/$fv-chart.json';
 						if (FileSystem.exists(p)) return p;
 					}
 					// Psych: data/name/name-diff.json  o  data/name/diff.json
@@ -168,6 +189,13 @@ class Song
 				final p = 'assets/songs/$fv/$dv.json';
 				if (FileSystem.exists(p)) return p;
 			}
+
+		// V-Slice: assets/songs/name/name-chart.json  (todos los diffs en un archivo)
+		for (fv in folderVars)
+		{
+			final p = 'assets/songs/$fv/$fv-chart.json';
+			if (FileSystem.exists(p)) return p;
+		}
 
 		return null;
 		#else
@@ -207,21 +235,25 @@ class Song
 
 		if (rawJson == null)
 		{
-			trace('[Song] ERROR: Chart no encontrado: $songFolder/$diffName');
-			throw 'Chart no encontrado: $songFolder/$diffName';
+			trace('[Song] ERROR: Chart not found: $songFolder/$diffName');
+			throw 'Chart not found: $songFolder/$diffName';
 		}
 
 		while (rawJson.length > 0 && rawJson.charAt(rawJson.length - 1) != '}')
 			rawJson = rawJson.substr(0, rawJson.length - 1);
 
-		return parseJSONshit(rawJson);
+		// Pasar el path resuelto para que VSliceConverter pueda encontrar
+		// el archivo de metadata separado ({songName}-metadata.json).
+		// También pasamos diffName para que el converter extraiga la dificultad correcta.
+		return parseJSONshit(rawJson, resolvedPath, diffName);
 	}
 
-	public static function parseJSONshit(rawJson:String):SwagSong
+	public static function parseJSONshit(rawJson:String, ?chartFilePath:String = null,
+	                                      ?difficulty:String = 'hard'):SwagSong
 	{
 		trace('[Song] === parseJSONshit LLAMADO ===');
 		
-		var swagShit:SwagSong = cast mods.compat.ModCompatLayer.loadChart(rawJson);
+		var swagShit:SwagSong = cast mods.compat.ModCompatLayer.loadChart(rawJson, difficulty, chartFilePath);
 		
 		swagShit.validScore = true;
 		
@@ -408,8 +440,101 @@ class Song
 	}
 
 	/**
-	 * NUEVO: Obtener personaje por índice
+	 * Auto-detecta las dificultades disponibles para una canción escaneando
+	 * los archivos de chart (.json) en la carpeta de la canción.
+	 *
+	 * Ejemplo: si hay "alone-nightmare.json", devuelve ['Nightmare', '-nightmare'].
+	 * Si hay "alone.json" o "normal.json", devuelve ['Normal', ''] (sufijo vacío).
+	 *
+	 * El orden es: easy → normal → hard → resto (alfabético).
+	 *
+	 * @param folder  Nombre de la carpeta de la canción (ej: "alone")
+	 * @return Array de pares [label, suffix], ej: [['Easy','-easy'],['Nightmare','-nightmare']]
+	 *         Si no se detecta nada, devuelve las 3 dificultades clásicas.
 	 */
+	public static function getAvailableDifficulties(folder:String):Array<Array<String>>
+	{
+		#if sys
+		final folderLow = folder.toLowerCase();
+		final found:Map<String, Bool> = new Map(); // sufijo → existe
+
+		// Rutas donde buscar charts
+		final searchDirs:Array<String> = ['assets/songs/$folderLow'];
+		if (mods.ModManager.isActive())
+		{
+			final mr = mods.ModManager.modRoot();
+			searchDirs.unshift('$mr/songs/$folderLow');
+			searchDirs.unshift('$mr/assets/songs/$folderLow');
+			searchDirs.unshift('$mr/data/$folderLow');
+			searchDirs.unshift('$mr/assets/data/$folderLow');
+		}
+		searchDirs.push('assets/data/$folderLow');
+
+		for (dir in searchDirs)
+		{
+			if (!FileSystem.exists(dir) || !FileSystem.isDirectory(dir)) continue;
+			for (entry in FileSystem.readDirectory(dir))
+			{
+				final entryLow = entry.toLowerCase();
+				if (!entryLow.endsWith('.json')) continue;
+				// Ignorar meta, configuración, etc.
+				if (entryLow == 'meta.json' || entryLow == 'config.json') continue;
+
+				final base = entryLow.substr(0, entryLow.length - 5); // quitar ".json"
+
+				var suffix:String;
+				// Formato "songname-diff.json"  ej: "alone-nightmare.json"
+				if (base.startsWith(folderLow + '-'))
+					suffix = base.substr(folderLow.length); // "-nightmare"
+				// Formato "diff.json"  ej: "nightmare.json"
+				else if (base == folderLow || base == 'normal')
+					suffix = ''; // dificultad normal
+				else
+					suffix = '-' + base; // "-nightmare"
+
+				found.set(suffix, true);
+			}
+		}
+
+		// Si no encontramos nada, fallback a las 3 clásicas
+		if (!found.keys().hasNext())
+			return [['Easy', '-easy'], ['Normal', ''], ['Hard', '-hard']];
+
+		// Construir array con orden preferido: easy, normal, hard, resto
+		final ordered:Array<Array<String>> = [];
+		final knownOrder:Array<Array<String>> = [
+			['-easy',   'Easy'],
+			['',        'Normal'],
+			['-normal', 'Normal'],
+			['-hard',   'Hard']
+		];
+
+		for (pair in knownOrder)
+		{
+			if (found.exists(pair[0]))
+			{
+				ordered.push([pair[1], pair[0]]);
+				found.remove(pair[0]);
+			}
+		}
+
+		// El resto en orden alfabético
+		final extras:Array<String> = [for (k in found.keys()) k];
+		extras.sort((a, b) -> a < b ? -1 : a > b ? 1 : 0);
+		for (suffix in extras)
+		{
+			// Capitalizar: "-nightmare" → "Nightmare"
+			final label = suffix.substr(1, 1).toUpperCase() + suffix.substr(2);
+			ordered.push([label, suffix]);
+		}
+
+		return ordered;
+		#else
+		return [['Easy', '-easy'], ['Normal', ''], ['Hard', '-hard']];
+		#end
+	}
+
+
 	public static function getCharacter(SONG:SwagSong, index:Int):CharacterSlotData
 	{
 		if (SONG.characters != null && index >= 0 && index < SONG.characters.length)

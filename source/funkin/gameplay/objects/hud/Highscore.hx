@@ -52,14 +52,15 @@ class Highscore
 
 	public static function formatSong(song:String, diff:Int):String
 	{
-		var daSong:String = song;
-
-		if (diff == 0)
-			daSong += '-easy';
+		var suffix:String = '';
+		final diffs = funkin.menus.FreeplayState.difficultyStuff;
+		if (diff >= 0 && diff < diffs.length)
+			suffix = diffs[diff][1];
+		else if (diff == 0)
+			suffix = '-easy';
 		else if (diff == 2)
-			daSong += '-hard';
-
-		return daSong;
+			suffix = '-hard';
+		return song + suffix;
 	}
 
 	public static function getScore(song:String, diff:Int):Int

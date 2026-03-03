@@ -47,6 +47,13 @@ class NoteManager
 	// BUGFIX: trackeado por dirección para evitar cross-chain en holds simultáneos
 	private var _prevSpawnedNote:Map<Int, Note> = new Map();
 
+	/** Calcula la clave del mapa _prevSpawnedNote combinando dirección y grupo de strums.
+	 *  noteData 0-3, strumsGroupIndex 0-N → clave única por grupo de strums.
+	 *  Necesario para que notas de distintos personajes/grupos en la misma
+	 *  dirección no compartan entrada y corrompan la cadena prevNote de los sustains. */
+	private inline function _prevNoteKey(noteData:Int, strumsGroupIndex:Int):Int
+		return noteData + strumsGroupIndex * 4;
+
 	// === STRUMS ===
 	private var playerStrums:FlxTypedGroup<FlxSprite>;
 	private var cpuStrums:FlxTypedGroup<FlxSprite>;
@@ -371,7 +378,8 @@ class NoteManager
 		{
 			final raw = unspawnNotes[_unspawnIdx++];
 
-			final note = renderer.getNote(raw.strumTime, raw.noteData, _prevSpawnedNote.get(raw.noteData), raw.isSustainNote, raw.mustHitNote);
+			final _pnKey = _prevNoteKey(raw.noteData, raw.strumsGroupIndex);
+			final note = renderer.getNote(raw.strumTime, raw.noteData, _prevSpawnedNote.get(_pnKey), raw.isSustainNote, raw.mustHitNote);
 			note.strumsGroupIndex = raw.strumsGroupIndex;
 			note.noteType = raw.noteType;
 			note.sustainLength = raw.sustainLength;
@@ -379,7 +387,7 @@ class NoteManager
 			note.active = true;
 			note.alpha = raw.isSustainNote ? 0.6 : 1.0;
 
-			_prevSpawnedNote.set(raw.noteData, note);
+			_prevSpawnedNote.set(_pnKey, note);
 			// Sustain notes van al grupo separado (se dibuja ANTES que notes →
 			// las notas normales siempre quedan por encima visualmente).
 			if (raw.isSustainNote)

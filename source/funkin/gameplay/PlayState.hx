@@ -171,6 +171,13 @@ class PlayState extends funkin.states.MusicBeatState
 	// === AUDIO ===
 	public var vocals:FlxSound;
 
+	/** Vocals específicas del jugador (BF). Solo se usa cuando existen archivos Voices-bf[-diff].ogg */
+	public var vocalsBf:FlxSound;
+	/** Vocals específicas del oponente (Dad). Solo se usa cuando existen archivos Voices-dad[-diff].ogg */
+	public var vocalsDad:FlxSound;
+	/** true si se cargaron vocales por personaje (vocalsBf/vocalsDad) en lugar de un único Voices.ogg */
+	private var _usingPerCharVocals:Bool = false;
+
 	// === STATE ===
 	private var generatedMusic:Bool = false;
 	private var _gcPausedForSong:Bool = false; // evita doble-pausa si la canción reinicia
@@ -917,8 +924,11 @@ class PlayState extends funkin.states.MusicBeatState
 	{
 		Conductor.changeBPM(SONG.bpm);
 
+		// Sufijo de dificultad para cargar Inst-diff.ogg / Voices-diff.ogg si existen
+		final _diffSuffix:String = funkin.data.CoolUtil.difficultySuffix();
+
 		// Cargar instrumental usando el método seguro que soporta archivos externos
-		FlxG.sound.music = Paths.loadInst(SONG.song);
+		FlxG.sound.music = Paths.loadInst(SONG.song, _diffSuffix);
 		FlxG.sound.music.volume = 0;
 		FlxG.sound.music.pause();
 		// NO añadir FlxG.sound.music a sound.list manualmente:
@@ -933,16 +943,23 @@ class PlayState extends funkin.states.MusicBeatState
 			vocals.destroy();
 			vocals = null;
 		}
+		_cleanPerCharVocals();
 
 		// Cargar voces usando el método seguro
 		if (SONG.needsVoices)
-			vocals = Paths.loadVoices(SONG.song);
-		else
-			vocals = new FlxSound();
+		{
+			_usingPerCharVocals = _tryLoadPerCharVocals(_diffSuffix);
+			if (!_usingPerCharVocals)
+				vocals = Paths.loadVoices(SONG.song, _diffSuffix);
+		}
 
-		vocals.volume = 0;
-		vocals.pause();
-		FlxG.sound.list.add(vocals);
+		if (!_usingPerCharVocals)
+		{
+			if (vocals == null) vocals = new FlxSound();
+			vocals.volume = 0;
+			vocals.pause();
+			FlxG.sound.list.add(vocals);
+		}
 
 		// Limpiar NotePool antes de regenerar (evita acumulación en retry)
 		// Codename Engine siempre resetea el pool al generar notas nuevas.
@@ -1119,8 +1136,9 @@ class PlayState extends funkin.states.MusicBeatState
 
 	function fixInstandVocals():Void
 	{
+		final _diffSuffix:String = funkin.data.CoolUtil.difficultySuffix();
 		if (FlxG.sound.music == null || !FlxG.sound.music.active)
-			FlxG.sound.music = Paths.loadInst(SONG.song);
+			FlxG.sound.music = Paths.loadInst(SONG.song, _diffSuffix);
 		FlxG.sound.music.volume = 0;
 		FlxG.sound.music.pause();
 		// No añadir a sound.list — Flixel gestiona FlxG.sound.music internamente
@@ -1133,19 +1151,22 @@ class PlayState extends funkin.states.MusicBeatState
 			vocals.destroy();
 			vocals = null;
 		}
+		_cleanPerCharVocals();
 
 		if (SONG.needsVoices)
 		{
-			vocals = Paths.loadVoices(SONG.song);
-		}
-		else
-		{
-			vocals = new FlxSound();
+			_usingPerCharVocals = _tryLoadPerCharVocals(_diffSuffix);
+			if (!_usingPerCharVocals)
+				vocals = Paths.loadVoices(SONG.song, _diffSuffix);
 		}
 
-		vocals.volume = 0;
-		vocals.pause();
-		FlxG.sound.list.add(vocals);
+		if (!_usingPerCharVocals)
+		{
+			if (vocals == null) vocals = new FlxSound();
+			vocals.volume = 0;
+			vocals.pause();
+			FlxG.sound.list.add(vocals);
+		}
 	}
 
 	public function executeCountdown():Void
@@ -1216,12 +1237,16 @@ class PlayState extends funkin.states.MusicBeatState
 					}
 
 					// Setear tiempo para vocals
-					if (vocals != null)
+					if (_usingPerCharVocals)
+					{
+						if (vocalsBf != null) { vocalsBf.volume = 1; vocalsBf.play(); vocalsBf.time = targetTime; }
+						if (vocalsDad != null) { vocalsDad.volume = 1; vocalsDad.play(); vocalsDad.time = targetTime; }
+					}
+					else if (vocals != null)
 					{
 						vocals.volume = 1;
 						vocals.play();
 						vocals.time = targetTime;
-						var vocalsTime = vocals.time;
 					}
 
 					// Actualizar Conductor.songPosition
@@ -1369,11 +1394,17 @@ class PlayState extends funkin.states.MusicBeatState
 			// internamente los holds del CPU.
 		}
 
-		if (vocals != null && SONG.needsVoices && !inCutscene && vocals.volume < 1)
+		if (SONG.needsVoices && !inCutscene)
 		{
-			vocals.volume += elapsed * 2;
-			if (vocals.volume > 1)
-				vocals.volume = 1;
+			if (_usingPerCharVocals)
+			{
+				// Las per-char vocals se controlan directamente en los callbacks de notas
+			}
+			else if (vocals != null && vocals.volume < 1)
+			{
+				vocals.volume += elapsed * 2;
+				if (vocals.volume > 1) vocals.volume = 1;
+			}
 		}
 
 		// Abrir menú de pausa con ENTER.
@@ -1498,11 +1529,19 @@ class PlayState extends funkin.states.MusicBeatState
 		}
 
 		// Sincronizar vocales con música
-		if (SONG.needsVoices && vocals != null && !inCutscene)
+		if (SONG.needsVoices && !inCutscene)
 		{
-			vocals.volume = 1;
-			vocals.time = 0;
-			vocals.play();
+			if (_usingPerCharVocals)
+			{
+				if (vocalsBf != null) { vocalsBf.volume = 1; vocalsBf.time = 0; vocalsBf.play(); }
+				if (vocalsDad != null) { vocalsDad.volume = 1; vocalsDad.time = 0; vocalsDad.play(); }
+			}
+			else if (vocals != null)
+			{
+				vocals.volume = 1;
+				vocals.time = 0;
+				vocals.play();
+			}
 		}
 
 		#if desktop
@@ -1674,7 +1713,14 @@ class PlayState extends funkin.states.MusicBeatState
 			}
 
 			noteManager.hitNote(note, rating);
-			vocals.volume = 1;
+			if (_usingPerCharVocals)
+			{
+				if (vocalsBf != null) vocalsBf.volume = 1;
+			}
+			else
+			{
+				vocals.volume = 1;
+			}
 
 			for (hook in _noteHitHookArr)
 				hook(note);
@@ -1754,7 +1800,14 @@ class PlayState extends funkin.states.MusicBeatState
 		if (!_ntMissCancelled)
 			uiManager.showMissPopup();
 
-		vocals.volume = 0;
+		if (_usingPerCharVocals)
+		{
+			if (vocalsBf != null) vocalsBf.volume = 0;
+		}
+		else
+		{
+			vocals.volume = 0;
+		}
 
 		if (scriptsEnabled)
 		{
@@ -1855,7 +1908,16 @@ class PlayState extends funkin.states.MusicBeatState
 
 		// Vocals
 		if (SONG.needsVoices)
-			vocals.volume = 1;
+		{
+			if (_usingPerCharVocals)
+			{
+				if (vocalsDad != null) vocalsDad.volume = 1;
+			}
+			else
+			{
+				vocals.volume = 1;
+			}
+		}
 	}
 
 	/**
@@ -1970,7 +2032,12 @@ class PlayState extends funkin.states.MusicBeatState
 			if (FlxG.sound.music != null)
 			{
 				FlxG.sound.music.pause();
-				if (vocals != null)
+				if (_usingPerCharVocals)
+				{
+					if (vocalsBf != null) vocalsBf.pause();
+					if (vocalsDad != null) vocalsDad.pause();
+				}
+				else if (vocals != null)
 					vocals.pause();
 			}
 
@@ -2080,7 +2147,12 @@ class PlayState extends funkin.states.MusicBeatState
 	 */
 	function resyncVocals():Void
 	{
-		if (SONG.needsVoices && vocals != null)
+		if (_usingPerCharVocals)
+		{
+			if (vocalsBf != null) vocalsBf.pause();
+			if (vocalsDad != null) vocalsDad.pause();
+		}
+		else if (SONG.needsVoices && vocals != null)
 		{
 			vocals.pause();
 		}
@@ -2088,7 +2160,12 @@ class PlayState extends funkin.states.MusicBeatState
 		FlxG.sound.music.play();
 		Conductor.songPosition = FlxG.sound.music.time;
 
-		if (SONG.needsVoices && vocals != null)
+		if (_usingPerCharVocals)
+		{
+			if (vocalsBf != null) { vocalsBf.time = Conductor.songPosition; vocalsBf.play(); }
+			if (vocalsDad != null) { vocalsDad.time = Conductor.songPosition; vocalsDad.play(); }
+		}
+		else if (SONG.needsVoices && vocals != null)
 		{
 			vocals.time = Conductor.songPosition;
 			vocals.play();
@@ -2107,7 +2184,13 @@ class PlayState extends funkin.states.MusicBeatState
 
 		canPause = false;
 		FlxG.sound.music.volume = 0;
-		vocals.volume = 0;
+		if (_usingPerCharVocals)
+		{
+			if (vocalsBf != null) vocalsBf.volume = 0;
+			if (vocalsDad != null) vocalsDad.volume = 0;
+		}
+		else if (vocals != null)
+			vocals.volume = 0;
 		isPlaying = false;
 
 		if (SONG.validScore)
@@ -2432,7 +2515,12 @@ class PlayState extends funkin.states.MusicBeatState
 		// quedan bloqueados por el flag global, causando el "traba" antes del restart.
 		FlxG.sound.resume();
 
-		if (vocals != null)
+		if (_usingPerCharVocals)
+		{
+			if (vocalsBf != null) { vocalsBf.time = 0; vocalsBf.volume = 0; vocalsBf.stop(); }
+			if (vocalsDad != null) { vocalsDad.time = 0; vocalsDad.volume = 0; vocalsDad.stop(); }
+		}
+		else if (vocals != null)
 		{
 			vocals.time = 0;
 			vocals.volume = 0;
@@ -2548,6 +2636,7 @@ class PlayState extends funkin.states.MusicBeatState
 			vocals.destroy();
 			vocals = null;
 		}
+		_cleanPerCharVocals();
 
 		// ── 4. Scripts (antes de destruir objetos del stage que usen scripts)
 		if (scriptsEnabled)
@@ -2807,7 +2896,7 @@ class PlayState extends funkin.states.MusicBeatState
 			else
 			{
 				// Next song
-				SONG = Song.loadFromJson(storyPlaylist[0].toLowerCase() + CoolUtil.difficultyPath[storyDifficulty], storyPlaylist[0]);
+				SONG = Song.loadFromJson(storyPlaylist[0].toLowerCase() + CoolUtil.difficultySuffix(), storyPlaylist[0]);
 				FlxG.sound.music.stop();
 				LoadingState.loadAndSwitchState(new PlayState());
 			}
@@ -2815,7 +2904,15 @@ class PlayState extends funkin.states.MusicBeatState
 		else
 		{
 			FlxG.sound.music.stop();
-			vocals.stop();
+			// vocals puede ser null en charts V-Slice que usan
+			// vocales por personaje (vocalsBf/vocalsDad).
+			if (_usingPerCharVocals)
+			{
+				if (vocalsBf != null)  vocalsBf.stop();
+				if (vocalsDad != null) vocalsDad.stop();
+			}
+			else if (vocals != null)
+				vocals.stop();
 			LoadingState.loadAndSwitchState(new RatingState());
 		}
 	}
@@ -2896,7 +2993,12 @@ class PlayState extends funkin.states.MusicBeatState
 		super.onFocusLost();
 
 		// Pausar vocals cuando se pierde foco
-		if (vocals != null && vocals.playing)
+		if (_usingPerCharVocals)
+		{
+			if (vocalsBf != null && vocalsBf.playing) vocalsBf.pause();
+			if (vocalsDad != null && vocalsDad.playing) vocalsDad.pause();
+		}
+		else if (vocals != null && vocals.playing)
 		{
 			vocals.pause();
 		}
@@ -2920,12 +3022,86 @@ class PlayState extends funkin.states.MusicBeatState
 			FlxG.sound.music.play();
 
 			// Reanudar vocals sincronizadas con el instrumental
-			if (vocals != null && SONG.needsVoices)
+			if (SONG.needsVoices)
 			{
-				vocals.time = FlxG.sound.music.time;
-				vocals.play();
+				if (_usingPerCharVocals)
+				{
+					if (vocalsBf != null) { vocalsBf.time = FlxG.sound.music.time; vocalsBf.play(); }
+					if (vocalsDad != null) { vocalsDad.time = FlxG.sound.music.time; vocalsDad.play(); }
+				}
+				else if (vocals != null)
+				{
+					vocals.time = FlxG.sound.music.time;
+					vocals.play();
+				}
 			}
 		}
+	}
+
+	// ══════════════════════════════════════════════════════════════════
+	// VOCALES POR PERSONAJE
+	// ══════════════════════════════════════════════════════════════════
+
+	/**
+	 * Intenta cargar Voices-bf[-diff].ogg y Voices-dad[-diff].ogg.
+	 * Devuelve true si se cargó al menos uno de los dos archivos.
+	 * En ese caso, usa el modo per-char; si ninguno existe, retorna false
+	 * y el caller debe cargar el Voices.ogg genérico.
+	 */
+	private function _tryLoadPerCharVocals(diffSuffix:String):Bool
+	{
+		// Obtener los nombres de los personajes BF y Dad desde el chart
+		var bfName  = SONG.player1 != null ? SONG.player1 : 'bf';
+		var dadName = SONG.player2 != null ? SONG.player2 : 'dad';
+		// Si el chart usa el nuevo array de characters, usar esos nombres
+		if (SONG.characters != null && SONG.characters.length >= 3)
+		{
+			bfName  = SONG.characters[2].name; // índice 2 = jugador
+			dadName = SONG.characters[1].name; // índice 1 = oponente
+		}
+
+		final bf  = Paths.loadVoicesForChar(SONG.song, bfName,  diffSuffix);
+		final dad = Paths.loadVoicesForChar(SONG.song, dadName, diffSuffix);
+
+		if (bf == null && dad == null) return false;
+
+		if (bf != null)
+		{
+			vocalsBf = bf;
+			vocalsBf.volume = 0;
+			vocalsBf.pause();
+			FlxG.sound.list.add(vocalsBf);
+		}
+		if (dad != null)
+		{
+			vocalsDad = dad;
+			vocalsDad.volume = 0;
+			vocalsDad.pause();
+			FlxG.sound.list.add(vocalsDad);
+		}
+
+		trace('[PlayState] Per-char vocals: bf=${bf != null}, dad=${dad != null}');
+		return true;
+	}
+
+	/** Destruye y limpia los tracks de vocals por personaje del sound list. */
+	private function _cleanPerCharVocals():Void
+	{
+		if (vocalsBf != null)
+		{
+			FlxG.sound.list.remove(vocalsBf, true);
+			vocalsBf.stop();
+			vocalsBf.destroy();
+			vocalsBf = null;
+		}
+		if (vocalsDad != null)
+		{
+			FlxG.sound.list.remove(vocalsDad, true);
+			vocalsDad.stop();
+			vocalsDad.destroy();
+			vocalsDad = null;
+		}
+		_usingPerCharVocals = false;
 	}
 
 	/**

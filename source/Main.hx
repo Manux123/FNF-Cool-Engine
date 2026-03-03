@@ -195,8 +195,8 @@ class Main extends Sprite
 		// ── WindowManager (después de createGame, necesita FlxG.signals) ──────
 		WindowManager.init(
 			/* mode    */ LETTERBOX,
-			/* minW    */ 640,
-			/* minH    */ 360,
+			/* minW    */ 960,
+			/* minH    */ 540,
 			/* baseW   */ GAME_WIDTH,
 			/* baseH   */ GAME_HEIGHT
 		);

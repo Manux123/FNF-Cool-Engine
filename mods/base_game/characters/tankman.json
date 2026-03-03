@@ -6,52 +6,67 @@
 			"framerate": 24,
 			"prefix": "Tankman Idle Dance",
 			"offsetY": 0,
+			"flipX": true,
 			"name": "idle",
 			"looped": false
 		},
 		{
-			"framerate": 24,
 			"offsetX": 44,
+			"framerate": 24,
 			"offsetY": 55,
 			"prefix": "Tankman UP note",
+			"name": "singUP",
 			"looped": false,
-			"name": "singUP"
+			"flipX": true
 		},
 		{
-			"framerate": 24,
-			"offsetX": 50,
+			"flipX": true,
 			"prefix": "Tankman DOWN note",
+			"offsetX": 50,
 			"offsetY": -111,
-			"looped": false,
-			"name": "singDOWN"
+			"name": "singDOWN",
+			"framerate": 24,
+			"looped": false
 		},
 		{
-			"framerate": 24,
 			"offsetX": 80,
+			"framerate": 24,
 			"offsetY": 1,
 			"prefix": "Tankman Right Note",
+			"name": "singLEFT",
 			"looped": false,
-			"name": "singLEFT"
+			"flipX": true
 		},
 		{
 			"framerate": 24,
 			"offsetX": -25,
-			"offsetY": -23,
 			"prefix": "Tankman Note Left",
+			"offsetY": -23,
 			"looped": false,
-			"name": "singRIGHT"
+			"name": "singRIGHT",
+			"flipX": true
 		},
 		{
-			"offsetX": 0,
+			"assetPath": "tankman/extra-animations",
 			"framerate": 24,
+			"offsetX": 0,
 			"prefix": "TANKMAN UGH",
 			"offsetY": 0,
-			"name": "ugh",
-			"looped": false
+			"looped": false,
+			"name": "ugh"
+		},
+		{
+			"assetPath": "tankman/extra-animations",
+			"framerate": 24,
+			"offsetX": 0,
+			"prefix": "PRETTY GOOD tankman",
+			"offsetY": 0,
+			"looped": false,
+			"name": "prettyGood"
 		}
 	],
 	"isPlayer": true,
 	"antialiasing": true,
-	"path": "tankman",
+	"path": "tankman/basic",
 	"scale": 1
 }

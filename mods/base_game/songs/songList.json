@@ -39,7 +39,7 @@
 		},
 		{
 			"weekName": "PICO",
-			"weekSongs": ["Pico", "Philly", "Blammed"],
+			"weekSongs": ["Pico", "Philly Nice", "Blammed"],
 			"songIcons": ["pico", "pico", "pico"],
 			"color": ["0xFF6BAA4C", "0xFF6BAA4C", "0xFF6BAA4C"],
 			"bpm": [150, 175, 165],

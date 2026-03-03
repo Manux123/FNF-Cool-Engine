@@ -511,12 +511,12 @@ class EventPopup extends FlxGroup
 			switch (p.type)
 			{
 				case PDBool:
-					var temp:FlxUIDropDownMenu = new FlxUIDropDownMenu(cx + 15, yOff, FlxUIDropDownMenu.makeStrIdLabelArray(["true","false"], true), null);
+					var temp:FlxUIDropDownMenu = new FlxUIDropDownMenu(cx + 15, yOff, FlxUIDropDownMenu.makeStrIdLabelArray(["true","false"], true), function(_){});
 					temp.cameras = [camHUD];
 					widget = temp;
 
 				case PDDropDown(opts):
-					var temp:FlxUIDropDownMenu = new FlxUIDropDownMenu(cx + 15, yOff, FlxUIDropDownMenu.makeStrIdLabelArray(opts, true), null);
+					var temp:FlxUIDropDownMenu = new FlxUIDropDownMenu(cx + 15, yOff, FlxUIDropDownMenu.makeStrIdLabelArray(opts, true), function(_){});
 					temp.cameras = [camHUD];
 					widget = temp;
 

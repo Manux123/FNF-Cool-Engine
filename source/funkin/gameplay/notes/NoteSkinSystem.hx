@@ -882,7 +882,7 @@ class NoteSkinSystem
 		}
 		// Fallback al global (sin tocar _globalSplash)
 		currentSplash = _globalSplash;
-		trace('[NoteSkinSystem] Splash "$splashName" no encontrado, usando global: $currentSplash');
+		trace('[NoteSkinSystem] Splash "$splashName" not found, usando global: $currentSplash');
 	}
 
 	/**
@@ -1176,7 +1176,7 @@ class NoteSkinSystem
 
 		if (!assetExists(path, folder))
 		{
-			trace('[NoteSkinSystem] loadAtlas: "$folder/$path" no encontrado, usando Default');
+			trace('[NoteSkinSystem] loadAtlas: "$folder/$path" not found, usando Default');
 			var fallback = Paths.skinSprite('Default/NOTE_assets');
 			if (fallback != null) return fallback;
 			return _makeFallbackFrames();
@@ -1195,7 +1195,7 @@ class NoteSkinSystem
 
 				case "image":
 					var graphic = FlxG.bitmap.add('assets/skins/$folder/$path.png');
-					if (graphic == null) throw 'PNG no encontrado para image skin: $folder/$path';
+					if (graphic == null) throw 'PNG not found para image skin: $folder/$path';
 					// BUGFIX: FlxG.bitmap.add() deja persist=false y useCount=0.
 					// FunkinCache.clearSecondLayer() → clearUnused() destruye cualquier
 					// gráfico con persist=false + useCount=0 al final de postStateSwitch,
@@ -1272,7 +1272,7 @@ class NoteSkinSystem
 					return FlxAtlasFrames.fromSpriteSheetPacker(FlxG.bitmap.add('assets/splashes/$folder/$path.png'), 'assets/splashes/$folder/$path.txt');
 				case "image":
 					var g = FlxG.bitmap.add('assets/splashes/$folder/$path.png');
-					if (g == null) throw 'PNG no encontrado para image splash: $folder/$path';
+					if (g == null) throw 'PNG not found para image splash: $folder/$path';
 					// BUGFIX: igual que loadAtlas "image" — persist=true para evitar que
 					// clearSecondLayer() → clearUnused() destruya el gráfico antes del primer render.
 					g.persist = true;

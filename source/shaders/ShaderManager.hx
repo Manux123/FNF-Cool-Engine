@@ -223,7 +223,10 @@ class ShaderManager
 					try
 					{
 						if (instance == null) continue;
-						final param = Reflect.getProperty(instance.data, paramName);
+						// FIX: Reflect.getProperty() busca getters/setters explícitos.
+					// Los uniforms de OpenFL ShaderData son campos dinámicos (@:data),
+					// por eso getProperty devuelve null. Reflect.field() los encuentra.
+					final param = Reflect.field(instance.data, paramName);
 						if (param != null && Std.isOfType(param, ShaderParameter))
 						{
 							cast(param, ShaderParameter<Dynamic>).value = value;
@@ -337,12 +340,13 @@ class CustomShader
 		if (shader == null) return false;
 		try
 		{
-			final param = Reflect.getProperty(shader.data, paramName);
+			// FIX: Reflect.field() para campos dinámicos (@:data) de ShaderData
+			final param = Reflect.field(shader.data, paramName);
 			if (param == null) return false;
 			if (Std.isOfType(param, ShaderParameter))
 				cast(param, ShaderParameter<Dynamic>).value = value;
 			else
-				Reflect.setProperty(shader.data, paramName, value);
+				Reflect.setField(shader.data, paramName, value);
 			return true;
 		}
 		catch (e:Exception)
@@ -357,7 +361,8 @@ class CustomShader
 		if (shader == null) return null;
 		try
 		{
-			final param = Reflect.getProperty(shader.data, paramName);
+			// FIX: Reflect.field() para campos dinámicos de ShaderData
+			final param = Reflect.field(shader.data, paramName);
 			if (param != null && Std.isOfType(param, ShaderParameter))
 				return cast(param, ShaderParameter<Dynamic>).value;
 			return param;

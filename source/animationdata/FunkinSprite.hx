@@ -10,6 +10,7 @@ import openfl.utils.Assets as OpenFlAssets;
 
 #if sys
 import sys.FileSystem;
+import sys.io.File;
 #end
 
 using StringTools;
@@ -19,11 +20,11 @@ using StringTools;
  * ─────────────────────────────────────────────────────────────────────────────
  * extends FlxAnimate directamente — sin sprite interno, sin sync de props.
  *
- * Fixes respecto a la versión anterior:
- *   • loadAtlas()       → this.frames = FlxAnimateFrames.fromAnimate(path)
- *   • hasAnimateAtlas   → @:access(animate.FlxAnimateController) en la clase
- *   • dictionary.keys() → [for (k in ...) k]  (Iterator no tiene .array())
- *   • @:privateAccess   → solo donde accedemos a campos privados de la lib
+ * Sistema multi-atlas al estilo V-Slice:
+ *   • Cada carpeta de Animate se carga como FlxAnimateFrames independiente.
+ *   • Se combinan en memoria con FlxAnimateFrames.combineAtlas().
+ *   • Sin manipulación de filesystem / directorios temporales.
+ *   • Compatible con targets no-sys (HTML5, etc.).
  */
 @:access(animate.FlxAnimateController)
 class FunkinSprite extends FlxAnimate
@@ -49,12 +50,65 @@ class FunkinSprite extends FlxAnimate
 	static var _frameLRU:Array<String>                  = [];
 	static final MAX_FRAME_CACHE = 30;
 
+	/**
+	 * Caché de FlxAnimateFrames individuales por carpeta.
+	 * Evita re-parsear Animation.json en cada carga del mismo personaje.
+	 */
+	static var _animateFrameCache:Map<String, FlxAnimateFrames> = [];
+
+	// ══════════════════════════════════════════════════════════════════════════
+	//  GESTIÓN DE VIDA ÚTIL DE ATLASES (por instancia, al estilo V-Slice)
+	// ══════════════════════════════════════════════════════════════════════════
+
+	/**
+	 * Atlases cargados para ESTA instancia con destroyOnNoUse = false.
+	 * Se liberan en destroy() restaurando destroyOnNoUse = true,
+	 * lo que permite que Flixel los limpie cuando ya no se usen.
+	 *
+	 * Equivalente a _usedAtlases en MultiSparrowCharacter / MultiAnimateAtlasCharacter de V-Slice.
+	 */
+	var _usedAtlases:Array<FlxAnimateFrames> = [];
+
+	/**
+	 * Registra un atlas como "en uso" por esta instancia y marca
+	 * destroyOnNoUse = false para evitar que Flixel lo destruya antes de tiempo.
+	 */
+	function _trackAtlas(atlas:FlxAnimateFrames):Void
+	{
+		if (atlas == null || atlas.parent == null) return;
+		if (_usedAtlases.contains(atlas)) return;
+		atlas.parent.destroyOnNoUse = false;
+		_usedAtlases.push(atlas);
+	}
+
+	/**
+	 * Libera todos los atlases rastreados, restaurando destroyOnNoUse = true.
+	 * Llamar antes de super.destroy() o antes de recargar el sprite.
+	 */
+	public function releaseTrackedAtlases():Void
+	{
+		for (atlas in _usedAtlases)
+		{
+			if (atlas == null || atlas.parent == null) continue;
+			atlas.parent.destroyOnNoUse = true;
+		}
+		_usedAtlases = [];
+	}
+
+	override public function destroy():Void
+	{
+		releaseTrackedAtlases();
+		super.destroy();
+	}
+
 	public static function invalidateCache(key:String):Void
 	{
 		_frameCache.remove(key);
 		_atlasResCache.remove(key);
 		final idx = _frameLRU.indexOf(key);
 		if (idx >= 0) _frameLRU.splice(idx, 1);
+		// Invalidar también caché de FlxAnimateFrames si la key coincide con una carpeta
+		_animateFrameCache.remove(key);
 		trace('[FunkinSprite] Cache invalidado: $key');
 	}
 
@@ -63,6 +117,7 @@ class FunkinSprite extends FlxAnimate
 		_frameCache.clear();
 		_atlasResCache.clear();
 		_frameLRU = [];
+		_animateFrameCache.clear();
 		trace('[FunkinSprite] Todos los cachés limpiados.');
 	}
 
@@ -143,27 +198,193 @@ class FunkinSprite extends FlxAnimate
 			}
 		}
 
-		trace('[FunkinSprite] WARNING: asset no encontrado para "$assetPath"');
+		trace('[FunkinSprite] WARNING: asset not found para "$assetPath"');
 		return this;
 	}
 
 	/**
-	 * Carga un Texture Atlas de Adobe Animate.
-	 *
-	 * FIX: La versión anterior llamaba _animateSprite.loadAtlas(path) sobre un
-	 * FlxAnimate externo. flixel-animate carga el atlas asignando frames:
-	 *   this.frames = FlxAnimateFrames.fromAnimate(fullPath)
-	 * Esto es lo mismo que hace V-Slice en Paths.getAnimateAtlas().
+	 * Carga un Texture Atlas de Adobe Animate (carpeta única).
 	 */
 	public function loadAnimateAtlas(folderPath:String):FunkinSprite
 	{
-		// No añadir prefijo 'assets/' si la ruta ya es absoluta o apunta a mods/
+		releaseTrackedAtlases();
 		final fullPath = (folderPath.startsWith('assets/') || folderPath.startsWith('mods/'))
 			? folderPath
 			: 'assets/$folderPath';
-		this.frames = FlxAnimateFrames.fromAnimate(fullPath);
+		_preloadFolderBitmaps(fullPath);
+		final atlas:FlxAnimateFrames = FlxAnimateFrames.fromAnimate(fullPath);
+		if (atlas != null) _trackAtlas(atlas);
+		this.frames = atlas;
 		trace('[FunkinSprite] Texture Atlas cargado: $fullPath');
 		return this;
+	}
+
+	/**
+	 * Carga múltiples carpetas de Adobe Animate y las fusiona al estilo V-Slice.
+	 *
+	 * El primer elemento de `folders` actúa como el ATLAS PRINCIPAL (el que contiene
+	 * el Animation.json con la timeline y los frame labels usados por todas las
+	 * animaciones). Los elementos siguientes son SUBATLASES (texturas adicionales).
+	 *
+	 * Replica MultiAnimateAtlasCharacter de V-Slice:
+	 *   1. Cargar mainTexture (folders[0])
+	 *   2. Cargar subTexturas (folders[1..])
+	 *   3. combineAtlas([main, sub1, sub2, ...])
+	 *   4. Rastrear todos en _usedAtlases para liberarlos en destroy()
+	 *
+	 * YA NO se usa unique=true ni se cachea el combined bajo key compuesta.
+	 * El ciclo de vida se gestiona via _usedAtlases + destroyOnNoUse por instancia.
+	 */
+	public function loadMultiAnimateAtlas(folders:Array<String>):FunkinSprite
+	{
+		if (folders == null || folders.length == 0) return this;
+		if (folders.length == 1) return loadAnimateAtlas(folders[0]);
+
+		releaseTrackedAtlases();
+
+		// Resolver paths absolutos
+		final fullPaths:Array<String> = [];
+		for (folder in folders)
+		{
+			fullPaths.push((folder.startsWith('assets/') || folder.startsWith('mods/'))
+				? folder : 'assets/$folder');
+		}
+
+		final textureList:Array<FlxAnimateFrames> = [];
+
+		// ── 1. Atlas principal (folders[0]) ───────────────────────────────────
+		final mainPath = fullPaths[0];
+		if (!folderHasAnimateAtlas(mainPath))
+		{
+			trace('[FunkinSprite] loadMultiAnimateAtlas: sin Animation.json en path principal $mainPath.');
+			return this;
+		}
+		_preloadFolderBitmaps(mainPath);
+		final mainAtlas:FlxAnimateFrames = FlxAnimateFrames.fromAnimate(mainPath);
+		if (mainAtlas == null)
+		{
+			trace('[FunkinSprite] loadMultiAnimateAtlas: fromAnimate→null para $mainPath.');
+			return this;
+		}
+		_trackAtlas(mainAtlas);
+		textureList.push(mainAtlas);
+
+		// ── 2. Subatlases (folders[1..]) ──────────────────────────────────────
+		final addedPaths:Array<String> = [mainPath];
+		for (i in 1...fullPaths.length)
+		{
+			final subPath = fullPaths[i];
+			if (addedPaths.contains(subPath)) continue;
+			if (!folderHasAnimateAtlas(subPath))
+			{
+				trace('[FunkinSprite] loadMultiAnimateAtlas: sin Animation.json en $subPath, saltando.');
+				continue;
+			}
+			_preloadFolderBitmaps(subPath);
+			final subAtlas:FlxAnimateFrames = FlxAnimateFrames.fromAnimate(subPath);
+			if (subAtlas == null)
+			{
+				trace('[FunkinSprite] loadMultiAnimateAtlas: fromAnimate→null para $subPath, saltando.');
+				continue;
+			}
+			_trackAtlas(subAtlas);
+			textureList.push(subAtlas);
+			addedPaths.push(subPath);
+		}
+
+		if (textureList.length == 1)
+		{
+			this.frames = textureList[0];
+			return this;
+		}
+
+		// ── 3. combineAtlas ───────────────────────────────────────────────────
+		final combined = FlxAnimateFrames.combineAtlas(cast textureList);
+		if (combined != null)
+		{
+			_trackAtlas(cast combined);
+			this.frames = combined;
+			trace('[FunkinSprite] Multi-atlas combinado: ${textureList.length} atlas → (${fullPaths.join(", ")})');
+		}
+		else
+		{
+			this.frames = textureList[0];
+			trace('[FunkinSprite] WARN: combineAtlas→null — usando atlas principal (${fullPaths[0]}).');
+		}
+		return this;
+	}
+
+	// ── Resolución de .sheets multi-animate ──────────────────────────────────
+
+	/**
+	 * Busca un archivo .sheets para el personaje y, si sus entradas son carpetas
+	 * de Adobe Animate, devuelve la lista de paths absolutos.
+	 * Devuelve null si no hay .sheets o si las entradas no son Animate.
+	 */
+	static function resolveMultiAnimateFolders(charKey:String):Null<Array<String>>
+	{
+		#if sys
+		final candidates = [
+			mods.ModManager.resolveInMod('characters/images/$charKey.sheets'),
+			mods.ModManager.resolveInMod('images/characters/$charKey.sheets'),
+			'assets/characters/images/$charKey.sheets'
+		];
+
+		var sheetsPath:Null<String> = null;
+		for (c in candidates)
+			if (c != null && FileSystem.exists(c)) { sheetsPath = c; break; }
+
+		if (sheetsPath == null) return null;
+
+		try
+		{
+			final keys:Array<String> = haxe.Json.parse(File.getContent(sheetsPath));
+			if (keys == null || keys.length == 0) return null;
+
+			final folders:Array<String> = [];
+			for (key in keys)
+			{
+				final folder = _resolveAnimateFolderForKey(charKey, key);
+				if (folder != null) folders.push(folder);
+			}
+
+			// Solo continuar si AL MENOS la primera es Animate
+			if (folders.length > 0 && folderHasAnimateAtlas(folders[0]))
+				return folders;
+		}
+		catch (e:Dynamic)
+		{
+			trace('[FunkinSprite] resolveMultiAnimateFolders error: $e');
+		}
+		#end
+		return null;
+	}
+
+	/**
+	 * Resuelve un key de .sheets (relativo a characters/images/) a una
+	 * carpeta de Animate, buscando en mod y en assets.
+	 */
+	static function _resolveAnimateFolderForKey(charKey:String, key:String):Null<String>
+	{
+		#if sys
+		final isSubfolder = !key.contains('/') || key.startsWith(charKey);
+
+		final candidatePaths = [
+			mods.ModManager.resolveInMod('characters/images/$key'),
+			mods.ModManager.resolveInMod('images/characters/$key'),
+			'assets/characters/images/$key',
+		];
+		if (isSubfolder)
+		{
+			final base = 'characters/images/$charKey/$key';
+			candidatePaths.unshift(mods.ModManager.resolveInMod(base) ?? '');
+			candidatePaths.push('assets/$base');
+		}
+
+		for (p in candidatePaths)
+			if (p != null && p != '' && folderHasAnimateAtlas(p)) return p;
+		#end
+		return null;
 	}
 
 	/** Sparrow (PNG + XML) con caché. */
@@ -180,7 +401,7 @@ class FunkinSprite extends FlxAnimate
 		}
 		final frames = Paths.getSparrowAtlas(key);
 		if (frames != null) { _frameCachePut(cacheKey, frames); this.frames = frames; trace('[FunkinSprite] Sparrow: $key'); }
-		else trace('[FunkinSprite] WARNING: Sparrow no encontrado para "$key"');
+		else trace('[FunkinSprite] WARNING: Sparrow not found para "$key"');
 		return this;
 	}
 
@@ -198,29 +419,51 @@ class FunkinSprite extends FlxAnimate
 		}
 		final frames = Paths.getPackerAtlas(key);
 		if (frames != null) { _frameCachePut(cacheKey, frames); this.frames = frames; trace('[FunkinSprite] Packer: $key'); }
-		else trace('[FunkinSprite] WARNING: Packer no encontrado para "$key"');
+		else trace('[FunkinSprite] WARNING: Packer not found para "$key"');
 		return this;
 	}
 
-	/** Personaje (assets/characters/images/): Atlas → Sparrow → Packer → placeholder. */
+	/** Personaje: Multi-Atlas → Atlas único → Sparrow → Packer → placeholder. */
 	public function loadCharacterSparrow(key:String):FunkinSprite
 	{
-		final atlasFolder = resolveAtlasFolder('characters/images/$key');
+		// BUGFIX: Algunos character JSON tienen path como "tankmen/basic/spritemap1"
+		// apuntando directamente al nombre del spritemap. La carpeta real del atlas
+		// Animate es "tankmen/basic/" (el padre). Detectar y normalizar este patrón.
+		var resolvedKey = key;
+		{
+			final spritemapRe = ~/\/spritemap\d*$/i;
+			if (spritemapRe.match(key))
+			{
+				final parentKey = spritemapRe.replace(key, '');
+				if (parentKey.length > 0)
+				{
+					trace('[FunkinSprite] loadCharacterSparrow: ruta con spritemap detectada "$key" → folder "$parentKey"');
+					resolvedKey = parentKey;
+				}
+			}
+		}
+
+		// 1. .sheets con múltiples carpetas Animate (Tankman, etc.)
+		final multiAnimFolders = resolveMultiAnimateFolders(resolvedKey);
+		if (multiAnimFolders != null) return loadMultiAnimateAtlas(multiAnimFolders);
+
+		// 2. Carpeta única de Adobe Animate
+		final atlasFolder = resolveAtlasFolder('characters/images/$resolvedKey');
 		if (atlasFolder != null) return loadAnimateAtlas(atlasFolder);
 
-		final ck = 'char_sparrow:$key';
+		final ck = 'char_sparrow:$resolvedKey';
 		var c = _frameCache.get(ck);
 		if (c != null) { @:privateAccess final v = c.parent != null && c.parent.bitmap != null; if (v) { _frameCacheTouch(ck); this.frames = c; return this; } _frameCache.remove(ck); }
-		var f = Paths.characterSprite(key);
+		var f = Paths.characterSprite(resolvedKey);
 		if (f != null) { _frameCachePut(ck, f); this.frames = f; return this; }
 
-		final ckTxt = 'char_packer:$key';
+		final ckTxt = 'char_packer:$resolvedKey';
 		var ct = _frameCache.get(ckTxt);
 		if (ct != null) { @:privateAccess final v = ct.parent != null && ct.parent.bitmap != null; if (v) { _frameCacheTouch(ckTxt); this.frames = ct; return this; } _frameCache.remove(ckTxt); }
-		var ft = Paths.characterSpriteTxt(key);
+		var ft = Paths.characterSpriteTxt(resolvedKey);
 		if (ft != null) { _frameCachePut(ckTxt, ft); this.frames = ft; return this; }
 
-		trace('[FunkinSprite] WARNING: No graphics for "$key" — placeholder invisible');
+		trace('[FunkinSprite] WARNING: No graphics for "$key" (resolved: "$resolvedKey") — placeholder invisible');
 		makeGraphic(1, 1, 0x00000000); visible = false;
 		return this;
 	}
@@ -233,7 +476,7 @@ class FunkinSprite extends FlxAnimate
 		if (c != null) { @:privateAccess final v = c.parent != null && c.parent.bitmap != null; if (v) { _frameCacheTouch(ck); this.frames = c; return this; } _frameCache.remove(ck); }
 		final f = Paths.stageSprite(key);
 		if (f != null) { _frameCachePut(ck, f); this.frames = f; }
-		else { trace('[FunkinSprite] WARNING: Stage asset no encontrado para "$key" — placeholder invisible'); makeGraphic(1, 1, 0x00000000); visible = false; }
+		else { trace('[FunkinSprite] WARNING: Stage asset not found para "$key" — placeholder invisible'); makeGraphic(1, 1, 0x00000000); visible = false; }
 		return this;
 	}
 
@@ -243,8 +486,7 @@ class FunkinSprite extends FlxAnimate
 
 	/**
 	 * Añade una animación.
-	 * Para atlases auto-detecta si el prefix es frame label o símbolo,
-	 * evitando el crash get_loopType/curInstance null del flxanimate antiguo.
+	 * Para atlases auto-detecta si el prefix es frame label o símbolo.
 	 */
 	public function addAnim(name:String, prefix:String, fps:Int = 24, looped:Bool = true,
 		?indices:Array<Int>):Void
@@ -267,7 +509,7 @@ class FunkinSprite extends FlxAnimate
 					this.anim.addBySymbol(name, prefix, fps, looped);
 			}
 			if (!this.animation.getNameList().contains(name))
-				trace('[FunkinSprite] WARN: addAnim("$name", "$prefix") — no encontrado en atlas.');
+				trace('[FunkinSprite] WARN: addAnim("$name", "$prefix") — not found en atlas.');
 		}
 		else
 		{
@@ -332,12 +574,30 @@ class FunkinSprite extends FlxAnimate
 	{
 		try
 		{
+			// Buscar en el timeline principal
 			final tl:Timeline = this.library.timeline;
-			if (tl == null) return false;
-			for (layer in tl.layers)
-				for (frame in layer.frames)
-					if (frame.name != null && frame.name.rtrim() == name)
-						return true;
+			if (tl != null)
+				for (layer in tl.layers)
+					for (frame in layer.frames)
+						if (frame.name != null && frame.name.rtrim() == name)
+							return true;
+
+			// FIX: También buscar en los timelines de atlases secundarios (multi-atlas)
+			@:privateAccess
+			final collections = this.library.addedCollections;
+			if (collections != null)
+			{
+				for (col in collections)
+				{
+					@:privateAccess
+					final colTl:Timeline = col.timeline;
+					if (colTl == null) continue;
+					for (layer in colTl.layers)
+						for (frame in layer.frames)
+							if (frame.name != null && frame.name.rtrim() == name)
+								return true;
+				}
+			}
 		}
 		catch (_) {}
 		return false;
@@ -361,11 +621,7 @@ class FunkinSprite extends FlxAnimate
 
 	/**
 	 * Intenta registrar la animación si existe en el atlas.
-	 *
-	 * FIX: dictionary.keys() devuelve un Iterator, NO un Array.
-	 * .array() no existe en Iterator — usamos [for (k in iter) k].
-	 * V-Slice usa .array() porque su flixel fork parchea KeyValueIterator,
-	 * nosotros lo hacemos compatible sin ese parche.
+	 * FIX: Usa library.existsSymbol / getSymbol para buscar en addedCollections también.
 	 */
 	function _addAnimIfExists(name:String):Bool
 	{
@@ -377,10 +633,8 @@ class FunkinSprite extends FlxAnimate
 				return true;
 			}
 
-			// FIX: Iterator → Array via comprensión, no .array()
-			@:privateAccess
-			final symbols:Array<String> = [for (k in this.library.dictionary.keys()) k];
-			if (symbols.contains(name))
+			// FIX: existsSymbol busca en dictionary principal Y en addedCollections
+			if (this.library.existsSymbol(name))
 			{
 				this.anim.addBySymbol(name, name, Std.int(this.library.frameRate), false);
 				return true;
@@ -394,7 +648,7 @@ class FunkinSprite extends FlxAnimate
 	//  DETECCIÓN DE TIPO DE ASSET
 	// ══════════════════════════════════════════════════════════════════════════
 
-	static function resolveAtlasFolder(key:String):Null<String>
+	public static function resolveAtlasFolder(key:String):Null<String>
 	{
 		if (_atlasResCache.exists(key)) return _atlasResCache.get(key);
 		final result = _resolveAtlasFolderImpl(key);
@@ -431,6 +685,27 @@ class FunkinSprite extends FlxAnimate
 		for (folder in candidates)
 			if (folderHasAnimateAtlas(folder)) return folder;
 		return null;
+	}
+
+
+	static function _preloadFolderBitmaps(folderPath:String):Void
+	{
+		#if sys
+		if (!FileSystem.exists(folderPath)) return;
+		try {
+			for (file in FileSystem.readDirectory(folderPath)) {
+				if (!file.endsWith(".png")) continue;
+				final fp = folderPath + "/" + file;
+				if (openfl.utils.Assets.cache.hasBitmapData(fp)) continue;
+				var g = flixel.FlxG.bitmap.get(fp);
+				if (g != null && g.bitmap != null) continue;
+				try {
+					final bmp = openfl.display.BitmapData.fromFile(fp);
+					if (bmp != null) openfl.utils.Assets.cache.setBitmapData(fp, bmp);
+				} catch (_:Dynamic) {}
+			}
+		} catch (_:Dynamic) {}
+		#end
 	}
 
 	public static function folderHasAnimateAtlas(folderPath:String):Bool

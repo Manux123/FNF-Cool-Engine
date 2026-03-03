@@ -148,6 +148,12 @@ class Stage extends FlxTypedGroup<FlxBasic>
 	public var stageData:StageData;
 	public var curStage:String;
 
+	/**
+	 * Cuando es true, los sprites con asset no encontrado generan un placeholder
+	 * visible en vez de ser omitidos. Activar SOLO en StageEditor, nunca en gameplay.
+	 */
+	public var isEditorPreview:Bool = false;
+
 	// Los mapas siguen tipados como FlxSprite — FunkinSprite extiende FlxAnimate
 	// que a su vez extiende FlxSprite, así que la compatibilidad está garantizada.
 	public var elements:Map<String, FlxSprite> = new Map<String, FlxSprite>();
@@ -395,11 +401,27 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		var sprite:FlxSprite = new FlxSprite(element.position[0], element.position[1]);
 		final bmp = Paths.imageStage(element.asset);
 		if (bmp != null)
+		{
 			sprite.loadGraphic(bmp);
+		}
 		else
 		{
-			trace('[Stage] createSprite: imagen no encontrada para asset="${element.asset}" — sprite omitido');
-			return; // Don't add a sprite with no graphic — causes FlxDrawQuadsItem crash
+			// BUGFIX: En el juego omitir un sprite sin gráfico tiene sentido para evitar
+			// FlxDrawQuadsItem crashes. Pero en el StageEditor esto hace que el elemento
+			// sea completamente invisible e inseleccionable aunque esté en el JSON.
+			// Usamos un flag para distinguir contextos: si el Stage está siendo usado
+			// por el editor, generamos un placeholder visible (checker magenta) en vez
+			// de silenciar el sprite. En gameplay seguimos ignorándolo.
+			if (isEditorPreview)
+			{
+				trace('[Stage] createSprite: asset no encontrado para "${element.asset}" — placeholder de editor');
+				_makePlaceholderGraphic(sprite, element.name ?? element.asset);
+			}
+			else
+			{
+				trace('[Stage] createSprite: imagen no encontrada para asset="${element.asset}" — sprite omitido');
+				return; // En gameplay no añadir sprites sin gráfico — crash en FlxDrawQuadsItem
+			}
 		}
 
 		applyElementProperties(sprite, element);
@@ -429,13 +451,21 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 		sprite.loadStageSparrow(assetKey);
 
-		// BUGFIX: si loadStageSparrow no encontró el asset, el sprite quedó invisible
-		// (placeholder 1×1 transparente). No añadirlo al Stage para evitar waste de draw calls,
-		// pero si hay animaciones definidas es mejor no añadirlo en absoluto.
+		// BUGFIX editor: igual que createSprite — si el asset no cargó, mostrar placeholder visible
+		// en vez de silenciar el sprite (en gameplay la lógica original sigue intacta).
 		if (!sprite.visible && sprite.width <= 1 && sprite.height <= 1)
 		{
-			trace('[Stage] createAnimatedSprite: asset no cargado para "${element.asset}" — sprite omitido');
-			return;
+			if (isEditorPreview)
+			{
+				trace('[Stage] createAnimatedSprite: asset no cargado para "${element.asset}" — placeholder de editor');
+				_makePlaceholderGraphic(sprite, element.name ?? element.asset);
+				sprite.visible = true;
+			}
+			else
+			{
+				trace('[Stage] createAnimatedSprite: asset no cargado para "${element.asset}" — sprite omitido');
+				return;
+			}
 		}
 
 		// Añadir animaciones con la API unificada
@@ -773,38 +803,33 @@ class Stage extends FlxTypedGroup<FlxBasic>
 			sprite.visible = element.visible;
 	}
 
+	/**
+	 * Genera un gráfico de placeholder para el StageEditor cuando un asset no se encuentra.
+	 * Dibuja un patrón de cuadros magenta/negro para que el elemento sea claramente visible
+	 * y seleccionable, con una escala mínima de 64×64 para que no sea invisible.
+	 */
+	private function _makePlaceholderGraphic(sprite:FlxSprite, label:String):Void
+	{
+		final SIZE = 64;
+		sprite.makeGraphic(SIZE, SIZE, 0xFFFF00FF); // magenta
+		// Dibujar cuadros negros en diagonal para el patrón checker
+		final half = SIZE >> 1;
+		final tile = new openfl.display.BitmapData(half, half, false, 0xFF000000);
+		sprite.pixels.copyPixels(tile, tile.rect, new openfl.geom.Point(0, 0));
+		sprite.pixels.copyPixels(tile, tile.rect, new openfl.geom.Point(half, half));
+		sprite.dirty = true;
+		sprite.updateHitbox();
+	}
+
 	function loadDefaultStage():Void
 	{
-		defaultCamZoom = 0.9;
-		isPixelStage = false;
-
 		// El stage por defecto usa los assets de 'stage' (week 1).
 		// Si Paths.currentStage apunta a otro stage que no existe,
 		// lo redirigimos temporalmente para no romper imageStage().
 		final _prevStage = Paths.currentStage;
 		Paths.currentStage = 'stage_week1';
 
-		var bg:FlxSprite = new FlxSprite(-600, -200).loadGraphic(Paths.imageStage('stageback'));
-		bg.antialiasing = FlxG.save.data.antialiasing;
-		bg.scrollFactor.set(0.9, 0.9);
-		bg.active = false;
-		add(bg);
-
-		var stageFront:FlxSprite = new FlxSprite(-650, 600).loadGraphic(Paths.imageStage('stagefront'));
-		stageFront.setGraphicSize(Std.int(stageFront.width * 1.1));
-		stageFront.updateHitbox();
-		stageFront.antialiasing = FlxG.save.data.antialiasing;
-		stageFront.scrollFactor.set(0.9, 0.9);
-		stageFront.active = false;
-		add(stageFront);
-
-		var stageCurtains:FlxSprite = new FlxSprite(-500, -300).loadGraphic(Paths.imageStage('stagecurtains'));
-		stageCurtains.setGraphicSize(Std.int(stageCurtains.width * 0.9));
-		stageCurtains.updateHitbox();
-		stageCurtains.antialiasing = FlxG.save.data.antialiasing;
-		stageCurtains.scrollFactor.set(1.3, 1.3);
-		stageCurtains.active = false;
-		add(stageCurtains);
+		loadStage('stage_week1');
 
 		Paths.currentStage = _prevStage;
 	}

@@ -43,8 +43,8 @@ echo ===============================================
 echo Installing HaxeFlixel...
 echo ===============================================
 
-haxelib install flixel 5.3.1
-haxelib set flixel 5.3.1
+haxelib install flixel 5.4.0
+haxelib set flixel 5.4.0
 
 haxelib install flixel-addons 3.2.2
 haxelib install flixel-ui 2.6.1
@@ -83,7 +83,7 @@ echo ===============================================
 
 haxelib set lime 8.0.2
 haxelib set openfl 9.2.2
-haxelib set flixel 5.3.1
+haxelib set flixel 5.4.0
 haxelib set flixel-ui 2.6.1
 haxelib set flixel-addons 3.2.2
 

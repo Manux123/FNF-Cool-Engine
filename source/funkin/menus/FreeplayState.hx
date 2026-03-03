@@ -32,7 +32,7 @@ import funkin.transitions.StickerTransition;
 import funkin.menus.StoryMenuState.Songs;
 import funkin.gameplay.PlayState;
 import funkin.data.Conductor;
-import extensions.CoolUtil;
+import funkin.data.CoolUtil;
 import ui.Alphabet;
 
 using StringTools;
@@ -256,7 +256,10 @@ class FreeplayState extends funkin.states.MusicBeatState
 			bg.color = 0xFF2A2A2A;
 			intendedColor = 0xFF2A2A2A;
 		}
-		changeSelection();
+		changeSelection(0);
+
+		// Auto-detectar dificultades del primer song seleccionado
+		_updateDifficultyStuff();
 		changeDiff();
 
 		// === TEXTO INFERIOR MEJORADO ===
@@ -580,15 +583,16 @@ class FreeplayState extends funkin.states.MusicBeatState
 				}
 
 				// Cargar voces usando el método seguro
+				final diffSuffix:String = difficultyStuff.length > curDifficulty ? difficultyStuff[curDifficulty][1] : '';
 				if (PlayState.SONG.needsVoices)
-					vocals = Paths.loadVoices(PlayState.SONG.song);
+					vocals = Paths.loadVoices(PlayState.SONG.song, diffSuffix);
 				else
 					vocals = new FlxSound();
 
 				FlxG.sound.list.add(vocals);
 
 				// Cargar instrumental usando el método seguro
-				FlxG.sound.music = Paths.loadInst(PlayState.SONG.song);
+				FlxG.sound.music = Paths.loadInst(PlayState.SONG.song, diffSuffix);
 				FlxG.sound.music.persist = true;
 				FlxG.sound.music.looped = true;
 				FlxG.sound.music.volume = 0.7;
@@ -834,6 +838,24 @@ class FreeplayState extends funkin.states.MusicBeatState
 		vocals = null;
 	}
 
+	/**
+	 * Detecta las dificultades disponibles para la canción actualmente
+	 * seleccionada y actualiza difficultyStuff. Si curDifficulty queda
+	 * fuera de rango después del cambio, se ajusta al índice válido más cercano.
+	 */
+	function _updateDifficultyStuff():Void
+	{
+		if (songs == null || songs.length == 0) return;
+		final songName = songs[curSelected].songName.toLowerCase();
+		difficultyStuff = cast Song.getAvailableDifficulties(songName);
+
+		// Clamp curDifficulty al nuevo rango
+		if (curDifficulty >= difficultyStuff.length)
+			curDifficulty = difficultyStuff.length - 1;
+		if (curDifficulty < 0)
+			curDifficulty = 0;
+	}
+
 	function changeDiff(change:Int = 0)
 	{
 		if (songs.length == 0) return;
@@ -924,6 +946,9 @@ class FreeplayState extends funkin.states.MusicBeatState
 				}
 			}
 		}
+
+		// Auto-detectar las dificultades disponibles para la canción seleccionada
+		_updateDifficultyStuff();
 
 		// Pequeño bump al cambiar selección
 		FlxG.camera.zoom = 1.02;

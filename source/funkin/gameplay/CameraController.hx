@@ -139,6 +139,30 @@ class CameraController
 
 	private function updateFollowPosition(elapsed:Float):Void
 	{
+		// ── Target 'both': centrar entre bf y dad ─────────────────────────
+		if (currentTarget == 'both')
+		{
+			if (boyfriend == null || dad == null) return;
+
+			var bfMid  = boyfriend.getMidpoint();
+			var dadMid = dad.getMidpoint();
+
+			var midX = (bfMid.x + dadMid.x) * 0.5;
+			var midY = (bfMid.y + dadMid.y) * 0.5;
+
+			// Offset vertical genérico para que no quede en los pies
+			midY -= 100;
+
+			var lerpVal:Float = FlxMath.bound(elapsed * LERP_SPEED, 0, 1);
+			camFollow.x = FlxMath.lerp(camFollow.x, midX, lerpVal);
+			camFollow.y = FlxMath.lerp(camFollow.y, midY, lerpVal);
+
+			bfMid.put();
+			dadMid.put();
+			return;
+		}
+
+		// ── Target normal ─────────────────────────────────────────────────
 		var targetChar = getTargetCharacter();
 		if (targetChar == null) return;
 
@@ -190,6 +214,21 @@ class CameraController
 	/** Mueve camFollow instantáneamente al target actual (sin lerp). */
 	private function _snapToTarget():Void
 	{
+		// ── Target 'both': snap al centro entre bf y dad ──────────────────
+		if (currentTarget == 'both')
+		{
+			if (boyfriend == null || dad == null) return;
+			var bfMid  = boyfriend.getMidpoint();
+			var dadMid = dad.getMidpoint();
+			camFollow.setPosition(
+				(bfMid.x + dadMid.x) * 0.5,
+				(bfMid.y + dadMid.y) * 0.5 - 100
+			);
+			bfMid.put();
+			dadMid.put();
+			return;
+		}
+
 		var targetChar = getTargetCharacter();
 		if (targetChar == null) return;
 
@@ -221,14 +260,15 @@ class CameraController
 		};
 	}
 
-	/** Normaliza aliases a los tres nombres canónicos. */
+	/** Normaliza aliases a los cuatro nombres canónicos. */
 	private function resolveTarget(raw:String):String
 	{
 		return switch (raw.toLowerCase().trim())
 		{
-			case 'player'   | 'bf' | 'boyfriend': 'player';
-			case 'opponent' | 'dad' | 'enemy':    'opponent';
-			case 'gf'       | 'girlfriend':        'gf';
+			case 'player'   | 'bf' | 'boyfriend':          'player';
+			case 'opponent' | 'dad' | 'enemy':             'opponent';
+			case 'gf'       | 'girlfriend':                 'gf';
+			case 'both'     | 'center' | 'middle' | 'all': 'both';
 			default: raw;
 		};
 	}

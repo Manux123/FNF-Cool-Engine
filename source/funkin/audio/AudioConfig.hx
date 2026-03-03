@@ -122,7 +122,7 @@ class AudioConfig
 
 		if (path == null)
 		{
-			trace('[AudioConfig] alsoft.ini no encontrado — usando defaults.');
+			trace('[AudioConfig] alsoft.ini not found — usando defaults.');
 			_applyDefaults();
 			return;
 		}

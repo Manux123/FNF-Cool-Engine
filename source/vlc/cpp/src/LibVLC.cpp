@@ -133,15 +133,16 @@ void LibVLC::setPath(const char* path)
 	libVlcMediaItem = libvlc_media_new_location(libVlcInstance, path);
 	libVlcMediaPlayer = libvlc_media_player_new_from_media(libVlcMediaItem);
 	libvlc_media_parse(libVlcMediaItem);
-	libvlc_media_release(libVlcMediaItem);
 	useHWacceleration(true);
 
-	if (libVlcMediaItem!=nullptr)
+	if (libVlcMediaItem != nullptr)
 	{
 		std::string sa = "input-repeat=";
 		sa += std::to_string(repeat);
 		libvlc_media_add_option(libVlcMediaItem, sa.c_str() );	
 	}
+
+	libvlc_media_release(libVlcMediaItem);
 }
 
 void LibVLC::play()

@@ -1527,8 +1527,8 @@ class ModChartEditorState extends FlxState
 		}
 
 		if (scriptStatusTxt != null)
-			scriptStatusTxt.text = 'No encontrado para "${songName}".\nBusqué en:\n${searchPaths.join("\n")}';
-		setStatus('Script no encontrado para: ${songName}');
+			scriptStatusTxt.text = 'not found para "${songName}".\nBusqué en:\n${searchPaths.join("\n")}';
+		setStatus('Script not found para: ${songName}');
 		#else
 		// HTML5: usar FlxG.save
 		if (FlxG.save.data.modchart_script != null)
@@ -2304,7 +2304,7 @@ class ModChartEditorState extends FlxState
 				setStatus('✓ ${manager.data.events.length} eventos cargados de ${mainPath}');
 			} catch (e:Dynamic) { setStatus("Error al cargar: " + e); }
 		}
-		else setStatus("Archivo no encontrado: " + mainPath);
+		else setStatus("Archivo not found: " + mainPath);
 		#else
 		if (FlxG.save.data.modchart_last != null)
 		{

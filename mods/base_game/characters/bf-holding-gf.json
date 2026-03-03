@@ -4,6 +4,11 @@
 	"healthIcon": "bf",
 	"charDeath": "bf-holding-gf-dead",
 	"gameOverMusic": "gameplay/gameOver",
+	"cameraOffset": [
+		-50,
+		-100
+	],
+	"flipX": true,
 	"animations": [
 		{
 			"offsetX": -5,

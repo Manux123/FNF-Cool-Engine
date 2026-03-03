@@ -227,7 +227,7 @@ class ScriptHandler
 		#if sys
 		if (!FileSystem.exists(scriptPath))
 		{
-			trace('[ScriptHandler] No encontrado: $scriptPath');
+			trace('[ScriptHandler] not found: $scriptPath');
 			return null;
 		}
 		#end
@@ -294,7 +294,7 @@ class ScriptHandler
 		#if sys
 		if (!FileSystem.exists(scriptPath))
 		{
-			trace('[ScriptHandler] No encontrado: $scriptPath');
+			trace('[ScriptHandler] not found: $scriptPath');
 			return null;
 		}
 		#end
@@ -507,7 +507,7 @@ class ScriptHandler
 				return true;
 			}
 		}
-		trace('[ScriptHandler] hotReload: "$name" no encontrado.');
+		trace('[ScriptHandler] hotReload: "$name" not found.');
 		return false;
 	}
 

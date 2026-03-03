@@ -10,7 +10,7 @@ import openfl.utils.Assets as OpenFlAssets;
 import animationdata.FunkinSprite;
 import mods.ModManager;
 import funkin.cache.PathsCache;
-
+import haxe.Json;
 #if sys
 import sys.FileSystem;
 import sys.io.File;
@@ -60,7 +60,9 @@ class Paths
 
 	/** Instancia global de PathsCache. Nunca null. */
 	public static var cache(get, never):PathsCache;
-	static inline function get_cache():PathsCache return PathsCache.instance;
+
+	static inline function get_cache():PathsCache
+		return PathsCache.instance;
 
 	// ── Caché de atlas (sólo frames, los bitmaps están en PathsCache) ─────────
 	//
@@ -69,7 +71,6 @@ class Paths
 	// El bitmap real vive en PathsCache (GPU o RAM según gpuCaching).
 	// LRU eliminado: FNF nunca necesita evictar atlases durante gameplay.
 	// Los frames se liberan con clearPreviousSession(), no por eviction.
-
 	static var atlasCache:Map<String, FlxAtlasFrames> = [];
 	static var atlasCount:Int = 0;
 
@@ -97,8 +98,15 @@ class Paths
 	 * Cambiar aquí también cambia el comportamiento de PathsCache.
 	 */
 	public static var gpuCaching(get, set):Bool;
-	static inline function get_gpuCaching():Bool return PathsCache.gpuCaching;
-	static inline function set_gpuCaching(v:Bool):Bool { PathsCache.gpuCaching = v; return v; }
+
+	static inline function get_gpuCaching():Bool
+		return PathsCache.gpuCaching;
+
+	static inline function set_gpuCaching(v:Bool):Bool
+	{
+		PathsCache.gpuCaching = v;
+		return v;
+	}
 
 	// ── Gestión de sesión (delegados a PathsCache) ────────────────────────────
 
@@ -156,7 +164,8 @@ class Paths
 	public static function resolve(file:String, ?type:AssetType):String
 	{
 		final modPath = ModManager.resolveInMod(file);
-		if (modPath != null) return modPath;
+		if (modPath != null)
+			return modPath;
 		return 'assets/$file';
 	}
 
@@ -193,16 +202,18 @@ class Paths
 		return filePath;
 	}
 
-
 	public static function resolveAny(candidates:Array<String>):String
 	{
 		for (c in candidates)
 		{
-			if (c == null || c == '') continue;
+			if (c == null || c == '')
+				continue;
 			#if sys
-			if (FileSystem.exists(c)) return c;
+			if (FileSystem.exists(c))
+				return c;
 			#else
-			if (OpenFlAssets.exists(c)) return c;
+			if (OpenFlAssets.exists(c))
+				return c;
 			#end
 		}
 		return candidates.filter(s -> s != null && s != '')[0] ?? '';
@@ -224,7 +235,8 @@ class Paths
 	{
 		final path = resolve(file, TEXT);
 		#if sys
-		if (FileSystem.exists(path)) return File.getContent(path);
+		if (FileSystem.exists(path))
+			return File.getContent(path);
 		#end
 		return OpenFlAssets.getText(path);
 	}
@@ -256,10 +268,7 @@ class Paths
 		]);
 
 	public static function stageJSON(key:String):String
-		return resolveAny([
-			ModManager.resolveInMod('stages/$key.json') ?? '',
-			'stages/$key.json'
-		]);
+		return resolveAny([ModManager.resolveInMod('stages/$key.json') ?? '', 'stages/$key.json']);
 
 	public static inline function image(key:String):String
 		return resolve('images/$key.png', IMAGE);
@@ -278,10 +287,12 @@ class Paths
 		final path = resolve('sounds/$key.$SOUND_EXT', SOUND);
 		#if sys
 		// Devolver el path si existe en disco aunque no esté en el manifest de OpenFL
-		if (FileSystem.exists(path)) return path;
+		if (FileSystem.exists(path))
+			return path;
 		// Fallback: buscar directamente en assets/ para builds sin recompilar
 		final direct = 'assets/sounds/$key.$SOUND_EXT';
-		if (FileSystem.exists(direct)) return direct;
+		if (FileSystem.exists(direct))
+			return direct;
 		#end
 		return path;
 	}
@@ -290,7 +301,8 @@ class Paths
 	{
 		final path = resolve('stages/$key.$SOUND_EXT', SOUND);
 		#if sys
-		if (FileSystem.exists(path)) return path;
+		if (FileSystem.exists(path))
+			return path;
 		#end
 		return path;
 	}
@@ -303,10 +315,12 @@ class Paths
 		final path = resolve('music/$key.$SOUND_EXT', MUSIC);
 		#if sys
 		// Devolver el path del disco directamente para builds no recompiladas
-		if (FileSystem.exists(path)) return path;
+		if (FileSystem.exists(path))
+			return path;
 		// Fallback: assets/ base
 		final direct = 'assets/music/$key.$SOUND_EXT';
-		if (FileSystem.exists(direct)) return direct;
+		if (FileSystem.exists(direct))
+			return direct;
 		#end
 		return path;
 	}
@@ -318,7 +332,7 @@ class Paths
 	{
 		final k = key.endsWith('.mp4') ? key.substr(0, key.length - 4) : key;
 		return resolveAny([
-			ModManager.resolveInMod('videos/$k.mp4')           ?? '',
+			ModManager.resolveInMod('videos/$k.mp4') ?? '',
 			ModManager.resolveInMod('cutscenes/videos/$k.mp4') ?? '',
 			'assets/videos/$k.mp4',
 			'assets/cutscenes/videos/$k.mp4'
@@ -376,12 +390,11 @@ class Paths
 		final bmp = _loadBitmapFromDisk(path);
 		if (bmp == null)
 		{
-			trace('[Paths] getGraphic: no encontrado "$key" (path="$path")');
+			trace('[Paths] getGraphic: not found "$key" (path="$path")');
 			return null;
 		}
 
-		return cacheEnabled ? cache.getGraphic(cacheKey, bmp, allowGPU)
-		                    : FlxGraphic.fromBitmapData(bmp, false, cacheKey, false);
+		return cacheEnabled ? cache.getGraphic(cacheKey, bmp, allowGPU) : FlxGraphic.fromBitmapData(bmp, false, cacheKey, false);
 	}
 
 	// ── Imagen del stage (path especial) ──────────────────────────────────────
@@ -393,16 +406,36 @@ class Paths
 	public static function imageStage(key:String):Null<Bitmap>
 	{
 		final path = _resolveStageImagePath(key);
-		if (path == null) return null;
+		if (path == null)
+			return null;
 
 		// Intentar desde PathsCache primero
 		if (cacheEnabled && cache.hasValidGraphic(path))
 			return cache.peekGraphic(path)?.bitmap;
 
 		final bmp = _loadBitmapFromDisk(path);
-		if (bmp == null) return null;
+		if (bmp == null)
+			return null;
 
-		if (cacheEnabled) cache.getGraphic(path, bmp);
+		// BUGFIX: cuando el StageEditor destruye y recrea el stage, el sprite anterior
+		// llama decrementUseCount() → useCount=0, destroyOnNoUse=true → FlxGraphic destruido
+		// (bitmap=null). El objeto FlxGraphic muerto PERMANECE en FlxG.bitmap._cache con la
+		// misma clave. Cuando cache.getGraphic() llama FlxGraphic.fromBitmapData(bmp, key),
+		// fromBitmapData hace checkCache(key) → TRUE → devuelve el gráfico muerto sin crear
+		// uno nuevo → sprite.loadGraphic(bmp) obtiene graphic.bitmap=null → invisible.
+		// Solución: purgar la entrada muerta de FlxG.bitmap antes de crear el gráfico nuevo.
+		@:privateAccess
+		{
+			final deadEntry = FlxG.bitmap.get(path);
+			if (deadEntry != null && deadEntry.bitmap == null)
+			{
+				FlxG.bitmap.removeKey(path);
+				trace('[Paths] imageStage: purgada entrada muerta de FlxG.bitmap para "$path"');
+			}
+		}
+
+		if (cacheEnabled)
+			cache.getGraphic(path, bmp);
 		return bmp;
 	}
 
@@ -437,7 +470,10 @@ class Paths
 			else if (OpenFlAssets.exists(path, MUSIC))
 				snd = OpenFlAssets.getSound(path, false);
 		}
-		catch (e:Dynamic) { trace('[Paths] getSound "$path": $e'); }
+		catch (e:Dynamic)
+		{
+			trace('[Paths] getSound "$path": $e');
+		}
 
 		return cacheEnabled ? cache.getSound(path, snd, safety) : snd;
 	}
@@ -456,12 +492,12 @@ class Paths
 	// ── Carga de audio de canción (streaming) ─────────────────────────────────
 
 	/** Carga el Inst de una canción usando streaming. */
-	public static function loadInst(song:String):flixel.sound.FlxSound
-		return _loadStreamingSound(inst(song));
+	public static function loadInst(song:String, ?diffSuffix:String):flixel.sound.FlxSound
+		return _loadStreamingSound(inst(song, diffSuffix));
 
 	/** Carga las Voices de una canción usando streaming. */
-	public static function loadVoices(song:String):flixel.sound.FlxSound
-		return _loadStreamingSound(voices(song));
+	public static function loadVoices(song:String, ?diffSuffix:String):flixel.sound.FlxSound
+		return _loadStreamingSound(voices(song, diffSuffix));
 
 	/**
 	 * Carga un FlxSound en modo streaming.
@@ -479,50 +515,132 @@ class Paths
 		try
 		{
 			#if sys
-			if (FileSystem.exists(path)) { snd.loadStream(path); return snd; }
+			if (FileSystem.exists(path))
+			{
+				snd.loadStream(path);
+				return snd;
+			}
 
 			// Asset embebido → volcar a tmp para hacer stream
 			final bytes = lime.utils.Assets.getBytes(path);
 			if (bytes != null)
 			{
-				final tmpDir  = Sys.getEnv('TEMP') ?? Sys.getEnv('TMPDIR') ?? '/tmp';
+				final tmpDir = Sys.getEnv('TEMP') ?? Sys.getEnv('TMPDIR') ?? '/tmp';
 				final tmpFile = '$tmpDir/funkin_stream_${path.split('/').pop() ?? "audio"}';
-				if (!FileSystem.exists(tmpFile)) File.saveBytes(tmpFile, bytes);
+				if (!FileSystem.exists(tmpFile))
+					File.saveBytes(tmpFile, bytes);
 				snd.loadStream(tmpFile);
 				return snd;
 			}
 			#end
 			snd.loadEmbedded(path, false, false);
 		}
-		catch (e:Dynamic) { trace('[Paths] _loadStreamingSound "$path": $e'); }
+		catch (e:Dynamic)
+		{
+			trace('[Paths] _loadStreamingSound "$path": $e');
+		}
 		return snd;
 	}
 
 	// ── Song paths ────────────────────────────────────────────────────────────
 
-	public static function inst(song:String):String
+	public static function inst(song:String, ?diffSuffix:String):String
 	{
 		final folder = _resolveSongFolder(song);
 		#if sys
+		// Primero intentar con sufijo de dificultad (ej: "Inst-nightmare.ogg")
+		if (diffSuffix != null && diffSuffix != '')
+		{
+			// El sufijo viene como "-nightmare", quitamos el guión inicial
+			final diffName = diffSuffix.startsWith('-') ? diffSuffix.substr(1) : diffSuffix;
+			for (subdir in ['song/', ''])
+			{
+				final p = '$folder/${subdir}Inst-$diffName.$SOUND_EXT';
+				if (FileSystem.exists(p))
+					return p;
+			}
+		}
 		final withSub = '$folder/song/Inst.$SOUND_EXT';
-		if (FileSystem.exists(withSub)) return withSub;
+		if (FileSystem.exists(withSub))
+			return withSub;
 		final flat = '$folder/Inst.$SOUND_EXT';
-		if (FileSystem.exists(flat)) return flat;
+		if (FileSystem.exists(flat))
+			return flat;
 		#end
 		return '$folder/song/Inst.$SOUND_EXT';
 	}
 
-	public static function voices(song:String):String
+	public static function voices(song:String, ?diffSuffix:String):String
 	{
 		final folder = _resolveSongFolder(song);
 		#if sys
+		// Primero intentar con sufijo de dificultad (ej: "Voices-nightmare.ogg")
+		if (diffSuffix != null && diffSuffix != '')
+		{
+			final diffName = diffSuffix.startsWith('-') ? diffSuffix.substr(1) : diffSuffix;
+			for (subdir in ['song/', ''])
+			{
+				final p = '$folder/${subdir}Voices-$diffName.$SOUND_EXT';
+				if (FileSystem.exists(p))
+					return p;
+			}
+		}
 		final withSub = '$folder/song/Voices.$SOUND_EXT';
-		if (FileSystem.exists(withSub)) return withSub;
+		if (FileSystem.exists(withSub))
+			return withSub;
 		final flat = '$folder/Voices.$SOUND_EXT';
-		if (FileSystem.exists(flat)) return flat;
+		if (FileSystem.exists(flat))
+			return flat;
 		#end
 		return '$folder/song/Voices.$SOUND_EXT';
 	}
+
+	/**
+	 * Resuelve la ruta de vocals para un personaje específico.
+	 * Prioridad: Voices-charName-diff → Voices-charName → Voices-diff → Voices
+	 * Devuelve null si no existe ningún archivo de vocals para ese personaje.
+	 */
+	public static function voicesForChar(song:String, charName:String, ?diffSuffix:String):Null<String>
+	{
+		if (charName == null || charName == '')
+			return null;
+		final folder = _resolveSongFolder(song);
+		#if sys
+		final diffName = (diffSuffix != null && diffSuffix != '') ? (diffSuffix.startsWith('-') ? diffSuffix.substr(1) : diffSuffix) : null;
+
+		// 1. Voices-charName-diff.ogg
+		if (diffName != null)
+		{
+			for (subdir in ['song/', ''])
+			{
+				final p = '$folder/${subdir}Voices-$charName-$diffName.$SOUND_EXT';
+				if (FileSystem.exists(p))
+					return p;
+			}
+		}
+		// 2. Voices-charName.ogg
+		for (subdir in ['song/', ''])
+		{
+			final p = '$folder/${subdir}Voices-$charName.$SOUND_EXT';
+			if (FileSystem.exists(p))
+				return p;
+		}
+		#end
+		return null; // no existe archivo específico para este personaje
+	}
+
+	/** Carga vocals específicas de un personaje como FlxSound en streaming. */
+	public static function loadVoicesForChar(song:String, charName:String, ?diffSuffix:String):Null<flixel.sound.FlxSound>
+	{
+		final path = voicesForChar(song, charName, diffSuffix);
+		if (path == null)
+			return null;
+		return _loadStreamingSound(path);
+	}
+
+	/** true si existen vocals específicas para este personaje (con o sin diff). */
+	public static function hasVoicesForChar(song:String, charName:String, ?diffSuffix:String):Bool
+		return voicesForChar(song, charName, diffSuffix) != null;
 
 	// ── FunkinSprite helpers ─────────────────────────────────────────────────
 
@@ -556,70 +674,222 @@ class Paths
 		return _cachedAtlas(key, () -> _sparrow(image(key), resolve('images/$key.xml')));
 
 	public static function characterSprite(key:String):FlxAtlasFrames
-		return _cachedAtlas('char_$key', () ->
-			_sparrow(_resolveCharacterPng(key), _resolveCharacterXml(key)));
+		return _cachedAtlas('char_$key', () -> _loadCharacterSpriteAtlas(key));
 
-	public static function stageSprite(key:String):FlxAtlasFrames
-		return _cachedAtlas('stage_$key', () ->
+	/**
+	 * Carga el atlas de un personaje soportando múltiples hojas de sprites.
+	 *
+	 * Si existe `characters/images/charName.sheets` (JSON array de strings),
+	 * cada entrada puede ser:
+	 *
+	 *   • Una KEY Sparrow (PNG+XML):
+	 *       ["tankman_basic", "tankman_bloody"]
+	 *
+	 *   • Una CARPETA de Adobe Animate (con Animation.json):
+	 *       ["tankman/basic", "tankman/bloody", "tankman/extra-animations"]
+	 *
+	 *   • O subcarpetas directas del personaje:
+	 *       ["basic", "bloody", "extra-animations"]
+	 *       → se resuelven como characters/images/charName/basic, etc.
+	 *
+	 * Las entradas Animate se fusionan vía FunkinSprite.loadMultiAnimateAtlas()
+	 * (que escribe un directorio temporal con el atlas unificado).
+	 * Las entradas Sparrow se fusionan con FlxAtlasFramesExt.mergeAtlases().
+	 *
+	 * Si el .sheets mezcla tipos, las entradas Animate tienen prioridad y las
+	 * Sparrow se ignoran (imprime un warning).
+	 *
+	 * Sin .sheets: hoja única estándar (Sparrow o Animate).
+	 */
+	static function _loadCharacterSpriteAtlas(key:String):FlxAtlasFrames
+	{
+		// 1. Buscar archivo .sheets para multi-sheet
+		final sheetsPath = _resolveCharacterSheets(key);
+		#if sys
+		if (sheetsPath != null && sys.FileSystem.exists(sheetsPath))
+		{
+			try
+			{
+				final sheetKeys:Array<String> = haxe.Json.parse(sys.io.File.getContent(sheetsPath));
+				if (sheetKeys != null && sheetKeys.length > 0)
+				{
+					// ── Detectar si las entradas son carpetas Animate ────────
+					final animateFolders:Array<String> = [];
+					final sparrowKeys:Array<String> = [];
+
+					for (sheetKey in sheetKeys)
+					{
+						if (sheetKey == null || sheetKey.trim() == '')
+							continue;
+						final folder = _resolveCharacterAnimateFolder(key, sheetKey);
+						if (folder != null)
+							animateFolders.push(folder);
+						else
+							sparrowKeys.push(sheetKey);
+					}
+
+					// ── Rama Animate ─────────────────────────────────────────
+					if (animateFolders.length > 0)
+					{
+						if (sparrowKeys.length > 0)
+							trace('[Paths] characterSprite "$key": .sheets mezcla Animate y Sparrow — se usan sólo las carpetas Animate.');
+
+						// La fusión real ocurre en FunkinSprite.loadMultiAnimateAtlas.
+						// Paths no puede devolver un FlxAtlasFrames para Animate —
+						// devolvemos null para que el caller (loadCharacterSparrow)
+						// use la vía Animate directamente.
+						//
+						// NOTA: este caso ya es interceptado en FunkinSprite.loadCharacterSparrow()
+						// mediante resolveMultiAnimateFolders(). Si llegamos aquí es porque alguien
+						// llama Paths.characterSprite() directamente (raro). En ese caso no podemos
+						// hacer nada útil, así que logueamos y devolvemos null.
+						trace('[Paths] characterSprite "$key": multi-Animate detectado — usar FunkinSprite.loadCharacterSparrow() en su lugar.');
+						return null;
+					}
+
+					// ── Rama Sparrow ──────────────────────────────────────────
+					if (sparrowKeys.length > 0)
+					{
+						final atlases:Array<FlxAtlasFrames> = [];
+						for (sheetKey in sparrowKeys)
+						{
+							final png = _resolveCharacterPng(sheetKey);
+							final xml = _resolveCharacterXml(sheetKey);
+							final atlas = _sparrow(png, xml);
+							if (atlas != null)
+								atlases.push(atlas);
+						}
+						if (atlases.length > 0)
+						{
+							final merged = extensions.FlxAtlasFramesExt.mergeAtlases(atlases);
+							if (merged != null)
+							{
+								trace('[Paths] characterSprite "$key": multi-sheet Sparrow (${atlases.length} hojas fusionadas)');
+								return merged;
+							}
+						}
+					}
+				}
+			}
+			catch (e:Dynamic)
+			{
+				trace('[Paths] characterSprite "$key": error leyendo .sheets — $e');
+			}
+		}
+		#end
+		// 2. Fallback: hoja única estándar
+		return _sparrow(_resolveCharacterPng(key), _resolveCharacterXml(key));
+	}
+
+	/**
+	 * Dado un key de .sheets, intenta resolverlo como carpeta Adobe Animate.
+	 * Busca en: subcarpeta del char, characters/images/, images/characters/, assets/.
+	 * Devuelve el path si tiene Animation.json, null si no es Animate.
+	 */
+	static function _resolveCharacterAnimateFolder(charKey:String, sheetKey:String):Null<String>
+	{
+		#if sys
+		final isSubKey = !sheetKey.contains('/');
+		final candidates:Array<String> = [];
+
+		// Como subcarpeta directa del personaje
+		if (isSubKey)
+		{
+			if (ModManager.activeMod != null)
+			{
+				final base = '${ModManager.MODS_FOLDER}/${ModManager.activeMod}';
+				candidates.push('$base/characters/images/$charKey/$sheetKey');
+				candidates.push('$base/images/characters/$charKey/$sheetKey');
+			}
+			candidates.push('assets/characters/images/$charKey/$sheetKey');
+		}
+
+		// Como ruta relativa a characters/images/
+		if (ModManager.activeMod != null)
+		{
+			final base = '${ModManager.MODS_FOLDER}/${ModManager.activeMod}';
+			candidates.push('$base/characters/images/$sheetKey');
+			candidates.push('$base/images/characters/$sheetKey');
+		}
+		candidates.push('assets/characters/images/$sheetKey');
+
+		for (p in candidates)
+			if (p != null && animationdata.FunkinSprite.folderHasAnimateAtlas(p))
+				return p;
+		#end
+		return null;
+	}
+
+	static function _resolveCharacterSheets(key:String):Null<String>
+	{
+		#if sys
+		return resolveAny([
+			ModManager.resolveInMod('characters/images/$key.sheets') ?? '',
+			ModManager.resolveInMod('images/characters/$key.sheets') ?? '',
+			'assets/characters/images/$key.sheets'
+		]);
+		#else
+		return null;
+		#end
+	}
+
+	public static function stageSprite(key:String):FlxAtlasFrames // FIX: la clave de caché debe incluir currentStage para evitar que dos stages
+		// diferentes con el mismo nombre de asset compartan el mismo atlas cacheado.
+		return _cachedAtlas('stage_${currentStage}_$key', () ->
 		{
 			final pngPath = resolveAny([
 				ModManager.resolveInMod('stages/$currentStage/images/$key.png') ?? '',
-				ModManager.resolveInMod('images/stages/$key.png')                ?? '',
-				ModManager.resolveInMod('images/$key.png')                       ?? '',
+				ModManager.resolveInMod('images/stages/$key.png') ?? '',
+				ModManager.resolveInMod('images/$key.png') ?? '',
 				'assets/stages/$currentStage/images/$key.png'
 			]);
 			final xmlPath = resolveAny([
 				ModManager.resolveInMod('stages/$currentStage/images/$key.xml') ?? '',
-				ModManager.resolveInMod('images/stages/$key.xml')                ?? '',
-				ModManager.resolveInMod('images/$key.xml')                       ?? '',
+				ModManager.resolveInMod('images/stages/$key.xml') ?? '',
+				ModManager.resolveInMod('images/$key.xml') ?? '',
 				'assets/stages/$currentStage/images/$key.xml'
 			]);
 			final stageBmp = _resolveStageImagePath(key);
-			if (stageBmp == null) return null;
+			if (stageBmp == null)
+				return null;
 			return _sparrowFromPath(stageBmp, xmlPath);
 		});
 
 	public static function skinSprite(key:String):FlxAtlasFrames
-		return _cachedAtlas('skin_$key', () ->
-			_sparrow(resolve('skins/$key.png', IMAGE), resolve('skins/$key.xml', TEXT)));
+		return _cachedAtlas('skin_$key', () -> _sparrow(resolve('skins/$key.png', IMAGE), resolve('skins/$key.xml', TEXT)));
 
 	public static function splashSprite(key:String):FlxAtlasFrames
-		return _cachedAtlas('splash_$key', () ->
-			_sparrow(resolve('splashes/$key.png', IMAGE), resolve('splashes/$key.xml', TEXT)));
+		return _cachedAtlas('splash_$key', () -> _sparrow(resolve('splashes/$key.png', IMAGE), resolve('splashes/$key.xml', TEXT)));
 
 	public static function getSparrowAtlasCutscene(key:String):FlxAtlasFrames
-		return _cachedAtlas('cutscene_$key', () ->
-			FlxAtlasFrames.fromSparrow('$key.png', '$key.xml'));
+		return _cachedAtlas('cutscene_$key', () -> FlxAtlasFrames.fromSparrow('$key.png', '$key.xml'));
 
 	// ── Atlas Packer con caché ────────────────────────────────────────────────
 
 	public static function getPackerAtlas(key:String):FlxAtlasFrames
-		return _cachedAtlas('packer_$key', () ->
-			_packer(image(key), resolve('images/$key.txt')));
+		return _cachedAtlas('packer_$key', () -> _packer(image(key), resolve('images/$key.txt')));
 
 	public static function characterSpriteTxt(key:String):FlxAtlasFrames
-		return _cachedAtlas('char_txt_$key', () ->
-			_packer(_resolveCharacterPng(key), _resolveCharacterTxt(key)));
+		return _cachedAtlas('char_txt_$key', () -> _packer(_resolveCharacterPng(key), _resolveCharacterTxt(key)));
 
-	public static function stageSpriteTxt(key:String):FlxAtlasFrames
-		return _cachedAtlas('stage_txt_$key', () ->
+	public static function stageSpriteTxt(key:String):FlxAtlasFrames // FIX: incluir currentStage en la clave de caché (igual que stageSprite)
+		return _cachedAtlas('stage_txt_${currentStage}_$key', () ->
 		{
 			final pngPath = resolveAny([
 				ModManager.resolveInMod('stages/$currentStage/images/$key.png') ?? '',
-				ModManager.resolveInMod('images/stages/$key.png')                ?? '',
+				ModManager.resolveInMod('images/stages/$key.png') ?? '',
 				'assets/stages/$currentStage/images/$key.png'
 			]);
 			final txtPath = resolveAny([
 				ModManager.resolveInMod('stages/$currentStage/images/$key.txt') ?? '',
-				ModManager.resolveInMod('images/stages/$key.txt')                ?? '',
+				ModManager.resolveInMod('images/stages/$key.txt') ?? '',
 				'assets/stages/$currentStage/images/$key.txt'
 			]);
 			return _packer(pngPath, txtPath);
 		});
 
 	public static function skinSpriteTxt(key:String):FlxAtlasFrames
-		return _cachedAtlas('skin_txt_$key', () ->
-			_packer(resolve('skins/$key.png', IMAGE), resolve('skins/$key.txt', TEXT)));
+		return _cachedAtlas('skin_txt_$key', () -> _packer(resolve('skins/$key.png', IMAGE), resolve('skins/$key.txt', TEXT)));
 
 	// ── Gestión del caché de atlas ────────────────────────────────────────────
 
@@ -648,15 +918,21 @@ class Paths
 	 * Llamar después de GC/compact para que atlas invalidados sean detectados.
 	 * Así el siguiente acceso fuerza una recarga limpia desde disco.
 	 */
-	
-	public static inline function pruneAtlasCache():Void{
+	public static inline function pruneAtlasCache():Void
+	{
 		_pruneInvalidAtlases();
 	}
 
 	public static function clearFlxBitmapCache():Void
 	{
 		FlxG.bitmap.clearCache();
-		try { openfl.utils.Assets.cache.clear(); } catch (_:Dynamic) {}
+		try
+		{
+			openfl.utils.Assets.cache.clear();
+		}
+		catch (_:Dynamic)
+		{
+		}
 		#if cpp cpp.vm.Gc.run(true); #end
 		#if hl hl.Gc.major(); #end
 		trace('[Paths] FlxG.bitmap + OpenFL cache limpiados.');
@@ -687,7 +963,11 @@ class Paths
 		final toRemove:Array<String> = [];
 		for (key in atlasCache.keys())
 			for (p in prefixes)
-				if (key.startsWith(p)) { toRemove.push(key); break; }
+				if (key.startsWith(p))
+				{
+					toRemove.push(key);
+					break;
+				}
 
 		for (key in toRemove)
 		{
@@ -697,7 +977,8 @@ class Paths
 			if (atlas?.parent != null)
 			{
 				atlas.parent.destroyOnNoUse = true;
-				if (atlas.parent.useCount <= 0) atlas.parent.destroy();
+				if (atlas.parent.useCount <= 0)
+					atlas.parent.destroy();
 			}
 		}
 
@@ -711,7 +992,8 @@ class Paths
 	public static function setCacheEnabled(enabled:Bool):Void
 	{
 		cacheEnabled = enabled;
-		if (!enabled) clearCache();
+		if (!enabled)
+			clearCache();
 	}
 
 	// ── Stats ─────────────────────────────────────────────────────────────────
@@ -738,7 +1020,8 @@ class Paths
 			if (FileSystem.exists(path))
 			{
 				final img = lime.graphics.Image.fromFile(path);
-				if (img != null) return Bitmap.fromImage(img);
+				if (img != null)
+					return Bitmap.fromImage(img);
 			}
 			#end
 			if (!path.startsWith('mods/') && OpenFlAssets.exists(path, IMAGE))
@@ -797,7 +1080,7 @@ class Paths
 			final graphic = _getGraphicForPath(pngPath);
 			if (graphic == null)
 			{
-				trace('[Paths] _sparrow: PNG no encontrado "$pngPath"');
+				trace('[Paths] _sparrow: PNG not found "$pngPath"');
 				return null;
 			}
 
@@ -805,7 +1088,7 @@ class Paths
 			final xmlContent = _readXml(xmlPath);
 			if (xmlContent == null)
 			{
-				trace('[Paths] _sparrow: XML no encontrado "$xmlPath"');
+				trace('[Paths] _sparrow: XML not found "$xmlPath"');
 				return null;
 			}
 
@@ -825,9 +1108,11 @@ class Paths
 		try
 		{
 			final graphic = _getGraphicForPath(pngPath);
-			if (graphic == null) return null;
+			if (graphic == null)
+				return null;
 			final xmlContent = _readXml(xmlPath);
-			if (xmlContent == null) return null;
+			if (xmlContent == null)
+				return null;
 			return FlxAtlasFrames.fromSparrow(graphic, xmlContent);
 		}
 		catch (e:Dynamic)
@@ -843,10 +1128,12 @@ class Paths
 		try
 		{
 			final graphic = _getGraphicForPath(pngPath);
-			if (graphic == null) return null;
+			if (graphic == null)
+				return null;
 
 			final txtContent = _readXml(txtPath); // reutilizar el mismo helper
-			if (txtContent == null) return null;
+			if (txtContent == null)
+				return null;
 
 			return FlxAtlasFrames.fromSpriteSheetPacker(graphic, txtContent);
 		}
@@ -869,10 +1156,10 @@ class Paths
 
 		// Cargar bitmap y registrar en PathsCache
 		final bmp = _loadBitmapFromDisk(pngPath);
-		if (bmp == null) return null;
+		if (bmp == null)
+			return null;
 
-		return cacheEnabled ? cache.getGraphic(pngPath, bmp)
-		                    : FlxGraphic.fromBitmapData(bmp, false, pngPath, false);
+		return cacheEnabled ? cache.getGraphic(pngPath, bmp) : FlxGraphic.fromBitmapData(bmp, false, pngPath, false);
 	}
 
 	/** Lee contenido XML/TXT desde disco o assets embebidos. */
@@ -881,11 +1168,16 @@ class Paths
 		try
 		{
 			#if sys
-			if (FileSystem.exists(xmlPath)) return File.getContent(xmlPath);
+			if (FileSystem.exists(xmlPath))
+				return File.getContent(xmlPath);
 			#end
-			if (OpenFlAssets.exists(xmlPath, TEXT)) return OpenFlAssets.getText(xmlPath);
+			if (OpenFlAssets.exists(xmlPath, TEXT))
+				return OpenFlAssets.getText(xmlPath);
 		}
-		catch (e:Dynamic) { trace('[Paths] _readXml "$xmlPath": $e'); }
+		catch (e:Dynamic)
+		{
+			trace('[Paths] _readXml "$xmlPath": $e');
+		}
 		return null;
 	}
 
@@ -900,8 +1192,14 @@ class Paths
 
 	static inline function _atlasValid(atlas:FlxAtlasFrames):Bool
 	{
-		try { return atlas != null && atlas.parent != null && atlas.parent.bitmap != null; }
-		catch (_:Dynamic) { return false; }
+		try
+		{
+			return atlas != null && atlas.parent != null && atlas.parent.bitmap != null;
+		}
+		catch (_:Dynamic)
+		{
+			return false;
+		}
 	}
 
 	/** Elimina del caché de atlas cualquier entrada cuyo FlxGraphic ya no esté en PathsCache. */
@@ -909,7 +1207,8 @@ class Paths
 	{
 		final toRemove:Array<String> = [];
 		for (key in atlasCache.keys())
-			if (!_atlasValid(atlasCache.get(key))) toRemove.push(key);
+			if (!_atlasValid(atlasCache.get(key)))
+				toRemove.push(key);
 		for (key in toRemove)
 		{
 			atlasCache.remove(key);
@@ -928,12 +1227,16 @@ class Paths
 		].filter(p -> p != null);
 
 		#if sys
-		for (p in candidates) if (FileSystem.exists(p)) return p;
+		for (p in candidates)
+			if (FileSystem.exists(p))
+				return p;
 		final base = 'assets/stages/$currentStage/images/$key.png';
-		if (FileSystem.exists(base)) return base;
+		if (FileSystem.exists(base))
+			return base;
 		#end
 		final base = 'assets/stages/$currentStage/images/$key.png';
-		if (OpenFlAssets.exists(base, IMAGE)) return base;
+		if (OpenFlAssets.exists(base, IMAGE))
+			return base;
 		return null;
 	}
 
@@ -962,9 +1265,17 @@ class Paths
 	{
 		final s = name.toLowerCase();
 		final v:Array<String> = [];
-		function add(x:String) { x = x.trim(); if (x != '' && !v.contains(x)) v.push(x); }
-		add(s); add(s.replace(' ', '-')); add(s.replace('-', ' '));
-		add(s.replace('!', '')); add(s.replace(' ', '-').replace('!', ''));
+		function add(x:String)
+		{
+			x = x.trim();
+			if (x != '' && !v.contains(x))
+				v.push(x);
+		}
+		add(s);
+		add(s.replace(' ', '-'));
+		add(s.replace('-', ' '));
+		add(s.replace('!', ''));
+		add(s.replace(' ', '-').replace('!', ''));
 		return v;
 	}
 
@@ -976,12 +1287,13 @@ class Paths
 			final modRoot = ModManager.modRoot();
 			for (v in _songFolderVariants(song))
 				for (base in ['$modRoot/songs', '$modRoot/assets/songs'])
-					if (sys.FileSystem.isDirectory('$base/$v')) return '$base/$v';
+					if (sys.FileSystem.isDirectory('$base/$v'))
+						return '$base/$v';
 		}
 		for (v in _songFolderVariants(song))
-			if (sys.FileSystem.isDirectory('assets/songs/$v')) return 'assets/songs/$v';
+			if (sys.FileSystem.isDirectory('assets/songs/$v'))
+				return 'assets/songs/$v';
 		#end
 		return 'assets/songs/${song.toLowerCase()}';
 	}
-
 }

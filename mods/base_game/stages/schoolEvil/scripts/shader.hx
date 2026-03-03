@@ -5,7 +5,7 @@ function _applyShader(name:String, shader:String)
     var spr = stage.getElement(name);
     if (spr == null)
     {
-        trace('[shader] WARN: "' + name + '" no encontrado, ignorando.');
+        trace('[shader] WARN: "' + name + '" not found, ignorando.');
         return;
     }
     ShaderManager.applyShader(spr, shader);

@@ -23,9 +23,10 @@ import haxe.Json;
  */
 enum abstract ModFormat(String) to String
 {
-	var COOL_ENGINE = "cool";
-	var PSYCH_ENGINE = "psych";
+	var COOL_ENGINE     = "cool";
+	var PSYCH_ENGINE    = "psych";
 	var CODENAME_ENGINE = "codename";
+	var VSLICE_ENGINE   = "vslice";
 }
 
 class ModFormatDetector
@@ -173,10 +174,41 @@ class ModFormatDetector
 					return PSYCH_ENGINE;
 			}
 
-			// Codename: notes is an Object with difficulty sub-keys, not an Array
+			// Codename / V-Slice: notes is an Object with difficulty sub-keys, not an Array
 			final notes = s.notes;
 			if (notes != null && !Std.isOfType(notes, Array))
+			{
+				// ── V-Slice detection ─────────────────────────────────────────────
+				// V-Slice también tiene notes como objeto, pero se distingue por:
+				//   1. Campo "generatedBy" que contiene "Friday Night Funkin'"
+				//   2. Campo "version" en raíz con semver (ej: "2.0.0")
+				//   3. Eventos con estructura {t, e, v} en lugar de arrays de arrays
+				final generatedBy:String = Std.string(root.generatedBy ?? '').toLowerCase();
+				if (generatedBy.contains('friday night funkin'))
+					return VSLICE_ENGINE;
+
+				// Comprobar versión semver en raíz (ej: "2.0.0", "2.2.0")
+				final versionStr:String = Std.string(root.version ?? '');
+				if (_isSemverChartVersion(versionStr))
+					return VSLICE_ENGINE;
+
+				// Comprobar estructura de eventos: V-Slice usa {t, e, v}
+				final evts:Dynamic = root.events ?? s.events;
+				if (evts != null && Std.isOfType(evts, Array))
+				{
+					final evArr:Array<Dynamic> = cast evts;
+					if (evArr.length > 0)
+					{
+						final firstEv:Dynamic = evArr[0];
+						// V-Slice: el evento tiene campo "e" (string con nombre del evento)
+						if (Reflect.hasField(firstEv, 'e') && Std.isOfType(firstEv.e, String))
+							return VSLICE_ENGINE;
+					}
+				}
+
+				// Si ninguna señal V-Slice, es Codename
 				return CODENAME_ENGINE;
+			}
 
 			// ── Flat Psych chart (no events array, no song wrapper) ──────────
 			// Señales características:
@@ -299,8 +331,24 @@ class ModFormatDetector
 		{
 			case 'psych', 'psych_engine', 'psychengine': PSYCH_ENGINE;
 			case 'codename', 'codename_engine', 'cne': CODENAME_ENGINE;
+			case 'vslice', 'v-slice', 'funkin', 'fnf': VSLICE_ENGINE;
 			default: COOL_ENGINE;
 		};
+	}
+
+	/**
+	 * Devuelve true si la cadena parece una versión semver de chart V-Slice.
+	 * Ejemplo: "2.0.0", "2.1.0", "2.2.0"  → true
+	 * "1.0.0" podría ser otra cosa → false (requerir mayor >= 2)
+	 */
+	static function _isSemverChartVersion(v:String):Bool
+	{
+		if (v == null || v == '') return false;
+		final parts = v.split('.');
+		if (parts.length < 2) return false;
+		final major = Std.parseInt(parts[0]);
+		// V-Slice chart versiones conocidas: 2.0.0, 2.1.0, 2.2.0
+		return (major != null && major >= 2);
 	}
 
 	static function _read(path:String):String

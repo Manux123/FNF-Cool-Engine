@@ -789,15 +789,7 @@ class StoryMenuState extends funkin.states.MusicBeatState
 			PlayState.isStoryMode = true;
 			selectedWeek = true;
 
-			var diffic = "";
-
-			switch (curDifficulty)
-			{
-				case 0:
-					diffic = '-easy';
-				case 2:
-					diffic = '-hard';
-			}
+			var diffic = funkin.data.CoolUtil.difficultySuffix();
 
 			PlayState.storyDifficulty = curDifficulty;
 
@@ -832,16 +824,28 @@ class StoryMenuState extends funkin.states.MusicBeatState
 
 		curDifficulty += change;
 
+		final diffs = funkin.menus.FreeplayState.difficultyStuff;
+
 		if (curDifficulty < 0)
-			curDifficulty = 2;
-		if (curDifficulty > 2)
+			curDifficulty = diffs.length - 1;
+		if (curDifficulty >= diffs.length)
 			curDifficulty = 0;
+
+		// Nombre de la dificultad (ej: "nightmare"), para cargar la imagen
+		final diffLabel:String = diffs[curDifficulty][0].toLowerCase();
 
 		// Cargar la imagen de la dificultad y actualizar hitbox para que
 		// sprDifficulty.width refleje el ancho REAL de la nueva imagen.
 		try
 		{
-			sprDifficulty.loadGraphic(Paths.image('menu/storymenu/difficulties/' + funkin.data.CoolUtil.difficultyArray[curDifficulty].toLowerCase()));
+			// Intenta primero con el label exacto, luego fallback a easy/normal/hard clásicos
+			var imgPath = 'menu/storymenu/difficulties/$diffLabel';
+			if (!openfl.Assets.exists(Paths.image(imgPath)))
+			{
+				// Para dificultades sin imagen propia, usa "normal" como fallback
+				imgPath = 'menu/storymenu/difficulties/normal';
+			}
+			sprDifficulty.loadGraphic(Paths.image(imgPath));
 			sprDifficulty.updateHitbox();
 			sprDifficulty.offset.set(0, 0);
 		}

@@ -1,45 +1,135 @@
 {
-	"name": "stage_week1",
-	"defaultZoom": 0.9,
-	"isPixelStage": false,
+	"dadPosition": [
+		106.666668551949,
+		46.6666672091937
+	],
+	"gfPosition": [
+		400,
+		130
+	],
 	"gfVersion": "gf",
-	"boyfriendPosition": [770, 450],
-	"dadPosition": [100, 100],
-	"gfPosition": [400, 130],
-	"cameraBoyfriend": [0, 0],
-	"cameraDad": [0, 0],
+	"isPixelStage": false,
+	"cameraDad": [
+		0,
+		0
+	],
+	"name": "stage_week1",
+	"boyfriendPosition": [
+		895.697639369111,
+		442.847229015552
+	],
+	"defaultZoom": 0.9,
+	"cameraBoyfriend": [
+		0,
+		0
+	],
 	"elements": [
 		{
-			"type": "sprite",
-			"name": "stageback",
 			"asset": "stageback",
-			"position": [-600, -200],
-			"scrollFactor": [0.9, 0.9],
+			"scrollFactor": [
+				0.9,
+				0.9
+			],
 			"antialiasing": true,
+			"zIndex": 0,
+			"position": [
+				-600,
+				-200
+			],
+			"type": "sprite",
 			"active": false,
-			"zIndex": 0
+			"name": "stageback"
 		},
 		{
+			"asset": "stage_light",
+			"zIndex": 0,
+			"aboveChars": false,
+			"position": [
+				-34,
+				-110
+			],
+			"scale": [
+				1,
+				1
+			],
 			"type": "sprite",
-			"name": "stagefront",
+			"visible": true,
+			"name": "light1",
+			"flipX": false,
+			"color": null,
+			"scrollFactor": [
+				1,
+				1
+			],
+			"antialiasing": true,
+			"flipY": false,
+			"alpha": 1
+		},
+		{
+			"asset": "stage_light",
+			"zIndex": 0,
+			"aboveChars": false,
+			"position": [
+				1126,
+				-110
+			],
+			"scale": [
+				1,
+				1
+			],
+			"type": "sprite",
+			"visible": true,
+			"name": "light1_copy",
+			"flipX": true,
+			"color": null,
+			"scrollFactor": [
+				1,
+				1
+			],
+			"antialiasing": true,
+			"flipY": false,
+			"alpha": 1
+		},
+		{
 			"asset": "stagefront",
-			"position": [-650, 600],
-			"scrollFactor": [0.9, 0.9],
-			"scale": [1.1, 1.1],
+			"zIndex": 1,
+			"position": [
+				-650,
+				600
+			],
+			"type": "sprite",
+			"scale": [
+				1.1,
+				1.1
+			],
+			"name": "stagefront",
+			"scrollFactor": [
+				0.9,
+				0.9
+			],
 			"antialiasing": true,
-			"active": false,
-			"zIndex": 1
+			"active": false
 		},
 		{
-			"type": "sprite",
-			"name": "stagecurtains",
+			"aboveChars": true,
 			"asset": "stagecurtains",
-			"position": [-500, -300],
-			"scrollFactor": [1.3, 1.3],
-			"scale": [0.9, 0.9],
+			"zIndex": 2,
+			"position": [
+				-500.000043683472,
+				-300.00000635396
+			],
+			"type": "sprite",
+			"scale": [
+				0.9,
+				0.9
+			],
+			"name": "stagecurtains",
+			"scrollFactor": [
+				1.3,
+				1.3
+			],
 			"antialiasing": true,
-			"active": false,
-			"zIndex": 2
+			"active": false
 		}
 	]
 }

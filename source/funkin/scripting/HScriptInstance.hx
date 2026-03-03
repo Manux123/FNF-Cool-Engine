@@ -224,7 +224,7 @@ class HScriptInstance
 	{
 		#if (HSCRIPT_ALLOWED && sys)
 		final resolved = _resolvePath(modulePath);
-		if (resolved == null) { trace('[HScript] require: no encontrado "$modulePath"'); return null; }
+		if (resolved == null) { trace('[HScript] require: not found "$modulePath"'); return null; }
 
 		final mod = ScriptHandler.loadScript(resolved, 'song');
 		if (mod == null || mod.interp == null) return null;

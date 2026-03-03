@@ -25,13 +25,14 @@ typedef CharacterData =
 	@:optional var healthIcon:String;
 	@:optional var healthBarColor:String;
 	@:optional var cameraOffset:Array<Float>;
-	// ── Game Over ─────────────────────────────────────────────────────────
-	@:optional var gameOverSound:String; // sfx upon dying.          Default: "fnf_loss_sfx"
-	@:optional var gameOverMusic:String; // music on loop.       Default: "gameplay/gameOver"
-	@:optional var gameOverEnd:String; // sfx upon retry.          Default: "gameplay/gameOverEnd"
-	@:optional var gameOverBpm:Float; // BPM.                  Default: 100
-	@:optional var gameOverCamFrame:Int; // camera follow frame. Default: 12
+	@:optional var gameOverSound:String;
+	@:optional var gameOverMusic:String;
+	@:optional var gameOverEnd:String;
+	@:optional var gameOverBpm:Float;
+	@:optional var gameOverCamFrame:Int;
 }
+
+// También modificar AnimData para incluir la hoja a la que pertenece:
 
 typedef AnimData =
 {
@@ -42,6 +43,19 @@ typedef AnimData =
 	var framerate:Float;
 	var prefix:String;
 	@:optional var indices:Array<Int>;
+	@:optional var assetPath:String;
+	@:optional var renderType:String;
+	/**
+	 * Voltear horizontalmente SOLO para esta animación, independiente del flipX global.
+	 * Útil cuando un sub-atlas tiene el sprite dibujado en la dirección contraria.
+	 *
+	 * El flipX resultante es: (flipX_global) XOR (flipX_anim).
+	 * Ejemplos:
+	 *   personaje sin flipX global + anim.flipX=true  → sprite volteado
+	 *   personaje con flipX global + anim.flipX=true  → sprite sin voltear (se cancelan)
+	 *   personaje con flipX global + anim.flipX=false → sprite volteado (normal)
+	 */
+	@:optional var flipX:Bool;
 }
 
 /**
@@ -91,6 +105,9 @@ class Character extends FunkinSprite
 	var danced:Bool = false;
 	var _singAnimPrefix:String = "sing";
 	var _idleAnim:String = "idle";
+
+	/** flipX base del personaje (sin per-anim flipX). Guardado en characterLoad(). */
+	var _baseFlipX:Bool = false;
 
 	// ══════════════════════════════════════════════════════════════════════════
 	//  CACHÉS ESTÁTICOS
@@ -168,6 +185,13 @@ class Character extends FunkinSprite
 		{
 			flipX = !flipX;
 		}
+
+		// Guardar el flipX base AQUÍ, cuando ya están aplicados isPlayer y flipX del JSON.
+		// playAnim() usará este valor como base para el XOR con AnimData.flipX.
+		_baseFlipX = this.flipX;
+
+		// Re-danzar con el _baseFlipX ya correcto para que la pose inicial sea la adecuada.
+		dance();
 	}
 
 	// ── Carga de datos con caché ──────────────────────────────────────────────
@@ -232,9 +256,56 @@ class Character extends FunkinSprite
 
 	function characterLoad(character:String):Void
 	{
-		// FunkinSprite auto-detecta Atlas → Sparrow → Packer
-		// y usa su propio _frameCache para evitar re-parsear el XML/TXT
-		loadCharacterSparrow(characterData.path);
+		// ── Multi-atlas al estilo V-Slice ────────────────────────────────────
+		// Recolectamos todos los assetPath únicos por animación.
+		// Si alguna animación tiene su propio assetPath, construimos el atlas
+		// combinado igual que MultiSparrowCharacter / MultiAnimateAtlasCharacter.
+		//
+		// El primer path siempre es el path principal (characterData.path).
+		// Los sub-paths se añaden en orden de aparición (sin duplicados).
+		// Esto permite que BF-holding-GF, Tankman, etc. funcionen
+		// sin necesidad de un archivo .sheets externo.
+
+		final mainPath:String = characterData.path;
+		final subPaths:Array<String> = [];
+		var needsMultiAtlas:Bool = false;
+
+		for (animData in characterData.animations)
+		{
+			if (animData.assetPath == null || animData.assetPath == mainPath) continue;
+			if (subPaths.contains(animData.assetPath)) continue;
+			subPaths.push(animData.assetPath);
+			needsMultiAtlas = true;
+		}
+
+		if (needsMultiAtlas)
+		{
+			// V-Slice style: main primero, subs después.
+			// IMPORTANTE: usamos resolveAtlasFolder() que ya sabe buscar en mods/ primero
+			// y luego en assets/. Así "tankman/basic" → "mods/base_game/characters/images/tankman/basic"
+			// si existe ahí, o "assets/characters/images/tankman/basic" si no.
+			// NO construimos el path a mano para evitar ignorar el mod activo.
+			final resolveCharAtlas = (p:String) -> {
+				// Si ya es un path absoluto resuelto (mods/ o assets/) lo usamos directo
+				if (p.startsWith('assets/') || p.startsWith('mods/')) return p;
+				// Normalizar a clave relativa a characters/images/
+				final charKey = p.startsWith('characters/images/') ? p : 'characters/images/$p';
+				// resolveAtlasFolder busca en mods → assets y devuelve el path real con Animation.json
+				final resolved = animationdata.FunkinSprite.resolveAtlasFolder(charKey);
+				if (resolved != null) return resolved;
+				// Fallback: devolver como estaba (loadMultiAnimateAtlas lo intentará con assets/)
+				return charKey;
+			};
+
+			final allPaths:Array<String> = [resolveCharAtlas(mainPath)].concat(subPaths.map(resolveCharAtlas));
+			trace('[Character] Multi-atlas para "$curCharacter": ${allPaths.length} atlases → ${allPaths.join(", ")}');
+			loadMultiAnimateAtlas(allPaths);
+		}
+		else
+		{
+			// FunkinSprite auto-detecta Atlas → Sparrow → Packer
+			loadCharacterSparrow(mainPath);
+		}
 
 		if (isAnimateAtlas)
 			trace('[Character] Modo Texture Atlas para "$curCharacter"');
@@ -259,6 +330,9 @@ class Character extends FunkinSprite
 
 		applyCharacterSpecificAdjustments();
 
+		// NOTA: _baseFlipX NO se guarda aquí porque isPlayer y flipX del JSON
+		// se aplican DESPUÉS en el constructor. Se guarda allí, tras esas modificaciones.
+
 		if (animOffsets.exists('danceRight'))
 			playAnim('danceRight');
 		else if (animOffsets.exists('danceLeft'))
@@ -278,6 +352,25 @@ class Character extends FunkinSprite
 			offset.set(daOffset[0], daOffset[1]);
 		else
 			offset.set(0, 0);
+
+		// ── flipX por animación ────────────────────────────────────────────────
+		// Buscar si esta animación tiene flipX propio en el CharacterData.
+		// Resultado = _baseFlipX XOR anim.flipX:
+		//   false XOR false = false  (sin voltear)
+		//   false XOR true  = true   (voltear)
+		//   true  XOR false = true   (voltear, normal para isPlayer)
+		//   true  XOR true  = false  (se cancelan, útil si el sub-atlas ya viene volteado)
+		if (characterData != null)
+		{
+			for (anim in characterData.animations)
+			{
+				if (anim.name == AnimName)
+				{
+					this.flipX = _baseFlipX != (anim.flipX == true);
+					break;
+				}
+			}
+		}
 	}
 
 	// ── Estado de animación ───────────────────────────────────────────────────
@@ -320,6 +413,11 @@ class Character extends FunkinSprite
 		if (!hasCurAnim())
 			return;
 
+		// En modo debug no se hace nada automático con las animaciones
+		// (ni idle, ni sing timeout, ni dance) — el usuario controla todo.
+		if (debugMode)
+			return;
+
 		var curAnimName = getCurAnimName();
 		var curAnimDone = isCurAnimFinished();
 
@@ -349,7 +447,7 @@ class Character extends FunkinSprite
 				holdTimer += elapsed;
 				if (holdTimer >= Conductor.stepCrochet * 4 * 0.001 && canSing)
 				{
-					playAnim(_idleAnim, true);
+					returnToIdle();
 					holdTimer = 0;
 				}
 			}
@@ -361,7 +459,7 @@ class Character extends FunkinSprite
 					if (curAnimName == 'firstDeath')
 						playAnim('deathLoop');
 					else
-						playAnim(_idleAnim, true);
+						returnToIdle();
 				}
 			}
 		}
@@ -469,6 +567,10 @@ class Character extends FunkinSprite
 
 	override function destroy():Void
 	{
+		// Liberar los atlases cargados con destroyOnNoUse=false (al estilo V-Slice destroy())
+		// Esto restaura destroyOnNoUse=true para que Flixel los pueda limpiar de memoria.
+		releaseTrackedAtlases();
+
 		if (animOffsets != null)
 		{
 			animOffsets.clear();

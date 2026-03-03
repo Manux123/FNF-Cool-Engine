@@ -127,7 +127,7 @@ class UIScriptedManager extends FlxGroup
 		{
 			if (name != 'default')
 			{
-				trace('[UIScriptedManager] "$name" no encontrado, cargando default...');
+				trace('[UIScriptedManager] "$name" not found, cargando default...');
 				loadUIScript('default');
 			}
 			else

@@ -84,8 +84,16 @@ class EventInfoSystem
 			name: "Camera Follow",
 			color: 0xFF88CCFF,
 			params: [
-				{ name: "Target",     type: PDDropDown(["bf","dad","gf","player","opponent"]), defValue: "bf"   },
+				{ name: "Target",     type: PDDropDown(["bf","dad","gf","both","player","opponent"]), defValue: "bf"   },
 				{ name: "Lerp Speed", type: PDFloat(0.0, 1.0),                                defValue: "0.04" }
+			]
+		},
+		{
+			name: "Camera Focus",
+			color: 0xFF66BBFF,
+			params: [
+				{ name: "Target",     type: PDDropDown(["both","bf","dad","gf"]), defValue: "both" },
+				{ name: "Lerp Speed", type: PDFloat(0.0, 1.0),                   defValue: "0.04" }
 			]
 		},
 		{

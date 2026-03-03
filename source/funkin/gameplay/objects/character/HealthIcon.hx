@@ -40,7 +40,7 @@ class HealthIcon extends FlxSprite
 
 		// ── Resolve path + logical key ────────────────────────────────────────
 		// We track the logical key so that Paths.getGraphic receives the same
-		// key that image() will resolve — avoiding the "no encontrado" mismatch
+		// key that image() will resolve — avoiding the "not found" mismatch
 		// that caused the null-object crash in FlxDrawQuadsItem::render.
 		var iconKey  = 'icons/icon-' + char;
 		var path     = Paths.image(iconKey);

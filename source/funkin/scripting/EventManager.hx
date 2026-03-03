@@ -249,6 +249,21 @@ class EventManager
 					}
 				}
 
+			// Camera Focus: centra la camara entre los dos personajes.
+			// v1 = target ('both' para centrar, o 'bf'/'dad'/'gf' igual que Camera Follow)
+			// v2 = lerp speed opcional
+			case 'camera focus', 'focus camera', 'focus':
+				if (game != null && game.cameraController != null)
+				{
+					final focusTarget = (v1 != '') ? v1 : 'both';
+					game.cameraController.setTarget(focusTarget);
+					if (v2 != '')
+					{
+						final lerp = Std.parseFloat(v2);
+						if (!Math.isNaN(lerp)) game.cameraController.setFollowLerp(lerp);
+					}
+				}
+
 			case 'camera zoom', 'zoom camera':
 				if (game != null && game.cameraController != null)
 				{

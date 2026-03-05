@@ -868,8 +868,8 @@ class FreeplayState extends funkin.states.MusicBeatState
 			curDifficulty = 0;
 
 		#if !switch
-		intendedScore = Highscore.getScore(songs[curSelected].songName, curDifficulty);
-		intendedRating = Highscore.getRating(songs[curSelected].songName, curDifficulty);
+		intendedScore = Highscore.getScore(songs[curSelected].songName, difficultyStuff.length > curDifficulty ? difficultyStuff[curDifficulty][1] : "");
+		intendedRating = Highscore.getRating(songs[curSelected].songName, difficultyStuff.length > curDifficulty ? difficultyStuff[curDifficulty][1] : "");
 		#end
 
 		PlayState.storyDifficulty = curDifficulty;
@@ -911,8 +911,8 @@ class FreeplayState extends funkin.states.MusicBeatState
 		}
 
 		#if !switch
-		intendedScore = Highscore.getScore(songs[curSelected].songName, curDifficulty);
-		intendedRating = Highscore.getRating(songs[curSelected].songName, curDifficulty);
+		intendedScore = Highscore.getScore(songs[curSelected].songName, difficultyStuff.length > curDifficulty ? difficultyStuff[curDifficulty][1] : "");
+		intendedRating = Highscore.getRating(songs[curSelected].songName, difficultyStuff.length > curDifficulty ? difficultyStuff[curDifficulty][1] : "");
 		#end
 
 		var bullShit:Int = 0;

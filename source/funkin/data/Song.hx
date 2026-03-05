@@ -283,29 +283,27 @@ class Song
 			swagShit.characters = [];
 			swagShit.strumsGroups = [];
 			
-			// Crear personajes por defecto
+			// Crear personajes por defecto.
+			// BUG FIX: Usar 'type' explícito — CharacterSlot infiere por nombre si type==null.
+			// Nombres no estándar ('ray', 'mighty') → tipificados como Opponent → posición incorrecta.
 			var gfChar:CharacterSlotData = {
 				name: swagShit.gfVersion != null ? swagShit.gfVersion : 'gf',
-				x: 0, // Se ajustará en PlayState según el stage
-				y: 0,
-				visible: true,
-				isGF: true,
+				x: 0, y: 0, visible: true,
+				isGF: true, type: 'Girlfriend',
 				strumsGroup: 'gf_strums_0'
 			};
 			
 			var dadChar:CharacterSlotData = {
 				name: swagShit.player2 != null ? swagShit.player2 : 'dad',
-				x: 0,
-				y: 0,
-				visible: true,
+				x: 0, y: 0, visible: true,
+				type: 'Opponent',
 				strumsGroup: 'cpu_strums_0'
 			};
 			
 			var bfChar:CharacterSlotData = {
 				name: swagShit.player1 != null ? swagShit.player1 : 'bf',
-				x: 0,
-				y: 0,
-				visible: true,
+				x: 0, y: 0, visible: true,
+				type: 'Player',
 				strumsGroup: 'player_strums_0'
 			};
 			
@@ -435,9 +433,9 @@ class Song
 		if (song.characters == null || song.characters.length == 0)
 		{
 			song.characters = [
-				{ name: gfName,  x: 0, y: 0, visible: true, isGF: true,  strumsGroup: 'gf_strums_0'     },
-				{ name: dadName, x: 0, y: 0, visible: true,               strumsGroup: 'cpu_strums_0'    },
-				{ name: bfName,  x: 0, y: 0, visible: true,               strumsGroup: 'player_strums_0' }
+				{ name: gfName,  x: 0, y: 0, visible: true, isGF: true,  type: 'Girlfriend', strumsGroup: 'gf_strums_0'     },
+				{ name: dadName, x: 0, y: 0, visible: true, type: 'Opponent',                strumsGroup: 'cpu_strums_0'    },
+				{ name: bfName,  x: 0, y: 0, visible: true, type: 'Player',                 strumsGroup: 'player_strums_0' }
 			];
 		}
 
@@ -494,15 +492,28 @@ class Song
 
 				final base = entryLow.substr(0, entryLow.length - 5); // quitar ".json"
 
+				// ── Filtro V-Slice: ignorar archivos de metadata ──────────────────
+				// Archivos como "senpai-metadata.json", "senpai-metadata-erect.json",
+				// "metadata.json" NO son charts, son metadatos del song en formato V-Slice.
+				if (base.contains('metadata')) continue;
+				// Ignorar archivos de manifest de chart (ej: "senpai-chart.json")
+				if (base.endsWith('-chart') || base == 'chart') continue;
+
+				// ── Filtro de nombre: solo aceptar archivos que empiecen con el folder ──
+				// Archivos que NO empiecen con el nombre de la canción (ej: "hard.json" suelto,
+				// "config_extra.json", etc.) no se identifican como dificultades.
+				// Solo se exceptúa "normal.json" por compatibilidad histórica.
+				if (!base.startsWith(folderLow) && base != 'normal') continue;
+
 				var suffix:String;
 				// Formato "songname-diff.json"  ej: "alone-nightmare.json"
 				if (base.startsWith(folderLow + '-'))
 					suffix = base.substr(folderLow.length); // "-nightmare"
-				// Formato "diff.json"  ej: "nightmare.json"
+				// Formato "diff.json" == "songname.json" (dificultad normal) o "normal.json"
 				else if (base == folderLow || base == 'normal')
 					suffix = ''; // dificultad normal
 				else
-					suffix = '-' + base; // "-nightmare"
+					continue; // ya filtrado arriba; por seguridad, skip
 
 				found.set(suffix, true);
 			}

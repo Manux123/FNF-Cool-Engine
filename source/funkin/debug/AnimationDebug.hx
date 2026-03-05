@@ -152,6 +152,12 @@ class AnimationDebug extends MusicBeatState
 	var gameOverEndInput:FlxUIInputText;
 	var gameOverBpmStepper:FlxUINumericStepper;
 	var gameOverCamFrameStepper:FlxUINumericStepper;
+	// Position offset steppers (campo "positionOffset" del CharacterData)
+	var posOffsetXStepper:FlxUINumericStepper;
+	var posOffsetYStepper:FlxUINumericStepper;
+	// Camera offset steppers (campo "cameraOffset" del CharacterData)
+	var camOffsetXStepper:FlxUINumericStepper;
+	var camOffsetYStepper:FlxUINumericStepper;
 	// Color actual seleccionado para la healthBar
 	var currentHealthBarColor:FlxColor = FlxColor.fromString("#31B0D1");
 
@@ -836,6 +842,33 @@ class AnimationDebug extends MusicBeatState
 		tab.add(isFlxAnimateCheckbox);
 		yPos += 30;
 
+		// ── Position Offset ───────────────────────────────────────────────────
+		// El offset global del sprite que se SUMA a la posición del stage.
+		// Equivalente al campo "position" de Psych Engine y al field nativo de Cool.
+		var posOffsetTitle = new FlxText(10, yPos, 0, "Position Offset:", 10);
+		tab.add(posOffsetTitle);
+		yPos += 15;
+		tab.add(new FlxText(10, yPos + 4, 0, "X:", 9));
+		posOffsetXStepper = new FlxUINumericStepper(22, yPos, 1, 0, -2000, 2000, 0);
+		tab.add(posOffsetXStepper);
+		tab.add(new FlxText(130, yPos + 4, 0, "Y:", 9));
+		posOffsetYStepper = new FlxUINumericStepper(142, yPos, 1, 0, -2000, 2000, 0);
+		tab.add(posOffsetYStepper);
+		yPos += 28;
+
+		// ── Camera Offset ─────────────────────────────────────────────────────
+		// Offset de la cámara relativo al personaje (cameraOffset en CharacterData).
+		var camOffsetTitle = new FlxText(10, yPos, 0, "Camera Offset:", 10);
+		tab.add(camOffsetTitle);
+		yPos += 15;
+		tab.add(new FlxText(10, yPos + 4, 0, "X:", 9));
+		camOffsetXStepper = new FlxUINumericStepper(22, yPos, 1, 0, -2000, 2000, 0);
+		tab.add(camOffsetXStepper);
+		tab.add(new FlxText(130, yPos + 4, 0, "Y:", 9));
+		camOffsetYStepper = new FlxUINumericStepper(142, yPos, 1, 0, -2000, 2000, 0);
+		tab.add(camOffsetYStepper);
+		yPos += 28;
+
 		tab.add(new FlxButton(10, yPos, "Apply Properties", function()
 		{
 			if (char != null)
@@ -844,6 +877,28 @@ class AnimationDebug extends MusicBeatState
 				char.scale.set(scaleStepper.value, scaleStepper.value);
 				char.updateHitbox();
 				updateIconPreview(healthIconInput.text);
+
+				// Aplicar positionOffset en vivo: recentrar y sumar el offset
+				char.screenCenter();
+				if (ghostChar != null) ghostChar.screenCenter();
+				if (posOffsetXStepper != null && posOffsetYStepper != null)
+				{
+					char.x += posOffsetXStepper.value;
+					char.y += posOffsetYStepper.value;
+					if (ghostChar != null)
+					{
+						ghostChar.x += posOffsetXStepper.value;
+						ghostChar.y += posOffsetYStepper.value;
+					}
+				}
+				// Actualizar cameraOffset en el characterData en memoria
+				if (char.characterData != null)
+				{
+					if (posOffsetXStepper != null && posOffsetYStepper != null)
+						char.characterData.positionOffset = [posOffsetXStepper.value, posOffsetYStepper.value];
+					if (camOffsetXStepper != null && camOffsetYStepper != null)
+						char.characterData.cameraOffset = [camOffsetXStepper.value, camOffsetYStepper.value];
+				}
 			}
 		}));
 
@@ -1453,6 +1508,22 @@ class AnimationDebug extends MusicBeatState
 		// NO sobreescribir flipX aquí — Character.hx ya lo aplica desde el JSON.
 		// loadCharacterData() actualizará el checkbox y sincronizará tras esto.
 
+		// Aplicar positionOffset al preview (igual que en PlayState)
+		if (char.characterData != null)
+		{
+			final posOff = char.characterData.positionOffset;
+			if (posOff != null && posOff.length >= 2)
+			{
+				char.x += posOff[0];
+				char.y += posOff[1];
+				if (ghostChar != null)
+				{
+					ghostChar.x += posOff[0];
+					ghostChar.y += posOff[1];
+				}
+			}
+		}
+
 		// Actualizar header con el nombre del personaje
 		if (charHeaderText != null)
 		{
@@ -1640,6 +1711,22 @@ class AnimationDebug extends MusicBeatState
 			if (gameOverCamFrameStepper != null)
 				gameOverCamFrameStepper.value = characterData.gameOverCamFrame ?? 12;
 
+			// ── Position Offset ──────────────────────────────────────────────
+			if (posOffsetXStepper != null && posOffsetYStepper != null)
+			{
+				var posOff = characterData.positionOffset;
+				posOffsetXStepper.value = (posOff != null && posOff.length > 0) ? posOff[0] : 0;
+				posOffsetYStepper.value = (posOff != null && posOff.length > 1) ? posOff[1] : 0;
+			}
+
+			// ── Camera Offset ────────────────────────────────────────────────
+			if (camOffsetXStepper != null && camOffsetYStepper != null)
+			{
+				var camOff = characterData.cameraOffset;
+				camOffsetXStepper.value = (camOff != null && camOff.length > 0) ? camOff[0] : 0;
+				camOffsetYStepper.value = (camOff != null && camOff.length > 1) ? camOff[1] : 0;
+			}
+
 			currentAnimData = characterData.animations;
 
 			if (usingFlxAnimate)
@@ -1692,6 +1779,24 @@ class AnimationDebug extends MusicBeatState
 			tempData.gameOverBpm = gameOverBpmStepper.value;
 		if (gameOverCamFrameStepper != null && Std.int(gameOverCamFrameStepper.value) != 12)
 			tempData.gameOverCamFrame = Std.int(gameOverCamFrameStepper.value);
+
+		// ── Position Offset ────────────────────────────────────────────────────
+		if (posOffsetXStepper != null && posOffsetYStepper != null)
+		{
+			final px = posOffsetXStepper.value;
+			final py = posOffsetYStepper.value;
+			if (px != 0 || py != 0)
+				tempData.positionOffset = [px, py];
+		}
+
+		// ── Camera Offset ──────────────────────────────────────────────────────
+		if (camOffsetXStepper != null && camOffsetYStepper != null)
+		{
+			final cx = camOffsetXStepper.value;
+			final cy = camOffsetYStepper.value;
+			if (cx != 0 || cy != 0)
+				tempData.cameraOffset = [cx, cy];
+		}
 
 		var jsonString = Json.stringify(tempData, null, '\t');
 
@@ -1756,6 +1861,24 @@ class AnimationDebug extends MusicBeatState
 			exportData.gameOverBpm = gameOverBpmStepper.value;
 		if (gameOverCamFrameStepper != null && Std.int(gameOverCamFrameStepper.value) != 12)
 			exportData.gameOverCamFrame = Std.int(gameOverCamFrameStepper.value);
+
+		// ── Position Offset ────────────────────────────────────────────────────
+		if (posOffsetXStepper != null && posOffsetYStepper != null)
+		{
+			final px = posOffsetXStepper.value;
+			final py = posOffsetYStepper.value;
+			if (px != 0 || py != 0)
+				exportData.positionOffset = [px, py];
+		}
+
+		// ── Camera Offset ──────────────────────────────────────────────────────
+		if (camOffsetXStepper != null && camOffsetYStepper != null)
+		{
+			final cx = camOffsetXStepper.value;
+			final cy = camOffsetYStepper.value;
+			if (cx != 0 || cy != 0)
+				exportData.cameraOffset = [cx, cy];
+		}
 
 		return exportData;
 	}

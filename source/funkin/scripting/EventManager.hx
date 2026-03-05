@@ -2,6 +2,7 @@ package funkin.scripting;
 
 import flixel.FlxG;
 import funkin.gameplay.PlayState;
+import funkin.gameplay.objects.character.Character;
 import funkin.data.Song.SwagSong;
 import funkin.data.Section.SwagSection;
 import Paths;
@@ -74,6 +75,13 @@ class EventManager
 
 		// Refrescar `game` en los scripts ahora que PlayState.instance existe.
 		ScriptHandler.setOnScripts('game', PlayState.instance);
+
+		// ── Precacheo proactivo de Change Character ───────────────────────────
+		// Escanear todos los eventos antes de que empiece el gameplay.
+		// Por cada "Change Character" único, cargar el JSON y el spritesheet
+		// del personaje nuevo en los caches estáticos (Character._dataCache y
+		// FunkinSprite._frameCache) para que el cambio en runtime sea instantáneo.
+		_precacheChangeCharacters();
 
 		trace('[EventManager] ${events.length} eventos cargados.');
 	}
@@ -390,6 +398,34 @@ class EventManager
 	}
 
 	// -- Helpers ---------------------------------------------------------------
+
+	/**
+	 * Escanea todos los eventos ya cargados buscando "Change Character".
+	 * Por cada personaje nuevo único, llama a Character.precacheCharacter()
+	 * para que su JSON y spritesheet queden en los caches estáticos antes
+	 * de que empiece el gameplay → cambio de personaje sin hitch.
+	 */
+	static function _precacheChangeCharacters():Void
+	{
+		final seen:Map<String, Bool> = [];
+		var count = 0;
+
+		for (e in events)
+		{
+			if (e.name.toLowerCase() != 'change character' && e.name.toLowerCase() != 'swap character')
+				continue;
+
+			final charName = e.value2 != null ? e.value2.trim() : '';
+			if (charName == '' || seen.exists(charName)) continue;
+
+			seen.set(charName, true);
+			Character.precacheCharacter(charName);
+			count++;
+		}
+
+		if (count > 0)
+			trace('[EventManager] Precacheados $count personajes de Change Character.');
+	}
 
 	static function _resolveChar(game:PlayState,
 	                             slot:String):Null<funkin.gameplay.objects.character.Character>

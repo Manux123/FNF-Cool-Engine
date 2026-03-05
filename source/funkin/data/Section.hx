@@ -15,7 +15,6 @@ typedef SwagSection =
 	
 	// === LEGACY ===
 	@:optional var gfSing:Bool; // GF canta (legacy)
-	@:optional var bothSing:Bool; // Ambos cantan (legacy)
 	
 	// === NUEVO SISTEMA ===
 	@:optional var characterIndex:Int; // Índice del personaje que canta (desde array characters)
@@ -33,6 +32,9 @@ class Section
 	public var typeOfSection:Int = 0;
 	public var mustHitSection:Bool = true;
 	
+	// === LEGACY ===
+	public var gfSing:Bool = false;     // GF canta (legacy, mirror of SwagSection)
+
 	// Nuevo
 	public var characterIndex:Int = -1; // -1 = usar lógica default (mustHitSection)
 	public var strumsGroupId:String = null;

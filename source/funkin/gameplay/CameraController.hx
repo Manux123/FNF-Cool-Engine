@@ -57,13 +57,21 @@ class CameraController
 	public var bfOffsetY:Int  = 0;
 
 	// === STAGE CAMERA OFFSETS ===
-	// Definidos en el stage JSON como cameraBoyfriend / cameraDad.
+	// Definidos en el stage JSON como cameraBoyfriend / cameraDad / cameraGirlfriend.
 	// Se suman al follow position igual que los offsets del personaje.
 	public var stageOffsetBf:FlxPoint  = new FlxPoint(0, 0);
 	public var stageOffsetDad:FlxPoint = new FlxPoint(0, 0);
+	/** Offset de cámara para GF (camera_girlfriend en Psych). */
+	public var stageOffsetGf:FlxPoint  = new FlxPoint(0, 0);
 
 	// === CONFIG ===
-	private static inline var LERP_SPEED:Float       = 2.4;
+	/**
+	 * Velocidad del lerp de cámara. Equivalente a camera_speed en Psych.
+	 * Se inicializa a 2.4 (default de Cool Engine). PlayState lo sobreescribe
+	 * con currentStage.cameraSpeed * BASE_LERP_SPEED tras cargar el stage.
+	 */
+	public var lerpSpeed:Float = 2.4;
+	public static inline var BASE_LERP_SPEED:Float = 2.4;
 	private static inline var NOTE_OFFSET_AMOUNT:Float = 30.0;
 
 	// ─────────────────────────────────────────────────────────────
@@ -153,7 +161,7 @@ class CameraController
 			// Offset vertical genérico para que no quede en los pies
 			midY -= 100;
 
-			var lerpVal:Float = FlxMath.bound(elapsed * LERP_SPEED, 0, 1);
+			var lerpVal:Float = FlxMath.bound(elapsed * lerpSpeed, 0, 1);
 			camFollow.x = FlxMath.lerp(camFollow.x, midX, lerpVal);
 			camFollow.y = FlxMath.lerp(camFollow.y, midY, lerpVal);
 
@@ -172,8 +180,16 @@ class CameraController
 		targetPos.x += targetChar.cameraOffset[0];
 		targetPos.y += targetChar.cameraOffset[1];
 
-		// Offsets del stage (cameraBoyfriend / cameraDad en el stage JSON).
-		var stageOff = currentTarget == 'player' ? stageOffsetBf : stageOffsetDad;
+		// BUG FIX: Seleccionar el stage offset correcto según el target.
+		// Antes: `currentTarget == 'player' ? stageOffsetBf : stageOffsetDad`
+		// → GF siempre recibía el offset del Dad (else branch), que era incorrecto.
+		var stageOff = switch (currentTarget)
+		{
+			case 'player':   stageOffsetBf;
+			case 'opponent': stageOffsetDad;
+			case 'gf':       stageOffsetGf;
+			default:         stageOffsetDad;
+		};
 		targetPos.x += stageOff.x;
 		targetPos.y += stageOff.y;
 
@@ -197,7 +213,7 @@ class CameraController
 		var noteOffY = currentTarget == 'player' ? bfOffsetY : dadOffsetY;
 
 		// Lerp suave hacia el destino.
-		var lerpVal:Float = FlxMath.bound(elapsed * LERP_SPEED, 0, 1);
+		var lerpVal:Float = FlxMath.bound(elapsed * lerpSpeed, 0, 1);
 		camFollow.x = FlxMath.lerp(camFollow.x, targetPos.x + noteOffX, lerpVal);
 		camFollow.y = FlxMath.lerp(camFollow.y, targetPos.y + noteOffY, lerpVal);
 
@@ -233,7 +249,14 @@ class CameraController
 		if (targetChar == null) return;
 
 		var mid = targetChar.getMidpoint();
-		var stageOff = currentTarget == 'player' ? stageOffsetBf : stageOffsetDad;
+		// BUG FIX: igual que en updateFollowPosition, GF necesita su propio stageOffset.
+		var stageOff = switch (currentTarget)
+		{
+			case 'player':   stageOffsetBf;
+			case 'opponent': stageOffsetDad;
+			case 'gf':       stageOffsetGf;
+			default:         stageOffsetDad;
+		};
 		switch (currentTarget)
 		{
 			case 'player':
@@ -338,6 +361,7 @@ class CameraController
 		camPos.put();
 		stageOffsetBf.put();
 		stageOffsetDad.put();
+		stageOffsetGf.put();
 		camFollow = null;
 	}
 }

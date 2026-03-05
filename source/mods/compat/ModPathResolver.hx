@@ -22,12 +22,8 @@ using StringTools;
  *  Chart          songs/name/hard.json     songs/name/hard.json   songs/name/chart.json
  *  Inst audio     songs/name/song/Inst.ogg songs/name/Inst.ogg    songs/name/Inst.ogg
  *  Voices audio   songs/name/song/Voices   songs/name/Voices      songs/name/Voices
- *
- * ── How to use ───────────────────────────────────────────────────────────────
- *  // Instead of ModManager.resolveInMod('characters/$name.json')
- *  ModPathResolver.characterJson(name);   // tries all known locations
- *  ModPathResolver.inst(songName);        // tries both audio layouts
- *  ModPathResolver.chartJson(song, diff); // tries all chart naming conventions
+ *  Voices split   —                        songs/name/Voices-Player.ogg  (Psych 0.7+)
+ *                                          songs/name/Voices-Opponent.ogg
  */
 class ModPathResolver
 {
@@ -189,6 +185,15 @@ class ModPathResolver
 
 	/**
 	 * Finds the Voices audio file for a song in the active mod.
+	 *
+	 * BUG FIX #10: Psych 0.7+ soporta voces divididas por personaje:
+	 *   • Voices-Player.ogg   (para BF)
+	 *   • Voices-Opponent.ogg (para Dad)
+	 *   • Voices.ogg          (combinadas — Psych ≤0.6 y fallback)
+	 *
+	 * Si el mod usa voces divididas, se devuelve la combinada como primera
+	 * opción. El caller debe usar `voicesPlayer()` y `voicesOpponent()` si
+	 * quiere las voces separadas para mezcla individual.
 	 */
 	public static function voices(song:String):Null<String>
 	{
@@ -202,6 +207,59 @@ class ModPathResolver
 			'$base/songs/$lower/song/Voices.$ext',
 			'$base/songs/$lower/Voices.$ext'
 		]);
+	}
+
+	/**
+	 * Finds the player (BF) voice track for Psych 0.7+ split-vocals mods.
+	 * Returns null if the split file doesn't exist (use `voices()` as fallback).
+	 *
+	 * Psych 0.7+ naming: "Voices-Player.ogg" / "Voices-bf.ogg"
+	 */
+	public static function voicesPlayer(song:String):Null<String>
+	{
+		final mod = ModManager.activeMod;
+		if (mod == null) return null;
+		final base  = '${ModManager.MODS_FOLDER}/$mod';
+		final lower = song.toLowerCase();
+		final ext   = #if web "mp3" #else "ogg" #end;
+
+		return _first([
+			'$base/songs/$lower/song/Voices-Player.$ext',
+			'$base/songs/$lower/Voices-Player.$ext',
+			'$base/songs/$lower/song/Voices-bf.$ext',
+			'$base/songs/$lower/Voices-bf.$ext'
+		]);
+	}
+
+	/**
+	 * Finds the opponent (Dad) voice track for Psych 0.7+ split-vocals mods.
+	 * Returns null if the split file doesn't exist (use `voices()` as fallback).
+	 *
+	 * Psych 0.7+ naming: "Voices-Opponent.ogg" / "Voices-dad.ogg"
+	 */
+	public static function voicesOpponent(song:String):Null<String>
+	{
+		final mod = ModManager.activeMod;
+		if (mod == null) return null;
+		final base  = '${ModManager.MODS_FOLDER}/$mod';
+		final lower = song.toLowerCase();
+		final ext   = #if web "mp3" #else "ogg" #end;
+
+		return _first([
+			'$base/songs/$lower/song/Voices-Opponent.$ext',
+			'$base/songs/$lower/Voices-Opponent.$ext',
+			'$base/songs/$lower/song/Voices-dad.$ext',
+			'$base/songs/$lower/Voices-dad.$ext'
+		]);
+	}
+
+	/**
+	 * Returns true if the song has split vocals (Psych 0.7+ style).
+	 * Use this to decide whether to load separate player/opponent tracks.
+	 */
+	public static function hasSplitVocals(song:String):Bool
+	{
+		return voicesPlayer(song) != null || voicesOpponent(song) != null;
 	}
 
 	// ─── Helpers ─────────────────────────────────────────────────────────────

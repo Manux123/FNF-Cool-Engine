@@ -167,6 +167,42 @@ class ScriptAPI
 		// OpenFL
 		interp.variables.set('BitmapData', openfl.display.BitmapData);
 		interp.variables.set('Sound',      openfl.media.Sound);
+
+		// BlendMode — expuesto como proxy con las constantes más usadas.
+		// En HScript la conversión abstracta `from String` de BlendMode no se
+		// aplica automáticamente al asignar sp.blend = "add", por lo que los
+		// scripts deben usar BlendMode.ADD, BlendMode.MULTIPLY, etc.
+		interp.variables.set('BlendMode', {
+			NORMAL   : (openfl.display.BlendMode.NORMAL   : openfl.display.BlendMode),
+			ADD      : (openfl.display.BlendMode.ADD      : openfl.display.BlendMode),
+			MULTIPLY : (openfl.display.BlendMode.MULTIPLY : openfl.display.BlendMode),
+			SCREEN   : (openfl.display.BlendMode.SCREEN   : openfl.display.BlendMode),
+			OVERLAY  : (openfl.display.BlendMode.OVERLAY  : openfl.display.BlendMode),
+			SUBTRACT : (openfl.display.BlendMode.SUBTRACT : openfl.display.BlendMode),
+			DARKEN   : (openfl.display.BlendMode.DARKEN   : openfl.display.BlendMode),
+			LIGHTEN  : (openfl.display.BlendMode.LIGHTEN  : openfl.display.BlendMode),
+			HARDLIGHT: (openfl.display.BlendMode.HARDLIGHT: openfl.display.BlendMode),
+			INVERT   : (openfl.display.BlendMode.INVERT   : openfl.display.BlendMode),
+			ALPHA    : (openfl.display.BlendMode.ALPHA    : openfl.display.BlendMode),
+			ERASE    : (openfl.display.BlendMode.ERASE    : openfl.display.BlendMode),
+			// Helper para convertir string → BlendMode (retrocompatibilidad)
+			fromString: function(name:String):openfl.display.BlendMode {
+				return switch (name.toLowerCase()) {
+					case 'add'       : openfl.display.BlendMode.ADD;
+					case 'multiply'  : openfl.display.BlendMode.MULTIPLY;
+					case 'screen'    : openfl.display.BlendMode.SCREEN;
+					case 'overlay'   : openfl.display.BlendMode.OVERLAY;
+					case 'subtract'  : openfl.display.BlendMode.SUBTRACT;
+					case 'darken'    : openfl.display.BlendMode.DARKEN;
+					case 'lighten'   : openfl.display.BlendMode.LIGHTEN;
+					case 'hardlight' : openfl.display.BlendMode.HARDLIGHT;
+					case 'invert'    : openfl.display.BlendMode.INVERT;
+					case 'alpha'     : openfl.display.BlendMode.ALPHA;
+					case 'erase'     : openfl.display.BlendMode.ERASE;
+					default          : openfl.display.BlendMode.NORMAL;
+				};
+			}
+		});
 	}
 
 	// ─── Gameplay ─────────────────────────────────────────────────────────────
@@ -445,6 +481,7 @@ class ScriptAPI
 			// OpenFL
 			'BitmapData'        => openfl.display.BitmapData,
 			'Sound'             => openfl.media.Sound,
+			'BlendMode'         => interp.variables.get('BlendMode'),
 		];
 
 		// Registrar clases opcionales (solo si están en el build)
@@ -779,13 +816,15 @@ class ScriptAPI
 				final ps = funkin.gameplay.PlayState.instance;
 				if (ps != null && ps.cameraController != null) ps.cameraController.bumpZoom();
 			},
-			// Añadir shader a una cámara específica
+			// Añadir shader a una cámara específica.
+			// FIX: usar ShaderManager.applyShaderToCamera() en lugar del camino manual
+			// que bypaseaba _liveInstances → setShaderParam no podía actualizar uniforms
+			// (uTime, etc.) porque la instancia no estaba registrada → sin efecto visual.
 			addShader: function(shaderName:String, ?camTarget:Dynamic) {
 				final ps = funkin.gameplay.PlayState.instance;
 				final cam:FlxCamera = camTarget ?? (ps != null ? Reflect.field(ps, 'camGame') : FlxG.camera);
 				if (cam == null) return;
-				final sh = shaders.ShaderManager.loadShader(shaderName);
-				if (sh != null) funkin.data.CameraUtil.addShader(sh.shader, cam);
+				shaders.ShaderManager.applyShaderToCamera(shaderName, cam);
 			},
 			clearShaders: function(?camTarget:Dynamic) {
 				final ps = funkin.gameplay.PlayState.instance;
@@ -855,11 +894,12 @@ class ScriptAPI
 
 	static function exposeShaders(interp:Interp):Void
 	{
-		interp.variables.set('ShaderManager', _shaderManagerProxy());
-		interp.variables.set('WaveEffect',    shaders.WaveEffect);
-		interp.variables.set('WiggleEffect',  shaders.WiggleEffect);
-		interp.variables.set('BlendModeEffect', shaders.BlendModeEffect);
-		interp.variables.set('OverlayShader',   shaders.OverlayShader);
+		interp.variables.set('ShaderManager',    _shaderManagerProxy());
+		interp.variables.set('WaveEffect',       shaders.WaveEffect);
+		interp.variables.set('WiggleEffect',     shaders.WiggleEffect);
+		interp.variables.set('BlendModeEffect',  shaders.BlendModeEffect);
+		interp.variables.set('OverlayShader',    shaders.OverlayShader);
+		interp.variables.set('DropShadowShader', shaders.DropShadowShader);
 
 		// WiggleEffect — object wrapper para usar en scripts fácilmente
 		// Uso: var wiggle = wiggleEffect.create(); wiggle.effectType = ...
@@ -1457,25 +1497,33 @@ class ScriptAPI
 	{
 		interp.variables.set('Highscore', funkin.gameplay.objects.hud.Highscore);
 		interp.variables.set('highscore', {
-			saveScore:  function(song:String, score:Int, ?diff:Int) {
-				funkin.gameplay.objects.hud.Highscore.saveScore(song, score, diff != null ? diff : 0);
+			// suffix = sufijo de dificultad como string: "-hard", "-erect", "" (normal)
+			// Si no se pasa suffix, usa la dificultad actual automáticamente.
+			saveScore:  function(song:String, score:Int, ?suffix:String) {
+				funkin.gameplay.objects.hud.Highscore.saveScore(song, score, suffix ?? funkin.data.CoolUtil.difficultySuffix());
 			},
-			getScore:   function(song:String, diff:Int):Int {
-				return funkin.gameplay.objects.hud.Highscore.getScore(song, diff);
+			saveRating: function(song:String, rating:Float, ?suffix:String) {
+				funkin.gameplay.objects.hud.Highscore.saveRating(song, rating, suffix ?? funkin.data.CoolUtil.difficultySuffix());
 			},
-			getRating:  function(song:String, diff:Int):Float {
-				return funkin.gameplay.objects.hud.Highscore.getRating(song, diff);
+			getScore:   function(song:String, ?suffix:String):Int {
+				return funkin.gameplay.objects.hud.Highscore.getScore(song, suffix ?? funkin.data.CoolUtil.difficultySuffix());
 			},
-			saveWeek:   function(week:Int, score:Int, ?diff:Int) {
-				funkin.gameplay.objects.hud.Highscore.saveWeekScore(week, score, diff != null ? diff : 0);
+			getRating:  function(song:String, ?suffix:String):Float {
+				return funkin.gameplay.objects.hud.Highscore.getRating(song, suffix ?? funkin.data.CoolUtil.difficultySuffix());
 			},
-			getWeek:    function(week:Int, diff:Int):Int {
-				return funkin.gameplay.objects.hud.Highscore.getWeekScore(week, diff);
+			saveWeek:   function(week:Int, score:Int, ?suffix:String) {
+				funkin.gameplay.objects.hud.Highscore.saveWeekScore(week, score, suffix ?? funkin.data.CoolUtil.difficultySuffix());
 			},
-			format:     function(song:String, diff:Int):String {
-				return funkin.gameplay.objects.hud.Highscore.formatSong(song, diff);
+			getWeek:    function(week:Int, ?suffix:String):Int {
+				return funkin.gameplay.objects.hud.Highscore.getWeekScore(week, suffix ?? funkin.data.CoolUtil.difficultySuffix());
 			},
-			load:       function() { funkin.gameplay.objects.hud.Highscore.load(); }
+			format:     function(song:String, suffix:String):String {
+				return funkin.gameplay.objects.hud.Highscore.formatSongBySuffix(song, suffix);
+			},
+			currentSuffix: function():String {
+				return funkin.data.CoolUtil.difficultySuffix();
+			},
+			load: function() { funkin.gameplay.objects.hud.Highscore.load(); }
 		});
 	}
 
@@ -1757,13 +1805,184 @@ class ScriptAPI
 	static function exposeGlobalConfig(interp:Interp):Void
 	{
 		interp.variables.set('GlobalConfig', funkin.data.GlobalConfig);
+
+		/**
+		 * `config` — proxy de lectura/escritura sobre GlobalConfig.
+		 *
+		 * Equivalente a Codename Engine's `PlayState.instance.xxx` pero para
+		 * configuración global del mod. Cambia surten efecto inmediatamente.
+		 *
+		 * LECTURA:   config.noteSkin()          → String
+		 * ESCRITURA: config.set('noteSkin', 'Pixel')
+		 * BULK:      config.apply({ noteSkin:'Pixel', downscroll:true })
+		 *
+		 * Campos disponibles:
+		 *   ui, noteSkin, noteSplash, holdCoverEnabled, holdCoverSkin,
+		 *   windowTitle, discordClientId, discordLargeImageKey,
+		 *   discordLargeImageText, discordMenuDetails,
+		 *   scrollSpeed, defaultZoom, ghostTap, antiMash,
+		 *   downscroll, middlescroll, noteSplashEnabled, freeplayMusicVolume
+		 */
 		interp.variables.set('config', {
-			get:       function():Dynamic { return funkin.data.GlobalConfig.instance; },
-			ui:        function():String  { return funkin.data.GlobalConfig.instance.ui; },
-			noteSkin:  function():String  { return funkin.data.GlobalConfig.instance.noteSkin; },
-			noteSplash: function():String { return funkin.data.GlobalConfig.instance.noteSplash; },
-			reload:    function() { funkin.data.GlobalConfig.reload(); },
-			save:      function() { funkin.data.GlobalConfig.instance.save(); }
+			// ── Lectura directa ───────────────────────────────────────────────
+			get:                  function():Dynamic            { return funkin.data.GlobalConfig.instance; },
+			ui:                   function():String             { return funkin.data.GlobalConfig.instance.ui; },
+			noteSkin:             function():String             { return funkin.data.GlobalConfig.instance.noteSkin; },
+			noteSplash:           function():String             { return funkin.data.GlobalConfig.instance.noteSplash; },
+			holdCoverEnabled:     function():Bool               { return funkin.data.GlobalConfig.instance.holdCoverEnabled; },
+			holdCoverSkin:        function():Null<String>       { return funkin.data.GlobalConfig.instance.holdCoverSkin; },
+			windowTitle:          function():Null<String>       { return funkin.data.GlobalConfig.instance.windowTitle; },
+			discordClientId:      function():Null<String>       { return funkin.data.GlobalConfig.instance.discordClientId; },
+			discordLargeImageKey: function():Null<String>       { return funkin.data.GlobalConfig.instance.discordLargeImageKey; },
+			discordLargeImageText:function():Null<String>       { return funkin.data.GlobalConfig.instance.discordLargeImageText; },
+			discordMenuDetails:   function():Null<String>       { return funkin.data.GlobalConfig.instance.discordMenuDetails; },
+			scrollSpeed:          function():Float              { return funkin.data.GlobalConfig.instance.scrollSpeed; },
+			defaultZoom:          function():Float              { return funkin.data.GlobalConfig.instance.defaultZoom; },
+			ghostTap:             function():Bool               { return funkin.data.GlobalConfig.instance.ghostTap; },
+			antiMash:             function():Bool               { return funkin.data.GlobalConfig.instance.antiMash; },
+			downscroll:           function():Bool               { return funkin.data.GlobalConfig.instance.downscroll; },
+			middlescroll:         function():Bool               { return funkin.data.GlobalConfig.instance.middlescroll; },
+			noteSplashEnabled:    function():Bool               { return funkin.data.GlobalConfig.instance.noteSplashEnabled; },
+			freeplayMusicVolume:  function():Float              { return funkin.data.GlobalConfig.instance.freeplayMusicVolume; },
+
+			// ── Escritura individual ──────────────────────────────────────────
+			// Cambia un campo y aplica los side-effects correspondientes.
+			set: function(field:String, value:Dynamic) {
+				funkin.data.GlobalConfig.set(field, value);
+			},
+
+			// ── Escritura bulk ────────────────────────────────────────────────
+			// Acepta un objeto anónimo con varios campos a la vez.
+			// Ejemplo: config.apply({ noteSkin:'Pixel', downscroll:true })
+			apply: function(obj:Dynamic) {
+				if (obj == null) return;
+				for (field in Reflect.fields(obj))
+					funkin.data.GlobalConfig.set(field, Reflect.field(obj, field));
+			},
+
+			// ── Persistencia ──────────────────────────────────────────────────
+			save:   function() { funkin.data.GlobalConfig.instance.save(); },
+			reload: function() { funkin.data.GlobalConfig.reload(); }
+		});
+
+		/**
+		 * `window` — control de la ventana del OS desde script.
+		 *
+		 * Ejemplo:
+		 *   window.setTitle('Mi Mod — Semana 5');
+		 *   window.setOpacity(0.9);
+		 *   window.center();
+		 */
+		interp.variables.set('window', {
+			setTitle: function(title:String) {
+				funkin.data.GlobalConfig.set('windowTitle', title);
+				funkin.data.GlobalConfig.applyWindowTitle();
+			},
+			getTitle: function():String {
+				#if !html5
+				final win = lime.app.Application.current?.window;
+				return win != null ? win.title : '';
+				#else
+				return '';
+				#end
+			},
+			setOpacity:  function(v:Float) { funkin.system.WindowManager.setWindowOpacity(v); },
+			setGameAlpha:function(v:Float) { funkin.system.WindowManager.setGameAlpha(v); },
+			center:      function()        { funkin.system.WindowManager.centerOnScreen(); },
+			minimize:    function()        { funkin.system.WindowManager.minimize(); },
+			restore:     function()        { funkin.system.WindowManager.restore(); },
+			hide:        function()        { funkin.system.WindowManager.hide(); },
+			show:        function()        { funkin.system.WindowManager.show(); },
+			setFullscreen:function(v:Bool) { flixel.FlxG.fullscreen = v; },
+			isFullscreen: function():Bool  { return flixel.FlxG.fullscreen; },
+			width:        function():Int   { return funkin.system.WindowManager.windowWidth; },
+			height:       function():Int   { return funkin.system.WindowManager.windowHeight; },
+			setScaleMode: function(mode:String) {
+				funkin.system.WindowManager.applyScaleModeByName(mode);
+			},
+			applyModBranding: function() {
+				funkin.system.WindowManager.applyModBranding(mods.ModManager.activeInfo());
+			},
+
+			// ── Cursor del ratón ──────────────────────────────────────────────
+			/**
+			 * Cambia la imagen del cursor del ratón por un asset del mod.
+			 *
+			 * @param key     Clave del asset de imagen (igual que Paths.image),
+			 *                sin extensión. Ej: 'ui/cursors/cursor-pixel'
+			 * @param hotX    Offset X del punto activo del cursor (default 0)
+			 * @param hotY    Offset Y del punto activo del cursor (default 0)
+			 *
+			 * Ejemplo:
+			 *   window.setCursor('ui/cursors/cursor-pixel');
+			 *   window.setCursor('ui/cursors/cursor-hand', 8, 2);
+			 */
+			setCursor: function(key:String, ?hotX:Int = 0, ?hotY:Int = 0) {
+				final bmp = Paths.getBitmap(key, false); // false = sin GPU, cursor necesita CPU-side
+				if (bmp != null)
+				{
+					flixel.FlxG.mouse.useSystemCursor = false;
+					flixel.FlxG.mouse.load(bmp, 1, hotX, hotY);
+					trace('[window.setCursor] Cursor cargado: "$key"');
+				}
+				else
+					trace('[window.setCursor] Imagen no encontrada: "$key"');
+			},
+
+			/** Restaura el cursor del engine por defecto (cursor-default del base). */
+			resetCursor: function() {
+				final bmp = Paths.getBitmap('menu/cursor/cursor-default', false);
+				if (bmp != null) {
+					flixel.FlxG.mouse.useSystemCursor = false;
+					flixel.FlxG.mouse.load(bmp);
+				}
+			},
+
+			/** Usa el cursor del sistema operativo en lugar de uno custom. */
+			useSystemCursor: function(v:Bool) {
+				flixel.FlxG.mouse.useSystemCursor = v;
+			},
+
+			/** Muestra u oculta el cursor. */
+			setCursorVisible: function(v:Bool) {
+				flixel.FlxG.mouse.visible = v;
+			},
+
+			isCursorVisible: function():Bool {
+				return flixel.FlxG.mouse.visible;
+			}
+		});
+
+		/**
+		 * `discord` — control del Discord Rich Presence desde script.
+		 *
+		 * Ejemplo:
+		 *   discord.setClientId('123456789012345678');
+		 *   discord.setLargeImage('myicon', 'Mi Mod — FNF Cool Engine');
+		 *   discord.setMenuDetails('Explorando el menú principal');
+		 */
+		interp.variables.set('discord', {
+			setClientId: function(id:String) {
+				funkin.data.GlobalConfig.set('discordClientId', id);
+				funkin.data.GlobalConfig.applyDiscord();
+			},
+			setLargeImage: function(key:String, ?text:String) {
+				funkin.data.GlobalConfig.set('discordLargeImageKey', key);
+				if (text != null) funkin.data.GlobalConfig.set('discordLargeImageText', text);
+				funkin.data.GlobalConfig.applyDiscord();
+			},
+			setMenuDetails: function(details:String) {
+				funkin.data.GlobalConfig.set('discordMenuDetails', details);
+				funkin.data.GlobalConfig.applyDiscord();
+			},
+			// Aplica todo lo que haya en GlobalConfig.instance al DiscordClient activo
+			apply: function() { funkin.data.GlobalConfig.applyDiscord(); },
+			// Acceso directo al DiscordClient para llamadas avanzadas (ej: changePresence)
+			#if cpp
+			client: data.Discord.DiscordClient
+			#else
+			client: null
+			#end
 		});
 	}
 
@@ -1875,17 +2094,20 @@ class ScriptAPI
 	static function _shaderManagerProxy():Dynamic
 	{
 		return {
-			applyShader         : shaders.ShaderManager.applyShader,
-			removeShader        : shaders.ShaderManager.removeShader,
-			setShaderParam      : shaders.ShaderManager.setShaderParam,
-			clearSpriteShaders  : shaders.ShaderManager.clearSpriteShaders,
-			loadShader          : shaders.ShaderManager.loadShader,
-			getShader           : shaders.ShaderManager.getShader,
-			getAvailableShaders : shaders.ShaderManager.getAvailableShaders,
-			scanShaders         : shaders.ShaderManager.scanShaders,
-			reloadShader        : shaders.ShaderManager.reloadShader,
-			reloadAllShaders    : shaders.ShaderManager.reloadAllShaders,
-			clear               : shaders.ShaderManager.clear,
+			applyShader          : shaders.ShaderManager.applyShader,
+			applyShaderToCamera  : shaders.ShaderManager.applyShaderToCamera,
+			registerInstance     : shaders.ShaderManager.registerInstance,
+			unregisterInstance   : shaders.ShaderManager.unregisterInstance,
+			removeShader         : shaders.ShaderManager.removeShader,
+			setShaderParam       : shaders.ShaderManager.setShaderParam,
+			clearSpriteShaders   : shaders.ShaderManager.clearSpriteShaders,
+			loadShader           : shaders.ShaderManager.loadShader,
+			getShader            : shaders.ShaderManager.getShader,
+			getAvailableShaders  : shaders.ShaderManager.getAvailableShaders,
+			scanShaders          : shaders.ShaderManager.scanShaders,
+			reloadShader         : shaders.ShaderManager.reloadShader,
+			reloadAllShaders     : shaders.ShaderManager.reloadAllShaders,
+			clear                : shaders.ShaderManager.clear,
 		};
 	}
 

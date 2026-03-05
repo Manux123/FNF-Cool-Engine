@@ -891,7 +891,7 @@ class StoryMenuState extends funkin.states.MusicBeatState
 		if (weekData.length > 0 && curWeek >= 0 && curWeek < weekData.length)
 		{
 			#if !switch
-			intendedScore = Highscore.getWeekScore(curWeek, curDifficulty);
+			intendedScore = Highscore.getWeekScore(curWeek, funkin.data.CoolUtil.difficultySuffix());
 			#end
 		}
 	}
@@ -1050,7 +1050,7 @@ class StoryMenuState extends funkin.states.MusicBeatState
 
 		#if !switch
 		if (curWeek >= 0 && curWeek < weekData.length)
-			intendedScore = Highscore.getWeekScore(curWeek, curDifficulty);
+			intendedScore = Highscore.getWeekScore(curWeek, funkin.data.CoolUtil.difficultySuffix());
 		#end
 	}
 

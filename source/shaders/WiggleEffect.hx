@@ -124,8 +124,8 @@ class WiggleShader extends FlxShader
 			
 			if (effectType == EFFECT_TYPE_DREAMY) 
 			{
-				float w = 1 / openfl_TextureSize.x;
-				float h = 6 / openfl_TextureSize.y;
+				float w = 1.0 / openfl_TextureSize.x; // FIX: era 1 (entero), causaba division entera en GLSL
+				float h = 6.0 / openfl_TextureSize.y; // FIX: idem
 
 				pt.y = floor(pt.y / h) * h;
 				float offsetX = sin(pt.y * uFrequency + uTime * uSpeed) * uWaveAmplitude;

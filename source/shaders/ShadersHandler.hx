@@ -4,7 +4,6 @@ import openfl.Lib;
 import openfl.display.Shader;
 import openfl.display.ShaderParameter;
 import openfl.filters.ShaderFilter;
-import openfl8.*;
 
 /**
  * ShadersHandler — Wrapper de shaders OpenFL legacy.

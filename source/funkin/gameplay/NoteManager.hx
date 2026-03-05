@@ -104,6 +104,14 @@ class NoteManager
 	// Hold note tracking
 	private var heldNotes:Map<Int, Note> = new Map();
 	private var holdStartTimes:Map<Int, Float> = new Map();
+	/**
+	 * Tiempo exacto en que termina cada hold por dirección.
+	 * Calculado al golpear el head note: headNote.strumTime + headNote.sustainLength.
+	 * Comparar con songPosition cada frame para disparar playEnd() puntualmente.
+	 */
+	private var holdEndTimes:Map<Int, Float> = new Map();
+	/** Mismo para CPU (por dirección 0-3). */
+	private var cpuHoldEndTimes:Array<Float> = [-1, -1, -1, -1];
 
 	/**
 	 * Estado de teclas presionadas — actualizado desde PlayState cada frame
@@ -309,11 +317,17 @@ class NoteManager
 	 * (futuras). Sin el check de unspawnNotes, holds largos se liberaban
 	 * prematuramente porque las piezas futuras aún no estaban en el grupo.
 	 */
+	/**
+	 * Libera holds cuyo tiempo de fin (strumTime + sustainLength del head note)
+	 * ya fue alcanzado por songPosition.
+	 *
+	 * FIX: antes usaba _hasPendingSustain que esperaba a que las notas salieran
+	 * de pantalla. Ahora usamos el tiempo exacto de fin, que es conocido desde
+	 * que golpeamos el head note. Esto dispara playEnd() en el momento correcto.
+	 */
 	private function autoReleaseFinishedHolds():Void
 	{
-		// Sustains están en el grupo separado sustainNotes
-		final members = sustainNotes.members;
-		final len = members.length;
+		final songPos = Conductor.songPosition;
 
 		// ── Jugador ──────────────────────────────────────────────────────────
 		if (heldNotes.keys().hasNext())
@@ -321,7 +335,13 @@ class NoteManager
 			_autoReleaseBuffer.resize(0);
 			for (dir in heldNotes.keys())
 			{
-				if (!_hasPendingSustain(dir, true, members, len))
+				// Usar holdEndTime si está disponible; fallback a _hasPendingSustain
+				var shouldRelease:Bool;
+				if (holdEndTimes.exists(dir))
+					shouldRelease = songPos >= holdEndTimes.get(dir);
+				else
+					shouldRelease = !_hasPendingSustain(dir, true, sustainNotes.members, sustainNotes.members.length);
+				if (shouldRelease)
 					_autoReleaseBuffer.push(dir);
 			}
 			for (dir in _autoReleaseBuffer)
@@ -336,13 +356,19 @@ class NoteManager
 			_autoReleaseBuffer.resize(0);
 			for (dir in 0...4)
 			{
-				if (_cpuHeldDirs[dir] && !_hasPendingSustain(dir, false, members, len))
-					_autoReleaseBuffer.push(dir);
+				if (!_cpuHeldDirs[dir]) continue;
+				var shouldRelease:Bool;
+				if (cpuHoldEndTimes[dir] >= 0)
+					shouldRelease = songPos >= cpuHoldEndTimes[dir];
+				else
+					shouldRelease = !_hasPendingSustain(dir, false, sustainNotes.members, sustainNotes.members.length);
+				if (shouldRelease) _autoReleaseBuffer.push(dir);
 			}
 			for (dir in _autoReleaseBuffer)
 			{
 				if (renderer != null) renderer.stopHoldCover(dir, false);
 				_cpuHeldDirs[dir] = false;
+				cpuHoldEndTimes[dir] = -1;
 			}
 		}
 	}
@@ -352,13 +378,22 @@ class NoteManager
 	 * buscando tanto en las notas ya spawneadas como en las futuras (unspawnNotes).
 	 * Sin revisar unspawnNotes, los holds largos se liberaban prematuramente.
 	 */
+	/**
+	 * Devuelve true si quedan piezas de sustain AÚN NO COMPLETADAS para esta dirección.
+	 *
+	 * FIX: antes comprobaba `n.alive` y esperaba a que los sustains se salieran de pantalla.
+	 * Ahora comprueba `!n.wasGoodHit && !n.tooLate` — la hold termina en cuanto la última
+	 * pieza de sustain cruza la ventana de hit (wasGoodHit=true), no cuando sale de pantalla.
+	 * Esto dispara la animación de fin del hold cover en el momento correcto.
+	 */
 	private function _hasPendingSustain(dir:Int, isPlayer:Bool, members:Array<Note>, len:Int):Bool
 	{
-		// 1. Notas spawneadas y activas
+		// 1. Notas spawneadas: pendientes = vivas, aún no golpeadas y no perdidas
 		for (i in 0...len)
 		{
 			final n = members[i];
-			if (n != null && n.alive && n.isSustainNote && n.noteData == dir && n.mustPress == isPlayer)
+			if (n != null && n.alive && n.isSustainNote && n.noteData == dir
+				&& n.mustPress == isPlayer && !n.wasGoodHit && !n.tooLate)
 				return true;
 		}
 		// 2. Notas futuras aún no spawneadas — CRÍTICO para holds largos
@@ -454,9 +489,14 @@ class NoteManager
 						var dir = note.noteData;
 						if (playerHeld[dir])
 						{
-							// Tecla mantenida: marcar como golpeada y eliminar limpiamente
+							// Tecla mantenida: marcar como golpeada pero NO eliminar todavía.
+							// Dejamos que el clipRect oculte la pieza suavemente mientras scrollea
+							// más allá del strum, evitando el efecto de trozos que desaparecen.
+							// Se eliminará en culling cuando salga completamente de pantalla.
 							note.wasGoodHit = true;
-							removeNote(note);
+							// Arrancar hold cover si todavía no se hizo (esta pieza pasó
+							// el hitWindow sin pasar por processSustains/hitNote).
+							handleSustainNoteHit(note);
 						}
 						else
 						{
@@ -491,10 +531,17 @@ class NoteManager
 
 			// ── Visibilidad y culling ──────────────────────────────────────
 			if (note.y < -CULL_DISTANCE || note.y > FlxG.height + CULL_DISTANCE)
+			{
 				note.visible = false;
+				// Eliminar sustains consumidas que ya salieron de pantalla
+				if (note.isSustainNote && note.wasGoodHit)
+					removeNote(note);
+			}
 			else
 			{
-				note.visible = true;
+				// No sobrescribir visible=false de sustains consumidas ocultas por clipRect
+				if (!(note.isSustainNote && note.wasGoodHit))
+					note.visible = true;
 				if (!note.mustPress && middlescroll)
 					note.alpha = 0;
 			}
@@ -508,13 +555,14 @@ class NoteManager
 			onCPUNoteHit(note);
 		// Solo animar el strum en la nota cabeza, NO en las piezas de sustain.
 		handleStrumAnimation(note.noteData, note.strumsGroupIndex, false);
+		// Guardar tiempo de fin del hold para la CPU al golpear el HEAD note
+		if (!note.isSustainNote && note.sustainLength > 0)
+			cpuHoldEndTimes[note.noteData] = note.strumTime + note.sustainLength;/*
 		if (!note.isSustainNote && !_cachedMiddlescroll && _cachedNoteSplashes && renderer != null)
-			createNormalSplash(note, false);
-/*
-		// Hold covers para CPU (como v-slice): solo en la primera pieza de sustain
+			createNormalSplash(note, false);*/
+		// Hold covers para CPU: solo en la primera pieza de sustain
 		if (note.isSustainNote && !_cachedMiddlescroll && _cachedNoteSplashes && renderer != null)
 		{
-			
 			var dir = note.noteData;
 			if (!_cpuHeldDirs[dir])
 			{
@@ -522,14 +570,14 @@ class NoteManager
 				var strum = getStrumForDirection(dir, note.strumsGroupIndex, false);
 				if (strum != null)
 				{
-					var cover = renderer.startHoldCover(dir, strum.x, strum.y, false);
-					if (cover != null && !_holdCoverSet.exists(cover)) {
+					var cover = renderer.startHoldCover(dir, strum.x - strum.offset.x + strum.frameWidth * 0.5, strum.y - strum.offset.y + strum.frameHeight * 0.5, false);
+					if (cover != null && !_holdCoverSet.exists(cover) && holdCovers.members.indexOf(cover) < 0) {
 						_holdCoverSet.set(cover, true);
 						holdCovers.add(cover);
 					}
 				}
 			}
-		}*/
+		}
 
 		removeNote(note);
 	}
@@ -552,10 +600,14 @@ class NoteManager
 			if (strum == null || !strum.alive)
 				continue;
 			final strumNote = cast(strum, funkin.gameplay.notes.StrumNote);
-			if (strumNote != null
-				&& strumNote.animation.curAnim != null
-				&& strumNote.animation.curAnim.name.startsWith('confirm')
-				&& strumNote.animation.curAnim.finished)
+			if (strumNote == null) continue;
+			final anim = strumNote.animation.curAnim;
+			// OPT: comparar primer char 'c' antes de llamar startsWith (evita scan completo)
+			// En la mayoria de frames el anim es 'static', que falla en el primer char.
+			if (anim != null && anim.finished
+				&& anim.name.length >= 7
+				&& anim.name.charCodeAt(0) == 99 // 'c' de 'confirm'
+				&& anim.name.startsWith('confirm'))
 				strumNote.playAnim('static');
 		}
 	}
@@ -641,7 +693,10 @@ class NoteManager
 		// dejando el rect viejo de la nota anterior asignado a la nota actual.
 		if (note.isSustainNote)
 		{
-			var strumLineThreshold = (strumLineY + Note.swagWidth / 2);
+			// Umbral = borde superior del strum (strumLineY).
+			// Antes era strumLineY + swagWidth/2 (+56px) lo que permitía que
+			// la nota penetrara visualmente en el strum antes de empezar a clipear.
+			var strumLineThreshold = strumLineY;
 
 			if (downscroll)
 			{
@@ -687,6 +742,9 @@ class NoteManager
 					}
 					else
 					{
+						// Nota completamente por encima del strum: ocultar si ya fue consumida
+						if (note.isSustainNote && note.wasGoodHit)
+							note.visible = false;
 						note.clipRect = null;
 					}
 				}
@@ -716,12 +774,14 @@ class NoteManager
 			return;
 		note.wasGoodHit = true;
 		handleStrumAnimation(note.noteData, note.strumsGroupIndex, true);
+		// Guardar el tiempo de fin del hold al golpear el HEAD note
+		if (!note.isSustainNote && note.sustainLength > 0)
+			holdEndTimes.set(note.noteData, note.strumTime + note.sustainLength);
 		if (rating == "sick")
-		{/*
+		{
 			if (note.isSustainNote)
 				handleSustainNoteHit(note);
-			else*/
-			if (!note.isSustainNote && _cachedNoteSplashes && renderer != null)
+			else if (_cachedNoteSplashes && renderer != null)
 				createNormalSplash(note, true);
 		}
 		removeNote(note);
@@ -743,9 +803,10 @@ class NoteManager
 				var strum = getStrumForDirection(direction, note.strumsGroupIndex, true);
 				if (strum != null)
 				{
-					var cover = renderer.startHoldCover(direction, strum.x, strum.y);
-					// Solo añadir al grupo si no está ya (el pool puede reutilizar objetos)
-					if (cover != null && !_holdCoverSet.exists(cover)) {
+					var cover = renderer.startHoldCover(direction, strum.x - strum.offset.x + strum.frameWidth * 0.5, strum.y - strum.offset.y + strum.frameHeight * 0.5);
+					// BUGFIX: indexOf evita doble-add de covers pre-calentados que ya
+					// están en el grupo → doble update/draw causaba animación duplicada.
+					if (cover != null && !_holdCoverSet.exists(cover) && holdCovers.members.indexOf(cover) < 0) {
 						_holdCoverSet.set(cover, true);
 						holdCovers.add(cover);
 					}
@@ -763,6 +824,7 @@ class NoteManager
 			renderer.stopHoldCover(direction);
 		heldNotes.remove(direction);
 		holdStartTimes.remove(direction);
+		holdEndTimes.remove(direction);
 	}
 
 	private function createNormalSplash(note:Note, isPlayer:Bool):Void
@@ -872,6 +934,8 @@ class NoteManager
 		heldNotes.clear();
 		_cpuHeldDirs[0] = _cpuHeldDirs[1] = _cpuHeldDirs[2] = _cpuHeldDirs[3] = false;
 		holdStartTimes.clear();
+		holdEndTimes.clear();
+		cpuHoldEndTimes[0] = cpuHoldEndTimes[1] = cpuHoldEndTimes[2] = cpuHoldEndTimes[3] = -1;
 		_missedHoldDir[0] = _missedHoldDir[1] = _missedHoldDir[2] = _missedHoldDir[3] = false;
 		playerHeld = [false, false, false, false];
 		_holdCoverSet.clear();
@@ -907,6 +971,8 @@ class NoteManager
 		heldNotes.clear();
 		_cpuHeldDirs[0] = _cpuHeldDirs[1] = _cpuHeldDirs[2] = _cpuHeldDirs[3] = false;
 		holdStartTimes.clear();
+		holdEndTimes.clear();
+		cpuHoldEndTimes[0] = cpuHoldEndTimes[1] = cpuHoldEndTimes[2] = cpuHoldEndTimes[3] = -1;
 		_missedHoldDir[0] = _missedHoldDir[1] = _missedHoldDir[2] = _missedHoldDir[3] = false;
 		_holdCoverSet.clear();
 		_playerStrumCache = [];

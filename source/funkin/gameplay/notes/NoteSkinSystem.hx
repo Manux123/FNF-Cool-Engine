@@ -147,6 +147,8 @@ typedef NoteSplashData =
 	var ?folder:String;
 	var assets:NoteSplashAssets;
 	var animations:SplashAnimations;
+	/** Configuración de los hold covers. Null = usar defaults hardcodeados. */
+	var ?holdCover:NoteHoldCoverData;
 }
 
 typedef NoteSplashAssets =
@@ -166,6 +168,76 @@ typedef SplashAnimations =
 	var right:Array<String>;
 	var ?framerate:Int;
 	var ?randomFramerateRange:Int;
+}
+
+/**
+ * Datos de configuración para los hold covers (animaciones de splash largo).
+ *
+ * Viven dentro del splash.json en el campo "holdCover".
+ * Todos los campos son opcionales — los valores por defecto reproducen
+ * el comportamiento original hardcodeado, manteniendo compatibilidad total.
+ *
+ * Ejemplo en splash.json:
+ * {
+ *   "holdCover": {
+ *     "texturePrefix": "holdCover",
+ *     "perColorTextures": true,
+ *     "textureType": "sparrow",
+ *     "scale": 1.0,
+ *     "antialiasing": true,
+ *     "framerate": 24,
+ *     "loopFramerate": 48,
+ *     "offset": [0, 0],
+ *     "startPrefix": "holdCoverStart",
+ *     "loopPrefix":  "holdCover",
+ *     "endPrefix":   "holdCoverEnd"
+ *   }
+ * }
+ *
+ * Con perColorTextures:true (default), se carga {texturePrefix}{Color}.png
+ * por cada dirección (e.g. holdCoverPurple.png, holdCoverBlue.png…).
+ * Con perColorTextures:false, se carga {texturePrefix}.png — atlas compartido.
+ *
+ * Los prefijos de animación siempre reciben el nombre del color como sufijo:
+ *   startPrefix="holdCoverStart" → "holdCoverStartPurple", "holdCoverStartBlue"…
+ */
+typedef NoteHoldCoverData =
+{
+	/** true (default): una textura por color; false: atlas único compartido. */
+	var ?perColorTextures:Bool;
+
+	/** Prefijo del archivo de textura. Default: "holdCover". */
+	var ?texturePrefix:String;
+
+	/** Tipo de atlas. "sparrow" | "packer". Default: "sparrow". */
+	var ?textureType:String;
+
+	/** Escala del sprite. Default: 1.0. */
+	var ?scale:Float;
+
+	/** Antialiasing. Default: true. */
+	var ?antialiasing:Bool;
+
+	/** FPS de las animaciones de start y end. Default: 24. */
+	var ?framerate:Int;
+
+	/** FPS de la animación de loop continuo. Default: 48. */
+	var ?loopFramerate:Int;
+
+	/**
+	 * Offset [x, y] en píxeles aplicado al sprite.
+	 * Null = auto (width*0.3, height*0.3), igual que el comportamiento original.
+	 */
+	var ?offset:Array<Float>;
+
+	/** Prefijo de la animación de inicio. Default: "holdCoverStart". */
+	var ?startPrefix:String;
+
+	/** Prefijo de la animación de loop. Default: "holdCover". */
+	var ?loopPrefix:String;
+
+	/** Prefijo de la animación de fin. Default: "holdCoverEnd". */
+	var ?endPrefix:String;
 }
 
 // ==================== SISTEMA PRINCIPAL ====================
@@ -1087,6 +1159,42 @@ class NoteSkinSystem
 
 	// ==================== HOLD COVERS ====================
 
+	/**
+	 * Devuelve los datos de configuración del hold cover para el splash actual.
+	 * Si el splash.json no tiene sección "holdCover", devuelve los defaults que
+	 * reproducen el comportamiento original (perColorTextures=true, prefijos estándar).
+	 */
+	public static function getHoldCoverData(?splashName:String):NoteHoldCoverData
+	{
+		if (!initialized)
+			init();
+		var d = availableSplashes.get(splashName != null ? splashName : currentSplash);
+		if (d == null)
+			d = availableSplashes.get("Default");
+
+		// Si el splash tiene datos propios, devolverlos completando los nulls con defaults.
+		var hc:NoteHoldCoverData = (d != null && d.holdCover != null) ? d.holdCover : {};
+
+		// Rellenar defaults inline para que NoteHoldCover nunca tenga que hacer null-checks.
+		if (hc.perColorTextures == null) hc.perColorTextures = true;
+		if (hc.texturePrefix    == null) hc.texturePrefix    = "holdCover";
+		if (hc.textureType      == null) hc.textureType      = "sparrow";
+		if (hc.scale            == null) hc.scale            = 1.0;
+		if (hc.antialiasing     == null) hc.antialiasing     = true;
+		if (hc.framerate        == null) hc.framerate        = 24;
+		if (hc.loopFramerate    == null) hc.loopFramerate    = 48;
+		if (hc.startPrefix      == null) hc.startPrefix      = "holdCoverStart";
+		if (hc.loopPrefix       == null) hc.loopPrefix       = "holdCover";
+		if (hc.endPrefix        == null) hc.endPrefix        = "holdCoverEnd";
+		// offset null = auto calculado en NoteHoldCover (width*0.3, height*0.3)
+
+		return hc;
+	}
+
+	/**
+	 * Comprueba si existen los assets de hold cover para el color y splash dados.
+	 * Usa la configuración del splash.json si está disponible.
+	 */
 	public static function holdCoverExists(color:String, ?splashName:String):Bool
 	{
 		if (!initialized)
@@ -1094,9 +1202,20 @@ class NoteSkinSystem
 		var d = availableSplashes.get(splashName != null ? splashName : currentSplash);
 		if (d == null)
 			d = availableSplashes.get("Default");
-		return splashAssetExists('holdCover$color', d.folder != null ? d.folder : "Default");
+		var folder = d != null && d.folder != null ? d.folder : "Default";
+		var hc = getHoldCoverData(splashName);
+
+		var texPath = hc.perColorTextures
+			? '${hc.texturePrefix}$color'
+			: hc.texturePrefix;
+		return splashAssetExists(texPath, folder);
 	}
 
+	/**
+	 * Carga el FlxAtlasFrames del hold cover para el color y splash dados.
+	 * Respeta la configuración de texturePrefix, perColorTextures y textureType
+	 * del splash.json — sin nada hardcodeado.
+	 */
 	public static function getHoldCoverTexture(color:String, ?splashName:String):FlxAtlasFrames
 	{
 		if (!initialized)
@@ -1104,17 +1223,38 @@ class NoteSkinSystem
 		var d = availableSplashes.get(splashName != null ? splashName : currentSplash);
 		if (d == null)
 			d = availableSplashes.get("Default");
-		var folder = d.folder != null ? d.folder : "Default";
-		var path = 'holdCover$color';
-		if (!splashAssetExists(path, folder))
-			return null;
+		var folder = d != null && d.folder != null ? d.folder : "Default";
+		var hc = getHoldCoverData(splashName);
+
+		// Construir path según modo (per-color o atlas único)
+		var texPath = hc.perColorTextures
+			? '${hc.texturePrefix}$color'
+			: hc.texturePrefix;
+
+		if (!splashAssetExists(texPath, folder))
+		{
+			// Fallback a Default si el splash actual no tiene el asset
+			if (folder != "Default" && splashAssetExists(texPath, "Default"))
+				folder = "Default";
+			else
+				return null;
+		}
+
 		try
 		{
-			return Paths.splashSprite('$folder/$path');
+			var fullPath = '$folder/$texPath';
+			return switch (hc.textureType.toLowerCase())
+			{
+				case "packer": FlxAtlasFrames.fromSpriteSheetPacker(
+					flixel.FlxG.bitmap.add('assets/splashes/$fullPath.png'),
+					'assets/splashes/$fullPath.txt');
+				default: Paths.splashSprite(fullPath); // sparrow
+			};
 		}
 		catch (e:Dynamic)
 		{
-			return Paths.splashSprite('Default/$path');
+			trace('[NoteSkinSystem] Error cargando holdCover $folder/$texPath: $e');
+			return null;
 		}
 	}
 
@@ -1449,6 +1589,66 @@ class NoteSkinSystem
 				right: ["note impact 1 red", "note impact 2 red"],
 				framerate: 24,
 				randomFramerateRange: 3
+			},
+			// Sección holdCover opcional — omitirla usa los defaults del engine.
+			// Copia y personaliza para modificar el cover visual de notas largas.
+			holdCover: {
+				perColorTextures: true,
+				texturePrefix: "holdCover",
+				textureType: "sparrow",
+				scale: 1.0,
+				antialiasing: true,
+				framerate: 24,
+				loopFramerate: 48,
+				offset: [0, 0],
+				startPrefix: "holdCoverStart",
+				loopPrefix: "holdCover",
+				endPrefix: "holdCoverEnd"
+			}
+		}, null, "  ");
+	}
+
+	/**
+	 * Genera un JSON de ejemplo de splash.json con sección holdCover personalizada.
+	 * Útil como punto de partida para un splash con atlas único compartido.
+	 *
+	 * Coloca el JSON en: assets/splashes/MySplash/splash.json
+	 * Y los assets en:   assets/splashes/MySplash/holdCoverAll.png  (+ .xml)
+	 */
+	public static function exportHoldCoverExample():String
+	{
+		return Json.stringify({
+			name: "Custom Hold Cover",
+			author: "Your Name",
+			description: "Single-atlas hold cover example",
+			assets: {
+				path: "noteSplashes",
+				type: "sparrow",
+				scale: 1.0,
+				antialiasing: true
+			},
+			animations: {
+				left: ["note impact 1 purple", "note impact 2 purple"],
+				down: ["note impact 1 blue", "note impact 2 blue"],
+				up: ["note impact 1 green", "note impact 2 green"],
+				right: ["note impact 1 red", "note impact 2 red"],
+				framerate: 24
+			},
+			holdCover: {
+				// Atlas único: holdCoverAll.png contiene todos los colores
+				perColorTextures: false,
+				texturePrefix: "holdCoverAll",
+				textureType: "sparrow",
+				scale: 1.0,
+				antialiasing: true,
+				framerate: 24,
+				loopFramerate: 48,
+				// offset null = auto (width*0.3, height*0.3)
+				// Los prefijos de animación reciben el color como sufijo:
+				// "myStart" → "myStartPurple", "myStartBlue"...
+				startPrefix: "holdCoverStart",
+				loopPrefix: "holdCover",
+				endPrefix: "holdCoverEnd"
 			}
 		}, null, "  ");
 	}

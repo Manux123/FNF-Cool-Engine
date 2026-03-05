@@ -58,6 +58,7 @@ class NoteRenderer
     // OPTIMIZATION: pool de splashes de hit normales
     private var splashPool:Array<NoteSplash> = [];
     private var maxSplashPoolSize:Int = 16;
+    private var _splashNext:Int = 0; // índice circular para O(1) amortizado en spawnSplash
 
     // NUEVO (v-slice): pool de NoteHoldCover
     public var holdCoverPool:Array<NoteHoldCover> = [];
@@ -149,24 +150,34 @@ class NoteRenderer
 
     /**
      * Crear y devolver un splash de hit para una nota normal.
-     * El caller (NoteManager) es quien añade el resultado al FlxGroup de la escena.
+     * OPT: scan lineal reemplazado por búsqueda con índice circular (_splashNext).
+     *      Los splashes se liberan rápido (animación corta) → casi siempre el
+     *      primer candidato está libre. Caso peor: itera el pool 1× (16 items max).
      */
     public function spawnSplash(x:Float, y:Float, noteData:Int = 0, ?splashName:String):NoteSplash
     {
-        // Buscar splash disponible en el pool
-        for (s in splashPool)
+        final poolLen = splashPool.length;
+
+        // Buscar desde _splashNext hacia adelante (circular)
+        if (poolLen > 0)
         {
-            if (!s.inUse)
+            for (k in 0...poolLen)
             {
-                s.setup(x, y, noteData, splashName);
-                pooledSplashes++;
-                return s;
+                final idx = (_splashNext + k) % poolLen;
+                final s = splashPool[idx];
+                if (!s.inUse)
+                {
+                    _splashNext = (idx + 1) % poolLen;
+                    s.setup(x, y, noteData, splashName);
+                    pooledSplashes++;
+                    return s;
+                }
             }
         }
 
-        // Crear nuevo, o reusar el más viejo si el pool está lleno
+        // Pool lleno o vacío → crear nuevo si hay hueco, si no reusar más viejo
         var splash:NoteSplash;
-        if (splashPool.length < maxSplashPoolSize)
+        if (poolLen < maxSplashPoolSize)
         {
             splash = new NoteSplash();
             splashPool.push(splash);
@@ -174,7 +185,8 @@ class NoteRenderer
         }
         else
         {
-            splash = splashPool[0];
+            splash = splashPool[_splashNext];
+            _splashNext = (_splashNext + 1) % poolLen;
         }
 
         splash.setup(x, y, noteData, splashName);
@@ -193,14 +205,15 @@ class NoteRenderer
 
     // ─────────────────────── HOLD COVER POOL (v-slice) ───────────────────────
 
-    private function _getHoldCover(x:Float, y:Float, noteData:Int, ?splashName:String):NoteHoldCover
+    // strumCenterX / strumCenterY = centro visual del strum (strum.x + strum.width/2)
+    private function _getHoldCover(strumCenterX:Float, strumCenterY:Float, noteData:Int, ?splashName:String):NoteHoldCover
     {
         // Buscar uno libre en el pool
         for (c in holdCoverPool)
         {
             if (!c.inUse)
             {
-                c.setup(x, y, noteData, splashName);
+                c.setup(strumCenterX, strumCenterY, noteData, splashName);
                 pooledHoldCovers++;
                 return c;
             }
@@ -211,7 +224,7 @@ class NoteRenderer
         var cover = new NoteHoldCover();
         holdCoverPool.push(cover);
         createdHoldCovers++;
-        cover.setup(x, y, noteData, splashName);
+        cover.setup(strumCenterX, strumCenterY, noteData, splashName);
         return cover;
     }
 
@@ -236,14 +249,15 @@ class NoteRenderer
      *
      * @return El NoteHoldCover asignado, o null si ya había uno para esta nota.
      */
-    public function startHoldCover(direction:Int, strumX:Float, strumY:Float, isPlayer:Bool = true):NoteHoldCover
+    // strumCenterX/Y = centro visual del strum (strum.x + strum.width/2, strum.y + strum.height/2)
+    public function startHoldCover(direction:Int, strumCenterX:Float, strumCenterY:Float, isPlayer:Bool = true):NoteHoldCover
     {
         // Player usa claves 0-3, CPU usa 4-7 para evitar colisiones
         var key:Int = isPlayer ? direction : direction + 4;
         if (activeHoldCovers.exists(key))
             return activeHoldCovers.get(key);
 
-        var cover = _getHoldCover(strumX, strumY, direction);
+        var cover = _getHoldCover(strumCenterX, strumCenterY, direction);
         cover.playStart();
         activeHoldCovers.set(key, cover);
         return cover;
@@ -349,6 +363,7 @@ class NoteRenderer
 
         pooledNotes = 0;
         pooledSplashes = 0;
+        _splashNext = 0;
         createdNotes = 0;
         createdSplashes = 0;
         pooledHoldCovers = 0;

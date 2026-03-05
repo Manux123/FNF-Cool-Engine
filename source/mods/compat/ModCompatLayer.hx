@@ -215,12 +215,39 @@ class ModCompatLayer
 
 	/**
 	 * Resolves the Voices.ogg path for a song.
+	 * Tries split vocals (Psych 0.7+) first, then the combined file.
 	 */
 	public static function resolveVoices(song:String):String
 	{
 		final modPath = ModPathResolver.voices(song);
 		return modPath ?? Paths.voices(song);
 	}
+
+	/**
+	 * Returns the player (BF) voice track path for Psych 0.7+ split-vocal mods.
+	 * Falls back to resolveVoices() if no split file exists.
+	 */
+	public static function resolveVoicesPlayer(song:String):String
+	{
+		final split = ModPathResolver.voicesPlayer(song);
+		if (split != null) return split;
+		return resolveVoices(song);
+	}
+
+	/**
+	 * Returns the opponent (Dad) voice track path for Psych 0.7+ split-vocal mods.
+	 * Falls back to resolveVoices() if no split file exists.
+	 */
+	public static function resolveVoicesOpponent(song:String):String
+	{
+		final split = ModPathResolver.voicesOpponent(song);
+		if (split != null) return split;
+		return resolveVoices(song);
+	}
+
+	/** Returns true if the active mod has split vocals for the given song. */
+	public static function hasSplitVocals(song:String):Bool
+		return ModPathResolver.hasSplitVocals(song);
 
 	// ─── Format queries ───────────────────────────────────────────────────────
 
@@ -422,6 +449,24 @@ class ModCompatLayer
 			];
 		}
 
+		// Parsear dificultades: Psych las guarda como string CSV "Easy,Normal,Hard"
+		// BUG FIX: ignorar este campo dejaba al FreeplayState / StoryMode sin saber
+		// qué dificultades soporta la semana, lo que rompía la selección de dificultad.
+		var weekDiffs:Array<String> = ['Easy', 'Normal', 'Hard']; // default Psych
+		if (w.difficulties != null)
+		{
+			final rawDiffs = Std.string(w.difficulties).trim();
+			if (rawDiffs != '')
+			{
+				weekDiffs = [];
+				for (d in rawDiffs.split(','))
+				{
+					final trimmed = d.trim();
+					if (trimmed != '') weekDiffs.push(trimmed);
+				}
+			}
+		}
+
 		return {
 			weekSongs:       songs,
 			songIcons:       icons,
@@ -432,7 +477,8 @@ class ModCompatLayer
 			locked:          locked,
 			hideFreeplay:    hideFreeplay,
 			showInStoryMode: showInStory,
-			weekBackground:  w.weekBackground != null ? Std.string(w.weekBackground) : 'stage'
+			weekBackground:  w.weekBackground != null ? Std.string(w.weekBackground) : 'stage',
+			difficulties:    weekDiffs
 		};
 	}
 
@@ -540,4 +586,6 @@ typedef ModSongsInfo =
 	// Campos exclusivos de mods
 	@:optional var hideFreeplay    : Bool;
 	@:optional var weekBackground  : String;
+	// BUG FIX: Psych weeks.json tiene "difficulties":"Easy,Normal,Hard" — se mapea aquí
+	@:optional var difficulties    : Array<String>;
 }

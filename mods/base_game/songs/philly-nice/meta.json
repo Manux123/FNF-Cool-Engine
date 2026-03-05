@@ -1,0 +1,7 @@
+{
+    "artist": "Kawai Sprite",
+    "difficultyOverrides": {
+        "erect":     { "artist": "Kawai Sprite (feat. Saruky)" },
+        "nightmare": { "artist": "Kawai Sprite (feat. Saruky)" }
+    }
+}

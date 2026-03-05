@@ -8,169 +8,159 @@ import flixel.input.keyboard.FlxKey;
 using StringTools;
 
 /**
- * InputHandler - Manejo optimizado de inputs
- * Detecta teclas, procesa hits, maneja combos
- * 
- * MEJORADO: Ahora con callback onKeyRelease para hold notes
+ * InputHandler — Manejo de inputs del jugador.
+ *
+ * OPTIMIZACIONES vs versión anterior:
+ *
+ *  1. possibleNotesByDir es un Array<Array<Note>> PREALLOCADO como campo de instancia.
+ *     Antes se creaba `[[], [], [], []]` cada frame → 5 allocs × 60fps = 300 allocs/seg
+ *     de objetos de corta vida que presionan el GC. Ahora se hace .resize(0) en su lugar.
+ *
+ *  2. forEachAlive() eliminado del hot path. Creaba un closure (heap alloc) en cada llamada.
+ *     Reemplazado por iteración directa sobre members[i] con chequeo manual alive/canBeHit.
+ *
+ *  3. Sort lambda reemplazado por función estática — cero closures en el sort.
+ *
+ *  4. processInputs y processSustains son llamados ~60-120 veces/seg;
+ *     eliminar los closures es lo más importante de todo.
  */
 class InputHandler
 {
 	// === KEYBINDS ===
-	public var leftBind:Array<FlxKey> = [A, LEFT];
-	public var downBind:Array<FlxKey> = [S, DOWN];
-	public var upBind:Array<FlxKey> = [W, UP];
+	public var leftBind:Array<FlxKey>  = [A, LEFT];
+	public var downBind:Array<FlxKey>  = [S, DOWN];
+	public var upBind:Array<FlxKey>    = [W, UP];
 	public var rightBind:Array<FlxKey> = [D, RIGHT];
-	public var killBind:Array<FlxKey> = [R];
+	public var killBind:Array<FlxKey>  = [R];
 
 	// === INPUT STATE ===
-	public var pressed:Array<Bool> = [false, false, false, false]; // Presionado este frame
-	public var held:Array<Bool> = [false, false, false, false]; // Mantenido
-	public var released:Array<Bool> = [false, false, false, false]; // Soltado este frame
+	public var pressed:Array<Bool>  = [false, false, false, false];
+	public var held:Array<Bool>     = [false, false, false, false];
+	public var released:Array<Bool> = [false, false, false, false];
 
 	// === CALLBACKS ===
-	public var onNoteHit:Note->Void = null;
-	public var onNoteMiss:funkin.gameplay.notes.Note->Void = null;
-	public var onKeyRelease:Int->Void = null; // Callback cuando se suelta una tecla (para hold notes)
-	public var onKeyPress:Int->Void   = null; // Callback cuando se presiona una tecla
+	public var onNoteHit:Note->Void    = null;
+	public var onNoteMiss:Note->Void   = null;
+	public var onKeyRelease:Int->Void  = null;
+	public var onKeyPress:Int->Void    = null;
 
 	// === CONFIG ===
-	public var ghostTapping:Bool = true; // No penalizar teclas incorrectas
-	public var inputBuffering:Bool = true; // Buffer de inputs para mejor timing
-	public var bufferTime:Float = 0.1; // Tiempo de buffer en segundos (100ms)
+	public var ghostTapping:Bool   = true;
+	public var inputBuffering:Bool = true;
+	public var bufferTime:Float    = 0.1;
 
 	// === ANTI-MASH ===
-	private var mashCounter:Int = 0;
+	private var mashCounter:Int    = 0;
 	private var mashViolations:Int = 0;
-
 	private static inline var MAX_MASH_VIOLATIONS:Int = 8;
-	
+
 	// === INPUT BUFFER ===
-	private var bufferedInputs:Array<Float> = [0, 0, 0, 0]; // Tiempo del último input por dirección
-	private var inputProcessed:Array<Bool> = [false, false, false, false]; // Si el input ya fue procesado
+	private var bufferedInputs:Array<Float> = [0, 0, 0, 0];
+	private var inputProcessed:Array<Bool>  = [false, false, false, false];
+
+	// ── PREALLOCADOS — cero allocs en el hot path ────────────────────────────
+	// Antes: [[], [], [], []] nuevo cada frame = 5 allocs × 60fps = 300 allocs/seg
+	// Ahora: resize(0) en su lugar — el array interno no se reasigna.
+	private var _notesByDir0:Array<Note> = [];
+	private var _notesByDir1:Array<Note> = [];
+	private var _notesByDir2:Array<Note> = [];
+	private var _notesByDir3:Array<Note> = [];
 
 	public function new()
 	{
-		leftBind[0] = FlxKey.fromString(FlxG.save.data.leftBind);
-		downBind[0] = FlxKey.fromString(FlxG.save.data.downBind);
-		upBind[0] = FlxKey.fromString(FlxG.save.data.upBind);
+		leftBind[0]  = FlxKey.fromString(FlxG.save.data.leftBind);
+		downBind[0]  = FlxKey.fromString(FlxG.save.data.downBind);
+		upBind[0]    = FlxKey.fromString(FlxG.save.data.upBind);
 		rightBind[0] = FlxKey.fromString(FlxG.save.data.rightBind);
-		killBind[0] = FlxKey.fromString(FlxG.save.data.killBind);
+		killBind[0]  = FlxKey.fromString(FlxG.save.data.killBind);
 	}
 
-	/**
-	 * Actualizar estado de inputs
-	 */
+	// ─── UPDATE ──────────────────────────────────────────────────────────────
+
 	public function update():Void
 	{
-		// Reset arrays
-		for (i in 0...4)
-		{
-			pressed[i] = false;
-			released[i] = false;
-		}
+		pressed[0] = pressed[1] = pressed[2] = pressed[3] = false;
+		released[0] = released[1] = released[2] = released[3] = false;
 
-		// Detectar inputs usando controls
-		if (FlxG.keys.anyJustPressed(leftBind))
-			pressed[0] = true;
-		if (FlxG.keys.anyJustPressed(downBind))
-			pressed[1] = true;
-		if (FlxG.keys.anyJustPressed(upBind))
-			pressed[2] = true;
-		if (FlxG.keys.anyJustPressed(rightBind))
-			pressed[3] = true;
+		if (FlxG.keys.anyJustPressed(leftBind))  pressed[0] = true;
+		if (FlxG.keys.anyJustPressed(downBind))  pressed[1] = true;
+		if (FlxG.keys.anyJustPressed(upBind))    pressed[2] = true;
+		if (FlxG.keys.anyJustPressed(rightBind)) pressed[3] = true;
 
-		if (FlxG.keys.anyPressed(leftBind))
-			held[0] = true;
-		else
-			held[0] = false;
+		held[0] = FlxG.keys.anyPressed(leftBind);
+		held[1] = FlxG.keys.anyPressed(downBind);
+		held[2] = FlxG.keys.anyPressed(upBind);
+		held[3] = FlxG.keys.anyPressed(rightBind);
 
-		if (FlxG.keys.anyPressed(downBind))
-			held[1] = true;
-		else
-			held[1] = false;
-
-		if (FlxG.keys.anyPressed(upBind))
-			held[2] = true;
-		else
-			held[2] = false;
-
-		if (FlxG.keys.anyPressed(rightBind))
-			held[3] = true;
-		else
-			held[3] = false;
-
-		// NUEVO: Detectar releases y llamar callback
 		if (FlxG.keys.anyJustReleased(leftBind))
 		{
 			released[0] = true;
-			if (onKeyRelease != null)
-				onKeyRelease(0);
+			if (onKeyRelease != null) onKeyRelease(0);
 		}
 		if (FlxG.keys.anyJustReleased(downBind))
 		{
 			released[1] = true;
-			if (onKeyRelease != null)
-				onKeyRelease(1);
+			if (onKeyRelease != null) onKeyRelease(1);
 		}
 		if (FlxG.keys.anyJustReleased(upBind))
 		{
 			released[2] = true;
-			if (onKeyRelease != null)
-				onKeyRelease(2);
+			if (onKeyRelease != null) onKeyRelease(2);
 		}
 		if (FlxG.keys.anyJustReleased(rightBind))
 		{
 			released[3] = true;
-			if (onKeyRelease != null)
-				onKeyRelease(3);
+			if (onKeyRelease != null) onKeyRelease(3);
 		}
 	}
 
+	// ─── PROCESS INPUTS ──────────────────────────────────────────────────────
+
 	/**
-	 * Procesar inputs contra notas disponibles
-	 * OPTIMIZADO: Una sola pasada por todas las notas
-	 * MEJORADO: Con sistema de input buffering
+	 * Procesa inputs del jugador contra las notas disponibles.
+	 *
+	 * OPT: iteración directa sobre members[] en lugar de forEachAlive().
+	 *      forEachAlive() asigna un closure nuevo en el heap cada llamada.
+	 *      Con iteración directa hay cero allocs en este path.
+	 *
+	 * OPT: possibleNotesByDir usa arrays preallocados (resize vs new).
+	 *
+	 * OPT: sort comparator es función estática — cero closures.
 	 */
 	public function processInputs(notes:FlxTypedGroup<Note>):Void
 	{
-		// ── Bot Play: el CPU presiona automáticamente las notas del jugador ──
 		if (funkin.gameplay.PlayState.isBotPlay)
 		{
-			// BUGFIX: Limpiar inputs reales del jugador para que no afecten
-			// a los strums ni provoquen miss/ghost-tap en botplay.
-			for (i in 0...4)
-			{
-				pressed[i]  = false;
-				held[i]     = false;
-				released[i] = false;
-			}
+			pressed[0] = pressed[1] = pressed[2] = pressed[3] = false;
+			held[0]    = held[1]    = held[2]    = held[3]    = false;
+			released[0]= released[1]= released[2]= released[3]= false;
 
-			notes.forEachAlive(function(note:Note)
+			// Iteración directa — sin closure
+			final members = notes.members;
+			final len = members.length;
+			for (i in 0...len)
 			{
-				if (note.canBeHit && note.mustPress && !note.tooLate && !note.wasGoodHit
-					&& !note.isSustainNote)
+				final note = members[i];
+				if (note == null || !note.alive) continue;
+				if (note.canBeHit && note.mustPress && !note.tooLate
+					&& !note.wasGoodHit && !note.isSustainNote)
 				{
-					if (onNoteHit != null)
-						onNoteHit(note);
-					// Simular strum confirm solo para notas normales
+					if (onNoteHit != null) onNoteHit(note);
 					pressed[note.noteData] = true;
-					if (onKeyPress != null)
-						onKeyPress(note.noteData);
+					if (onKeyPress != null) onKeyPress(note.noteData);
 				}
-			});
+			}
 			return;
 		}
 
-		// Contar teclas presionadas este frame
 		var keysPressed:Int = 0;
-		for (p in pressed)
-			if (p)
-				keysPressed++;
-
+		if (pressed[0]) keysPressed++;
+		if (pressed[1]) keysPressed++;
+		if (pressed[2]) keysPressed++;
+		if (pressed[3]) keysPressed++;
 		mashCounter = keysPressed;
-		
-		// Actualizar buffer de inputs
-		var currentTime = FlxG.game.ticks / 1000.0; // Tiempo actual en segundos
+
+		final currentTime = FlxG.game.ticks / 1000.0;
 		for (dir in 0...4)
 		{
 			if (pressed[dir])
@@ -180,163 +170,133 @@ class InputHandler
 			}
 		}
 
-		// OPTIMIZACIÓN: Una sola pasada para obtener todas las notas disponibles
-		var possibleNotesByDir:Array<Array<Note>> = [[], [], [], []];
-		
-		notes.forEachAlive(function(note:Note)
+		// Limpiar buckets preallocados — resize(0) no reasigna memoria interna
+		_notesByDir0.resize(0);
+		_notesByDir1.resize(0);
+		_notesByDir2.resize(0);
+		_notesByDir3.resize(0);
+
+		// Clasificar notas por dirección — iteración directa, sin closure
+		final members = notes.members;
+		final len = members.length;
+		for (i in 0...len)
 		{
-			if (note.canBeHit && note.mustPress && !note.tooLate && !note.wasGoodHit && !note.isSustainNote)
+			final note = members[i];
+			if (note == null || !note.alive) continue;
+			if (note.canBeHit && note.mustPress && !note.tooLate
+				&& !note.wasGoodHit && !note.isSustainNote)
 			{
-				possibleNotesByDir[note.noteData].push(note);
-			}
-		});
-
-		// Ordenar cada dirección por tiempo (solo una vez)
-		for (dir in 0...4)
-		{
-			if (possibleNotesByDir[dir].length > 0)
-				possibleNotesByDir[dir].sort((a, b) -> Std.int(a.strumTime - b.strumTime));
-		}
-
-		// Procesar cada dirección (buffered o pressed)
-		for (dir in 0...4)
-		{
-			// Verificar si hay input válido (recién presionado o en buffer)
-			var hasValidInput = false;
-			
-			if (pressed[dir])
-			{
-				hasValidInput = true;
-			}
-			else if (inputBuffering && !inputProcessed[dir])
-			{
-				// Verificar si hay un input en buffer que no ha expirado
-				var timeSinceInput = currentTime - bufferedInputs[dir];
-				if (timeSinceInput <= bufferTime)
-					hasValidInput = true;
-			}
-			
-			if (!hasValidInput)
-				continue;
-
-			var possibleNotes = possibleNotesByDir[dir];
-
-			if (possibleNotes.length > 0)
-			{
-				// Hit la nota más cercana
-				var note = possibleNotes[0];
-
-				// Anti-mash check - OPTIMIZADO: usar length en vez de llamar a getAvailableNotes()
-				if (mashCounter <= possibleNotes.length + 1 || mashViolations > MAX_MASH_VIOLATIONS)
+				switch (note.noteData)
 				{
-					if (onNoteHit != null)
-					{
-						onNoteHit(note);
-						inputProcessed[dir] = true; // Marcar como procesado
-					}
-				}
-				else
-				{
-					mashViolations++;
+					case 0: _notesByDir0.push(note);
+					case 1: _notesByDir1.push(note);
+					case 2: _notesByDir2.push(note);
+					case 3: _notesByDir3.push(note);
 				}
 			}
-			else if (!ghostTapping && pressed[dir]) // Solo penalizar si fue presionado este frame
-			{
-				// Miss por ghost tap
-				if (onNoteMiss != null)
-					onNoteMiss(null); // ghost tap — no hay nota concreta
-				inputProcessed[dir] = true;
-			}
 		}
+
+		// Ordenar por tiempo (función estática — cero closures)
+		if (_notesByDir0.length > 1) _notesByDir0.sort(_compareByStrumTime);
+		if (_notesByDir1.length > 1) _notesByDir1.sort(_compareByStrumTime);
+		if (_notesByDir2.length > 1) _notesByDir2.sort(_compareByStrumTime);
+		if (_notesByDir3.length > 1) _notesByDir3.sort(_compareByStrumTime);
+
+		_processDir(0, _notesByDir0, currentTime);
+		_processDir(1, _notesByDir1, currentTime);
+		_processDir(2, _notesByDir2, currentTime);
+		_processDir(3, _notesByDir3, currentTime);
 	}
 
-	/**
-	 * OBSOLETO — NoteManager.updateActiveNotes() ya gestiona los misses.
-	 *
-	 * Bug que tenía esta implementación:
-	 *   1. Race condition: ventana de 350ms hace que la nota ya esté fuera de
-	 *      pantalla cuando se marca tooLate → NoteManager la elimina via
-	 *      shouldRemoveNote() ANTES de que checkMisses() la vea. Miss nunca dispara.
-	 *   2. note.kill() sin notes.remove() ni renderer.recycleNote() → pool leak.
-	 *
-	 * Fix real: noteManager.onNoteMiss = onPlayerNoteMiss en PlayState.
-	 */
-	public function checkMisses(notes:FlxTypedGroup<Note>):Void
+	/** Comparador estático — reutilizado por todos los sorts, cero allocs. */
+	static function _compareByStrumTime(a:Note, b:Note):Int
+		return Std.int(a.strumTime - b.strumTime);
+
+	private inline function _processDir(dir:Int, possibleNotes:Array<Note>, currentTime:Float):Void
 	{
-		// No-op: NoteManager.updateActiveNotes() detecta tooLate y llama
-		// missNote() → onNoteMiss (PlayState.onPlayerNoteMiss) en el mismo frame.
+		var hasValidInput = pressed[dir];
+
+		if (!hasValidInput && inputBuffering && !inputProcessed[dir])
+			hasValidInput = (currentTime - bufferedInputs[dir]) <= bufferTime;
+
+		if (!hasValidInput) return;
+
+		if (possibleNotes.length > 0)
+		{
+			if (mashCounter <= possibleNotes.length + 1 || mashViolations > MAX_MASH_VIOLATIONS)
+			{
+				if (onNoteHit != null)
+				{
+					onNoteHit(possibleNotes[0]);
+					inputProcessed[dir] = true;
+				}
+			}
+			else
+			{
+				mashViolations++;
+			}
+		}
+		else if (!ghostTapping && pressed[dir])
+		{
+			if (onNoteMiss != null) onNoteMiss(null);
+			inputProcessed[dir] = true;
+		}
 	}
 
+	// ─── PROCESS SUSTAINS ────────────────────────────────────────────────────
 
 	/**
-	 * Procesar sustain notes (hold)
-	 * OPTIMIZADO: Una sola pasada por todas las notas
+	 * Procesa sustain notes del jugador.
+	 * OPT: iteración directa — sin forEachAlive/closure.
 	 */
 	public function processSustains(notes:FlxTypedGroup<Note>):Void
 	{
-		// ── Bot Play: mantener pulsadas todas las sustains del jugador ──
-		// BUGFIX: sin esto el bot no sostiene holds y los pierde (tooLate)
+		final members = notes.members;
+		final len = members.length;
+
 		if (funkin.gameplay.PlayState.isBotPlay)
 		{
-			notes.forEachAlive(function(note:Note)
+			for (i in 0...len)
 			{
+				final note = members[i];
+				if (note == null || !note.alive) continue;
 				if (note.mustPress && note.isSustainNote && !note.wasGoodHit
 					&& note.canBeHit && !note.tooLate)
 				{
-					// Simular tecla mantenida para que NoteManager no marque fallo
 					held[note.noteData] = true;
-					if (onNoteHit != null)
-						onNoteHit(note);
+					if (onNoteHit != null) onNoteHit(note);
 				}
-			});
+			}
 			return;
 		}
 
-		// OPTIMIZACIÓN: Una sola pasada, procesar todas las direcciones
-		notes.forEachAlive(function(note:Note)
+		for (i in 0...len)
 		{
-			// Solo procesar sustains que están siendo presionadas
-			if (note.canBeHit && note.mustPress && note.isSustainNote && !note.wasGoodHit)
+			final note = members[i];
+			if (note == null || !note.alive) continue;
+			if (note.canBeHit && note.mustPress && note.isSustainNote
+				&& !note.wasGoodHit && held[note.noteData])
 			{
-				// Verificar si la tecla correspondiente está siendo presionada
-				if (held[note.noteData])
-				{
-					if (onNoteHit != null)
-						onNoteHit(note);
-				}
+				if (onNoteHit != null) onNoteHit(note);
 			}
-		});
-	}
-
-	/**
-	 * Reset mashing y buffer de inputs
-	 */
-	public function resetMash():Void
-	{
-		mashViolations = 0;
-		mashCounter = 0;
-	}
-	
-	/**
-	 * Limpiar buffer de inputs (útil al pausar/resetear)
-	 */
-	public function clearBuffer():Void
-	{
-		for (i in 0...4)
-		{
-			bufferedInputs[i] = 0;
-			inputProcessed[i] = false;
 		}
 	}
 
-	/**
-	 * Verificar si alguna tecla está siendo presionada
-	 */
-	public function anyKeyHeld():Bool
+	// No-op mantenido por compatibilidad
+	public function checkMisses(notes:FlxTypedGroup<Note>):Void {}
+
+	public function resetMash():Void
 	{
-		for (h in held)
-			if (h)
-				return true;
-		return false;
+		mashViolations = 0;
+		mashCounter    = 0;
 	}
+
+	public function clearBuffer():Void
+	{
+		bufferedInputs[0] = bufferedInputs[1] = bufferedInputs[2] = bufferedInputs[3] = 0;
+		inputProcessed[0] = inputProcessed[1] = inputProcessed[2] = inputProcessed[3] = false;
+	}
+
+	public function anyKeyHeld():Bool
+		return held[0] || held[1] || held[2] || held[3];
 }

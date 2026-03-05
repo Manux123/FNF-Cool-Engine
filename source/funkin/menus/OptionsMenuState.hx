@@ -66,6 +66,12 @@ class OptionsMenuState extends MusicBeatSubstate
 	static inline var OPT_SPACING:Int  = 55;
 	static inline var OPT_VISIBLE_H:Int = 370; // FlxG.height(720) - footer(100) - startY(180) - margen(70)
 
+	// ── Scrollbar ─────────────────────────────────────────────────────────
+	var _scrollbarTrack:FlxSprite = null;  // barra gris de fondo
+	var _scrollbarThumb:FlxSprite = null;  // barra blanca indicadora
+	static inline var SCROLLBAR_W:Int  = 6;
+	static var SCROLLBAR_X:Int  = FlxG.width - 58; // pegado al borde derecho del panel
+
 	// Keybind state
 	var bindingState:String = "select"; // "select", "binding"
 	var tempKey:String = "";
@@ -214,7 +220,18 @@ class OptionsMenuState extends MusicBeatSubstate
 		var scrollHint = new FlxText(0, FlxG.height - 108, FlxG.width, "▲ ▼  Scroll", 16);
 		scrollHint.setFormat(Paths.font("Funkin.otf"), 16, 0xFF555555, CENTER, NONE);
 		scrollHint.scrollFactor.set();
-		add(scrollHint);
+		//add(scrollHint);
+
+		// ── Scrollbar ─────────────────────────────────────────────────────────
+		_scrollbarTrack = new FlxSprite(SCROLLBAR_X, OPT_START_Y).makeGraphic(SCROLLBAR_W, OPT_VISIBLE_H, 0xFF222222);
+		_scrollbarTrack.scrollFactor.set();
+		_scrollbarTrack.visible = false;
+		add(_scrollbarTrack);
+
+		_scrollbarThumb = new FlxSprite(SCROLLBAR_X, OPT_START_Y).makeGraphic(SCROLLBAR_W, 40, 0xFFFFFFFF);
+		_scrollbarThumb.scrollFactor.set();
+		_scrollbarThumb.visible = false;
+		add(_scrollbarThumb);
 
 		loadCategory(curCategory);
 
@@ -287,6 +304,8 @@ class OptionsMenuState extends MusicBeatSubstate
 		currentOptions = [];
 		curSelected = 0;
 		_optScrollY  = 0.0;
+		if (_scrollbarTrack != null) _scrollbarTrack.visible = false;
+		if (_scrollbarThumb != null) _scrollbarThumb.visible = false;
 		bindingState = "select";
 		bindingIndicator.visible = false;
 
@@ -703,6 +722,24 @@ class OptionsMenuState extends MusicBeatSubstate
 			txt.y = OPT_START_Y + (txt.ID * OPT_SPACING) - _optScrollY;
 			txt.visible = (txt.y >= OPT_START_Y - OPT_SPACING) && (txt.y < OPT_START_Y + OPT_VISIBLE_H);
 		});
+
+		// ── Actualizar scrollbar ──────────────────────────────────────────────
+		if (_scrollbarTrack != null && _scrollbarThumb != null)
+		{
+			var totalH    = currentOptions.length * OPT_SPACING;
+			var needsBar  = totalH > OPT_VISIBLE_H;
+			_scrollbarTrack.visible = needsBar;
+			_scrollbarThumb.visible = needsBar;
+			if (needsBar)
+			{
+				// Altura del thumb proporcional al contenido visible
+				var thumbH = Std.int(Math.max(20, OPT_VISIBLE_H * OPT_VISIBLE_H / totalH));
+				var thumbTravel = OPT_VISIBLE_H - thumbH;
+				var thumbY = OPT_START_Y + Std.int(thumbTravel * (_optScrollY / maxScroll));
+				_scrollbarThumb.makeGraphic(SCROLLBAR_W, thumbH, 0xFFFFFFFF);
+				_scrollbarThumb.y = thumbY;
+			}
+		}
 	}
 
 	function updateCategoryDisplay()
@@ -832,7 +869,7 @@ class OptionsMenuState extends MusicBeatSubstate
 			changeCategory(1);
 		}
 
-		// Navegación de opciones
+		// Navegación de opciones (teclado)
 		if (controls.UP_P)
 		{
 			changeSelection(-1);

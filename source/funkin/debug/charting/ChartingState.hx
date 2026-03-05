@@ -1485,13 +1485,18 @@ class ChartingState extends funkin.states.MusicBeatState
 		_destroyChartVocals();
 		if (_song.needsVoices)
 		{
-			// Intentar cargar vocals por personaje primero
+			// Intentar cargar vocals por personaje primero — buscar por TIPO (no por índice)
 			var bfName  = (_song.player1  != null && _song.player1  != '') ? _song.player1  : 'bf';
 			var dadName = (_song.player2  != null && _song.player2  != '') ? _song.player2  : 'dad';
-			if (_song.characters != null && _song.characters.length >= 3)
+			if (_song.characters != null && _song.characters.length > 0)
 			{
-				bfName  = _song.characters[2].name;
-				dadName = _song.characters[1].name;
+				for (c in _song.characters)
+				{
+					if (c.type == 'Player' || c.type == 'Boyfriend')
+						bfName = c.name;
+					else if (c.type == 'Opponent' || c.type == 'Dad')
+						dadName = c.name;
+				}
 			}
 
 			final bfVocals  = Paths.loadVoicesForChar(daSong, bfName,  curDiffSuffix);
@@ -2788,8 +2793,7 @@ class ChartingState extends funkin.states.MusicBeatState
 			sectionNotes: [],
 			typeOfSection: 0,
 			altAnim: false,
-			gfSing: false,
-			bothSing: false
+			gfSing: false
 		};
 
 		_song.notes.push(sec);

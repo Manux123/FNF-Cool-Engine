@@ -21,10 +21,10 @@ import funkin.data.Section;
  *     "stage": "stage",
  *     "notes": [
  *       {
- *         "sectionNotes": [[time, lane, sustainLength], ...],
+ *         "sectionNotes": [[time, lane, sustainLength, ?noteType], ...],
  *         "mustHitSection": true,
+ *         "sectionBeats": 4,        ← Psych SIEMPRE usa sectionBeats, nunca lengthInSteps
  *         "bpm": 100,  "changeBPM": false,
- *         "lengthInSteps": 16,
  *         "altAnim": false,  "gfSection": false
  *       }
  *     ],
@@ -43,10 +43,17 @@ import funkin.data.Section;
  *   "no_antialiasing": false,
  *   "image": "characters/BOYFRIEND",
  *   "position": [0, 0],
+ *   "camera_position": [0, 0],
  *   "healthicon": "bf",
  *   "healthbar_colors": [49, 176, 209],
  *   "flip_x": false,
- *   "scale": 1
+ *   "scale": 1,
+ *   "sing_duration": 4,
+ *   "vocals_file": "",
+ *   "gameOverChar": "bf-dead",
+ *   "gameOverSound": "fnf_loss_sfx",
+ *   "gameOverLoop": "gameOver",
+ *   "gameOverEnd": "gameOverEnd"
  * }
  */
 class PsychConverter
@@ -92,17 +99,49 @@ class PsychConverter
 			events:      []
 		};
 
-		// ── Notes / sections ─────────────────────────────────────────────────
+		// ── Detección de versión del chart (lane format) ─────────────────────
+		// Psych 0.6+ usa lanes ABSOLUTAS: 0-3 = siempre player, 4-7 = siempre CPU.
+		// Psych pre-0.6 / vanilla FNF usa lanes RELATIVAS: 0-3 = el personaje que
+		// canta en esa sección (según mustHitSection), 4-7 = el otro.
+		//
+		// La detección por `sectionBeats` NO es fiable: algunos charts tienen
+		// sectionBeats en secciones vacías pero usan lanes relativas en las demás,
+		// o son charts "mixtos" editados parcialmente en Psych 0.6+.
+		//
+		// Heurística correcta: contar notas en secciones mustHit=FALSE.
+		//   · Formato relativo → el oponente canta en 0-3 (predominan 0-3)
+		//   · Formato absoluto → el oponente canta en 4-7 (predominan 4-7)
+		// Si hay ≥10 notas de muestra y >60% están en 0-3 → lanes relativas.
+		// Fallback a sectionBeats si no hay suficientes muestras.
 		final psychSections:Array<Dynamic> = (ps.notes != null && Std.isOfType(ps.notes, Array))
 			? cast ps.notes : [];
 
+		var isNewPsychFormat:Bool = _detectAbsoluteLanes(psychSections);
+		trace('[PsychConverter] Formato detectado: ${isNewPsychFormat ? "Psych 0.6+ (lanes absolutas)" : "pre-0.6 / vanilla (lanes relativas)"}');
+
+		// ── Notes / sections ─────────────────────────────────────────────────
+
 		for (sec in psychSections)
 		{
+			// Psych 0.6+ SIEMPRE usa `sectionBeats` (por defecto 4).
+			// Charts viejos usan `lengthInSteps` directamente.
+			// Fallback a 4 beats / 16 steps si ninguno está presente.
+			final stepsInSec:Int = (sec.lengthInSteps != null)
+				? Std.int(_float(sec.lengthInSteps, 16))
+				: Std.int(_float(sec.sectionBeats, 4) * 4);
+			final mustHit:Bool    = _bool(sec.mustHitSection, true);
+
 			final converted:SwagSection = {
-				sectionNotes:   _convertNotes(sec.sectionNotes),
-				lengthInSteps:  Std.int(_float(sec.lengthInSteps, 16)),
+				// LANE CONVERSION:
+				// • Psych 0.6+ → lanes ABSOLUTAS: 0-3=player, 4-7=CPU siempre.
+				//   Cool Engine usa lanes relativas, así que cuando mustHitSection=false
+				//   hay que invertir 0-3↔4-7 para que el flip interno quede correcto.
+				// • Psych pre-0.6 / vanilla FNF → lanes RELATIVAS: ya están en el
+				//   formato que espera Cool Engine. NO invertir.
+				sectionNotes:   _convertNotes(sec.sectionNotes, mustHit, isNewPsychFormat),
+				lengthInSteps:  stepsInSec,
 				typeOfSection:  0,
-				mustHitSection: _bool(sec.mustHitSection, true),
+				mustHitSection: mustHit,
 				bpm:            _float(sec.bpm, song.bpm),
 				changeBPM:      _bool(sec.changeBPM, false),
 				altAnim:        _bool(sec.altAnim, false),
@@ -120,38 +159,74 @@ class PsychConverter
 		_convertCameraFromSections(psychSections, song);
 
 		// ── Events ───────────────────────────────────────────────────────────
-		// Psych format: Array<[Float, Array<[String, String, String]>]>
-		// Cool format : Array<{stepTime, type, value}>
-		final psychEvents:Array<Dynamic> = (ps.events != null && Std.isOfType(ps.events, Array))
+		// Hay tres formatos posibles:
+		//
+		//   A) Psych 0.6+ (arrays anidados):
+		//      [ [timeMs, [ [name, v1, v2], ... ]], ... ]
+		//
+		//   B) Pre-0.6 con eventos inline en sectionNotes (lane negativa):
+		//      Ya se descartan silenciosamente en _convertNotes.
+		//
+		//   C) Charts en formato Cool Engine nativo:
+		//      [ {stepTime, type, value}, ... ]
+		//      Ocurre en charts viejos creados o parcialmente convertidos para Cool Engine.
+		//
+		// Detectamos el formato mirando el primer elemento de ps.events.
+		final psychEventsRaw:Array<Dynamic> = (ps.events != null && Std.isOfType(ps.events, Array))
 			? cast ps.events : [];
 
-		for (evtGroup in psychEvents)
+		if (psychEventsRaw.length > 0)
 		{
-			if (!Std.isOfType(evtGroup, Array)) continue;
-			final arr:Array<Dynamic> = cast evtGroup;
-			if (arr.length < 2) continue;
+			final firstEvt:Dynamic = psychEventsRaw[0];
+			final isCoolNative:Bool = firstEvt != null
+				&& !Std.isOfType(firstEvt, Array)
+				&& (Reflect.hasField(firstEvt, 'stepTime') || Reflect.hasField(firstEvt, 'type'));
 
-			final timeMs:Float          = _float(arr[0], 0);
-			final stepTime:Float        = _msToStep(timeMs, song.bpm);
-			final innerList:Array<Dynamic> = Std.isOfType(arr[1], Array) ? cast arr[1] : [];
-
-			for (ev in innerList)
+			if (isCoolNative)
 			{
-				if (!Std.isOfType(ev, Array)) continue;
-				final evArr:Array<Dynamic> = cast ev;
-				final evName  = _str(evArr[0], '');
-				final evVal1  = _str(evArr[1], '');
-				final evVal2  = _str(evArr[2], '');
+				// ── Formato C: ya en formato Cool Engine — copiar directamente ──
+				trace('[PsychConverter] Eventos en formato Cool Engine nativo — copiando directamente.');
+				for (ev in psychEventsRaw)
+				{
+					if (ev == null) continue;
+					song.events.push({
+						stepTime: _float(ev.stepTime, 0),
+						type:     _str(ev.type, ''),
+						value:    _str(ev.value, '')
+					});
+				}
+			}
+			else
+			{
+				// ── Formato A: Psych 0.6+  [ [timeMs, [[name,v1,v2],...]], ... ] ──
+				for (evtGroup in psychEventsRaw)
+				{
+					if (!Std.isOfType(evtGroup, Array)) continue;
+					final arr:Array<Dynamic> = cast evtGroup;
+					if (arr.length < 2) continue;
 
-				// Map known Psych event names → Cool Engine equivalents
-				final coolType  = _mapEventType(evName);
-				final coolValue = _mapEventValue(evName, evVal1, evVal2);
+					final timeMs:Float             = _float(arr[0], 0);
+					final stepTime:Float           = _msToStep(timeMs, song.bpm);
+					final innerList:Array<Dynamic> = Std.isOfType(arr[1], Array) ? cast arr[1] : [];
 
-				song.events.push({
-					stepTime: stepTime,
-					type:     coolType,
-					value:    coolValue
-				});
+					for (ev in innerList)
+					{
+						if (!Std.isOfType(ev, Array)) continue;
+						final evArr:Array<Dynamic> = cast ev;
+						final evName  = _str(evArr[0], '');
+						final evVal1  = _str(evArr[1], '');
+						final evVal2  = _str(evArr[2], '');
+
+						final coolType  = _mapEventType(evName);
+						final coolValue = _mapEventValue(evName, evVal1, evVal2);
+
+						song.events.push({
+							stepTime: stepTime,
+							type:     coolType,
+							value:    coolValue
+						});
+					}
+				}
 			}
 		}
 
@@ -220,15 +295,35 @@ class PsychConverter
 			}
 		}
 
-		// ── Camera offset from "position" field ───────────────────────────────
-		// Psych "position" = global offset, not camera-specific; we map it to
-		// cameraOffset as a best approximation.
+		// ── Camera offset desde "camera_position" ────────────────────────────
+		// Psych guarda la posición de cámara en "camera_position" (no en "position").
+		// "position" es el offset global del sprite en el mundo.
 		var camOffset:Array<Float> = [0.0, 0.0];
 		if (p.camera_position != null && Std.isOfType(p.camera_position, Array))
 		{
 			final cp:Array<Dynamic> = cast p.camera_position;
 			camOffset = [_float(cp[0], 0), _float(cp[1], 0)];
 		}
+
+		// BUG FIX #CHARPOS: Psych almacena el offset global del sprite en "position" [x, y].
+		// Este offset se SUMA a la posición del stage (DAD_X/BF_X/GF_X etc.).
+		// La versión anterior ignoraba este campo, dejando los personajes mal posicionados.
+		var positionOffset:Array<Float> = [0.0, 0.0];
+		if (p.position != null && Std.isOfType(p.position, Array))
+		{
+			final pos:Array<Dynamic> = cast p.position;
+			positionOffset = [_float(pos[0], 0), _float(pos[1], 0)];
+		}
+
+		// BUG FIX #4: Mapear campos de Game Over de Psych → Cool
+		// Psych: gameOverChar → Cool: charDeath
+		// Psych: gameOverSound → Cool: gameOverSound
+		// Psych: gameOverLoop  → Cool: gameOverMusic (bucle del tema)
+		// Psych: gameOverEnd   → Cool: gameOverEnd
+		final charDeath:String     = p.gameOverChar  != null ? _str(p.gameOverChar,  '') : '';
+		final gameOverSound:String = p.gameOverSound != null ? _str(p.gameOverSound, '') : '';
+		final gameOverMusic:String = p.gameOverLoop  != null ? _str(p.gameOverLoop,  '') : '';
+		final gameOverEnd:String   = p.gameOverEnd   != null ? _str(p.gameOverEnd,   '') : '';
 
 		// ── Build Cool Engine CharacterData ───────────────────────────────────
 		final coolChar:Dynamic = {
@@ -242,8 +337,15 @@ class PsychConverter
 			flipX:          _bool(p.flip_x, false),
 			healthIcon:     _str(p.healthicon, charName),
 			healthBarColor: healthBarColor,
-			cameraOffset:   camOffset
+			cameraOffset:   camOffset,
+			positionOffset: positionOffset   // BUG FIX #CHARPOS
 		};
+
+		// Solo añadir campos opcionales si tienen valor (evita contaminar el objeto)
+		if (charDeath     != '') Reflect.setField(coolChar, 'charDeath',     charDeath);
+		if (gameOverSound != '') Reflect.setField(coolChar, 'gameOverSound', gameOverSound);
+		if (gameOverMusic != '') Reflect.setField(coolChar, 'gameOverMusic', gameOverMusic);
+		if (gameOverEnd   != '') Reflect.setField(coolChar, 'gameOverEnd',   gameOverEnd);
 
 		trace('[PsychConverter] Character "$charName" done. Anims: ${anims.length}');
 		return coolChar;
@@ -260,13 +362,56 @@ class PsychConverter
 	 *
 	 * Solo se genera un evento cuando el target CAMBIA respecto al anterior, para no
 	 * saturar la lista. Se coloca al COMIENZO del array events para que los eventos
-	 * explícitos del chart (Hey!, BPM Change, etc.) puedan sobrescribir si hace falta.
+	/**
+	 * Detecta si un chart usa lanes ABSOLUTAS (Psych 0.6+) o RELATIVAS (pre-0.6).
 	 *
-	 * Los eventos explícitos de Psych que también cambian la cámara (Camera Follow
-	 * Opponent / Camera Follow Player) se manejan por separado en _mapEventType y
-	 * NO se duplican aquí: si hay un evento explícito en el mismo step, el orden
-	 * de inserción (secciones primero, explícitos después) garantiza que el
-	 * explícito sobreescribe — que es el comportamiento correcto.
+	 * En formato ABSOLUTO las secciones del oponente (mustHitSection=false) tienen
+	 * sus notas en lanes 4-7 (CPU siempre en la mitad superior).
+	 * En formato RELATIVO esas mismas secciones tienen las notas del oponente en
+	 * 0-3 (relativo al rol de esa sección).
+	 *
+	 * Muestra: notas en secciones mustHit=FALSE.
+	 * Devuelve true (absoluto) si la mayoría (>60%) están en lanes 4-7.
+	 * Devuelve false (relativo) si la mayoría están en 0-3.
+	 * Si no hay suficiente muestra (<10 notas), cae al fallback de sectionBeats.
+	 */
+	static function _detectAbsoluteLanes(psychSections:Array<Dynamic>):Bool
+	{
+		var low  = 0; // lanes 0-3  → predominan en formato relativo
+		var high = 0; // lanes 4-7  → predominan en formato absoluto
+
+		for (sec in psychSections)
+		{
+			if (_bool(sec.mustHitSection, true)) continue; // solo secciones del oponente
+			final raw = sec.sectionNotes;
+			if (raw == null || !Std.isOfType(raw, Array)) continue;
+			for (n in (cast raw:Array<Dynamic>))
+			{
+				if (!Std.isOfType(n, Array)) continue;
+				final lane = Std.int(_float((cast n:Array<Dynamic>)[1], 0));
+				if (lane < 0) continue; // ignorar event-notes legacy
+				if (lane < 4) low++ else high++;
+			}
+		}
+
+		final total = low + high;
+		if (total < 10)
+		{
+			// Muestra insuficiente — fallback: ¿alguna sección tiene sectionBeats?
+			trace('[PsychConverter] Muestra de lanes insuficiente ($total notas), usando fallback sectionBeats.');
+			for (sec in psychSections)
+				if (sec.sectionBeats != null) return true;
+			return false;
+		}
+
+		final pctHigh = high / total;
+		trace('[PsychConverter] Lane sample: $total notas en secciones oponente → ${Math.round(pctHigh*100)}% en 4-7.');
+		// >60% en 4-7 → formato absoluto (Psych 0.6+)
+		return pctHigh > 0.6;
+	}
+
+	/**
+	 * explícitos del chart (Hey!, BPM Change, etc.) puedan sobrescribir si hace falta.
 	 *
 	 * @param psychSections  Array de secciones crudas del JSON de Psych.
 	 * @param song           SwagSong en construcción (se modificará su .events).
@@ -281,16 +426,15 @@ class PsychConverter
 
 		for (sec in psychSections)
 		{
-			// Número de steps de esta sección. Psych usa sectionBeats*4 si no hay
-			// lengthInSteps explícito (igual que Cool Engine).
-			final beats        = _float(sec.sectionBeats, 4);
-			final stepsInSec:Float = sec.lengthInSteps != null
-				? _float(sec.lengthInSteps, beats * 4)
-				: beats * 4;
+			// BUG FIX #1 (también aquí): usar sectionBeats para calcular los steps
+			final beats:Float        = _float(sec.sectionBeats, 4);
+			final stepsInSec:Float   = beats * 4;
 
 			// Determinar target de cámara según flags de Psych
 			final isGfSection  = _bool(sec.gfSection, false);
 			final mustHitSec   = _bool(sec.mustHitSection, true);
+			// BUG FIX #3: usar 'player'/'opponent' consistentemente con EventManager,
+			// NO 'bf'/'dad' como hacía antes el mapeo de eventos explícitos.
 			final target:String = isGfSection ? 'gf' : (mustHitSec ? 'player' : 'opponent');
 
 			// Solo emitir evento si el target cambia (o es el primer step)
@@ -304,8 +448,6 @@ class PsychConverter
 				lastTarget = target;
 			}
 
-			// Avanzar BPM si la sección lo cambia (para cálculos futuros si se
-			// necesitara convertir a ms; aquí solo usamos steps así que es informativo)
 			if (_bool(sec.changeBPM, false) && _float(sec.bpm, 0) > 0)
 				currentBpm = _float(sec.bpm, currentBpm);
 
@@ -314,7 +456,6 @@ class PsychConverter
 
 		// Insertar al frente para que los eventos explícitos (procesados después)
 		// queden al final y prevalezcan en el EventManager cuando comparte step.
-		// La inserción en reverso mantiene el orden original (step ascendente).
 		var insertIdx = 0;
 		for (evt in cameraEvents)
 		{
@@ -325,10 +466,21 @@ class PsychConverter
 		trace('[PsychConverter] ${cameraEvents.length} Camera Follow generados desde mustHitSection.');
 	}
 
-	/** Converts a Psych sectionNotes array to Cool's format.
-	 *  Psych note: [time:Float, lane:Int, sustainLength:Float, ?altAnim:Bool]
-	 *  Cool note : same structure — already compatible, just ensure types. */
-	static function _convertNotes(raw:Dynamic):Array<Dynamic>
+	/**
+	 * Converts a Psych sectionNotes array to Cool's format.
+	 *
+	 * Psych note: [time:Float, lane:Int, sustainLength:Float, ?noteType:String]
+	 * Cool note : [time:Float, lane:Int, sustainLength:Float, ?noteType:String]
+	 *
+	 * Preserva noteType (índice 3) si es un String válido.
+	 *
+	 * LANE CONVERSION:
+	 *   • Psych 0.6+ (isNewPsychFormat=true) → lanes ABSOLUTAS: 0-3=player, 4-7=CPU.
+	 *     Cool Engine usa relativas → invertir 0-3↔4-7 cuando mustHitSection=false.
+	 *   • Pre-0.6 / vanilla FNF (isNewPsychFormat=false) → lanes RELATIVAS:
+	 *     ya coinciden con Cool Engine. NO invertir.
+	 */
+	static function _convertNotes(raw:Dynamic, mustHitSection:Bool = true, isNewPsychFormat:Bool = true):Array<Dynamic>
 	{
 		final out:Array<Dynamic> = [];
 		if (raw == null || !Std.isOfType(raw, Array)) return out;
@@ -337,12 +489,29 @@ class PsychConverter
 		{
 			if (!Std.isOfType(n, Array)) continue;
 			final note:Array<Dynamic> = cast n;
-			// [time, lane, sustainLength]  — already matches Cool's format
-			out.push([
-				_float(note[0], 0),
-				Std.int(_float(note[1], 0)),
-				_float(note[2], 0)
-			]);
+
+			// Ignorar notas de evento (lane negativa — son eventos legacy de Psych 0.5)
+			final rawLane = Std.int(_float(note[1], 0));
+			if (rawLane < 0) continue;
+
+			// Psych 0.6+: lanes absolutas → invertir cuando mustHitSection=false
+			// para que Cool Engine (que usa relativas) las asigne al personaje correcto.
+			// Pre-0.6: lanes ya son relativas → no tocar.
+			final lane:Int = (isNewPsychFormat && !mustHitSection)
+				? ((rawLane < 4) ? rawLane + 4 : rawLane - 4)
+				: rawLane;
+
+			final noteTime:Float    = _float(note[0], 0);
+			final noteSustain:Float = _float(note[2], 0);
+
+			// Preservar noteType (índice 3) si es un String válido
+			final noteType:String = (note.length > 3 && note[3] != null && Std.isOfType(note[3], String))
+				? Std.string(note[3]) : '';
+
+			if (noteType != '' && noteType != 'Default Note')
+				out.push([noteTime, lane, noteSustain, noteType]);
+			else
+				out.push([noteTime, lane, noteSustain]);
 		}
 		return out;
 	}
@@ -351,8 +520,8 @@ class PsychConverter
 	 * Maps Psych Engine event names → Cool Engine equivalents.
 	 *
 	 * ── Psych events covered ─────────────────────────────────────────────────
-	 *  Camera Follow Opponent / Focus Camera On Opponent  → Camera Follow (dad)
-	 *  Camera Follow Player  / Focus Camera On BF         → Camera Follow (bf)
+	 *  Camera Follow Opponent / Focus Camera On Opponent  → Camera Follow (opponent)
+	 *  Camera Follow Player  / Focus Camera On BF         → Camera Follow (player)
 	 *  Change BPM / BPM Change                            → BPM Change
 	 *  Hey!                                               → Play Anim
 	 *  Alt Idle Animation / Alt Anim                      → Alt Anim
@@ -451,17 +620,20 @@ class PsychConverter
 	/**
 	 * Convierte los valores v1/v2 de Psych al formato de valor único de Cool Engine.
 	 * Cool Engine usa un solo campo `value` (con separador `|` para dos valores).
+	 *
+	 * BUG FIX #3: Los eventos explícitos de cámara ahora usan 'player'/'opponent'
+	 * en lugar de 'bf'/'dad', consistente con EventManager y _convertCameraFromSections.
 	 */
 	static function _mapEventValue(psychName:String, v1:String, v2:String):String
 	{
 		return switch (psychName.toLowerCase())
 		{
-			// Cámara: mapear target a nombre interno
+			// BUG FIX #3: cámara usa 'opponent'/'player', no 'dad'/'bf'
 			case 'camera follow opponent', 'focus camera on opponent':
-				v2 != '' ? 'dad|$v2' : 'dad';
+				v2 != '' ? 'opponent|$v2' : 'opponent';
 
 			case 'camera follow player', 'focus camera on bf':
-				v2 != '' ? 'bf|$v2' : 'bf';
+				v2 != '' ? 'player|$v2' : 'player';
 
 			case 'camera follow gf', 'focus camera on gf':
 				'gf';
@@ -506,6 +678,22 @@ class PsychConverter
 			case 'play video', 'show movie', 'play cutscene', 'video':
 				v2 != '' ? '$v1|$v2' : v1;
 
+			// Play Animation: Psych Engine v1=animName, v2=target(bf/dad/gf/0/1/2)
+			// Cool Engine 'Play Anim' espera: value="target|animName"
+			// BUG FIX: Sin este case caía al default produciendo "animName|target",
+			// lo que hacía que EventManager tratara el nombre de anim como slot y
+			// getCharacterByName("hey") devolvía null → animación nunca se ejecutaba.
+			case 'play animation', 'character anim':
+				final coolTarget = switch (v2.toLowerCase().trim())
+				{
+					case 'bf' | 'boyfriend': 'bf';
+					case 'gf' | 'girlfriend': 'gf';
+					case '1': 'bf';  // índice numérico Psych
+					case '2': 'gf';  // índice numérico Psych
+					default: (v2 != '') ? v2 : 'dad'; // dad es el default en Psych
+				};
+				v1 != '' ? '$coolTarget|$v1' : coolTarget;
+
 			// Set Property / Run Function
 			case 'set property', 'change property', 'set variable':
 				'$v1|$v2';
@@ -522,15 +710,29 @@ class PsychConverter
 	{
 		if (song.characters != null && song.characters.length > 0) return;
 
+		// BUG FIX A: 3 groups [gf(0), cpu(1), player(2)] — same as Song.parseJSONshit.
+		// With only 2 groups, allStrumsGroups[1]='player_strums_0' → PlayState CPU routing
+		// maps Dad's notes in BF sections to BF → BF sings opponent notes.
+
+		// BUG FIX B: Always set explicit 'type' for EVERY character.
+		// CharacterSlot._resolveCharType falls back to NAME INFERENCE when type==null.
+		// Non-standard names like 'ray' (player1) don't start with 'bf' →
+		// get typed as 'Opponent' → placed at dadPosition instead of boyfriendPosition
+		// → visible on screen when the stage intentionally puts them off-screen.
+		final gfName  = _str(song.gfVersion, 'gf');
+		final dadName = _str(song.player2,   'dad');
+		final bfName  = _str(song.player1,   'bf');
+
 		song.characters = [
-			{ name: song.gfVersion ?? 'gf',  x: 0.0, y: 0.0, visible: true, type: 'Girlfriend' },
-			{ name: song.player2   ?? 'dad', x: 0.0, y: 0.0, visible: true, type: 'Opponent'   },
-			{ name: song.player1   ?? 'bf',  x: 0.0, y: 0.0, visible: true, type: 'Player'     }
+			{ name: gfName,  x: 0.0, y: 0.0, visible: true, isGF: true,  type: 'Girlfriend', strumsGroup: 'gf_strums_0'     },
+			{ name: dadName, x: 0.0, y: 0.0, visible: true, isGF: false, type: 'Opponent',   strumsGroup: 'cpu_strums_0'    },
+			{ name: bfName,  x: 0.0, y: 0.0, visible: true, isGF: false, type: 'Player',     strumsGroup: 'player_strums_0' }
 		];
 
 		song.strumsGroups = [
-			{ id: 'cpu_strums_0',    x: 100.0, y: 50.0, visible: true, cpu: true,  spacing: 110.0 },
-			{ id: 'player_strums_0', x: 740.0, y: 50.0, visible: true, cpu: false, spacing: 110.0 }
+			{ id: 'gf_strums_0',     x: 400.0, y: 50.0, visible: false, cpu: true,  spacing: 110.0 },
+			{ id: 'cpu_strums_0',    x: 100.0, y: 50.0, visible: true,  cpu: true,  spacing: 110.0 },
+			{ id: 'player_strums_0', x: 740.0, y: 50.0, visible: true,  cpu: false, spacing: 110.0 }
 		];
 	}
 
@@ -560,8 +762,21 @@ class PsychConverter
 		return Math.isNaN(f) ? def : f;
 	}
 
+	// BUG FIX: Some Psych chart editors store booleans as integers (0/1).
+	// Standard Haxe `v == true` returns false for the integer 1 because
+	// they are different types in strict equality. This would cause
+	// mustHitSection to always return the default (true), breaking all
+	// sections where mustHitSection should be false.
 	static inline function _bool(v:Dynamic, def:Bool):Bool
-		return (v != null) ? (v == true) : def;
+	{
+		if (v == null)   return def;
+		if (v == true)   return true;
+		if (v == false)  return false;
+		// Handle integer encoding: 0 = false, anything else = true
+		final n = Std.parseFloat(Std.string(v));
+		if (!Math.isNaN(n)) return n != 0;
+		return def;
+	}
 
 	static function _hex2(n:Int):String
 	{

@@ -136,6 +136,7 @@ class ScriptHandler
 			_loadFolder('$r/scripts/global',   'global');
 			_loadFolder('$r/scripts/events',   'global');
 			_loadFolder('$r/data/scripts',     'global');
+			_loadFolder('$r/data/config', 'global');
 			// Rutas Psych-compat
 			_loadFolder('$r/custom_events',    'global');
 			_loadFolder('$r/custom_notetypes', 'global');
@@ -157,6 +158,8 @@ class ScriptHandler
 			final r = mods.ModManager.modRoot();
 			_loadFolder('$r/songs/$songName/scripts', 'song');
 			_loadFolder('$r/songs/$songName/events',  'song');
+			// Psych Engine layout: scripts live in data/{songName}/ alongside the chart
+			_loadFolder('$r/data/$songName', 'song');
 		}
 		#end
 		_loadFolder('assets/songs/$songName/scripts', 'song');
@@ -255,10 +258,23 @@ class ScriptHandler
 				for (k => v in presetVars)
 					script.interp.variables.set(k, v);
 
+			// ── Psych Lua API shims ───────────────────────────────────────────
+			// Always expose the gameplay API for Lua scripts (getProperty,
+			// setProperty, makeLuaText, callMethod, etc.).
+			// The stage-specific API is layered on top when a Stage is provided.
+			if (isLua)
+				mods.compat.PsychLuaGameplayAPI.expose(script.interp);
+
 			if (isLua && stage != null)
 				mods.compat.PsychLuaStageAPI.expose(script.interp, stage);
 
 			script.interp.execute(script.program);
+
+			// Set up Psych callback aliases AFTER the script has defined its
+			// functions (goodNoteHit → onNoteHit, onCreatePost → postCreate, etc.)
+			if (isLua)
+				mods.compat.PsychLuaGameplayAPI.setupCallbackAliases(script);
+
 			script.call('onCreate');
 			script.call('postCreate');
 
@@ -299,7 +315,11 @@ class ScriptHandler
 		}
 		#end
 
-		final rawContent = #if sys File.getContent(scriptPath) #else '' #end;
+		final isLuaNoInit = scriptPath.endsWith('.lua');
+		final rawContentNoInit = #if sys File.getContent(scriptPath) #else '' #end;
+		final rawContent = isLuaNoInit
+			? mods.compat.LuaStageConverter.convert(rawContentNoInit, _extractName(scriptPath))
+			: rawContentNoInit;
 		final scriptName = _extractName(scriptPath);
 		final script     = new HScriptInstance(scriptName, scriptPath);
 
@@ -314,8 +334,14 @@ class ScriptHandler
 				for (k => v in presetVars)
 					script.interp.variables.set(k, v);
 
+			if (isLuaNoInit)
+				mods.compat.PsychLuaGameplayAPI.expose(script.interp);
+
 			// Ejecutar el programa define funciones en interp.variables — sin llamar onCreate aún.
 			script.interp.execute(script.program);
+
+			if (isLuaNoInit)
+				mods.compat.PsychLuaGameplayAPI.setupCallbackAliases(script);
 
 			_registerScript(script, scriptType);
 			trace('[ScriptHandler] Cargado sin init [$scriptType]: $scriptName');

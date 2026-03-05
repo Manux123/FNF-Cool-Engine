@@ -179,10 +179,6 @@ class ModFormatDetector
 			if (notes != null && !Std.isOfType(notes, Array))
 			{
 				// ── V-Slice detection ─────────────────────────────────────────────
-				// V-Slice también tiene notes como objeto, pero se distingue por:
-				//   1. Campo "generatedBy" que contiene "Friday Night Funkin'"
-				//   2. Campo "version" en raíz con semver (ej: "2.0.0")
-				//   3. Eventos con estructura {t, e, v} en lugar de arrays de arrays
 				final generatedBy:String = Std.string(root.generatedBy ?? '').toLowerCase();
 				if (generatedBy.contains('friday night funkin'))
 					return VSLICE_ENGINE;
@@ -200,7 +196,6 @@ class ModFormatDetector
 					if (evArr.length > 0)
 					{
 						final firstEv:Dynamic = evArr[0];
-						// V-Slice: el evento tiene campo "e" (string con nombre del evento)
 						if (Reflect.hasField(firstEv, 'e') && Std.isOfType(firstEv.e, String))
 							return VSLICE_ENGINE;
 					}
@@ -211,13 +206,6 @@ class ModFormatDetector
 			}
 
 			// ── Flat Psych chart (no events array, no song wrapper) ──────────
-			// Señales características:
-			//   • player1 en root (Psych usa esto, Cool usa characters[])
-			//   • sectionBeats en las secciones (campo exclusivo de Psych;
-			//     Cool Engine usa lengthInSteps)
-			//   • mustHitSection presente Y sin bpm a nivel raíz
-			// Si se cumple alguna de estas, lo tratamos como Psych para que
-			// PsychConverter genere los eventos Camera Follow correctamente.
 			if (notes != null && Std.isOfType(notes, Array))
 			{
 				final notesArr:Array<Dynamic> = cast notes;
@@ -226,6 +214,9 @@ class ModFormatDetector
 					final firstSec:Dynamic = notesArr[0];
 					// sectionBeats es un campo exclusivo de Psych
 					if (firstSec.sectionBeats != null)
+						return PSYCH_ENGINE;
+					// mustHitSection sin bpm a nivel raíz → también Psych
+					if (firstSec.mustHitSection != null && root.bpm == null)
 						return PSYCH_ENGINE;
 				}
 			}
@@ -275,6 +266,9 @@ class ModFormatDetector
 					if (anims.length > 0 && Reflect.hasField(anims[0], 'anim'))
 						return PSYCH_ENGINE;
 				}
+				// Sin animaciones pero con "image" y sin "path" → probablemente Psych
+				if (!Reflect.hasField(c, 'asset'))
+					return PSYCH_ENGINE;
 			}
 			// Codename JSON: has "asset" instead of "path"
 			if (Reflect.hasField(c, 'asset') && !Reflect.hasField(c, 'path'))
@@ -302,7 +296,6 @@ class ModFormatDetector
 				return PSYCH_ENGINE;
 
 			// Psych minimal format: character position fields boyfriend/girlfriend/opponent
-			// (NocturnBg.json style — no stageObjects, just positions + zoom)
 			if (Reflect.hasField(ps, 'boyfriend') || Reflect.hasField(ps, 'girlfriend') || Reflect.hasField(ps, 'opponent'))
 				return PSYCH_ENGINE;
 
@@ -310,11 +303,35 @@ class ModFormatDetector
 			if (Reflect.hasField(root, 'bfPos') || Reflect.hasField(root, 'dadPos'))
 				return PSYCH_ENGINE;
 
-			// Codename variant A: sprites array
+			// BUG FIX #9: "objects" array es AMBIGUO — Psych 0.6 Y Codename lo usan.
+			// Diferenciar por campos adicionales:
+			//   • Psych:    siempre tiene "directory", "defaultZoom" o "hide_girlfriend"
+			//   • Codename: tiene "characters" junto a "objects", O no tiene "defaultZoom"
+			if (Reflect.hasField(root, 'objects'))
+			{
+				final hasPsychFields = Reflect.hasField(root, 'directory')
+					|| Reflect.hasField(root, 'defaultZoom')
+					|| Reflect.hasField(root, 'hide_girlfriend')
+					|| Reflect.hasField(root, 'camera_boyfriend');
+
+				// Si tiene campos característicos de Psych → Psych
+				if (hasPsychFields)
+					return PSYCH_ENGINE;
+
+				// Si tiene "characters" junto a "objects" → Codename
+				if (Reflect.hasField(root, 'characters'))
+					return CODENAME_ENGINE;
+
+				// objects solo, sin más contexto → asumir Psych (más común en mods)
+				return PSYCH_ENGINE;
+			}
+
+			// Codename variant: sprites array
 			if (Reflect.hasField(root, 'sprites'))
 				return CODENAME_ENGINE;
-			// Codename variant B: objects + characters
-			if (Reflect.hasField(root, 'objects') && Reflect.hasField(root, 'characters'))
+
+			// Codename variant B: objects + characters (ya cubierto arriba pero por si acaso)
+			if (Reflect.hasField(root, 'characters'))
 				return CODENAME_ENGINE;
 		}
 		catch (_:Dynamic)
@@ -339,7 +356,6 @@ class ModFormatDetector
 	/**
 	 * Devuelve true si la cadena parece una versión semver de chart V-Slice.
 	 * Ejemplo: "2.0.0", "2.1.0", "2.2.0"  → true
-	 * "1.0.0" podría ser otra cosa → false (requerir mayor >= 2)
 	 */
 	static function _isSemverChartVersion(v:String):Bool
 	{
@@ -347,7 +363,6 @@ class ModFormatDetector
 		final parts = v.split('.');
 		if (parts.length < 2) return false;
 		final major = Std.parseInt(parts[0]);
-		// V-Slice chart versiones conocidas: 2.0.0, 2.1.0, 2.2.0
 		return (major != null && major >= 2);
 	}
 

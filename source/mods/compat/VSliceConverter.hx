@@ -307,10 +307,21 @@ class VSliceConverter
 		}
 
 		// Asignar cada nota a su sección
+		// altAnim: se activa cuando las notas CPU de una sección tienen un kind que
+		// indica un personaje alt (ej: "mom" en Eggnog, "dad-car" en algunas canciones).
+		// En V-Slice el campo "k" (kind) de las notas del oponente (d >= 4) se usa
+		// para distinguir qué personaje canta — si no es el oponente base, es altAnim.
+		final sectionAltAnims:Array<Bool> = [for (_ in 0...sectionStarts.length) false];
+
+		// Kinds que indican animación alt del oponente.
+		// "mom" es el más común (Eggnog/Cocoa/Eggnoggin), pero admitimos cualquier
+		// kind en notas CPU que NO sea un tipo de nota normal (hurt, mine, etc.).
+		final _normalNoteKinds = ['', 'hurt', 'mine', 'bomb', 'hazard', 'default', 'normal'];
+
 		for (n in notes)
 		{
 			final t:Float = _float(n.t, 0);
-			// Buscar sección por tiempo (binary-ish, lineal suficiente para chart sizes)
+			// Buscar sección por tiempo
 			var secIdx:Int = sectionStarts.length - 1;
 			for (i in 0...sectionStarts.length - 1)
 			{
@@ -323,7 +334,12 @@ class VSliceConverter
 			// El "d" de V-Slice = lane directamente en Cool Engine
 			final lane:Int = Std.int(_float(n.d, 0));
 			final hold:Float = _float(n.l, 0);
-			final kind:String = (n.k != null) ? Std.string(n.k) : '';
+			final kind:String = (n.k != null) ? Std.string(n.k).toLowerCase() : '';
+
+			// Detectar altAnim: nota CPU (lane >= 4) con un kind que no sea tipo
+			// de nota estándar → el oponente usa personaje/animación alternativa
+			if (lane >= 4 && kind != '' && !_normalNoteKinds.contains(kind))
+				sectionAltAnims[secIdx] = true;
 
 			if (kind != '')
 				sectionNoteArrays[secIdx].push([t, lane, hold, kind]);
@@ -362,7 +378,7 @@ class VSliceConverter
 				mustHitSection: i < sectionMustHits.length ? sectionMustHits[i] : true,
 				bpm: i < sectionBpms.length ? sectionBpms[i] : song.bpm,
 				changeBPM: i > 0 && i < sectionBpms.length && sectionBpms[i] != sectionBpms[i - 1],
-				altAnim: false
+				altAnim: i < sectionAltAnims.length ? sectionAltAnims[i] : false
 			});
 		}
 	}
@@ -547,47 +563,62 @@ class VSliceConverter
 				_addDV(difficulty);
 			}
 
-			// IMPORTANTE: variante específica de dificultad PRIMERO, luego fallback genérico.
-			// Si buscamos "erect" debe cargar ugh-metadata-erect.json ANTES que ugh-metadata.json,
-			// ya que el genérico tiene stage/personajes de la versión base (no erect).
-			final candidates:Array<String> = [];
-			for (_dv in _diffVarsFile)
-				candidates.push('$dir/${folderName}-metadata-${_dv}.json');
-			candidates.push('$dir/${folderName}-metadata-default.json');
-			// Genérico solo como último recurso
-			candidates.push('$dir/$folderName-metadata.json');
-			candidates.push('$dir/metadata.json');
-			// También buscar en carpeta padre si estamos dentro de una subcarpeta de variación
+			// ── Carga en dos pasos ────────────────────────────────────────────────────
+			// Paso 1: metadata genérica (valores base: stage, BPM, personajes, artist)
+			// Paso 2: metadata específica de dificultad (override, incluyendo artist)
+			//
+			// Así, si senpai-metadata-erect.json tiene un "artist" distinto, tiene
+			// prioridad. Si no tiene "artist", se conserva el del metadata base.
+			// La carga genérica también busca en carpeta padre para variaciones.
 			final parentDir = _parentDir(dir);
 			final parentFolder = _folderName(parentDir);
+
+			final genericCandidates:Array<String> = [
+				'$dir/${folderName}-metadata-default.json',
+				'$dir/$folderName-metadata.json',
+				'$dir/metadata.json',
+			];
 			if (parentFolder != '' && parentFolder != folderName)
 			{
-				candidates.push('$parentDir/$parentFolder-metadata.json');
-				candidates.push('$parentDir/metadata.json');
+				genericCandidates.push('$parentDir/$parentFolder-metadata.json');
+				genericCandidates.push('$parentDir/metadata.json');
 			}
 
-			for (path in candidates)
+			final specificCandidates:Array<String> = [];
+			for (_dv in _diffVarsFile)
+				specificCandidates.push('$dir/${folderName}-metadata-${_dv}.json');
+
+			// Paso 1 — base
+			for (path in genericCandidates)
 			{
-				if (!sys.FileSystem.exists(path))
-					continue;
+				if (!sys.FileSystem.exists(path)) continue;
 				try
 				{
-					final raw = sys.io.File.getContent(path);
-					final meta:Dynamic = Json.parse(raw);
+					final meta:Dynamic = Json.parse(sys.io.File.getContent(path));
 					_applyMetadata(meta, result);
-					trace('[VSliceConverter] Metadata cargada desde: $path');
+					trace('[VSliceConverter] Metadata base desde: $path');
 					break;
 				}
-				catch (e:Dynamic)
-				{
-					trace('[VSliceConverter] Error leyendo metadata "$path": $e');
-				}
+				catch (e:Dynamic) { trace('[VSliceConverter] Error leyendo metadata "$path": $e'); }
 			}
 
-			// BUGFIX: Si no encontramos metadata en el directorio del chart (p.ej. el chart
-			// está en assets/ pero la metadata está en mods/base_game/songs/), buscar en
-			// TODOS los mods instalados. Esto cubre el caso V-Slice donde base_game tiene
-			// los charts en assets/ y la metadata en mods/base_game/.
+			// Paso 2 — específica de dificultad (override, artist incluido)
+			for (path in specificCandidates)
+			{
+				if (!sys.FileSystem.exists(path)) continue;
+				try
+				{
+					final meta:Dynamic = Json.parse(sys.io.File.getContent(path));
+					_applyMetadata(meta, result);
+					trace('[VSliceConverter] Metadata específica (diff=$cleanDiff) desde: $path');
+					break;
+				}
+				catch (e:Dynamic) { trace('[VSliceConverter] Error leyendo metadata "$path": $e'); }
+			}
+
+			// BUGFIX: Si los charts están en assets/ pero la metadata está en un mod
+			// (ej: base_game), buscar en todos los mods habilitados con el mismo esquema
+			// de dos pasos para respetar la prioridad del artist por dificultad.
 			if (result.stage == 'stage_week1' && result.player == 'bf' && result.opponent == 'dad')
 			{
 				for (mod in mods.ModManager.installedMods)
@@ -596,31 +627,43 @@ class VSliceConverter
 					final modSongDir = '${mods.ModManager.MODS_FOLDER}/${mod.id}/songs/$folderName';
 					if (!sys.FileSystem.exists(modSongDir)) continue;
 
-					final modCandidates:Array<String> = [
+					final modGeneric:Array<String> = [
+						'$modSongDir/${folderName}-metadata-default.json',
 						'$modSongDir/$folderName-metadata.json',
 						'$modSongDir/metadata.json',
 					];
+					final modSpecific:Array<String> = [];
 					for (_dv in _diffVarsFile)
-						modCandidates.push('$modSongDir/${folderName}-metadata-${_dv}.json');
-					modCandidates.push('$modSongDir/${folderName}-metadata-default.json');
+						modSpecific.push('$modSongDir/${folderName}-metadata-${_dv}.json');
 
 					var foundInMod = false;
-					for (mpath in modCandidates)
+					// Paso 1 mod — base
+					for (mpath in modGeneric)
 					{
 						if (!sys.FileSystem.exists(mpath)) continue;
 						try
 						{
-							final raw = sys.io.File.getContent(mpath);
-							final meta:Dynamic = Json.parse(raw);
+							final meta:Dynamic = Json.parse(sys.io.File.getContent(mpath));
 							_applyMetadata(meta, result);
-							trace('[VSliceConverter] Metadata encontrada en mod "${mod.id}": $mpath');
+							trace('[VSliceConverter] Metadata base mod "${mod.id}": $mpath');
 							foundInMod = true;
 							break;
 						}
-						catch (e:Dynamic)
+						catch (e:Dynamic) { trace('[VSliceConverter] Error metadata mod "$mpath": $e'); }
+					}
+					// Paso 2 mod — específica (artist override)
+					for (mpath in modSpecific)
+					{
+						if (!sys.FileSystem.exists(mpath)) continue;
+						try
 						{
-							trace('[VSliceConverter] Error leyendo metadata mod "$mpath": $e');
+							final meta:Dynamic = Json.parse(sys.io.File.getContent(mpath));
+							_applyMetadata(meta, result);
+							trace('[VSliceConverter] Metadata específica mod "${mod.id}": $mpath');
+							foundInMod = true;
+							break;
 						}
+						catch (e:Dynamic) { trace('[VSliceConverter] Error metadata mod "$mpath": $e'); }
 					}
 					if (foundInMod) break;
 				}

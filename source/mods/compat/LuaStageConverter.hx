@@ -33,14 +33,47 @@ class LuaStageConverter
 	static inline var BLK_DO       = 'do';
 	static inline var BLK_REPEAT   = 'repeat';
 
-	// Known callbacks that need argument injection
+	// Known callbacks that need argument injection.
+	// Covers both Cool Engine natives AND Psych Engine 1.0.x gameplay callbacks.
+	// Format: functionName => haxe-typed parameter list (injected when the Lua
+	// function is defined with NO parameters, e.g. "function onStepHit()").
+	// Functions that already declare their own params in Lua are left untouched.
 	static var CALLBACK_ARGS:Map<String, String> = [
-		'onStepHit'  => 'curStep:Int',
-		'onBeatHit'  => 'curBeat:Int',
-		'onUpdate'   => 'elapsed:Float',
-		'onUpdatePost' => 'elapsed:Float',
-		'onNoteHit'  => 'note:Dynamic',
-		'onNoteMiss' => 'note:Dynamic',
+		// ── Cool Engine natives ───────────────────────────────────────────────
+		'onStepHit'          => 'curStep:Int',
+		'onBeatHit'          => 'curBeat:Int',
+		'onUpdate'           => 'elapsed:Float',
+		'onUpdatePost'       => 'elapsed:Float',
+		'onNoteHit'          => 'note:Dynamic',
+		'onNoteMiss'         => 'note:Dynamic',
+		'onOpponentNoteHit'  => 'note:Dynamic',
+		// ── Psych Engine 1.0.x gameplay callbacks ────────────────────────────
+		// goodNoteHit / opponentNoteHit: called with (noteIndex, direction, noteType, isSustain)
+		// These are declared WITH params in Lua, so no injection needed — listed
+		// for documentation only. The aliases in PsychLuaGameplayAPI.setupCallbackAliases()
+		// bridge them to onNoteHit / onOpponentNoteHit automatically.
+		//
+		// onCreatePost: fires after all objects are created (equiv. to postCreate)
+		// Declared with no params in Psych → inject nothing (empty param)
+		'onCreatePost'       => '',
+		// onMissPress: player pressed a key with no note
+		'onMissPress'        => 'direction:Int',
+		// onGhostTap (alias used by some mods)
+		'onGhostTap'         => 'direction:Int',
+		// onSongStart, onPause, onResume — no args
+		'onSongStart'        => '',
+		'onPause'            => '',
+		'onResume'           => '',
+		// onCountdownTick(count) — countdown step 0-4
+		'onCountdownTick'    => 'count:Int',
+		// onEvent(eventName, value1, value2) — chart event fired
+		'onEvent'            => 'eventName:String, value1:String, value2:String',
+		// onTimerCompleted(tag) — FlxTimer finished
+		'onTimerCompleted'   => 'tag:String',
+		// onTweenCompleted(tag) — FlxTween finished
+		'onTweenCompleted'   => 'tag:String',
+		// onSoundFinished(tag)
+		'onSoundFinished'    => 'tag:String',
 	];
 
 	// ─── Public API ───────────────────────────────────────────────────────────

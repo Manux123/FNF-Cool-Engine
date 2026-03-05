@@ -30,6 +30,10 @@ typedef StageData =
 	@:optional var gfPosition:Array<Float>;
 	@:optional var cameraBoyfriend:Array<Float>;
 	@:optional var cameraDad:Array<Float>;
+	/** Offset de cámara para la GF (campo camera_girlfriend de Psych). */
+	@:optional var cameraGirlfriend:Array<Float>;
+	/** Velocidad del lerp de cámara (camera_speed en Psych, multiplicador sobre el default). */
+	@:optional var cameraSpeed:Float;
 	@:optional var hideGirlfriend:Bool;
 	@:optional var scripts:Array<String>;
 	@:optional var customProperties:Dynamic;
@@ -204,6 +208,10 @@ class Stage extends FlxTypedGroup<FlxBasic>
 	// Camera offsets
 	public var cameraBoyfriend:FlxPoint = new FlxPoint(0, 0);
 	public var cameraDad:FlxPoint = new FlxPoint(0, 0);
+	/** Offset de cámara para la GF. Equivalente a camera_girlfriend en Psych. */
+	public var cameraGirlfriend:FlxPoint = new FlxPoint(0, 0);
+	/** Multiplicador de velocidad del lerp de cámara. 1.0 = default. */
+	public var cameraSpeed:Float = 1.0;
 
 	public var gfVersion:String = 'gf';
 	public var hideGirlfriend:Bool = false;
@@ -308,6 +316,14 @@ class Stage extends FlxTypedGroup<FlxBasic>
 
 		if (stageData.cameraDad != null)
 			cameraDad.set(stageData.cameraDad[0], stageData.cameraDad[1]);
+
+		// BUG FIX: cameraGirlfriend y cameraSpeed eran convertidos por PsychStageConverter
+		// pero Stage nunca los leía — los campos se perdían silenciosamente.
+		if (stageData.cameraGirlfriend != null)
+			cameraGirlfriend.set(stageData.cameraGirlfriend[0], stageData.cameraGirlfriend[1]);
+
+		if (stageData.cameraSpeed != null && stageData.cameraSpeed > 0)
+			cameraSpeed = stageData.cameraSpeed;
 
 		// Sort elements by zIndex
 		if (stageData.elements != null)
@@ -473,7 +489,17 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		// Cargar frames: Sparrow (XML) o Packer (TXT) — auto-detectado
 		var assetKey:String = element.asset.endsWith('.txt') ? element.asset.replace('.txt', '') : element.asset;
 
-		sprite.loadStageSparrow(assetKey);
+		// Intentar XML (Sparrow) primero, con fallback a TXT (Packer)
+		var stageFrames = Paths.stageSprite(assetKey);
+		if (stageFrames == null)
+			stageFrames = Paths.stageSpriteTxt(assetKey);
+		if (stageFrames != null)
+			sprite.frames = stageFrames;
+		else
+		{
+			sprite.makeGraphic(1, 1, 0x00000000);
+			sprite.visible = false;
+		}
 
 		// BUGFIX editor: igual que createSprite — si el asset no cargó, mostrar placeholder visible
 		// en vez de silenciar el sprite (en gameplay la lógica original sigue intacta).

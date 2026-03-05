@@ -2,5 +2,6 @@
 	"needsVoices": true,
 	"ui": "default",
 	"introVideo": "ughCutscene",
-	"noteSkin": "default"
+	"noteSkin": "default",
+	"artist": "Kawai Sprite"
 }

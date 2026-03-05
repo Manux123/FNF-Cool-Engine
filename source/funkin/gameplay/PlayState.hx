@@ -354,7 +354,7 @@ class PlayState extends funkin.states.MusicBeatState
 		// Crear stage y personajes
 		loadStageAndCharacters();
 
-		metaData = MetaData.load(SONG.song);
+		metaData = MetaData.load(SONG.song, funkin.data.CoolUtil.difficultySuffix());
 		NoteSkinSystem.init();
 		// Aplicar defaults del mod (global.json) después de init().
 		// Ahora es seguro: _initializing=false, initialized=true.
@@ -417,9 +417,11 @@ class PlayState extends funkin.states.MusicBeatState
 			// a los scripts que NO son de stage (global, song, ui, etc.).
 			ScriptHandler.callOnNonStageScripts('onStageCreate', ScriptHandler._argsEmpty);
 			ScriptHandler.callOnScripts('postCreate', ScriptHandler._argsEmpty);
-			// Actualizar listArtist desde el metadata de la canción (V-Slice "artist" field).
-			// Sólo sobreescribir si el chart proporciona un artista explícito.
-			if (SONG.artist != null && SONG.artist != '')
+			// Resolver listArtist con prioridad: meta.json > chart field > default.
+			// meta.json permite overridear el artista sin modificar el chart.
+			if (metaData != null && metaData.artist != null && metaData.artist != '')
+				GameState.listArtist = metaData.artist;
+			else if (SONG.artist != null && SONG.artist != '')
 				GameState.listArtist = SONG.artist;
 			ScriptHandler.setOnScripts('author', GameState.listArtist);
 		}
@@ -599,12 +601,16 @@ class PlayState extends funkin.states.MusicBeatState
 		if (currentStage.aboveCharsGroup != null && currentStage.aboveCharsGroup.length > 0)
 			add(currentStage.aboveCharsGroup);
 
-		if (characterSlots.length > 0)
-			gf = characterSlots[0].character;
-		if (characterSlots.length > 1)
-			dad = characterSlots[1].character;
-		if (characterSlots.length > 2)
-			boyfriend = characterSlots[2].character;
+		// Asignar refs legacy buscando por tipo (no por índice)
+		for (slot in characterSlots)
+		{
+			if (slot.isGFSlot && gf == null)
+				gf = slot.character;
+			else if (slot.isOpponentSlot && dad == null)
+				dad = slot.character;
+			else if (slot.isPlayerSlot && boyfriend == null)
+				boyfriend = slot.character;
+		}
 	}
 
 	private function loadCharacters():Void
@@ -615,31 +621,31 @@ class PlayState extends funkin.states.MusicBeatState
 		// El bloque de compatibilidad legacy era código muerto. Corregido:
 		if (SONG.characters == null || SONG.characters.length == 0)
 		{
-			// Compatibilidad con charts en formato legacy (player1/player2/gfVersion sin array 'characters')
+			// Compatibilidad legacy. BUG FIX: usar 'type' explícito.
+			// Sin 'type', CharacterSlot infiere por nombre de personaje.
+			// Nombres no estándar como 'ray' (player1) o 'mighty' (player2)
+			// no empiezan por 'bf'/'gf' → se tipifican como 'Opponent' →
+			// BF se coloca en dadPosition (visible) en lugar de boyfriendPosition.
 			SONG.characters = [];
 
 			SONG.characters.push({
 				name: SONG.gfVersion != null ? SONG.gfVersion : 'gf',
-				x: 0,
-				y: 0,
-				visible: true,
-				isGF: true,
+				x: 0, y: 0, visible: true,
+				isGF: true, type: 'Girlfriend',
 				strumsGroup: 'gf_strums_0'
 			});
 
 			SONG.characters.push({
 				name: SONG.player2 != null ? SONG.player2 : 'dad',
-				x: 0,
-				y: 0,
-				visible: true,
+				x: 0, y: 0, visible: true,
+				type: 'Opponent',
 				strumsGroup: 'cpu_strums_0'
 			});
 
 			SONG.characters.push({
 				name: SONG.player1 != null ? SONG.player1 : 'bf',
-				x: 0,
-				y: 0,
-				visible: true,
+				x: 0, y: 0, visible: true,
+				type: 'Player',
 				strumsGroup: 'player_strums_0'
 			});
 		}
@@ -650,19 +656,19 @@ class PlayState extends funkin.states.MusicBeatState
 			var charData = SONG.characters[i];
 			var slot = new CharacterSlot(charData, i);
 
-			// Si la posición es (0,0), usar posición del stage
+			// Si la posición es (0,0), usar posición del stage según el TIPO del personaje
 			if (charData.x == 0 && charData.y == 0)
 			{
-				switch (i)
+				switch (slot.charType)
 				{
-					case 0: // GF
+					case 'Girlfriend':
 						slot.character.setPosition(currentStage.gfPosition.x, currentStage.gfPosition.y);
-					case 1: // Dad
+					case 'Opponent':
 						slot.character.setPosition(currentStage.dadPosition.x, currentStage.dadPosition.y);
-					case 2: // BF (o segundo oponente)
+					case 'Player':
 						slot.character.setPosition(currentStage.boyfriendPosition.x, currentStage.boyfriendPosition.y);
 					default:
-						// Posicionamiento personalizado para personajes adicionales
+						// Personajes tipo "Other" o sin tipo: sin posición automática
 				}
 			}
 			else
@@ -671,8 +677,37 @@ class PlayState extends funkin.states.MusicBeatState
 				slot.character.setPosition(charData.x, charData.y);
 			}
 
+			// BUG FIX #CHARPOS: Aplicar el offset de posición del personaje (campo "position"
+			// en Psych). En Psych Engine, este offset se SUMA a la posición del stage.
+			// Ejemplo: dad en el stage está en x=100, pero su JSON tiene position=[50, 0]
+			// → posición final = x=150. Sin este fix, el personaje siempre aparece en x=100.
+			if (slot.character.characterData != null)
+			{
+				final posOff = slot.character.characterData.positionOffset;
+				if (posOff != null && posOff.length >= 2)
+				{
+					slot.character.x += posOff[0];
+					slot.character.y += posOff[1];
+				}
+			}
+
 			characterSlots.push(slot);
 			add(slot.character);
+		}
+
+		// BUG FIX #HIDEGF: hide_girlfriend del stage de Psych (y el campo nativo de Cool).
+		// La versión anterior leía hideGirlfriend en Stage.hx pero nunca lo aplicaba
+		// a la visibilidad del personaje GF en PlayState. La GF seguía visible siempre.
+		if (currentStage != null && currentStage.hideGirlfriend)
+		{
+			for (slot in characterSlots)
+			{
+				if (slot.isGFSlot && slot.character != null)
+				{
+					slot.character.visible = false;
+					trace('[PlayState] hideGirlfriend: ocultando "${slot.character.curCharacter}"');
+				}
+			}
 		}
 	}
 
@@ -804,10 +839,14 @@ class PlayState extends funkin.states.MusicBeatState
 			cameraController.defaultZoom = currentStage.defaultCamZoom;
 
 		// Aplicar los offsets de cámara definidos en el stage JSON.
-		// Sin esto, cameraBoyfriend/cameraDad del stage son ignorados
-		// y la cámara usa solo los offsets del personaje (character JSON).
+		// BUG FIX: cameraGirlfriend y cameraSpeed eran convertidos desde Psych pero
+		// nunca se cableaban aquí — la GF siempre usaba el offset del Dad, y la
+		// velocidad de cámara era siempre la hardcodeada (2.4) sin importar el stage.
 		cameraController.stageOffsetBf.set(currentStage.cameraBoyfriend.x, currentStage.cameraBoyfriend.y);
 		cameraController.stageOffsetDad.set(currentStage.cameraDad.x, currentStage.cameraDad.y);
+		cameraController.stageOffsetGf.set(currentStage.cameraGirlfriend.x, currentStage.cameraGirlfriend.y);
+		// cameraSpeed es un multiplicador: 1.0 = default. Se aplica sobre BASE_LERP_SPEED.
+		cameraController.lerpSpeed = CameraController.BASE_LERP_SPEED * currentStage.cameraSpeed;
 
 		// Character controller
 		characterController = new CharacterController();
@@ -825,8 +864,8 @@ class PlayState extends funkin.states.MusicBeatState
 		inputHandler.inputBuffering = true;
 		inputHandler.bufferTime = 0.1; // 100ms
 
-		// NUEVO: Callback para release de hold notes
-		// inputHandler.onKeyRelease = onKeyRelease;  for now note hold splashes disabled :(
+		// NUEVO: Callback para release de hold notes — dispara animación fin del hold cover
+		inputHandler.onKeyRelease = onKeyRelease;
 
 		// AJUSTE: Calcular posición de strums según downscroll
 		if (FlxG.save.data.downscroll)
@@ -1607,9 +1646,26 @@ class PlayState extends funkin.states.MusicBeatState
 		{
 			for (i in 0...4)
 			{
-				if (inputHandler.pressed[i] && !isPlayingConfirm(i))
+				if (!isPlayingConfirm(i))
 				{
-					playerStrumsGroup.playPressed(i);
+					if (inputHandler.pressed[i])
+					{
+						// Tecla recién pulsada: activar pressed inmediatamente
+						playerStrumsGroup.playPressed(i);
+					}
+					else if (inputHandler.held[i])
+					{
+						// Tecla mantenida: si el confirm ya terminó y el strum volvió a
+						// 'static', cambiarlo a 'pressed' para que no se vea en reposo
+						// mientras el jugador sigue pulsando.
+						var strum = playerStrumsGroup.getStrum(i);
+						if (strum != null && strum.animation != null
+							&& strum.animation.curAnim != null
+							&& strum.animation.curAnim.name == 'static')
+						{
+							playerStrumsGroup.playPressed(i);
+						}
+					}
 				}
 
 				if (inputHandler.released[i])
@@ -1630,10 +1686,19 @@ class PlayState extends funkin.states.MusicBeatState
 			if (Std.isOfType(spr, StrumNote))
 			{
 				var strumNote:StrumNote = cast(spr, StrumNote);
+				var curAnim = strumNote.animation.curAnim.name;
 
-				if (inputHandler.pressed[spr.ID] && strumNote.animation.curAnim.name != 'confirm')
+				if (curAnim != 'confirm')
 				{
-					strumNote.playAnim('pressed');
+					if (inputHandler.pressed[spr.ID])
+					{
+						strumNote.playAnim('pressed');
+					}
+					else if (inputHandler.held[spr.ID] && curAnim == 'static')
+					{
+						// Confirm terminó y el jugador sigue pulsando → mostrar pressed
+						strumNote.playAnim('pressed');
+					}
 				}
 
 				if (inputHandler.released[spr.ID])
@@ -1644,9 +1709,18 @@ class PlayState extends funkin.states.MusicBeatState
 			else
 			{
 				// Fallback para FlxSprite genérico
-				if (inputHandler.pressed[spr.ID] && spr.animation.curAnim.name != 'confirm')
+				var curAnim = spr.animation.curAnim.name;
+
+				if (curAnim != 'confirm')
 				{
-					spr.animation.play('pressed');
+					if (inputHandler.pressed[spr.ID])
+					{
+						spr.animation.play('pressed');
+					}
+					else if (inputHandler.held[spr.ID] && curAnim == 'static')
+					{
+						spr.animation.play('pressed');
+					}
 				}
 
 				if (inputHandler.released[spr.ID])
@@ -1740,8 +1814,9 @@ class PlayState extends funkin.states.MusicBeatState
 				}
 			} // end !_ntCancelled
 
-			// Animate character - USAR ÍNDICE FIJO DEL JUGADOR
-			var playerCharIndex:Int = 2;
+			// Animate character - BUSCAR ÍNDICE DEL JUGADOR POR TIPO
+			var playerCharIndex:Int = characterController.findPlayerIndex();
+			if (playerCharIndex < 0) playerCharIndex = 2; // fallback legacy
 			if (characterSlots.length > playerCharIndex)
 			{
 				characterController.singByIndex(playerCharIndex, note.noteData);
@@ -1826,8 +1901,9 @@ class PlayState extends funkin.states.MusicBeatState
 			}
 		}
 
-		// Animate - USAR ÍNDICE FIJO DEL JUGADOR
-		var playerCharIndex:Int = 2;
+		// Animate - BUSCAR ÍNDICE DEL JUGADOR POR TIPO
+		var playerCharIndex:Int = characterController.findPlayerIndex();
+		if (playerCharIndex < 0) playerCharIndex = 2; // fallback legacy
 		if (characterSlots.length > playerCharIndex)
 		{
 			var slot = characterSlots[playerCharIndex];
@@ -1840,8 +1916,11 @@ class PlayState extends funkin.states.MusicBeatState
 			boyfriend.playAnim('sing' + anims[direction] + 'miss', true);
 		}
 
-		if (gf != null && gf.animOffsets.exists('sad'))
-			gf.playAnim('sad', true);
+		// GF sad anim - buscar por tipo (funciona aunque GF no esté en índice 0)
+		var gfIdx = characterController.findGFIndex();
+		var gfChar = gfIdx >= 0 ? characterController.getCharacter(gfIdx) : gf;
+		if (gfChar != null && gfChar.animOffsets.exists('sad'))
+			gfChar.playAnim('sad', true);
 
 		if (!_ntMissCancelled)
 			uiManager.showMissPopup();
@@ -1888,33 +1967,43 @@ class PlayState extends funkin.states.MusicBeatState
 
 		var altAnim:String = getHasAltAnim(curStep) ? '-alt' : '';
 
-		// ✅ FIX: Animar solo al personaje DAD (índice 1), NO a GF
-		// GF (índice 0) solo baila, no canta
+		// ✅ FIX: Buscar índice del oponente por TIPO (no hardcodeado a 1)
+		// Soporte para gfSing y múltiples grupos CPU
 		var section = getSectionAsClass(curStep);
 		if (section != null)
 		{
 			var charIndices = section.getActiveCharacterIndices(1, 2); // (dadIndex, bfIndex)
 
-			// ✅ ARREGLADO: Solo hacer cantar al personaje DAD (índice 1)
-			// GF (índice 0) NO debe cantar, solo bailar
-			var dadIndex:Int = 1; // Dad es siempre el índice 1
+			// Índice dinámico del oponente
+			var dadIndex:Int = characterController.findOpponentIndex();
+			if (dadIndex < 0) dadIndex = 1; // fallback legacy
 
-			if (characterSlots.length > dadIndex)
+			// Soporte sección gfSing
+			if (section.gfSing == true)
+			{
+				characterController.singGF(note.noteData, altAnim);
+			}
+			else if (characterSlots.length > dadIndex)
 			{
 				var dadSlot = characterSlots[dadIndex];
 				if (dadSlot != null && dadSlot.isActive && dadSlot.character != null)
-				{
-					// Hacer cantar solo a Dad
 					characterController.singByIndex(dadIndex, note.noteData, altAnim);
-				}
 			}
 			else if (dad != null)
 			{
-				// Fallback al sistema legacy si no hay slots
 				characterController.sing(dad, note.noteData, altAnim);
 			}
 
-			// Camera offset - usar el primer personaje activo del CPU para el offset de cámara
+			// Routing adicional para múltiples grupos CPU
+			if (note.strumsGroupIndex > 0 && strumsGroups.length > note.strumsGroupIndex)
+			{
+				var sg = strumsGroups[note.strumsGroupIndex].data.id;
+				var extraIdx = characterController.findByStrumsGroup(sg);
+				if (extraIdx >= 0 && extraIdx != dadIndex)
+					characterController.singByIndex(extraIdx, note.noteData, altAnim);
+			}
+
+			// Camera offset
 			if (charIndices.length > 0)
 			{
 				var activeChar = characterController.getCharacter(charIndices[0]);
@@ -1930,8 +2019,9 @@ class PlayState extends funkin.states.MusicBeatState
 		}
 		else
 		{
-			// FALLBACK: Si la sección es null, animar solo a Dad (índice 1)
-			var dadIndex:Int = 1;
+			// FALLBACK: Si la sección es null, animar solo al oponente (por tipo)
+			var dadIndex:Int = characterController.findOpponentIndex();
+			if (dadIndex < 0) dadIndex = 1; // fallback legacy
 
 			if (characterSlots.length > dadIndex)
 			{
@@ -2248,7 +2338,9 @@ class PlayState extends funkin.states.MusicBeatState
 
 		if (SONG.validScore)
 		{
-			Highscore.saveScore(SONG.song, songScore, storyDifficulty);
+			final diffSuffix = funkin.data.CoolUtil.difficultySuffix();
+			Highscore.saveScore(SONG.song, songScore, diffSuffix);
+			Highscore.saveRating(SONG.song, gameState.accuracy, diffSuffix);
 		}
 
 		// ── Outro video (meta.json: "outroVideo": "mi-video") ─────────────────
@@ -2458,6 +2550,12 @@ class PlayState extends funkin.states.MusicBeatState
 		}
 		if (vocals != null)
 			vocals.pause();
+
+		if (camHUD.alpha == 0)
+			camHUD.alpha = 1;
+
+		if (!camHUD.visible)
+			camHUD.visible = true;
 
 		// Configurar parámetros del rewind
 		_rewindFromPos = Conductor.songPosition;
@@ -2954,7 +3052,7 @@ class PlayState extends funkin.states.MusicBeatState
 				FlxG.sound.playMusic(Paths.music('freakyMenu'));
 
 				if (SONG.validScore)
-					Highscore.saveWeekScore(storyWeek, campaignScore, storyDifficulty);
+					Highscore.saveWeekScore(storyWeek, campaignScore, funkin.data.CoolUtil.difficultySuffix());
 
 				FlxG.save.flush();
 				LoadingState.loadAndSwitchState(new RatingState());
@@ -3131,11 +3229,16 @@ class PlayState extends funkin.states.MusicBeatState
 		// Obtener los nombres de los personajes BF y Dad desde el chart
 		var bfName = SONG.player1 != null ? SONG.player1 : 'bf';
 		var dadName = SONG.player2 != null ? SONG.player2 : 'dad';
-		// Si el chart usa el nuevo array de characters, usar esos nombres
-		if (SONG.characters != null && SONG.characters.length >= 3)
+		// Si el chart usa el nuevo array de characters, buscar por TIPO (no por índice)
+		if (SONG.characters != null && SONG.characters.length > 0)
 		{
-			bfName = SONG.characters[2].name; // índice 2 = jugador
-			dadName = SONG.characters[1].name; // índice 1 = oponente
+			for (c in SONG.characters)
+			{
+				if (c.type == 'Player' || c.type == 'Boyfriend')
+					bfName = c.name;
+				else if (c.type == 'Opponent' || c.type == 'Dad')
+					dadName = c.name;
+			}
 		}
 
 		final bf = Paths.loadVoicesForChar(SONG.song, bfName, diffSuffix);

@@ -998,8 +998,8 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 			}
 
 			#if !switch
-			intendedScore = Highscore.getScore(songs[curSelected - 1].songName, curDifficulty);
-			intendedRating = Highscore.getRating(songs[curSelected - 1].songName, curDifficulty);
+			intendedScore = Highscore.getScore(songs[curSelected - 1].songName, funkin.data.CoolUtil.difficultySuffix());
+			intendedRating = Highscore.getRating(songs[curSelected - 1].songName, funkin.data.CoolUtil.difficultySuffix());
 			#end
 		}
 

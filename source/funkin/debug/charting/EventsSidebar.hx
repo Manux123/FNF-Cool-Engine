@@ -136,7 +136,8 @@ class EventsSidebar extends FlxGroup
 	public function setScrollY(scrollY:Float, currentGridY:Float):Void
 	{
 		this.gridScrollY = scrollY;
-		this.gridY       = currentGridY;
+		// gridY (gridBG.y) includes _gridWindowOffset which changes while playing —
+		// we must NOT store it; event Y is computed as (100 - gridScrollY) like notes.
 		refreshEvents();
 	}
 
@@ -155,8 +156,10 @@ class EventsSidebar extends FlxGroup
 			// Ocultar el que se está arrastrando
 			if (_dragging && _dragEvt == evt) continue;
 
-			// Subtract gridScrollY so events scroll with the grid (same as note Y formula).
-			var evtY = (gridY - gridScrollY) + (evt.stepTime * GRID_SIZE);
+			// Same Y formula as notes: (100 - gridScrollY) + absoluteStep * GRID_SIZE
+			// gridBG.y must NOT be used here because it includes _gridWindowOffset
+			// which shifts while music plays, causing events to drift.
+			var evtY = (100 - gridScrollY) + (evt.stepTime * GRID_SIZE);
 			if (evtY < 80 || evtY > FlxG.height - 30) continue;
 
 			var evtColor = _eventColor(evt.type);
@@ -220,7 +223,7 @@ class EventsSidebar extends FlxGroup
 
 			if (FlxG.mouse.justReleased)
 			{
-				var relY    = (_dragSprite.y + EVENT_H / 2) - (gridY - gridScrollY);
+				var relY    = (_dragSprite.y + EVENT_H / 2) - (100 - gridScrollY);
 				var newStep = Math.max(0, Math.round(relY / GRID_SIZE));
 				_saveEvtHistory();
 				_dragEvt.stepTime = newStep;
@@ -237,9 +240,10 @@ class EventsSidebar extends FlxGroup
 
 		if (isHoveringBorder)
 		{
-			var relY     = my - (gridY - gridScrollY);
+			var base     = 100 - gridScrollY;
+			var relY     = my - base;
 			var beatSize = GRID_SIZE * 4;
-			hoverBeatY   = (gridY - gridScrollY) + (Math.floor(relY / beatSize) * beatSize);
+			hoverBeatY   = base + (Math.floor(relY / beatSize) * beatSize);
 
 			var justShown = !addEventBtn.visible;
 			addEventBtn.x     = gridX - 24;
@@ -285,7 +289,7 @@ class EventsSidebar extends FlxGroup
 		if (_song.events == null) return;
 		for (evt in _song.events)
 		{
-			var evtY = (gridY - gridScrollY) + (evt.stepTime * GRID_SIZE);
+			var evtY = (100 - gridScrollY) + (evt.stepTime * GRID_SIZE);
 			var evtX = gridX - SIDEBAR_WIDTH - 5;
 			if (mx >= evtX && mx <= gridX - 5 && my >= evtY - EVENT_H && my <= evtY + EVENT_H)
 			{
@@ -323,7 +327,7 @@ class EventsSidebar extends FlxGroup
 		if (_song.events == null) return;
 		for (evt in _song.events)
 		{
-			var evtY = (gridY - gridScrollY) + (evt.stepTime * GRID_SIZE);
+			var evtY = (100 - gridScrollY) + (evt.stepTime * GRID_SIZE);
 			var evtX = gridX - SIDEBAR_WIDTH - 5;
 			if (mx >= evtX && mx <= gridX && my >= evtY - EVENT_H && my <= evtY + EVENT_H)
 			{

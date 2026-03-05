@@ -25,6 +25,8 @@ typedef CharacterData =
 	@:optional var healthIcon:String;
 	@:optional var healthBarColor:String;
 	@:optional var cameraOffset:Array<Float>;
+	/** Offset de posición global del personaje (campo "position" de Psych). Se suma a la posición del stage. */
+	@:optional var positionOffset:Array<Float>;
 	@:optional var gameOverSound:String;
 	@:optional var gameOverMusic:String;
 	@:optional var gameOverEnd:String;
@@ -90,7 +92,6 @@ class Character extends FunkinSprite
 	public var animOffsets:Map<String, Array<Dynamic>>;
 	public var debugMode:Bool = false;
 
-	public var canSing:Bool = true;
 	public var stunned:Bool = false;
 	public var isPlayer:Bool = false;
 	public var curCharacter:String = 'bf';
@@ -149,6 +150,41 @@ class Character extends FunkinSprite
 		trace('[Character] Todos los cachés de Character limpiados.');
 	}
 
+	/**
+	 * Precachea un personaje SIN añadirlo al stage ni a ninguna cámara.
+	 *
+	 * Carga en background:
+	 *   • JSON de datos → _dataCache  (Character.loadCharacterData)
+	 *   • Spritesheet PNG/XML → FunkinSprite._frameCache  (FlxAtlasFrames en VRAM)
+	 *
+	 * Llamar esto durante la fase de carga (antes del gameplay) elimina
+	 * el hitch que ocurre al cambiar de personaje con Change Character
+	 * si el personaje nuevo no había sido cargado antes.
+	 *
+	 * @param name  Nombre del personaje a precachear
+	 */
+	public static function precacheCharacter(name:String):Void
+	{
+		if (name == null || name == '' || _dataCache.exists(name)) return;
+
+		try
+		{
+			// Crear una instancia temporal completamente fuera de pantalla
+			// y sin añadirla a ningún grupo/cámara.
+			// El constructor llama loadCharacterData + characterLoad internamente,
+			// lo que rellena _dataCache y FunkinSprite._frameCache.
+			final dummy = new Character(-99999, -99999, name, false);
+			// Destruir inmediatamente para liberar la instancia Haxe,
+			// pero los assets PNG/XML ya quedaron en los caches estáticos.
+			dummy.destroy();
+			trace('[Character] Precacheo completado: "$name"');
+		}
+		catch (e:Dynamic)
+		{
+			trace('[Character] Precacheo fallido para "$name": $e');
+		}
+	}
+
 	// ── Constructor ───────────────────────────────────────────────────────────
 
 	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false)
@@ -176,7 +212,13 @@ class Character extends FunkinSprite
 
 		dance();
 
-		isPlayer = characterData.isPlayer;
+		// El isPlayer del constructor (pasado por CharacterSlot segun el tipo de slot)
+		// es la fuente de verdad en runtime. characterData.isPlayer solo puede promover
+		// de false -> true, nunca de true -> false.
+		// Necesario para mods Psych: PsychConverter siempre pone isPlayer:false
+		// porque no conoce el rol en runtime, y no debe sobreescribir al isPlayer real.
+		if (characterData.isPlayer)
+			isPlayer = true;
 
 		if (characterData.flipX != null && characterData.flipX)
 			flipX = characterData.flipX;
@@ -252,6 +294,8 @@ class Character extends FunkinSprite
 		healthIcon = data.healthIcon != null ? data.healthIcon : character;
 		healthBarColor = data.healthBarColor != null ? FlxColor.fromString(data.healthBarColor) : healthBarColor;
 		cameraOffset = data.cameraOffset != null ? data.cameraOffset : cameraOffset;
+		// positionOffset se almacena en characterData.positionOffset y se aplica en PlayState/AnimationDebug
+		// after setPosition(), por lo que no se toca aquí (evitar double-apply).
 	}
 
 	function characterLoad(character:String):Void
@@ -445,7 +489,7 @@ class Character extends FunkinSprite
 			if (curAnimName.startsWith(_singAnimPrefix))
 			{
 				holdTimer += elapsed;
-				if (holdTimer >= Conductor.stepCrochet * 4 * 0.001 && canSing)
+				if (holdTimer >= Conductor.stepCrochet * 4 * 0.001)
 				{
 					returnToIdle();
 					holdTimer = 0;
@@ -479,6 +523,32 @@ class Character extends FunkinSprite
 		{
 			playAnim(_idleAnim);
 		}
+	}
+
+	/**
+	 * Recarga completamente los datos y visuales de este personaje con un nuevo nombre.
+	 * Útil para event scripts (ChangeCharacter.hx) sin necesidad de acceder a métodos privados.
+	 * Preserva la posición actual y el flag isPlayer.
+	 *
+	 * @param newName  Nombre del personaje a cargar (debe existir en assets/characters/)
+	 */
+	public function reloadCharacter(newName:String):Void
+	{
+		if (newName == null || newName == '') return;
+		final savedX      = x;
+		final savedY      = y;
+		final savedPlayer = isPlayer;
+
+		// Borrar animaciones y offsets del personaje anterior para evitar acumulación
+		animOffsets.clear();
+		animation.destroyAnimations();
+
+		curCharacter = newName;
+		loadCharacterData(newName);
+		characterLoad(newName);
+
+		isPlayer = savedPlayer;
+		setPosition(savedX, savedY);
 	}
 
 	public function dance():Void

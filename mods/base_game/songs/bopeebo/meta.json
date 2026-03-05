@@ -1,0 +1,12 @@
+{
+    "ui": "default",
+    "noteSkin": "default",
+    "hideCombo": false,
+    "hideRatings": false,
+    "hudVisible": true,
+    "artist": "Kawai Sprite",
+    "difficultyOverrides": {
+        "erect":     { "artist": "Kawai Sprite (feat. Saruky)" },
+        "nightmare": { "artist": "Kawai Sprite (feat. Saruky)" }
+    }
+}

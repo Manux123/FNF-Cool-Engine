@@ -1,0 +1,256 @@
+{
+	"dadPosition": [
+		-203.33341683009,
+		46.6667007927961
+	],
+	"gfPosition": [
+		168.333333333333,
+		148.333333333333
+	],
+	"gfVersion": "gf",
+	"isPixelStage": false,
+	"cameraDad": [
+		0,
+		0
+	],
+	"name": "mainStageErect",
+	"boyfriendPosition": [
+		789.164385180904,
+		461.017836071663
+	],
+	"defaultZoom": 0.85,
+	"hideGirlfriend": false,
+	"cameraBoyfriend": [
+		0,
+		0
+	],
+	"elements": [
+		{
+			"asset": "brightLightSmall",
+			"zIndex": 0,
+			"aboveChars": false,
+			"position": [
+				965,
+				-105
+			],
+			"scale": [
+				1,
+				1
+			],
+			"type": "sprite",
+			"visible": true,
+			"name": "brightLightSmall",
+			"flipX": false,
+			"color": null,
+			"scrollFactor": [
+				1.2,
+				1.2
+			],
+			"antialiasing": true,
+			"flipY": false,
+			"alpha": 1
+		},
+		{
+			"asset": "crowd",
+			"zIndex": 0,
+			"aboveChars": false,
+			"position": [
+				680,
+				295
+			],
+			"scale": [
+				1,
+				1
+			],
+			"type": "animated",
+			"visible": true,
+			"name": "crowd",
+			"color": null,
+			"flipX": false,
+			"antialiasing": true,
+			"scrollFactor": [
+				0.8,
+				0.8
+			],
+			"firstAnimation": "idle",
+			"flipY": false,
+			"alpha": 1,
+			"animations": [
+				{
+					"framerate": 24,
+					"prefix": "idle",
+					"looped": true,
+					"indices": null,
+					"name": "idle"
+				}
+			]
+		},
+		{
+			"asset": "bg",
+			"zIndex": 0,
+			"aboveChars": false,
+			"position": [
+				-765.296437388173,
+				-240.178364869155
+			],
+			"scale": [
+				1,
+				1
+			],
+			"type": "sprite",
+			"visible": true,
+			"name": "bg",
+			"flipX": false,
+			"color": null,
+			"scrollFactor": [
+				1,
+				1
+			],
+			"antialiasing": true,
+			"flipY": false,
+			"alpha": 1
+		},
+		{
+			"asset": "server",
+			"zIndex": 0,
+			"aboveChars": false,
+			"position": [
+				-992.149284463567,
+				205.781788252844
+			],
+			"scale": [
+				1,
+				1
+			],
+			"type": "sprite",
+			"visible": true,
+			"name": "server",
+			"color": null,
+			"flipX": false,
+			"antialiasing": true,
+			"scrollFactor": [
+				1,
+				1
+			],
+			"flipY": false,
+			"alpha": 1
+		},
+		{
+			"zIndex": 0,
+			"asset": "lights",
+			"aboveChars": true,
+			"position": [
+				-845,
+				-245
+			],
+			"visible": true,
+			"type": "sprite",
+			"scale": [
+				1,
+				1
+			],
+			"name": "lights",
+			"flipX": false,
+			"color": null,
+			"antialiasing": true,
+			"scrollFactor": [
+				1.2,
+				1.2
+			],
+			"flipY": false,
+			"alpha": 1
+		},
+		{
+			"asset": "orangeLight",
+			"zIndex": 0,
+			"aboveChars": false,
+			"position": [
+				190,
+				-500
+			],
+			"scale": [
+				1,
+				20
+			],
+			"type": "sprite",
+			"visible": true,
+			"name": "orangeLight",
+			"color": null,
+			"flipX": false,
+			"antialiasing": true,
+			"scrollFactor": [
+				1,
+				1
+			],
+			"flipY": false,
+			"alpha": 1
+		},
+		{
+			"zIndex": 0,
+			"asset": "lightgreen",
+			"position": [
+				-180.000000000001,
+				250
+			],
+			"visible": true,
+			"type": "sprite",
+			"scale": [
+				1,
+				1
+			],
+			"name": "lightgreen",
+			"antialiasing": true,
+			"scrollFactor": [
+				1,
+				1
+			],
+			"alpha": 1
+		},
+		{
+			"zIndex": 0,
+			"asset": "lightred",
+			"aboveChars": false,
+			"position": [
+				-105.000000000001,
+				560
+			],
+			"visible": true,
+			"type": "sprite",
+			"scale": [
+				1,
+				1
+			],
+			"name": "lightred",
+			"flipX": false,
+			"color": null,
+			"antialiasing": true,
+			"scrollFactor": [
+				1,
+				1
+			],
+			"flipY": false,
+			"alpha": 1
+		},
+		{
+			"asset": "lightAbove",
+			"zIndex": 0,
+			"position": [
+				830.000000000001,
+				-116.666666652375
+			],
+			"scale": [
+				1,
+				1
+			],
+			"type": "sprite",
+			"visible": true,
+			"name": "lightAbove",
+			"scrollFactor": [
+				1,
+				1
+			],
+			"antialiasing": true,
+			"alpha": 1
+		}
+	]
+}

@@ -8,51 +8,55 @@ import funkin.gameplay.objects.stages.Stage;
 /**
  * PsychStageConverter
  * ─────────────────────────────────────────────────────────────────────────────
- * Converts a Psych Engine 0.7.x stage JSON into Cool Engine's StageData.
+ * Converts a Psych Engine 0.6.x / 0.7.x stage JSON into Cool Engine's StageData.
  *
- * ── Psych 0.7.x stage JSON structure ────────────────────────────────────────
- * Psych wraps everything in a "stageJson" key, OR stores it flat:
- *
+ * ── Psych StageFile real (de StageData.hx) ──────────────────────────────────
  * {
- *   "stageJson": {
- *     "defaultZoom":    0.9,
- *     "isPixelStage":   false,
- *     "hide_girlfriend": false,
- *     "girlfriend":     [400, 130],
- *     "boyfriend":      [770, 450],
- *     "opponent":       [100, 100],
- *     "camera_boyfriend": [0, 0],
- *     "camera_opponent":  [0, 0],
- *     "stageObjects": [
- *       {
- *         "image":        "stageback",
- *         "libraryName":  "",
- *         "position":     [-600, -200],
- *         "scrollFactor": [0.9, 0.9],
- *         "scale":        [1, 1],
- *         "angle":        0,
- *         "alpha":        1,
- *         "isAnimated":   false,
- *         "frameRate":    24,
- *         "animations":   [],
- *         "startingAnim": "",
- *         "antialiasing": true,
- *         "visible":      true,
- *         "flipX":        false,
- *         "flipY":        false,
- *         "depth":        0,
- *         "color":        "0xFFFFFFFF",
- *         "blend":        ""
- *       }
- *     ]
- *   }
+ *   "directory":    "",          ← biblioteca de assets compartida (p.ej. "week4")
+ *   "defaultZoom":  0.9,
+ *   "isPixelStage": false,
+ *   "stageUI":      "normal",    ← "normal" | "pixel" | custom
+ *   "boyfriend":    [770, 100],  ← posición X/Y (array de 2 floats)
+ *   "girlfriend":   [400, 130],
+ *   "opponent":     [100, 100],
+ *   "hide_girlfriend": false,
+ *   "camera_boyfriend":  [0, 0],
+ *   "camera_opponent":   [0, 0],
+ *   "camera_girlfriend": [0, 0],  ← BUG FIX #6: campo que faltaba completamente
+ *   "camera_speed":      1.0,     ← BUG FIX #7: campo que faltaba completamente
+ *   "objects": [ ... ]            ← BUG FIX #5: Psych 0.6 usa "objects", no "stageObjects"
  * }
  *
- * ── Notes ────────────────────────────────────────────────────────────────────
- * - Psych stages may also have a companion Lua script. This converter handles
- *   only the JSON part. Lua scripts are silently ignored (unsupported).
- * - "libraryName" is Psych's atlas library system — we treat it as a path prefix.
- * - "depth" in Psych = zIndex in Cool (lower depth = drawn first).
+ * ── Formato de cada objeto en Psych (campo "objects") ───────────────────────
+ * {
+ *   "name":         "bg",
+ *   "image":        "stageback",
+ *   "libraryName":  "",           ← overrides "directory" para este sprite
+ *   "position":     [-600, -200],
+ *   "scrollFactor": [0.9, 0.9],
+ *   "scale":        [1, 1],       ← puede ser Float o Array<Float>
+ *   "angle":        0,
+ *   "alpha":        1,
+ *   "isAnimated":   false,
+ *   "frameRate":    24,
+ *   "animations":   [],
+ *   "startingAnim": "",
+ *   "antialiasing": true,
+ *   "visible":      true,
+ *   "flipX":        false,
+ *   "flipY":        false,
+ *   "depth":        0,
+ *   "color":        "0xFFFFFFFF",
+ *   "blend":        ""
+ * }
+ *
+ * ── Notas ────────────────────────────────────────────────────────────────────
+ * - Psych 0.7.x Stage Editor guarda los sprites en "stageObjects"; Psych 0.6.x
+ *   y la mayoría de mods los guardan en "objects". Este convertor soporta AMBOS.
+ * - "directory" es el nombre de la biblioteca de assets de Psych (librería compartida).
+ *   Se mapea a stageData.directory para que el cargador de stages pueda precargarlo.
+ * - "libraryName" en cada objeto sobreescribe el directorio global por sprite.
+ * - Lua scripts (.lua) asociados al stage son ignorados (no soportados).
  */
 class PsychStageConverter
 {
@@ -65,8 +69,14 @@ class PsychStageConverter
 		trace('[PsychStageConverter] Converting stage "$stageName"...');
 
 		final root:Dynamic = Json.parse(rawJson);
-		// Psych can wrap in "stageJson" or store flat
+		// Psych puede envolver en "stageJson" o almacenar plano
 		final ps:Dynamic   = (Reflect.hasField(root, 'stageJson')) ? root.stageJson : root;
+
+		// ── BUG FIX #8: "directory" — biblioteca de assets de Psych ──────────
+		// Los mods de Psych usan esto para precargar una librería de assets
+		// compartida (equivalente al swf/pack que usa FlxAtlasFrames).
+		// Sin esto, los sprites del escenario no encuentran sus imágenes.
+		final directory:String = _str(ps.directory, '');
 
 		// ── Character positions ───────────────────────────────────────────────
 		final gfPos  = _arr2(ps.girlfriend,      [400.0, 130.0]);
@@ -75,9 +85,24 @@ class PsychStageConverter
 		final camBF  = _arr2(ps.camera_boyfriend, [0.0, 0.0]);
 		final camDad = _arr2(ps.camera_opponent,  [0.0, 0.0]);
 
+		// BUG FIX #6: Psych tiene camera_girlfriend además de camera_boyfriend/opponent.
+		// La versión anterior lo ignoraba completamente, rompiendo stages con GF activa.
+		final camGF  = _arr2(ps.camera_girlfriend, [0.0, 0.0]);
+
+		// BUG FIX #7: camera_speed controla la velocidad del lerp de cámara.
+		// Sin este campo los cambios de cámara son instantáneos en lugar de suaves.
+		final camSpeed:Float = _float(ps.camera_speed, 1.0);
+
 		// ── Elements ──────────────────────────────────────────────────────────
 		final elements:Array<Dynamic> = [];
-		final psychObjs:Array<Dynamic> = _getArray(ps.stageObjects);
+
+		// BUG FIX #5: Psych 0.7.x Stage Editor usa "stageObjects", pero Psych 0.6.x
+		// y la MAYORÍA de mods reales usan "objects". Hay que probar ambos.
+		// Si ninguno existe, usar array vacío (stage sin sprites estáticos).
+		var rawObjects:Dynamic = ps.stageObjects;
+		if (rawObjects == null || !Std.isOfType(rawObjects, Array))
+			rawObjects = ps.objects;
+		final psychObjs:Array<Dynamic> = _getArray(rawObjects);
 
 		for (i in 0...psychObjs.length)
 		{
@@ -86,16 +111,16 @@ class PsychStageConverter
 			final hasAnims   = isAnimated && _getArray(obj.animations).length > 0;
 
 			// ── Image path ────────────────────────────────────────────────────
-			// Psych stores just the filename (e.g. "stageback").
-			// "libraryName" is an optional atlas library prefix (usually blank).
-			final lib   = _str(obj.libraryName, '');
+			// "libraryName" del objeto sobreescribe el "directory" global.
+			// Si ambos están vacíos, la imagen es simplemente el filename.
+			final lib   = _str(obj.libraryName != null ? obj.libraryName : directory, '');
 			final img   = _str(obj.image, '');
 			final asset = (lib != '') ? '$lib/$img' : img;
 
 			// ── Position ──────────────────────────────────────────────────────
 			final pos = _arr2(obj.position, [0.0, 0.0]);
 
-			// ── Color: Psych uses "0xAARRGGBB" string ──────────────────────────
+			// ── Color: Psych usa "0xAARRGGBB" string ──────────────────────────
 			final colorStr = _psychColorToCool(_str(obj.color, ''));
 
 			// ── Build element ─────────────────────────────────────────────────
@@ -103,7 +128,8 @@ class PsychStageConverter
 				type:         hasAnims ? 'animated' : 'sprite',
 				asset:        asset,
 				position:     pos,
-				name:         'object_$i',
+				// Psych usa "name" en algunos objetos; si no existe, generar uno
+				name:         obj.name != null ? _str(obj.name, 'object_$i') : 'object_$i',
 				scrollFactor: _arr2(obj.scrollFactor, [1.0, 1.0]),
 				scale:        _psychScaleToCool(obj.scale),
 				antialiasing: _bool(obj.antialiasing, true),
@@ -140,19 +166,23 @@ class PsychStageConverter
 		// ── Assemble StageData ────────────────────────────────────────────────
 		final stageData:Dynamic = {
 			name:               stageName,
+			directory:          directory,          // BUG FIX #8
 			defaultZoom:        _float(ps.defaultZoom, 0.9),
 			isPixelStage:       _bool(ps.isPixelStage, false),
+			stageUI:            _str(ps.stageUI, 'normal'),
 			hideGirlfriend:     _bool(ps.hide_girlfriend, false),
 			gfPosition:         gfPos,
 			boyfriendPosition:  bfPos,
 			dadPosition:        dadPos,
 			cameraBoyfriend:    camBF,
 			cameraDad:          camDad,
+			cameraGirlfriend:   camGF,              // BUG FIX #6
+			cameraSpeed:        camSpeed,           // BUG FIX #7
 			elements:           elements,
-			scripts:            []   // Lua scripts not supported
+			scripts:            []                  // Lua scripts not supported
 		};
 
-		trace('[PsychStageConverter] Done. Elements: ${elements.length}');
+		trace('[PsychStageConverter] Done. Elements: ${elements.length}, directory: "$directory"');
 		return stageData;
 	}
 
@@ -227,6 +257,17 @@ class PsychStageConverter
 		return Math.isNaN(f) ? def : f;
 	}
 
+	// BUG FIX: algunos charts/stages de Psych serializan booleanos como enteros (0/1).
+	// La versión anterior usaba `(v == true)` que devuelve false para el entero 1.
+	// Eso rompía hide_girlfriend=1, isPixelStage=1, etc.
 	static inline function _bool(v:Dynamic, def:Bool):Bool
-		return (v != null) ? (v == true) : def;
+	{
+		if (v == null)  return def;
+		if (v == true)  return true;
+		if (v == false) return false;
+		// Enteros: 0 = false, cualquier otro valor = true
+		final n = Std.parseFloat(Std.string(v));
+		if (!Math.isNaN(n)) return n != 0;
+		return def;
+	}
 }

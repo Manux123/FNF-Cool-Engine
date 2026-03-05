@@ -5,6 +5,10 @@
 	"scale": 1.0,
 	"flipX": true,
 	"healthIcon":"bf",
+	"cameraOffset": [
+		0,
+		100
+	],
 	"animations": [
 		{
 			"name": "idle",

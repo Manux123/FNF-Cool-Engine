@@ -34,7 +34,7 @@ class GameState
 	/**
 	 * Contador genérico por nombre de rating.
 	 * Incluye los 4 legacy + cualquier rating custom del mod.
-	 * Ejemplo: ratingCounts['perfect'], ratingCounts['sick'], etc.
+	 * Example: ratingCounts['perfect'], ratingCounts['sick'], etc.
 	 */
 	public var ratingCounts:Map<String, Int> = new Map();
 
@@ -46,7 +46,7 @@ class GameState
 	private static inline var MAX_HEALTH:Float = 2.0;
 	private static inline var MIN_HEALTH:Float = 0.0;
 
-	public static var listArtist:String = 'Kawai Sprite';
+	public static var listArtist:String = 'unknown';
 	public static var deathCounter:Int = 0;
 
 	public function new()

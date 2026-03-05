@@ -45,6 +45,7 @@ class AddSongSubState extends FlxSubState
 	var noteSkinInput:FlxInputText;
 	var introVideoInput:FlxInputText;   // video de intro (antes del countdown)
 	var outroVideoInput:FlxInputText;   // video de outro (tras la cancion)
+	var artistInput:FlxInputText;       // artista de la canción (pause menu)
 
 	// === BUTTONS ===
 	var loadInstBtn:FlxButton;
@@ -233,6 +234,15 @@ class AddSongSubState extends FlxSubState
 		var h2 = new FlxText(windowX + 30, startY + 44, 430, "Video filename without extension  (empty = no cutscene)", 11);
 		h2.setFormat(Paths.font("vcr.ttf"), 11, funkin.debug.themes.EditorTheme.current.textSecondary, LEFT);
 		h2.alpha = 0; add(h2); FlxTween.tween(h2, {alpha: 0.7}, 0.3, {startDelay: 0.64});
+
+		// Row 3 — Artist
+		startY += 65;
+		_lbl(windowX + 30, startY, "Artist:", 0.66);
+		artistInput = _inp(windowX + 30, startY + 50, 400, "", 80, 0.68);
+
+		var h3 = new FlxText(windowX + 30, startY + 74, 430, "Shown in the pause menu. Leave empty to use the chart's artist field.", 11);
+		h3.setFormat(Paths.font("vcr.ttf"), 11, funkin.debug.themes.EditorTheme.current.textSecondary, LEFT);
+		h3.alpha = 0; add(h3); FlxTween.tween(h3, {alpha: 0.7}, 0.3, {startDelay: 0.70});
 	}
 
 	// ── Toggles: Story Mode + Needs Voices (same row) ─────────────────────
@@ -497,6 +507,7 @@ class AddSongSubState extends FlxSubState
 		var noteSkin   = noteSkinInput != null    ? noteSkinInput.text.trim()   : 'default';
 		var introVideo = introVideoInput != null  ? introVideoInput.text.trim() : '';
 		var outroVideo = outroVideoInput != null  ? outroVideoInput.text.trim() : '';
+		var artist     = artistInput != null      ? artistInput.text.trim()     : '';
 
 		#if sys
 		try
@@ -509,6 +520,7 @@ class AddSongSubState extends FlxSubState
 			meta.needsVoices    = needsVoices;
 			if (introVideo != '') meta.introVideo = introVideo;
 			if (outroVideo != '') meta.outroVideo = outroVideo;
+			if (artist     != '') meta.artist     = artist;
 
 			var metaPath = '$dir/meta.json';
 			File.saveContent(metaPath, Json.stringify(meta, null, "\t"));
@@ -550,6 +562,7 @@ class AddSongSubState extends FlxSubState
 		if (noteSkinInput   != null) noteSkinInput.text   = m.noteSkin;
 		if (introVideoInput != null) introVideoInput.text = m.introVideo ?? '';
 		if (outroVideoInput != null) outroVideoInput.text = m.outroVideo ?? '';
+		if (artistInput     != null) artistInput.text     = m.artist    ?? '';
 
 		// needsVoices: read from chart (most accurate source), fall back to true
 		needsVoices = _readNeedsVoicesFromChart(editingSong.songName);

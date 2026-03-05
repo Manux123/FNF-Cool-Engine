@@ -236,7 +236,10 @@ class PsychLuaStageAPI
 		{
 			final spr = sprites.get(name);
 			if (spr == null) return;
-			final cam = camName.toLowerCase() == 'hud' ? FlxG.cameras.list[1] : FlxG.camera;
+			// BUG FIX: Psych uses 'camHUD' or 'hud'; Cool Engine uses 'hud'.
+			// camName.toLowerCase() == 'camhud' must also match.
+			final camLow = camName.toLowerCase();
+			final cam = (camLow == 'hud' || camLow == 'camhud') ? FlxG.cameras.list[1] : FlxG.camera;
 			spr.cameras = [cam];
 		});
 

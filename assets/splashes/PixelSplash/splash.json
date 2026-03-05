@@ -16,5 +16,18 @@
     "right": ["orange1", "orange2","orange3"],
     "framerate": 24,
     "randomFramerateRange": 3
+  },
+  "holdCover": {
+    "perColorTextures": false,
+    "texturePrefix": "pixelNoteHoldCover",
+    "textureType": "sparrow",
+    "scale": 6.0,
+    "offset": [160,-20],
+    "antialiasing": false,
+    "framerate": 24,
+    "loopFramerate": 24,
+    "startPrefix": "",
+    "loopPrefix": "loop",
+    "endPrefix": "explode"
   }
 }

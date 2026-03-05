@@ -125,6 +125,21 @@ class WindowManager
 		}
 	}
 
+	/**
+	 * Versión string de applyScaleMode — para llamar desde scripts sin
+	 * necesitar importar el enum ScaleMode.
+	 * Valores: "letterbox" (default), "stretch", "pixel" / "pixel_perfect"
+	 */
+	public static function applyScaleModeByName(name:String):Void
+	{
+		applyScaleMode(switch (name.toLowerCase())
+		{
+			case 'stretch':                     STRETCH;
+			case 'pixel', 'pixel_perfect':      PIXEL_PERFECT;
+			default:                            LETTERBOX;
+		});
+	}
+
 	// ── Fullscreen ────────────────────────────────────────────────────────────
 
 	public static function toggleFullscreen():Void

@@ -1,6 +1,7 @@
 package shaders;
 
 import openfl.Assets;
+import openfl.display.BitmapData;
 import openfl.utils.ByteArray;
 
 @:keep @:bitmap("menu/logo.png")
@@ -13,8 +14,7 @@ typedef FlxShader =
     #if (openfl_legacy || nme)
     Dynamic;
     #elseif FLX_DRAW_QUADS
-    flixel.graphics.title.FlxGraphicsShader;
+    flixel.graphics.tile.FlxGraphicsShader;
     #else
     openfl.display.Shader;
     #end
-#end

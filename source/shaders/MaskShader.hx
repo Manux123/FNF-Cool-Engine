@@ -139,16 +139,18 @@ class MaskShader extends FlxShader
 		float angleMask(vec2 uv)
 		{
 			// Misma técnica AA de V-Slice AngleMask
-			const float AA_STAGES = 2.0;
-			const float AA_TOTAL  = AA_STAGES * AA_STAGES + 1.0;
-			const float AA_JITTER = 0.5;
+			// FIX: loop vars deben ser int en GLSL, no float
+			const int   AA_STAGES_I = 2;
+			const float AA_STAGES   = 2.0;
+			const float AA_TOTAL    = AA_STAGES * AA_STAGES + 1.0;
+			const float AA_JITTER   = 0.5;
 
 			float color = angleMaskPass(uv);
-			for (float x = 0.0; x < AA_STAGES; x++)
+			for (int xi = 0; xi < AA_STAGES_I; xi++)
 			{
-				for (float y = 0.0; y < AA_STAGES; y++)
+				for (int yi = 0; yi < AA_STAGES_I; yi++)
 				{
-					vec2 offset = AA_JITTER * (2.0 * hash22(vec2(x, y)) - 1.0) / openfl_TextureSize.xy;
+					vec2 offset = AA_JITTER * (2.0 * hash22(vec2(float(xi), float(yi))) - 1.0) / openfl_TextureSize.xy;
 					color += angleMaskPass(uv + offset);
 				}
 			}

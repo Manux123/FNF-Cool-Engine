@@ -21,6 +21,7 @@ import funkin.data.GlobalConfig;
 import funkin.debug.themes.EditorTheme;
 import funkin.debug.themes.ThemePickerSubState;
 import funkin.menus.MainMenuState;
+import funkin.menus.ModImportSubState;
 #if sys
 import sys.FileSystem;
 import sys.io.File;
@@ -83,6 +84,8 @@ class ModSelectorState extends MusicBeatState
 	var _itemGroup:FlxTypedGroup<ModListItem>;
 	var _newBtn:FlxSprite;
 	var _newBtnTxt:FlxText;
+	var _importBtn:FlxSprite;
+	var _importBtnTxt:FlxText;
 	var _previewBg:FlxSprite;
 	var _previewImg:FlxSprite;
 	var _previewNone:FlxSprite;
@@ -242,7 +245,7 @@ class ModSelectorState extends MusicBeatState
 
 		// Izquierda: controles del panel de mods
 		_infoKey = new FlxText(8, FlxG.height - 44, LIST_W - 16,
-			'[1][2][3] Tabs   [↑↓] Browse   [Enter] Active\n[X] Enable   [E] Edit   [N] New   [F] Startup');
+			'[1][2][3] Tabs   [↑↓] Browse   [Enter] Active\n[X] Enable   [E] Edit   [N] New   [I] Import   [F] Startup');
 		_infoKey.setFormat(null, 11, T.textDim, LEFT);
 		_infoKey.scrollFactor.set();
 		_infoKey.cameras = [_camUI];
@@ -358,6 +361,19 @@ class ModSelectorState extends MusicBeatState
 		_infoWebsite.scrollFactor.set();
 		_infoWebsite.cameras = [_camUI];
 		add(_infoWebsite);
+
+		// ── Botón "⬆ IMPORT MOD" ──────────────────────────────────────────────
+		final importBtnY = FlxG.height - 116;
+		_importBtn = new FlxSprite(8, importBtnY).makeGraphic(LIST_W - 16, 28, T.warning);
+		_importBtn.scrollFactor.set();
+		_importBtn.cameras = [_camUI];
+		add(_importBtn);
+		_importBtnTxt = new FlxText(8, importBtnY + 6, LIST_W - 16, '⬆ IMPORT MOD');
+		_importBtnTxt.setFormat(null, 13, T.bgDark, CENTER, OUTLINE, T.bgDark);
+		_importBtnTxt.bold = true;
+		_importBtnTxt.scrollFactor.set();
+		_importBtnTxt.cameras = [_camUI];
+		add(_importBtnTxt);
 
 		// ── Botón "+ NEW MOD" ─────────────────────────────────────────────────
 		final btnY = FlxG.height - 80;
@@ -513,6 +529,8 @@ class ModSelectorState extends MusicBeatState
 		_infoWebsite.visible = isMods;
 		_infoActive.visible = isMods;
 		_infoStartup.visible = isMods;
+		if (_importBtn != null)    _importBtn.visible    = isMods;
+		if (_importBtnTxt != null) _importBtnTxt.visible = isMods;
 
 		// Tab CONFIG visibility
 		if (_cfgBar != null)
@@ -646,6 +664,14 @@ class ModSelectorState extends MusicBeatState
 		// ── Tab MODS ─────────────────────────────────────────────────────────
 		if (_curTab == 0)
 		{
+			// Botón "⬆ IMPORT MOD"
+			if (_importBtn != null && mx >= _importBtn.x && mx <= _importBtn.x + _importBtn.width
+				&& my >= _importBtn.y && my <= _importBtn.y + _importBtn.height)
+			{
+				_sndConfirm();
+				_openImportMod();
+				return;
+			}
 			// Botón "+ NEW MOD"
 			if (_newBtn != null && mx >= _newBtn.x && mx <= _newBtn.x + _newBtn.width
 				&& my >= _newBtn.y && my <= _newBtn.y + _newBtn.height)
@@ -740,6 +766,11 @@ class ModSelectorState extends MusicBeatState
 		if (FlxG.keys.justPressed.N)
 		{
 			_openCreateMod();
+			return;
+		}
+		if (FlxG.keys.justPressed.I)
+		{
+			_openImportMod();
 			return;
 		}
 		if (_mods.length == 0)
@@ -1134,6 +1165,29 @@ class ModSelectorState extends MusicBeatState
 			_prevCur = -1;
 			_selectItem(_cur, true);
 			_itemGroup.forEachAlive(function(it:ModListItem) it.refresh());
+		}));
+	}
+
+	function _openImportMod():Void
+	{
+		FlxG.mouse.visible = true;
+		openSubState(new ModImportSubState(function()
+		{
+			// Refresh mod list after successful import
+			ModManager.init();
+			_mods = ModManager.installedMods.copy();
+			_itemGroup.forEachAlive(function(it:ModListItem) it.kill());
+			_itemGroup.clear();
+			for (i in 0..._mods.length)
+			{
+				final item = new ModListItem(_mods[i], i);
+				item.y = CONTENT_Y + i * (LIST_ITEM_H + 4);
+				_itemGroup.add(item);
+			}
+			_prevCur = -1;
+			if (_mods.length > 0)
+				_selectItem(_cur = 0, true);
+			_showStatus('✓ Mod imported successfully.', true);
 		}));
 	}
 

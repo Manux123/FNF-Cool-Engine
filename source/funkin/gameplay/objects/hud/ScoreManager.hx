@@ -205,8 +205,11 @@ class ScoreManager
 
 	public function getHUDText(gameState:funkin.gameplay.GameState):String
 	{
-		var fcText = fullCombo ? ' [FC]' : '';
-		var scText = sickCombo ? ' [SC]' : '';
+		// Fix: leer FC/SC desde GameState, no desde los campos locales del ScoreManager.
+		// El ScoreManager del script nunca recibe processNoteHit/processMiss,
+		// así que this.fullCombo / this.sickCombo siempre serían `true`.
+		var fcText = gameState.isFullCombo() ? ' [FC]' : '';
+		var scText = gameState.isSickMode()  ? ' [SC]' : '';
 		
 		return 'Score: ${gameState.score} - Misses: ${gameState.misses}$fcText$scText - Accuracy: ${gameState.accuracy}%';
 	}

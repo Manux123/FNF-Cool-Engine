@@ -3,7 +3,7 @@ var shadersEnabled = true;
 // Sprites del stage que reciben el shader
 var TARGETS = ['weebBackTrees', 'weebSchool', 'weebStreet', 'weebTrees'];
 
-function _applyShader(name:String, shader:String)
+function _applyShader(name:String)
 {
     var spr = stage.getElement(name);
     if (spr == null)
@@ -11,23 +11,8 @@ function _applyShader(name:String, shader:String)
         trace('[shader] "' + name + '" no encontrado, ignorando.');
         return;
     }
-    ShaderManager.applyShader(spr, shader);
+    ShaderManager.applyShader(spr, 'evilSchoolWarp');
     trace('[shader] OK: shader aplicado a "' + name + '"');
-}
-
-function _setDefaults()
-{
-    // Setear todos los uniforms con sus valores por defecto
-    // (el .frag ya NO usa def() — depende de que estos valores estén seteados)
-    ShaderManager.setShaderParam('evilSchoolWarp', 'uTime',     0.0);
-    ShaderManager.setShaderParam('evilSchoolWarp', 'uWaveX',    0.006);
-    ShaderManager.setShaderParam('evilSchoolWarp', 'uWaveY',    0.004);
-    ShaderManager.setShaderParam('evilSchoolWarp', 'uFreqX',    8.0);
-    ShaderManager.setShaderParam('evilSchoolWarp', 'uFreqY',    6.0);
-    ShaderManager.setShaderParam('evilSchoolWarp', 'uSpeedX',   1.2);
-    ShaderManager.setShaderParam('evilSchoolWarp', 'uSpeedY',   0.9);
-    ShaderManager.setShaderParam('evilSchoolWarp', 'uRipple',   0.003);
-    ShaderManager.setShaderParam('evilSchoolWarp', 'uVignette', 0.5);
 }
 
 function onStageCreate()
@@ -39,9 +24,11 @@ function onStageCreate()
         try
         {
             for (name in TARGETS)
-                _applyShader(name, 'evilSchoolWarp');
+                _applyShader(name);
 
-            _setDefaults();
+            // Solo uTime necesita inicializarse; las demás constantes
+            // están embebidas en el GLSL y no dependen de setShaderParam.
+            ShaderManager.setShaderParam('evilSchoolWarp', 'uTime', warpTime);
         }
         catch (e:Dynamic)
         {

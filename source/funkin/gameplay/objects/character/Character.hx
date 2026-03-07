@@ -23,6 +23,13 @@ typedef CharacterData =
 	@:optional var isFlxAnimate:Bool;
 	@:optional var spritemapName:String;
 	@:optional var healthIcon:String;
+	/**
+	 * Clave del asset en el portal Discord Developer.
+	 * Si es null, se usa `healthIcon` como fallback.
+	 * Útil cuando el nombre del personaje no coincide con la clave Discord
+	 * (ej: charName 'monster-christmas' → discordIcon 'monster').
+	 */
+	@:optional var discordIcon:String;
 	@:optional var healthBarColor:String;
 	@:optional var cameraOffset:Array<Float>;
 	/** Offset de posición global del personaje (campo "position" de Psych). Se suma a la posición del stage. */

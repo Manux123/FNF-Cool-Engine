@@ -250,10 +250,13 @@ class NoteRenderer
      * @return El NoteHoldCover asignado, o null si ya había uno para esta nota.
      */
     // strumCenterX/Y = centro visual del strum (strum.x + strum.width/2, strum.y + strum.height/2)
-    public function startHoldCover(direction:Int, strumCenterX:Float, strumCenterY:Float, isPlayer:Bool = true):NoteHoldCover
+    public function startHoldCover(direction:Int, strumCenterX:Float, strumCenterY:Float, isPlayer:Bool = true, strumsGroupIndex:Int = 0):NoteHoldCover
     {
-        // Player usa claves 0-3, CPU usa 4-7 para evitar colisiones
-        var key:Int = isPlayer ? direction : direction + 4;
+        // BUG FIX: incluir strumsGroupIndex en la clave para que dos holds simultáneos
+        // en la misma dirección pero distintos grupos no compartan el mismo cover.
+        // Player: 0-3 (grupo 0), 8-11 (grupo 1), ...
+        // CPU:    4-7 (grupo 0), 12-15 (grupo 1), ...
+        var key:Int = direction + (isPlayer ? strumsGroupIndex * 8 : 4 + strumsGroupIndex * 8);
         if (activeHoldCovers.exists(key))
             return activeHoldCovers.get(key);
 
@@ -267,9 +270,9 @@ class NoteRenderer
      * Detener el cover de una hold note (release o miss).
      * Reproduce la animación de fin; NoteHoldCover se mata solo al terminar.
      */
-    public function stopHoldCover(direction:Int, isPlayer:Bool = true):Void
+    public function stopHoldCover(direction:Int, isPlayer:Bool = true, strumsGroupIndex:Int = 0):Void
     {
-        var key:Int = isPlayer ? direction : direction + 4;
+        var key:Int = direction + (isPlayer ? strumsGroupIndex * 8 : 4 + strumsGroupIndex * 8);
         if (activeHoldCovers.exists(key))
         {
             var cover = activeHoldCovers.get(key);

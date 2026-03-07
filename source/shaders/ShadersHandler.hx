@@ -1,5 +1,6 @@
 package shaders;
 
+import funkin.gameplay.objects.hud.Highscore;
 import openfl.Lib;
 import openfl.display.Shader;
 import openfl.display.ShaderParameter;

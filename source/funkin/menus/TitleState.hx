@@ -16,8 +16,54 @@ import data.PlayerSettings;
 import ui.Alphabet;
 import funkin.scripting.StateScriptHandler;
 import funkin.transitions.StateTransition;
+import haxe.Json;
 
 using StringTools;
+
+/**
+ * Estructura de datos de titlescreen.json
+ *
+ * Ruta: assets/data/titlescreen.json
+ *
+ * Ejemplo completo:
+ * {
+ *   "bpm": 102,
+ *   "introBeats": [
+ *     { "beat": 1, "texts": ["ninjamuffin99", "phantomArcade", "kawaisprite", "evilsk8er"] },
+ *     { "beat": 3, "texts": ["present"] },
+ *     { "beat": 4, "clear": true },
+ *     { "beat": 5, "texts": ["Cool Engine Team"] },
+ *     { "beat": 7, "texts": ["Manux", "Juanen100", "MrClogsworthYt", "JloorMC", "Overcharged Dev"] },
+ *     { "beat": 8, "clear": true },
+ *     { "beat": 9, "random": true },
+ *     { "beat": 11, "randomSecond": true },
+ *     { "beat": 12, "clear": true },
+ *     { "beat": 13, "texts": ["Friday"] },
+ *     { "beat": 14, "texts": ["Night"] },
+ *     { "beat": 15, "texts": ["Funkin"] },
+ *     { "beat": 16, "skipIntro": true }
+ *   ],
+ *   "randomLines": [
+ *     ["Thx PabloelproxD210", "for the Android port LOL"],
+ *     ["Thx Chase for...", "SOMTHING"],
+ *     ["Thx TheStrexx for", "you'r 3 commits :D"]
+ *   ]
+ * }
+ */
+typedef TitleBeat = {
+	var beat:Int;
+	@:optional var texts:Array<String>;
+	@:optional var clear:Bool;
+	@:optional var random:Bool;
+	@:optional var randomSecond:Bool;
+	@:optional var skipIntro:Bool;
+}
+
+typedef TitleScreenData = {
+	@:optional var bpm:Float;
+	@:optional var introBeats:Array<TitleBeat>;
+	@:optional var randomLines:Array<Array<String>>;
+}
 
 class TitleState extends funkin.states.MusicBeatState
 {
@@ -32,12 +78,42 @@ class TitleState extends funkin.states.MusicBeatState
 	// var curWacky:Array<String> = [];
 	var wackyImage:FlxSprite;
 
+	/** Datos cargados de assets/data/titlescreen.json */
+	var titleData:TitleScreenData = null;
+	/** Lista de pares de strings aleatorios (del JSON). */
+	var _randomLines:Array<Array<String>> = [];
+	/** Índice de la línea random elegida este ciclo. */
+	var _randomIdx:Int = 0;
+
+	static function _loadTitleData():TitleScreenData
+	{
+		// Prioridad: mod > assets base
+		var paths:Array<String> = [];
+		#if sys
+		var modRoot = mods.ModManager.modRoot();
+		if (modRoot != null)
+			paths.push(modRoot + '/data/titlescreen.json');
+		paths.push('assets/data/titlescreen.json');
+		for (p in paths)
+		{
+			if (sys.FileSystem.exists(p))
+			{
+				try { return cast haxe.Json.parse(sys.io.File.getContent(p)); }
+				catch (e:Dynamic) { trace('[TitleState] Error parseando $p: $e'); }
+			}
+		}
+		#end
+		return null;
+	}
+
 	override public function create():Void
 	{
 		PlayerSettings.init();
 		
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.getGraphic('menu/menuBGtitle'));
 		add(bg);
+
+		MainMenuState.musicFreakyisPlaying = true;
 
 		// DEBUG BULLSHIT
 
@@ -63,6 +139,16 @@ class TitleState extends funkin.states.MusicBeatState
 		#elseif MAINMENU
 		StateTransition.switchState(new MainMenuState());
 		#else
+		titleData = _loadTitleData();
+		// Cargar líneas aleatorias del JSON (si existen) o usar los defaults del engine
+		if (titleData != null && titleData.randomLines != null && titleData.randomLines.length > 0)
+			_randomLines = titleData.randomLines;
+		else
+			_randomLines = [
+				['Thx PabloelproxD210', 'for the Android port LOL'],
+				['Thx Chase for...', 'SOMTHING'],
+				['Thx TheStrexx for', "you'r 3 commits :D"]
+			];
 		startIntro();
 		#end
 
@@ -142,7 +228,7 @@ class TitleState extends funkin.states.MusicBeatState
 				final snd = Paths.loadMusic('freakyMenu');
 				if (snd != null) FlxG.sound.playMusic(snd, 0.7);
 				else FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7);
-				Conductor.changeBPM(102);
+				Conductor.changeBPM(titleData != null && titleData.bpm != null ? titleData.bpm : 102);
 			}
 			skipIntro();
 		}
@@ -159,7 +245,7 @@ class TitleState extends funkin.states.MusicBeatState
 				FlxG.sound.playMusic(freakyPath, 0);
 
 			FlxG.sound.music.fadeIn(4, 0, 0.7);
-			Conductor.changeBPM(102);
+			Conductor.changeBPM(titleData != null && titleData.bpm != null ? titleData.bpm : 102);
 			initialized = true;
 		}
 
@@ -310,9 +396,6 @@ class TitleState extends funkin.states.MusicBeatState
 		}
 	}
 
-	var randomString = ['Thx PabloelproxD210', 'Thx Chase for...', "Thx TheStrexx for"];
-	var randomString2 = ['for the Android port LOL', 'SOMTHING', "you'r 3 commits :D"];
-	var random:Int;
 
 	override function beatHit()
 	{
@@ -336,61 +419,77 @@ class TitleState extends funkin.states.MusicBeatState
 
 		switch (curBeat)
 		{
-			case 0:
-				deleteCoolText();
-			case 1:
-				createCoolText(['ninjamuffin99', 'phantomArcade', 'kawaisprite', 'evilsk8er']);
-			// credTextShit.visible = true;
-			case 3:
-				addMoreText('present');
-			// credTextShit.text += '\npresent...';
-			// credTextShit.addText();
-			case 4:
-				deleteCoolText();
-			// credTextShit.visible = false;
-			// credTextShit.text = 'In association \nwith';
-			// credTextShit.screenCenter();
-			case 5:
-				createCoolText(['Cool Engine Team']);
-			case 7:
-				// I can just put the original engine creator instead of every single fucking person that helps with it
-				// Suck my dick Juan
-				addMoreText('Manux');
-				addMoreText('Juanen100');
-				addMoreText('MrClogsworthYt');
-				addMoreText('JloorMC');
-				addMoreText('Overcharged Dev');
-			// credTextShit.text += '\nNewgrounds';
-			case 8:
-				deleteCoolText();
-				ngSpr.visible = false;
-			// credTextShit.visible = false;
-
-			// credTextShit.text = 'Shoutouts Tom Fulp';
-			// credTextShit.screenCenter();
-			case 9:
-				random = FlxG.random.int(0, randomString.length);
-				createCoolText([randomString[random]]);
-			// credTextShit.visible = true;
-			case 11:
-				addMoreText(randomString2[random]);
-			// credTextShit.text += '\nlmao';
-			case 12:
-				deleteCoolText();
-			// credTextShit.visible = false;
-			// credTextShit.text = "Friday";
-			// credTextShit.screenCenter();
-			case 13:
-				addMoreText('Friday');
-			// credTextShit.visible = true;
-			case 14:
-				addMoreText('Night');
-			// credTextShit.text += '\nNight';
-			case 15:
-				addMoreText("Funkin"); // credTextShit.text += '\nFunkin';
-
-			case 16:
-				skipIntro();
+			// La secuencia de intro se lee de titlescreen.json (campo "introBeats").
+			// Si no existe el JSON, se usan los valores hardcodeados como fallback.
+			default:
+				if (titleData != null && titleData.introBeats != null)
+				{
+					// JSON-driven: buscar si hay una entrada para este beat
+					for (entry in titleData.introBeats)
+					{
+						if (entry.beat != curBeat) continue;
+						if (entry.clear == true)        deleteCoolText();
+						if (entry.skipIntro == true)    { skipIntro(); break; }
+						if (entry.random == true)
+						{
+							_randomIdx = FlxG.random.int(0, _randomLines.length - 1);
+							if (_randomLines[_randomIdx].length > 0)
+								createCoolText([_randomLines[_randomIdx][0]]);
+						}
+						if (entry.randomSecond == true)
+						{
+							if (_randomLines[_randomIdx].length > 1)
+								addMoreText(_randomLines[_randomIdx][1]);
+						}
+						if (entry.texts != null)
+						{
+							// Si ya hay texto visible, usar addMoreText para cada línea;
+							// si no hay, usar createCoolText para la primera y addMoreText para el resto.
+							if (textGroup.length == 0)
+							{
+								createCoolText(entry.texts);
+							}
+							else
+							{
+								for (t in entry.texts)
+									addMoreText(t);
+							}
+						}
+						break;
+					}
+				}
+				else
+				{
+					// Fallback hardcodeado — misma secuencia de siempre
+					switch (curBeat)
+					{
+						case 0:  deleteCoolText();
+						case 1:  createCoolText(['ninjamuffin99', 'phantomArcade', 'kawaisprite', 'evilsk8er']);
+						case 3:  addMoreText('present');
+						case 4:  deleteCoolText();
+						case 5:  createCoolText(['Cool Engine Team']);
+						case 7:
+							addMoreText('Manux');
+							addMoreText('Juanen100');
+							addMoreText('MrClogsworthYt');
+							addMoreText('JloorMC');
+							addMoreText('Overcharged Dev');
+						case 8:
+							deleteCoolText();
+							ngSpr.visible = false;
+						case 9:
+							_randomIdx = FlxG.random.int(0, _randomLines.length - 1);
+							createCoolText([_randomLines[_randomIdx][0]]);
+						case 11:
+							if (_randomLines[_randomIdx].length > 1)
+								addMoreText(_randomLines[_randomIdx][1]);
+						case 12: deleteCoolText();
+						case 13: addMoreText('Friday');
+						case 14: addMoreText('Night');
+						case 15: addMoreText('Funkin');
+						case 16: skipIntro();
+					}
+				}
 		}
 	}
 

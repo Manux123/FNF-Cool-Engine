@@ -407,10 +407,12 @@ class FreeplayState extends funkin.states.MusicBeatState
 		{
 			final ep = '$songsDir/$entry';
 			if (!sys.FileSystem.isDirectory(ep)) continue;
-			// Check that a chart file exists
+			// Check that a chart file exists — .level format (new) OR legacy .json
 			var hasChart = false;
-			for (diff in ['hard', 'normal', 'easy', 'chart'])
-				if (sys.FileSystem.exists('$ep/$diff.json')) { hasChart = true; break; }
+			if (sys.FileSystem.exists('$ep/$entry.level')) { hasChart = true; }
+			if (!hasChart)
+				for (diff in ['hard', 'normal', 'easy', 'chart'])
+					if (sys.FileSystem.exists('$ep/$diff.json')) { hasChart = true; break; }
 			if (!hasChart) continue;
 			songNames.push(entry);
 			songIcons.push('icon-$entry');
@@ -548,21 +550,22 @@ class FreeplayState extends funkin.states.MusicBeatState
 				destroyFreeplayVocals();
 				FlxG.sound.music.volume = 0;
 
+				// Verify chart exists — .level (new format) or legacy .json
 				var songLowercase:String = songs[curSelected].songName.toLowerCase();
 				var poop:String = Highscore.formatSong(songLowercase, curDifficulty);
 
-				// Verify if JSON exists before trying to preview
-				var jsonExists:Bool = Song.findChart(songLowercase, poop) != null;
+				var chartExists:Bool = funkin.data.LevelFile.exists(songLowercase)
+					|| Song.findChart(songLowercase, poop) != null;
 
-				if (!jsonExists)
+				if (!chartExists)
 				{
 					// Show error message
-					showError('Cannot preview: Chart file not found!\n"$poop.json" is missing');
+					showError('Cannot preview: Chart file not found!\n"$songLowercase" has no .level or .json');
 					FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 					return;
 				}
 
-				// Try to load JSON
+				// Try to load chart (.level first, then .json fallback via loadFromJson)
 				try
 				{
 					PlayState.SONG = Song.loadFromJson(poop, songLowercase);
@@ -578,7 +581,7 @@ class FreeplayState extends funkin.states.MusicBeatState
 				{
 					showError('Cannot preview: Failed to load chart!');
 					FlxG.sound.play(Paths.sound('menus/cancelMenu'));
-					trace('Error loading song JSON for preview: ' + e);
+					trace('Error loading song for preview: ' + e);
 					return;
 				}
 
@@ -686,43 +689,43 @@ class FreeplayState extends funkin.states.MusicBeatState
 			trace('[FreeplayState] Formatted filename: $poop');
 			trace('[FreeplayState] Current difficulty: $curDifficulty');
 
-			// Verify if JSON exists
-			var jsonExists:Bool = Song.findChart(songLowercase, poop) != null;
-			trace('[FreeplayState] findChart($songLowercase, $poop) = $jsonExists');
+			// Verify chart exists — .level (new format) or legacy .json
+			var chartExists:Bool = funkin.data.LevelFile.exists(songLowercase)
+				|| Song.findChart(songLowercase, poop) != null;
+			trace('[FreeplayState] chartExists($songLowercase) = $chartExists');
 
-			if (!jsonExists)
+			if (!chartExists)
 			{
 				// Show error message
-				trace('[FreeplayState] ERROR: JSON not found!');
-				showError('ERROR: Chart file not found!\n"$poop.json" is missing');
+				trace('[FreeplayState] ERROR: Chart not found!');
+				showError('ERROR: Chart file not found!\n"$songLowercase" has no .level or .json');
 				FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 				FlxG.camera.shake(0.01, 0.3);
 				return;
 			}
 
-			// Try to load JSON
+			// Try to load chart (.level first, then .json fallback via loadFromJson)
 			try
 			{
-				trace('[FreeplayState] Attempting to load JSON...');
+				trace('[FreeplayState] Attempting to load chart...');
 				PlayState.SONG = Song.loadFromJson(poop, songLowercase);
-				trace('[FreeplayState] JSON loaded successfully');
+				trace('[FreeplayState] Chart loaded successfully');
 
 				// Validate song data
 				if (PlayState.SONG == null || PlayState.SONG.song == null)
 				{
 					trace('[FreeplayState] ERROR: Song data is null or corrupted');
-					showError('ERROR: Chart file is corrupted!\nPlease check "$poop.json"');
+					showError('ERROR: Chart file is corrupted!\nPlease check "$songLowercase"');
 					FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 					FlxG.camera.shake(0.01, 0.3);
 					return;
 				}
 
-				trace('[FreeplayState] Song name in JSON: ${PlayState.SONG.song}');
+				trace('[FreeplayState] Song name: ${PlayState.SONG.song}');
 			}
 			catch (e:Dynamic)
 			{
-				// Show error message on load failure
-				trace('[FreeplayState] ERROR loading JSON: $e');
+				trace('[FreeplayState] ERROR loading chart: $e');
 				showError('ERROR: Failed to load chart!\n' + e);
 				FlxG.sound.play(Paths.sound('menus/cancelMenu'));
 				FlxG.camera.shake(0.01, 0.3);

@@ -1,0 +1,29 @@
+{
+  "_comment": "Configuración de la pantalla de título. Coloca este archivo en assets/data/titlescreen.json",
+  "_comment2": "Los mods pueden poner su propia versión en mods/{mod}/data/titlescreen.json para sobreescribir.",
+
+  "bpm": 102,
+
+  "introBeats": [
+    { "beat": 0,  "clear": true },
+    { "beat": 1,  "texts": ["ninjamuffin99", "phantomArcade", "kawaisprite", "evilsk8er"] },
+    { "beat": 3,  "texts": ["present"] },
+    { "beat": 4,  "clear": true },
+    { "beat": 5,  "texts": ["Cool Engine Team"] },
+    { "beat": 7,  "texts": ["Manux", "Juanen100", "MrClogsworthYt", "JloorMC", "Overcharged Dev"] },
+    { "beat": 8,  "clear": true },
+    { "beat": 9,  "random": true },
+    { "beat": 11, "randomSecond": true },
+    { "beat": 12, "clear": true },
+    { "beat": 13, "texts": ["Friday"] },
+    { "beat": 14, "texts": ["Night"] },
+    { "beat": 15, "texts": ["Funkin"] },
+    { "beat": 16, "skipIntro": true }
+  ],
+
+  "randomLines": [
+    ["Thx PabloelproxD210", "for the Android port LOL"],
+    ["Thx Chase for...", "SOMTHING"],
+    ["Thx TheStrexx for", "you'r 3 commits :D"]
+  ]
+}

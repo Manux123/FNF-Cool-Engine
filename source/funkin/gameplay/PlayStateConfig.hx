@@ -63,45 +63,33 @@ class PlayStateConfig
 	public static inline var IDLE_THRESHOLD:Float = 0.001;
 	public static inline var HOLD_THRESHOLD:Float = 0.001;
 	
-	// === SONG-SPECIFIC ===
-	public static inline var MILF_ZOOM_START_BEAT:Int = 168;
-	public static inline var MILF_ZOOM_END_BEAT:Int = 200;
-	public static inline var MILF_ZOOM_AMOUNT:Float = 0.015;
-	
 	// === PATHS ===
 	public static inline var UI_PATH:String = 'UI/';
 	public static inline var NORMAL_UI_PATH:String = 'UI/normal/';
 	public static inline var PIXEL_UI_PATH:String = 'UI/pixelUI/';
-	
+
 	/**
-	 * Obtener path de UI según stage
+	 * ELIMINADO: MILF_ZOOM_START_BEAT / MILF_ZOOM_END_BEAT / MILF_ZOOM_AMOUNT
+	 *
+	 * Esas constantes hardcodeaban el comportamiento de zoom mid-song solo para
+	 * la canción "milf" y nunca se usaban en ningún otro lugar.
+	 * El zoom de cámara ya es 100% softcodeable via el evento "Camera Zoom"
+	 * del EventManager → assets/data/events/{canción}.json
+	 * Ninguna canción necesita modificar código Haxe para tener zoom custom.
 	 */
-	public static function getUIPath(stage:String):String
-	{
-		return stage.startsWith('school') ? PIXEL_UI_PATH : NORMAL_UI_PATH;
-	}
-	
+
 	/**
-	 * Obtener suffix de UI según stage
+	 * ELIMINADO: isPixelStage(stage) / getUIPath / getUISuffix / getPixelScale
+	 *
+	 * Estas funciones chequeaban stage.startsWith('school'), lo que rompía
+	 * cualquier stage pixel de mod que no se llamara "school*".
+	 *
+	 * CÓMO HACERLO AHORA — leer el campo del JSON del stage:
+	 *
+	 *   var sd = funkin.gameplay.objects.stages.Stage.getStageData(curStage);
+	 *   var isPixel = (sd != null && sd.isPixelStage == true);
+	 *
+	 * En el JSON del stage añade:  "isPixelStage": true
+	 * Eso es todo — ningún código Haxe necesita saber el nombre del stage.
 	 */
-	public static function getUISuffix(stage:String):String
-	{
-		return stage.startsWith('school') ? '-pixel' : '';
-	}
-	
-	/**
-	 * Obtener escala de pixel según stage
-	 */
-	public static function getPixelScale(stage:String):Float
-	{
-		return stage.startsWith('school') ? PIXEL_ZOOM : 1.0;
-	}
-	
-	/**
-	 * Verificar si es stage pixel
-	 */
-	public static function isPixelStage(stage:String):Bool
-	{
-		return stage.startsWith('school');
-	}
 }

@@ -5,6 +5,7 @@ import funkin.data.Section.SwagSection;
 import funkin.data.Song.SwagSong;
 import funkin.data.Song.CharacterSlotData;
 import funkin.data.Song.StrumsGroupData;
+import funkin.data.LevelFile;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxCamera;
@@ -1036,11 +1037,22 @@ class ChartingState extends funkin.states.MusicBeatState
 		tab_group_settings.add(diffDropdown);
 
 		// Save/Load
-		var saveBtn = new FlxButton(10, 225, "Save Chart", saveChart);
+		var saveBtn = new FlxButton(10, 225, "Save Chart (.level)", saveChart);
 		tab_group_settings.add(saveBtn);
 
 		var loadBtn = new FlxButton(10, 255, "Load Chart", loadChart);
 		tab_group_settings.add(loadBtn);
+
+		// Migrate: convierte los .json viejos de esta canción a un único .level
+		var migrateBtn = new FlxButton(10, 285, "Migrate → .level", function()
+		{
+			final ok = funkin.data.LevelFile.migrateFromJson(_song.song);
+			showMessage(ok
+				? '✓ Migrated to ${_song.song.toLowerCase()}.level'
+				: '⚠ Migration failed (check console)',
+				ok ? ACCENT_SUCCESS : ACCENT_WARNING);
+		});
+		tab_group_settings.add(migrateBtn);
 
 		UI_box.addGroup(tab_group_settings);
 	}
@@ -3074,39 +3086,13 @@ class ChartingState extends funkin.states.MusicBeatState
 		if (!validateChart())
 			return;
 
-		var json = {
-			"song": _song
-		};
-
-		var data:String = Json.stringify(json, "\t");
-
 		#if sys
-		try
-		{
-			// Guardar en la carpeta del mod activo si existe, si no en assets/
-			final songKey   = _song.song.toLowerCase();
-			final diffSuffix = (curDiffSuffix != null && curDiffSuffix != '') ? curDiffSuffix : '';
-			var path:String;
-			if (mods.ModManager.isActive())
-			{
-				final modRoot = mods.ModManager.modRoot();
-				path = '$modRoot/songs/$songKey/autosave-$songKey$diffSuffix.json';
-			}
-			else
-			{
-				path = Paths.resolveWrite('songs/$songKey/autosave-$songKey$diffSuffix.json');
-			}
-			// Asegurar que el directorio existe
-			final dir = HaxePath.directory(path);
-			if (!sys.FileSystem.exists(dir))
-				sys.FileSystem.createDirectory(dir);
-			sys.io.File.saveContent(path, data);
-			showMessage('💾 Autosaved → ${mods.ModManager.isActive() ? "MOD" : "assets"}', ACCENT_SUCCESS);
-		}
-		catch (e:Dynamic)
-		{
-			trace('Autosave error: $e');
-		}
+		final diff = (curDiffSuffix != null && curDiffSuffix != '') ? curDiffSuffix : '';
+		final ok   = LevelFile.saveDiff(_song.song, diff, _song);
+		if (ok)
+			showMessage('💾 Autosaved (${_song.song}$diff.level)', ACCENT_SUCCESS);
+		else
+			showMessage('⚠ Autosave failed — check console', ACCENT_WARNING);
 		#else
 		showMessage('💾 Autosave not available on this platform', ACCENT_WARNING);
 		#end
@@ -3117,26 +3103,35 @@ class ChartingState extends funkin.states.MusicBeatState
 		if (!validateChart())
 			return;
 
-		var json = {
-			"song": _song
-		};
+		final diff = (curDiffSuffix != null && curDiffSuffix != '') ? curDiffSuffix : '';
 
-		var data:String = Json.stringify(json, "\t");
-
+		#if sys
+		// Desktop: guardar directamente en disco usando LevelFile
+		final ok = LevelFile.saveDiff(_song.song, diff, _song);
+		if (ok)
+		{
+			showMessage('💾 Saved → ${_song.song.toLowerCase()}$diff.level', ACCENT_SUCCESS);
+			FlxG.sound.play(Paths.sound('menus/confirmMenu'), 0.6);
+		}
+		else
+		{
+			showMessage('❌ Error saving chart!', ACCENT_ERROR);
+		}
+		#else
+		// Web / non-sys: exportar JSON legacy mediante FileReference (igual que antes)
+		final json = { "song": _song };
+		final data : String = Json.stringify(json, "\t");
 		if (data.length > 0)
 		{
-			// Nombre del archivo con sufijo de dificultad dinámica
-			// '' → song.json | '-nightmare' → song-nightmare.json
-			final diffSuffix = (curDiffSuffix != null && curDiffSuffix != '') ? curDiffSuffix : '';
-			final fileName = _song.song.toLowerCase() + diffSuffix + ".json";
+			final fileName = _song.song.toLowerCase() + diff + ".json";
 			_file = new FileReference();
-			_file.addEventListener(Event.COMPLETE, onSaveComplete);
-			_file.addEventListener(Event.CANCEL, onSaveCancel);
-			_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
+			_file.addEventListener(Event.COMPLETE,          onSaveComplete);
+			_file.addEventListener(Event.CANCEL,            onSaveCancel);
+			_file.addEventListener(IOErrorEvent.IO_ERROR,   onSaveError);
 			_file.save(data, fileName);
 		}
-
 		showMessage('💾 Saving chart...', ACCENT_CYAN);
+		#end
 	}
 
 	function onSaveComplete(_):Void
@@ -3313,13 +3308,14 @@ class ChartingState extends funkin.states.MusicBeatState
 
 	function loadChart():Void
 	{
-		var jsonFilter:String = "JSON files (*.json)";
 		_file = new FileReference();
-		_file.addEventListener(Event.SELECT, onLoadSelect);
-		_file.addEventListener(Event.CANCEL, onLoadCancel);
-		_file.addEventListener(IOErrorEvent.IO_ERROR, onLoadError);
-		_file.browse();
-
+		_file.addEventListener(Event.SELECT,             onLoadSelect);
+		_file.addEventListener(Event.CANCEL,             onLoadCancel);
+		_file.addEventListener(IOErrorEvent.IO_ERROR,    onLoadError);
+		// Acepta tanto .level (nuevo) como .json (legacy)
+		_file.browse([
+			new openfl.net.FileFilter('Level files (*.level, *.json)', '*.level;*.json')
+		]);
 		showMessage('📂 Select chart to load...', ACCENT_CYAN);
 	}
 
@@ -3331,12 +3327,39 @@ class ChartingState extends funkin.states.MusicBeatState
 
 	function onLoadComplete(_):Void
 	{
-		var fullJson:String = _file.data.toString();
+		final fullText : String = _file.data.toString();
+		final fileName : String = _file.name?.toLowerCase() ?? '';
 
 		try
 		{
-			var parsedJson = Json.parse(fullJson);
-			_song = parsedJson.song;
+			var loadedSong : SwagSong = null;
+
+			if (fileName.endsWith('.level'))
+			{
+				// ── Formato .level ────────────────────────────────────────
+				final level : funkin.data.LevelFile.LevelData = cast haxe.Json.parse(fullText);
+				// Intentar cargar la dificultad actual; si no existe, usar normal
+				final dk = (curDiffSuffix != null && curDiffSuffix != '') ? curDiffSuffix : '';
+				loadedSong = cast Reflect.field(level.difficulties, dk);
+				if (loadedSong == null)
+					loadedSong = cast Reflect.field(level.difficulties, '');
+				if (loadedSong == null)
+				{
+					// Último recurso: primer campo
+					final fields = Reflect.fields(level.difficulties);
+					if (fields.length > 0)
+						loadedSong = cast Reflect.field(level.difficulties, fields[0]);
+				}
+				if (loadedSong == null) throw 'No difficulties found in .level file';
+			}
+			else
+			{
+				// ── Formato .json legacy ──────────────────────────────────
+				final parsedJson = haxe.Json.parse(fullText);
+				loadedSong = parsedJson.song ?? cast parsedJson;
+			}
+
+			_song = loadedSong;
 
 			// Verificar que tenga los campos necesarios
 			if (_song.player1 == null)

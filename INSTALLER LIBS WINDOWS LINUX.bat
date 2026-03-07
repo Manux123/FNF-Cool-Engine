@@ -95,7 +95,7 @@ echo.
 echo Installed versions:
 echo  - Lime:        8.0.2
 echo  - OpenFL:      9.2.2
-echo  - Flixel:      5.3.1
+echo  - Flixel:      5.4.0
 echo  - Flixel-UI:   2.5.0
 echo  - Flixel-Addons: 3.0.2
 echo.

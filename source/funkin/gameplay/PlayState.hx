@@ -525,15 +525,19 @@ class PlayState extends funkin.states.MusicBeatState
 	private function setupDiscord():Void
 	{
 		storyDifficultyText = CoolUtil.difficultyString();
-		iconRPC = SONG.player2;
-
-		switch (iconRPC)
-		{
-			case 'monster-christmas':
-				iconRPC = 'monster';
-			case 'mom-car':
-				iconRPC = 'mom';
-		}
+		// Lee discordIcon del JSON del personaje oponente (campo opcional).
+		// Si el personaje no define discordIcon se usa el healthIcon o el nombre directo.
+		// Esto elimina el switch hardcodeado 'monster-christmas'→'monster', etc.:
+		// cualquier personaje con nombre que no coincida con su clave Discord
+		// solo necesita añadir "discordIcon": "clave" en su JSON.
+		var _dadChar = dad != null ? dad : null;
+		var _dadData = _dadChar != null ? _dadChar.characterData : null;
+		if (_dadData != null && _dadData.discordIcon != null && _dadData.discordIcon != '')
+			iconRPC = _dadData.discordIcon;
+		else if (_dadData != null && _dadData.healthIcon != null && _dadData.healthIcon != '')
+			iconRPC = _dadData.healthIcon;
+		else
+			iconRPC = SONG.player2;
 
 		if (isStoryMode)
 			detailsText = "Story Mode: Week " + storyWeek;
@@ -839,14 +843,15 @@ class PlayState extends funkin.states.MusicBeatState
 			cameraController.defaultZoom = currentStage.defaultCamZoom;
 
 		// Aplicar los offsets de cámara definidos en el stage JSON.
-		// BUG FIX: cameraGirlfriend y cameraSpeed eran convertidos desde Psych pero
-		// nunca se cableaban aquí — la GF siempre usaba el offset del Dad, y la
-		// velocidad de cámara era siempre la hardcodeada (2.4) sin importar el stage.
 		cameraController.stageOffsetBf.set(currentStage.cameraBoyfriend.x, currentStage.cameraBoyfriend.y);
 		cameraController.stageOffsetDad.set(currentStage.cameraDad.x, currentStage.cameraDad.y);
 		cameraController.stageOffsetGf.set(currentStage.cameraGirlfriend.x, currentStage.cameraGirlfriend.y);
 		// cameraSpeed es un multiplicador: 1.0 = default. Se aplica sobre BASE_LERP_SPEED.
 		cameraController.lerpSpeed = CameraController.BASE_LERP_SPEED * currentStage.cameraSpeed;
+
+		// Snapshot the final initial state NOW (after stage overrides) so that
+		// resetToInitial() on rewind/restart knows where to return to.
+		cameraController.snapshotInitialState();
 
 		// Character controller
 		characterController = new CharacterController();
@@ -2650,6 +2655,14 @@ class PlayState extends funkin.states.MusicBeatState
 		// ── 5. Rebobinar eventos ─────────────────────────────────────────────
 		if (scriptsEnabled)
 			EventManager.rewindToStart();
+
+		// ── 5b. Resetear cámara al estado inicial ────────────────────────────
+		// Los eventos de Camera Follow / Camera Zoom del editor pueden haber
+		// dejado la cámara siguiendo a un personaje diferente o con un zoom
+		// distinto. Hay que volver al estado que tenía ANTES de que corriera
+		// cualquier evento (snapshot guardado en snapshotInitialState() al cargar).
+		if (cameraController != null)
+			cameraController.resetToInitial();
 
 		// ── 6. Resetear personajes a idle ─────────────────────────────────────
 		if (characterController != null)

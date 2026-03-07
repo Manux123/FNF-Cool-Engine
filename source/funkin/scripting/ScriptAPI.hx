@@ -1290,6 +1290,24 @@ class ScriptAPI
 			if (FlxG.state != null) return FlxG.state.remove(obj, splice ?? false);
 			return null;
 		});
+		// setFilters / clearFilters / makeShaderFilter
+		// HScript no puede acceder a .filters en cpp (propiedad nativa OpenFL).
+		// Estos helpers lo hacen desde Haxe compilado donde sí funciona.
+		interp.variables.set('setFilters', function(obj:Dynamic, filters:Array<Dynamic>):Void {
+			if (obj == null) return;
+			var disp:openfl.display.DisplayObject = cast obj;
+			disp.filters = filters != null ? cast filters : null;
+		});
+		interp.variables.set('clearFilters', function(obj:Dynamic):Void {
+			if (obj == null) return;
+			var disp:openfl.display.DisplayObject = cast obj;
+			disp.filters = null;
+		});
+		interp.variables.set('makeShaderFilter', function(shader:Dynamic):Dynamic {
+			if (shader == null) return null;
+			return new openfl.filters.ShaderFilter(cast shader);
+		});
+
 		// addToHUD(sprite) → añade a camHUD
 		interp.variables.set('addToHUD', function(obj:Dynamic) {
 			final ps = funkin.gameplay.PlayState.instance;

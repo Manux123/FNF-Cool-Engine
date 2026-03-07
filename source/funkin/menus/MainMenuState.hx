@@ -61,7 +61,7 @@ class MainMenuState extends funkin.states.MusicBeatState
 
 		#if !MAINMENU
 		// TitleState already started freakyMenu - only play it here if somehow missing
-		if (FlxG.sound.music == null || !FlxG.sound.music.playing)
+		if (FlxG.sound.music == null || !musicFreakyisPlaying)
 		{
 			if (FreeplayState.vocals == null)
 			{
@@ -205,6 +205,8 @@ class MainMenuState extends funkin.states.MusicBeatState
 		{
 			if (FlxG.keys.justPressed.ONE)
 				StateTransition.switchState(new funkin.menus.CharacterSelectorState());
+			if (FlxG.keys.justPressed.TWO)
+				StateTransition.switchState(new funkin.debug.MenuEditor());
 		}
 
 		// ── Mod Selector ────────────────────────────────────────────────────────

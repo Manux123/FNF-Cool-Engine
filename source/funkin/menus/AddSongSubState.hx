@@ -20,6 +20,8 @@ import sys.io.File;
 import sys.FileSystem;
 import funkin.menus.FreeplayState.SongMetadata;
 import funkin.data.MetaData;
+import funkin.data.LevelFile;
+import funkin.data.Song.SwagSong;
 
 using StringTools;
 
@@ -237,10 +239,10 @@ class AddSongSubState extends FlxSubState
 
 		// Row 3 — Artist
 		startY += 65;
-		_lbl(windowX + 30, startY, "Artist:", 0.66);
-		artistInput = _inp(windowX + 30, startY + 50, 400, "", 80, 0.68);
+		_lbl(windowX + 30, startY + 174, "Artist:", 0.66);
+		artistInput = _inp(windowX + 30, startY + 200, 400, "", 80, 0.68);
 
-		var h3 = new FlxText(windowX + 30, startY + 74, 430, "Shown in the pause menu. Leave empty to use the chart's artist field.", 11);
+		var h3 = new FlxText(windowX + 30, startY + 224, 430, "Shown in the pause menu. Leave empty to use the chart's artist field.", 11);
 		h3.setFormat(Paths.font("vcr.ttf"), 11, funkin.debug.themes.EditorTheme.current.textSecondary, LEFT);
 		h3.alpha = 0; add(h3); FlxTween.tween(h3, {alpha: 0.7}, 0.3, {startDelay: 0.70});
 	}
@@ -460,34 +462,57 @@ class AddSongSubState extends FlxSubState
 
 	function updateExistingSong(songName:String, weekIndex:Int, bpmVal:Float):Void
 	{
-		for (week in songListData.songsWeeks)
+		// ── Update songList in-place to preserve song order ───────────────────
+		// Find the song in its current week and update metadata at the same index.
+		// If the week changed, move it to the right position in the new week.
+		var foundWeekIdx  = -1;
+		var foundSongIdx  = -1;
+		for (wi in 0...songListData.songsWeeks.length)
 		{
-			var idx = week.weekSongs.indexOf(editingSong.songName);
-			if (idx != -1)
-			{
-				week.weekSongs.splice(idx, 1);
-				week.songIcons.splice(idx, 1);
-				week.color.splice(idx, 1);
-				week.bpm.splice(idx, 1);
-				if (week.showInStoryMode != null && week.showInStoryMode.length > idx)
-					week.showInStoryMode.splice(idx, 1);
-				break;
-			}
+			var idx = songListData.songsWeeks[wi].weekSongs.indexOf(editingSong.songName);
+			if (idx != -1) { foundWeekIdx = wi; foundSongIdx = idx; break; }
 		}
 
-		while (songListData.songsWeeks.length <= weekIndex)
-			songListData.songsWeeks.push({weekSongs:[], songIcons:[], color:[], bpm:[], showInStoryMode:[]});
+		if (foundWeekIdx != -1 && foundWeekIdx == weekIndex)
+		{
+			// Same week → update in-place (order preserved)
+			var week = songListData.songsWeeks[foundWeekIdx];
+			week.weekSongs[foundSongIdx]  = songName;
+			week.songIcons[foundSongIdx]  = iconNameInput.text.trim();
+			week.color[foundSongIdx]      = selectedColor;
+			week.bpm[foundSongIdx]        = bpmVal;
+			if (week.showInStoryMode == null) week.showInStoryMode = [];
+			while (week.showInStoryMode.length <= foundSongIdx) week.showInStoryMode.push(true);
+			week.showInStoryMode[foundSongIdx] = showInStoryMode;
+		}
+		else
+		{
+			// Week changed → remove from old week, append to new week
+			if (foundWeekIdx != -1)
+			{
+				var oldWeek = songListData.songsWeeks[foundWeekIdx];
+				oldWeek.weekSongs.splice(foundSongIdx, 1);
+				oldWeek.songIcons.splice(foundSongIdx, 1);
+				oldWeek.color.splice(foundSongIdx, 1);
+				oldWeek.bpm.splice(foundSongIdx, 1);
+				if (oldWeek.showInStoryMode != null && oldWeek.showInStoryMode.length > foundSongIdx)
+					oldWeek.showInStoryMode.splice(foundSongIdx, 1);
+			}
+			while (songListData.songsWeeks.length <= weekIndex)
+				songListData.songsWeeks.push({weekSongs:[], songIcons:[], color:[], bpm:[], showInStoryMode:[]});
+			var week = songListData.songsWeeks[weekIndex];
+			week.weekSongs.push(songName);
+			week.songIcons.push(iconNameInput.text.trim());
+			week.color.push(selectedColor);
+			week.bpm.push(bpmVal);
+			if (week.showInStoryMode == null) week.showInStoryMode = [];
+			week.showInStoryMode.push(showInStoryMode);
+		}
 
-		var week = songListData.songsWeeks[weekIndex];
-		week.weekSongs.push(songName);
-		week.songIcons.push(iconNameInput.text.trim());
-		week.color.push(selectedColor);
-		week.bpm.push(bpmVal);
-		if (week.showInStoryMode == null) week.showInStoryMode = [];
-		week.showInStoryMode.push(showInStoryMode);
-
-		createBaseChartJSON(songName.toLowerCase(), bpmVal);
-		_patchNeedsVoicesInCharts(songName.toLowerCase()); // patch existing charts too
+		// ── Migrate existing charts to .level and patch bpm/needsVoices ──────
+		// LevelFile.saveDiff automatically imports all legacy .json files into
+		// a .level on first call, then updates only what changed.
+		_migrateAndPatchCharts(songName.toLowerCase(), bpmVal);
 
 		#if desktop
 		if (instLoaded     && currentInstPath   != "") copySongFile(currentInstPath,   songName, "Inst");
@@ -509,24 +534,41 @@ class AddSongSubState extends FlxSubState
 		var outroVideo = outroVideoInput != null  ? outroVideoInput.text.trim() : '';
 		var artist     = artistInput != null      ? artistInput.text.trim()     : '';
 
+		// Build a SongMetaData struct for the .level block
+		var meta : funkin.data.MetaData.SongMetaData = {
+			ui:           ui       != '' ? ui       : 'default',
+			noteSkin:     noteSkin != '' ? noteSkin : 'default',
+			introVideo:   introVideo != '' ? introVideo : null,
+			outroVideo:   outroVideo != '' ? outroVideo : null,
+			artist:       artist     != '' ? artist     : null
+		};
+
 		#if sys
 		try
 		{
-			var dir = _songDir(songName.toLowerCase());
+			var songKey = songName.toLowerCase();
+			var dir     = _songDir(songKey);
 
-			var meta:Dynamic    = {};
-			meta.ui             = ui       != '' ? ui       : 'default';
-			meta.noteSkin       = noteSkin != '' ? noteSkin : 'default';
-			meta.needsVoices    = needsVoices;
-			if (introVideo != '') meta.introVideo = introVideo;
-			if (outroVideo != '') meta.outroVideo = outroVideo;
-			if (artist     != '') meta.artist     = artist;
-
-			var metaPath = '$dir/meta.json';
-			File.saveContent(metaPath, Json.stringify(meta, null, "\t"));
-			trace('[AddSong] meta.json guardado en: $metaPath');
+			// ── Save into the .level file (creates or updates the meta block) ──
+			// saveDiff with no song data but with meta: it opens the existing .level
+			// (or migrates legacy files) and merges the new meta block in.
+			// We pass the first available diff song so saveDiff has something to work
+			// with if it needs to create the .level from scratch.
+			var existingSong = _loadAnyExistingDiff(songKey);
+			if (existingSong != null)
+			{
+				LevelFile.saveDiff(songKey, '', existingSong, meta);
+				trace('[AddSong] meta saved into .level for $songKey');
+			}
+			else
+			{
+				// Fallback: write standalone meta.json (brand-new song, chart not created yet)
+				var metaPath = '$dir/meta.json';
+				File.saveContent(metaPath, Json.stringify(meta, null, "\t"));
+				trace('[AddSong] meta.json fallback saved: $metaPath');
+			}
 		}
-		catch (e:Dynamic) { trace('[AddSongSubState] Error saving meta.json: $e'); }
+		catch (e:Dynamic) { trace('[AddSongSubState] Error saving meta: $e'); }
 		#else
 		MetaData.save(songName, ui != '' ? ui : 'default', noteSkin != '' ? noteSkin : 'default');
 		#end
@@ -647,41 +689,159 @@ class AddSongSubState extends FlxSubState
 		#if desktop
 		try
 		{
-			var dir = _songDir(songName);
-			var nv  = needsVoices ? "true" : "false";
-
-			var sb = new StringBuf();
-			sb.add('{\n\t"song": {\n');
-			sb.add('\t\t"song": "$songName",\n');
-			sb.add('\t\t"bpm": $bpm,\n');
-			sb.add('\t\t"speed": 2.5,\n');
-			sb.add('\t\t"needsVoices": $nv,\n');
-			sb.add('\t\t"player1": "bf",\n');
-			sb.add('\t\t"player2": "dad",\n');
-			sb.add('\t\t"gfVersion": "gf",\n');
-			sb.add('\t\t"stage": "stage_week1",\n');
-			sb.add('\t\t"notes": []\n\t}\n}');
-			var json = sb.toString();
-
-			for (suffix in ["", "-easy", "-hard"])
+			var dir       = _songDir(songName);
+			var levelPath = '$dir/$songName.level';
+			if (FileSystem.exists(levelPath))
 			{
-				var p = '$dir/$songName$suffix.json';
-				if (!FileSystem.exists(p)) { File.saveContent(p, json); trace('Chart created: $p'); }
-				else trace('Chart already exists: $p');
+				trace('Chart already exists: $levelPath');
+				return;
 			}
+			var tmpl  = _makeBlankSong(songName, bpm);
+			var diffs : Map<String, SwagSong> = ['' => tmpl, '-easy' => tmpl, '-hard' => tmpl];
+			LevelFile.saveAll(songName, diffs, null, songName, null);
+			trace('Chart created: $levelPath');
 		}
 		catch (e:Dynamic) { trace('Error creating base chart: $e'); }
 		#end
 	}
 
+	/** Constructs a minimal blank SwagSong. */
+	function _makeBlankSong(songName:String, bpm:Float):SwagSong
+	{
+		return {
+			song:         songName,
+			bpm:          bpm,
+			speed:        2.5,
+			needsVoices:  needsVoices,
+			player1:      'bf',
+			player2:      'dad',
+			gfVersion:    'gf',
+			stage:        'stage_week1',
+			validScore:   true,
+			notes:        [],
+			events:       [],
+			characters:   null,
+			strumsGroups: null
+		};
+	}
+
 	/**
-	 * Patches `needsVoices` into ALL existing chart JSONs of the song.
-	 * Called when editing an existing song so old charts are updated.
+	 * Migra todos los charts legacy a un único .level (si no existe aún),
+	 * luego parchea bpm y needsVoices en TODAS las dificultades.
+	 *
+	 * Usa las APIs de LevelFile para que la resolución de rutas y la migración
+	 * de formato antiguo (v1/v2) sean correctas sin duplicar lógica.
+	 */
+	function _migrateAndPatchCharts(songLower:String, bpmVal:Float):Void
+	{
+		#if sys
+		// 1. Si todavía no existe un .level, intentar migrar desde los .json legacy
+		if (!LevelFile.exists(songLower))
+		{
+			var migrated = LevelFile.migrateFromJson(songLower);
+			if (!migrated)
+			{
+				trace('[AddSong] _migrateAndPatchCharts: no charts found for $songLower');
+				return;
+			}
+		}
+
+		// 2. Leer el .level completo (LevelFile.loadFull maneja _migrate para
+		//    formatos v1/v2 con campo "song" en lugar de "difficulties")
+		var levelData = LevelFile.loadFull(songLower);
+		if (levelData == null || levelData.difficulties == null)
+		{
+			trace('[AddSong] _migrateAndPatchCharts: could not load level for $songLower');
+			return;
+		}
+
+		// 3. Parchear bpm + needsVoices en cada dificultad y re-guardar
+		//    LevelFile.saveDiff abre el .level existente, actualiza SOLO esa
+		//    dificultad y guarda el archivo completo → todas las diffs se conservan.
+		var diffKeys = Reflect.fields(levelData.difficulties);
+		for (diffKey in diffKeys)
+		{
+			var song : SwagSong = cast Reflect.field(levelData.difficulties, diffKey);
+			if (song == null) continue;
+			song.bpm         = bpmVal;
+			song.needsVoices = needsVoices;
+			LevelFile.saveDiff(songLower, diffKey, song, null);
+		}
+		trace('[AddSong] Patched .level for $songLower (${diffKeys.length} diffs)');
+		#end
+	}
+
+	/**
+	 * Returns the first SwagSong found for a song, checking .level then legacy .json.
+	 * Returns null if no chart exists at all.
+	 */
+	function _loadAnyExistingDiff(songLower:String):Null<SwagSong>
+	{
+		#if sys
+		var dir       = _contentRoot() + '/songs/$songLower';
+		var levelPath = '$dir/$songLower.level';
+		if (sys.FileSystem.exists(levelPath))
+		{
+			try
+			{
+				var data : funkin.data.LevelFile.LevelData = cast haxe.Json.parse(sys.io.File.getContent(levelPath));
+				if (data.difficulties != null)
+				{
+					var fields = Reflect.fields(data.difficulties);
+					if (fields.length > 0)
+						return cast Reflect.field(data.difficulties, fields[0]);
+				}
+			}
+			catch (_) {}
+		}
+		// Fallback: legacy .json
+		if (sys.FileSystem.exists(dir))
+		{
+			for (suffix in ["", "-easy", "-hard"])
+			{
+				var p = '$dir/$songLower$suffix.json';
+				if (!sys.FileSystem.exists(p)) continue;
+				try
+				{
+					var raw : Dynamic = haxe.Json.parse(sys.io.File.getContent(p));
+					return cast ((raw.song != null && !Std.isOfType(raw.song, String)) ? raw.song : raw);
+				}
+				catch (_) {}
+			}
+		}
+		#end
+		return null;
+	}
+
+		/**
+	 * Patches needsVoices in the .level file for this song.
+	 * Falls back to patching legacy .json charts when no .level exists.
 	 */
 	function _patchNeedsVoicesInCharts(songLower:String):Void
 	{
 		#if sys
-		var dir = _songDir(songLower);
+		var dir       = _songDir(songLower);
+		var levelPath = '$dir/$songLower.level';
+		if (FileSystem.exists(levelPath))
+		{
+			try
+			{
+				var data : funkin.data.LevelFile.LevelData = cast haxe.Json.parse(File.getContent(levelPath));
+				if (data.difficulties != null)
+				{
+					for (key in Reflect.fields(data.difficulties))
+					{
+						var song : SwagSong = cast Reflect.field(data.difficulties, key);
+						if (song != null) song.needsVoices = needsVoices;
+					}
+				}
+				File.saveContent(levelPath, haxe.Json.stringify(data, null, "\t"));
+				trace('[AddSong] Patched needsVoices in $levelPath');
+			}
+			catch (_:Dynamic) {}
+			return;
+		}
+		// Fallback: patch legacy .json charts
 		if (!FileSystem.exists(dir)) return;
 		for (file in FileSystem.readDirectory(dir))
 		{
@@ -689,12 +849,12 @@ class AddSongSubState extends FlxSubState
 			var p = '$dir/$file';
 			try
 			{
-				var raw:Dynamic     = Json.parse(File.getContent(p));
+				var raw:Dynamic     = haxe.Json.parse(File.getContent(p));
 				var songObj:Dynamic = (raw.song != null) ? raw.song : raw;
-				if (Reflect.hasField(songObj, 'song')) // valid chart object
+				if (Reflect.hasField(songObj, 'song'))
 				{
 					songObj.needsVoices = needsVoices;
-					File.saveContent(p, Json.stringify(raw, null, "\t"));
+					File.saveContent(p, haxe.Json.stringify(raw, null, "\t"));
 				}
 			}
 			catch (_:Dynamic) {}
@@ -703,27 +863,48 @@ class AddSongSubState extends FlxSubState
 	}
 
 	/**
-	 * Reads `needsVoices` from the first chart JSON found.
-	 * Returns true (safe default) when no chart exists.
+	 * Reads needsVoices from the .level file, or falls back to legacy .json charts.
+	 * Returns true (safe default) when no chart exists yet.
 	 */
 	function _readNeedsVoicesFromChart(songName:String):Bool
 	{
 		#if sys
-		var lower = songName.toLowerCase();
-		var dir   = _contentRoot() + '/songs/$lower';
-		if (!FileSystem.exists(dir)) return true;
-		for (suffix in ["", "-hard", "-easy"])
+		var lower     = songName.toLowerCase();
+		var dir       = _contentRoot() + '/songs/$lower';
+		var levelPath = '$dir/$lower.level';
+		if (FileSystem.exists(levelPath))
 		{
-			var p = '$dir/$lower$suffix.json';
-			if (!FileSystem.exists(p)) continue;
 			try
 			{
-				var raw:Dynamic     = Json.parse(File.getContent(p));
-				var songObj:Dynamic = (raw.song != null) ? raw.song : raw;
-				if (Reflect.hasField(songObj, 'needsVoices'))
-					return (songObj.needsVoices == true);
+				var data : funkin.data.LevelFile.LevelData = cast haxe.Json.parse(File.getContent(levelPath));
+				if (data.difficulties != null)
+				{
+					for (key in Reflect.fields(data.difficulties))
+					{
+						var song : SwagSong = cast Reflect.field(data.difficulties, key);
+						if (song != null && Reflect.hasField(song, 'needsVoices'))
+							return (song.needsVoices == true);
+					}
+				}
 			}
 			catch (_:Dynamic) {}
+		}
+		// Fallback: legacy .json charts
+		if (FileSystem.exists(dir))
+		{
+			for (suffix in ["", "-hard", "-easy"])
+			{
+				var p = '$dir/$lower$suffix.json';
+				if (!FileSystem.exists(p)) continue;
+				try
+				{
+					var raw:Dynamic     = haxe.Json.parse(File.getContent(p));
+					var songObj:Dynamic = (raw.song != null) ? raw.song : raw;
+					if (Reflect.hasField(songObj, 'needsVoices'))
+						return (songObj.needsVoices == true);
+				}
+				catch (_:Dynamic) {}
+			}
 		}
 		#end
 		return true;

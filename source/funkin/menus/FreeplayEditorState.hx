@@ -94,7 +94,8 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 	// Drag & Drop variables
 	var isDragging:Bool = false;
 	var draggedIndex:Int = -1;
-	var dragStartY:Float = 0;
+	var dragStartY:Float = 0;   // mouse Y at the moment of click
+	var _dragBaseY:Float = 0;   // item's actual y at the moment of click
 	var draggedAlphabet:Alphabet = null;
 	var draggedIcon:HealthIcon = null;
 	var hoverIndex:Int = -1;
@@ -109,7 +110,8 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 
 		FlxG.mouse.visible = true;
 		
-		FlxG.sound.playMusic(Paths.music('chartEditorLoop/chartEditorLoop'), 0.7);
+		if (!FlxG.sound.music.playing)
+			FlxG.sound.playMusic(Paths.music('chartEditorLoop/chartEditorLoop'), 0.7);
 
 		loadSongsData();
 
@@ -538,7 +540,7 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 		if (Math.abs(lerpRating - intendedRating) <= 0.01)
 			lerpRating = intendedRating;
 
-		var ratingSplit:Array<String> = Std.string(FlxMath.roundDecimal(lerpRating * 100, 2)).split('.');
+		var ratingSplit:Array<String> = Std.string(FlxMath.roundDecimal(lerpRating * 100 / 100, 2)).split('.');
 		if (ratingSplit.length < 2)
 		{
 			ratingSplit.push('');
@@ -564,8 +566,8 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 		var downP = controls.DOWN_P;
 		var accepted = controls.ACCEPT;
 
-		// Drag & Drop with mouse
-		handleDragAndDrop();
+		// Drag & Drop with mouse — must run AFTER super.update() so that
+		// Alphabet.update()'s lerp doesn't overwrite the position we set here.
 
 		if (upP)
 		{
@@ -617,6 +619,10 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 		}
 
 		super.update(elapsed);
+
+		// Drag position must be applied after Alphabet.update() has run,
+		// otherwise the lerp inside Alphabet immediately overwrites our y.
+		handleDragAndDrop();
 
 		#if HSCRIPT_ALLOWED
 		StateScriptHandler.callOnScripts('onUpdatePost', [elapsed]);
@@ -712,6 +718,7 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 						isDragging = true;
 						draggedIndex = i;
 						dragStartY = mouseY;
+						_dragBaseY  = item.y;   // snapshot actual rendered y
 						draggedAlphabet = item;
 						draggedIcon = iconArray[i];
 						
@@ -735,7 +742,10 @@ class FreeplayEditorState extends funkin.states.MusicBeatState
 				var deltaY = mouseY - dragStartY;
 				if (draggedAlphabet != null)
 				{
-					draggedAlphabet.y = draggedAlphabet.targetY * 70 + 30 + deltaY;
+					// Use the item's actual y at pick-up time plus mouse delta.
+					// Do NOT use targetY*70+30 — Alphabet positions itself via
+					// its own lerp formula and those constants don't match.
+					draggedAlphabet.y = _dragBaseY + deltaY;
 				}
 
 				// Check which position we're hovering over

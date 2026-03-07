@@ -13,6 +13,8 @@ import funkin.gameplay.objects.StrumsGroup;
 import funkin.data.Song.SwagSong;
 import funkin.data.Conductor;
 import funkin.gameplay.notes.NoteSkinSystem;
+import funkin.gameplay.modchart.ModChartManager;
+import funkin.gameplay.modchart.ModChartEvent;
 
 using StringTools;
 
@@ -77,6 +79,13 @@ class NoteManager
 	public var middlescroll:Bool = false;
 
 	private var songSpeed:Float = 1.0;
+
+	/**
+	 * Referencia al ModChartManager activo (si hay modchart cargado).
+	 * PlayState la asigna en create() después de crear el ModChartManager.
+	 * NoteManager la usa en updateNotePosition() para aplicar modificadores per-nota.
+	 */
+	public var modManager:Null<ModChartManager> = null;
 
 	private static inline var CULL_DISTANCE:Float = 2000;
 
@@ -625,11 +634,28 @@ class NoteManager
 
 	private function updateNotePosition(note:Note, songPosition:Float):Void
 	{
+		// ── Leer modificadores per-nota del ModChartManager (si existe) ────────
+		var _modState:funkin.gameplay.modchart.StrumState = null;
+		if (modManager != null && modManager.enabled)
+		{
+			// Resolver el groupId a partir del strumsGroupIndex de la nota
+			var _groupId:String = null;
+			if (allStrumsGroups != null && note.strumsGroupIndex < allStrumsGroups.length)
+				_groupId = allStrumsGroups[note.strumsGroupIndex].id;
+			if (_groupId == null)
+				_groupId = note.mustPress ? "player" : "cpu";
+			_modState = modManager.getState(_groupId, note.noteData);
+		}
+
+		// ── Scroll speed con multiplicador per-strum ────────────────────────────
+		final _scrollMult:Float = (_modState != null) ? _modState.scrollMult : 1.0;
+		final _effectiveSpeed:Float = _scrollSpeed * _scrollMult;
+
 		var noteY:Float;
 		if (downscroll)
-			noteY = strumLineY + (songPosition - note.strumTime) * _scrollSpeed;
+			noteY = strumLineY + (songPosition - note.strumTime) * _effectiveSpeed;
 		else
-			noteY = strumLineY - (songPosition - note.strumTime) * _scrollSpeed;
+			noteY = strumLineY - (songPosition - note.strumTime) * _effectiveSpeed;
 
 		// Para notas normales, Y es directo
 		if (!note.isSustainNote)
@@ -638,9 +664,23 @@ class NoteManager
 		var strum = getStrumForDirection(note.noteData, note.strumsGroupIndex, note.mustPress);
 		if (strum != null)
 		{
-			note.angle = strum.angle;
-			// updateHitbox() solo cuando la escala realmente cambió (evita
-			// recalcular dimensiones en cada frame para cada nota activa).
+			// ── Ángulo base del strum ─────────────────────────────────────────
+			var _finalAngle:Float = strum.angle;
+
+			if (_modState != null)
+			{
+				// CONFUSION: rotación plana extra en cada nota
+				_finalAngle += _modState.confusion;
+
+				// TORNADO: cada nota rota según su strumTime (efecto carrusel).
+				// La onda usa drunkFreq como frecuencia compartida con drunk.
+				if (_modState.tornado != 0)
+					_finalAngle += _modState.tornado * Math.sin(note.strumTime * 0.001 * _modState.drunkFreq);
+			}
+
+			note.angle = _finalAngle;
+
+			// ── Escala / alpha ────────────────────────────────────────────────
 			final newSX = strum.scale.x;
 			final newSY = note.isSustainNote ? note.scale.y : strum.scale.y;
 			final scaleChanged = note.scale.x != newSX || note.scale.y != newSY;
@@ -650,7 +690,34 @@ class NoteManager
 			if (scaleChanged)
 				note.updateHitbox();
 			note.alpha = FlxMath.bound(strum.alpha, 0.05, 1.0);
-			note.x = strum.x + (strum.width - note.width) / 2;
+
+			// ── Posición X base ───────────────────────────────────────────────
+			var _noteX:Float = strum.x + (strum.width - note.width) / 2;
+
+			if (_modState != null)
+			{
+				// NOTE_OFFSET_X: offset plano en X
+				_noteX += _modState.noteOffsetX;
+
+				// DRUNK_X: onda senoidal en X usando strumTime de la nota.
+				// El segundo término (songPosition) hace que la onda se desplace
+				// en el tiempo incluso cuando no llegan notas nuevas.
+				if (_modState.drunkX != 0)
+					_noteX += _modState.drunkX * Math.sin(
+						note.strumTime * 0.001 * _modState.drunkFreq
+						+ songPosition * 0.0008
+					);
+
+				// FLIP_X: espejo horizontal alrededor del centro del strum.
+				// Con flipX=1 las notas aparecen en el lado opuesto del strum.
+				if (_modState.flipX > 0.5)
+				{
+					final _strumCenter = strum.x + strum.width / 2;
+					_noteX = _strumCenter - (_noteX - _strumCenter + note.width / 2) - note.width / 2;
+				}
+			}
+
+			note.x = _noteX;
 		}
 
 		// ── V-Slice style fade: desvanecer notas que pasan el strum ─────────
@@ -677,11 +744,31 @@ class NoteManager
 			}
 		}
 
+		// ── Modificadores Y per-nota (antes de asignar Y final) ──────────────
+		if (_modState != null && !note.isSustainNote)
+		{
+			// NOTE_OFFSET_Y: offset plano
+			if (_modState.noteOffsetY != 0)
+				note.y += _modState.noteOffsetY;
+
+			// DRUNK_Y: onda senoidal en Y por strumTime.
+			// Fase ligeramente distinta a drunkX para que no sean idénticas.
+			if (_modState.drunkY != 0)
+				note.y += _modState.drunkY * Math.sin(
+					note.strumTime * 0.001 * _modState.drunkFreq
+					+ songPosition * 0.001
+				);
+
+			// BUMPY: toda la columna oscila al mismo tiempo (mismo phase para todas las notas).
+			// A diferencia de DRUNK_Y, no depende del strumTime individual.
+			if (_modState.bumpy != 0)
+				note.y += _modState.bumpy * Math.sin(songPosition * 0.001 * _modState.bumpySpeed);
+		}
+
 		// Posición Y de sustains: noteY directo (fórmula original).
 		// scale.y fue calculado en setupSustainNote() para que la altura de cada pieza
 		// coincida con el espacio entre strumTimes adyacentes (stepCrochet * scrollSpeed).
 		// Cualquier compensación de offset.y rompe esa alineación cuerpo↔tail.
-		// El bug original era z-order (ya resuelto con grupo sustainNotes), no posición Y.
 		if (note.isSustainNote)
 			note.y = noteY;
 
@@ -774,8 +861,12 @@ class NoteManager
 			return;
 		note.wasGoodHit = true;
 		handleStrumAnimation(note.noteData, note.strumsGroupIndex, true);
-		// Guardar el tiempo de fin del hold al golpear el HEAD note
-		if (!note.isSustainNote && note.sustainLength > 0)
+		// Guardar el tiempo de fin del hold al golpear el HEAD note.
+		// BUG FIX: no sobreescribir si ya hay un hold activo para esta dirección.
+		// Sin este check, un segundo head note en la misma dirección pisaba el tiempo
+		// del hold activo → autoReleaseFinishedHolds lo cerraba antes de tiempo
+		// → playEnd() se disparaba y el loop del splash se cortaba solo.
+		if (!note.isSustainNote && note.sustainLength > 0 && !holdEndTimes.exists(note.noteData))
 			holdEndTimes.set(note.noteData, note.strumTime + note.sustainLength);
 		if (rating == "sick")
 		{

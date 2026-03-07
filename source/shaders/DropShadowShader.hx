@@ -310,33 +310,50 @@ class DropShadowShader extends FlxShader
 			return color / AA_TOTAL_PASSES;
 		}
 
-		vec3 createDropShadow(vec3 col, float curThreshold, bool useMask) {
-			float intensity = antialias(openfl_TextureCoordv, curThreshold, useMask);
+		// BUGFIX createDropShadow: el algoritmo original tomaba intensity del pixel ACTUAL
+		// (que es 0 para pixeles transparentes), por lo que la sombra nunca aparecia
+		// detras del sprite. El algoritmo correcto es: mirar el pixel en la direccion
+		// contraria al offset (el "lanzador de sombra") para decidir si mostrar sombra
+		// en el pixel actual. Esto hace que la sombra aparezca en pixeles transparentes
+		// que tienen un pixel opaco cerca en la direccion del offset.
+		//
+		// Composicion correcta (premultiplicada):
+		//   shadowContrib = shadowCasterAlpha * str * (1 - spriteAlpha)
+		//   outRGB = spritePremult + dropColor * shadowContrib
+		//   outA   = spriteAlpha + shadowContrib
 
+		void main()
+		{
+			vec4 col = texture2D(bitmap, openfl_TextureCoordv); // premultiplied RGBA
+
+			// --- Calcular donde esta el lanzador de sombra ---
 			vec2 imageRatio = vec2(1.0 / openfl_TextureSize.x, 1.0 / openfl_TextureSize.y);
-
-			vec2 checkedPixel = vec2(
+			vec2 shadowSourceUV = vec2(
 				openfl_TextureCoordv.x + (dist * cos(ang + angOffset) * imageRatio.x),
 				openfl_TextureCoordv.y - (dist * sin(ang + angOffset) * imageRatio.y)
 			);
 
-			float dropShadowAmount = 0.0;
-			if(checkedPixel.x > uFrameBounds.x && checkedPixel.y > uFrameBounds.y
-			&& checkedPixel.x < uFrameBounds.z && checkedPixel.y < uFrameBounds.w){
-				dropShadowAmount = texture2D(bitmap, checkedPixel).a;
+			// Alpha del pixel que lanza sombra sobre el pixel actual
+			float shadowCasterAlpha = 0.0;
+			if (shadowSourceUV.x > uFrameBounds.x && shadowSourceUV.y > uFrameBounds.y
+			&&  shadowSourceUV.x < uFrameBounds.z && shadowSourceUV.y < uFrameBounds.w)
+			{
+				float srcIntensity = antialias(shadowSourceUV, thr, useMask);
+				shadowCasterAlpha = srcIntensity * str;
 			}
 
-			col.rgb += dropColor.rgb * ((1.0 - (dropShadowAmount * str)) * intensity);
-			return col;
-		}
+			// --- Aplicar HSBC al color del sprite (despreemultiplicado) ---
+			vec3 unpremult = col.a > 0.0 ? col.rgb / col.a : vec3(0.0);
+			vec3 hsbc = clamp(applyHSBCEffect(unpremult), 0.0, 1.0);
 
-		void main()
-		{
-			vec4 col = texture2D(bitmap, openfl_TextureCoordv);
-			vec3 unpremultipliedColor = col.a > 0.0 ? col.rgb / col.a : col.rgb;
-			vec3 outColor = applyHSBCEffect(unpremultipliedColor);
-			outColor = createDropShadow(outColor, thr, useMask);
-			gl_FragColor = vec4(outColor.rgb * col.a, col.a);
+			// --- Composicion sombra + sprite (premultiplied) ---
+			// La sombra solo contribuye donde el sprite es transparente/semi-transparente
+			float shadowContrib = clamp(shadowCasterAlpha * (1.0 - col.a), 0.0, 1.0);
+
+			vec3 outRgb  = hsbc * col.a + dropColor.rgb * shadowContrib;
+			float outA   = clamp(col.a + shadowContrib, 0.0, 1.0);
+
+			gl_FragColor = vec4(outRgb, outA);
 		}
 	')
 	public function new()

@@ -286,9 +286,23 @@ class ShaderManager
 
 	// ─── _writeParam: usa FlxRuntimeShader API, sin tocar __data ─────────────
 	//
-	// FlxRuntimeShader.setFloat/setInt/setBool/setFloatArray/setIntArray/setBoolArray
-	// son los mismos métodos que usa Psych Engine (ShaderFunctions.hx).
-	// Internamente FlxRuntimeShader ya maneja el null-check de uniforms.
+	// BUGFIX — "Shader int property not found" en uniforms float:
+	//
+	// En Haxe compilado a C++ (y en contextos HScript/Dynamic), los literales
+	// de punto flotante con valor entero (0.0, 8.0, 6.0) se almacenan como
+	// cpp.Int32 al pasar por Dynamic.  Type.typeof() devuelve TInt para ellos,
+	// aunque el GLSL los declare como `uniform float`.  Llamar setInt() sobre
+	// un uniform float no lanza excepción: OpenFL sólo imprime un warning
+	// "Shader int property X not found" y devuelve sin hacer nada, dejando el
+	// uniform sin actualizar.
+	//
+	// Solución: para valores TInt, llamar primero setFloat() porque los uniforms
+	// GLSL float son abrumadoramente más comunes que los int.  setFloat() sobre
+	// un uniform float sí funciona sin warnings.  Para shaders que realmente
+	// necesiten un uniform int, exponer setShaderParamInt() en ScriptAPI.
+	//
+	// BUGFIX setIntArray: puede no existir en flixel-addons antiguo.
+	// Se usa setFloatArray como fallback seguro.
 
 	static function _writeParam(instance:FlxRuntimeShader, paramName:String, value:Dynamic):Bool
 	{
@@ -301,24 +315,67 @@ class ShaderManager
 				if (arr.length == 0) return false;
 				final first = arr[0];
 				if (Std.isOfType(first, Bool))
+				{
 					instance.setBoolArray(paramName, cast arr);
-				else if (Std.isOfType(first, Int) && !Std.isOfType(first, Float))
-					instance.setIntArray(paramName, cast arr);
+				}
+				else if (Type.typeof(first) == TInt)
+				{
+					// Misma lógica que el caso escalar: preferir setFloatArray para
+					// evitar warnings silenciosos en uniforms float[].
+					// setIntArray puede no existir en flixel-addons antiguo -> fallback.
+					try { instance.setFloatArray(paramName, [for (v in arr) cast(v, Float)]); }
+					catch (_:Dynamic)
+					{
+						try { instance.setIntArray(paramName, [for (v in arr) Std.int(v)]); }
+						catch (_:Dynamic) {}
+					}
+				}
 				else
+				{
 					instance.setFloatArray(paramName, [for (v in arr) cast(v, Float)]);
+				}
 			}
 			else if (Std.isOfType(value, Bool))
+			{
 				instance.setBool(paramName, cast value);
-			else if (Std.isOfType(value, Int) && !Std.isOfType(value, Float))
-				instance.setInt(paramName, cast value);
-			else
+			}
+			else if (Type.typeof(value) == TInt)
+			{
+				// BUGFIX: En C++/Dynamic, floats de valor entero (0.0, 8.0, 6.0) llegan
+				// como TInt. setInt() sobre un uniform float sólo imprime un warning
+				// y no lanza excepción, por lo que el try/catch anterior nunca actuaba.
+				// Usar setFloat() primero (cubre ~99% de los casos reales en GLSL).
+				// Si el uniform es realmente un int, usar setShaderParamInt() desde el script.
 				instance.setFloat(paramName, cast(value, Float));
+			}
+			else
+			{
+				instance.setFloat(paramName, cast(value, Float));
+			}
 			return true;
 		}
 		catch (e:Dynamic)
 		{
-			return false; // uniform no registrado aún → pending
+			return false; // uniform no registrado aún -> pending
 		}
+	}
+
+	/**
+	 * Versión explícita para uniforms GLSL `int` / `sampler2D`.
+	 * Usar cuando el script necesite pasar un entero real (no un float).
+	 * En la mayoría de shaders de juego no es necesario.
+	 */
+	public static function setShaderParamInt(shaderName:String, paramName:String, value:Int):Bool
+	{
+		var updated = false;
+		final arr = _liveInstances.get(shaderName);
+		if (arr != null)
+			for (instance in arr)
+				if (instance != null)
+					try { instance.setInt(paramName, value); updated = true; } catch (_:Dynamic) {}
+		if (!updated) _storePending(shaderName, paramName, value);
+		_cacheParam(shaderName, paramName, value);
+		return updated;
 	}
 
 	static function _storePending(shaderName:String, paramName:String, value:Dynamic):Void

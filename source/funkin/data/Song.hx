@@ -227,6 +227,20 @@ class Song
 
 		trace('[Song] loadFromJson: folder=$folder, diff=$jsonInput');
 
+		// ── Prioridad 1: archivo .level (nuevo formato) ───────────────────
+		#if sys
+		final levelSuffix = _diffNameToSuffix(songFolder, diffName);
+		final levelSong   = funkin.data.LevelFile.loadDiff(songFolder, levelSuffix);
+		if (levelSong != null)
+		{
+			trace('[Song] Cargado desde .level: $songFolder diff=$levelSuffix');
+			ensureMigrated(levelSong);
+			levelSong.validScore = true;
+			return levelSong;
+		}
+		#end
+
+		// ── Prioridad 2: .json legacy ─────────────────────────────────────
 		var rawJson:String = null;
 
 		#if sys
@@ -254,10 +268,23 @@ class Song
 		while (rawJson.length > 0 && rawJson.charAt(rawJson.length - 1) != '}')
 			rawJson = rawJson.substr(0, rawJson.length - 1);
 
-		// Pasar el path resuelto para que VSliceConverter pueda encontrar
-		// el archivo de metadata separado ({songName}-metadata.json).
-		// También pasamos diffName para que el converter extraiga la dificultad correcta.
 		return parseJSONshit(rawJson, resolvedPath, diffName);
+	}
+
+	/**
+	 * Convierte el diffName que usa loadFromJson (ej: 'bopeebo-hard' o 'hard')
+	 * al sufijo que usa LevelFile (ej: '-hard' o '').
+	 */
+	static function _diffNameToSuffix(folder:String, diffName:String):String
+	{
+		// Quitar el prefijo del folder si viene con él (ej: 'bopeebo-hard' → '-hard')
+		if (diffName.startsWith(folder + '-'))
+			return diffName.substr(folder.length);
+		// Sufijo puro (ej: 'hard' → '-hard', 'normal'/'folder' → '')
+		if (diffName == 'normal' || diffName == folder) return '';
+		if (diffName == 'easy')  return '-easy';
+		if (diffName == 'hard')  return '-hard';
+		return '-' + diffName;
 	}
 
 	public static function parseJSONshit(rawJson:String, ?chartFilePath:String = null,
@@ -467,6 +494,23 @@ class Song
 		#if sys
 		final folderLow = folder.toLowerCase();
 		final found:Map<String, Bool> = new Map(); // sufijo → existe
+
+		// ── Dificultades desde el .level (nuevo formato) ──────────────────
+		{
+			final levelPath = funkin.data.LevelFile.resolvePath(folderLow);
+			if (levelPath != null)
+			{
+				try
+				{
+					final level : funkin.data.LevelFile.LevelData =
+						cast haxe.Json.parse(sys.io.File.getContent(levelPath));
+					if (level.difficulties != null)
+						for (dk in Reflect.fields(level.difficulties))
+							found.set(dk, true);
+				}
+				catch (_) {}
+			}
+		}
 
 		// Rutas donde buscar charts
 		final searchDirs:Array<String> = ['assets/songs/$folderLow'];

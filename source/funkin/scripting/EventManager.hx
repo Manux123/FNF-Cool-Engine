@@ -62,9 +62,14 @@ class EventManager
 			loadLegacyFormat(songData);
 
 		// Compatibilidad hacia atrás: generar Camera Follow desde mustHitSection
-		// si el chart no tiene ningún evento de cámara.
-		final hasNewEvents = songData.events != null && songData.events.length > 0;
-		if (!hasNewEvents && songData.notes != null)
+		// si el chart (old .json o nuevo .level) no contiene ningún evento de cámara.
+		//
+		// BUG FIX: la condición anterior era `!hasNewEvents && notes != null`, lo que
+		// saltaba la generación en cuanto el .level tenía CUALQUIER evento (p. ej. un
+		// BPM Change o un efecto de cámara sin Camera Follow). El check correcto es
+		// "¿hay algún Camera Follow en la lista final?" — si no, y hay secciones,
+		// generarlo independientemente de si existen otros tipos de eventos.
+		if (songData.notes != null)
 		{
 			var hasCam = false;
 			for (e in events) if (e.name == 'Camera Follow') { hasCam = true; break; }

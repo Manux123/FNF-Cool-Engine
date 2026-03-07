@@ -22,7 +22,7 @@
     "texturePrefix": "pixelNoteHoldCover",
     "textureType": "sparrow",
     "scale": 6.0,
-    "offset": [160,-20],
+    "offset": [170,-30],
     "antialiasing": false,
     "framerate": 24,
     "loopFramerate": 24,

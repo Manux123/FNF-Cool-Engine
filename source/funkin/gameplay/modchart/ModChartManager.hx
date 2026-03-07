@@ -13,33 +13,63 @@ using StringTools;
 
 typedef StrumState =
 {
-    /** Posición base (la que pusiste en PlayState según scroll mode) */
+    // ── Posición del strum ──────────────────────────────────────────────────
     var baseX    : Float;
     var baseY    : Float;
-
-    /** Offsets aplicados por el modchart */
     var offsetX  : Float;
     var offsetY  : Float;
-
-    /** Posición absoluta (cuando un evento usa SET_ABS_X/Y, sobreescribe base+offset) */
     var absX     : Null<Float>;
     var absY     : Null<Float>;
 
-    /** Ángulo acumulado */
+    // ── Rotación / apariencia del strum ─────────────────────────────────────
     var angle    : Float;
-
-    /** Rotación continua (deg/beat, se acumula cada beat) */
     var spinRate : Float;
-
-    /** Alpha */
     var alpha    : Float;
-
-    /** Escala */
     var scaleX   : Float;
     var scaleY   : Float;
-
-    /** Visibilidad */
     var visible  : Bool;
+
+    // ── Modificadores per-nota (NUEVOS) ──────────────────────────────────────
+    /** Amplitud de onda senoidal en X para cada nota (px). 0 = desactivado. */
+    var drunkX      : Float;
+    /** Amplitud de onda senoidal en Y para cada nota (px). 0 = desactivado. */
+    var drunkY      : Float;
+    /** Frecuencia de las ondas drunk (default 1.0). */
+    var drunkFreq   : Float;
+    /** Rotación en onda según strumTime de cada nota (grados). 0 = desactivado. */
+    var tornado     : Float;
+    /** Rotación plana extra en cada nota (grados). 0 = sin efecto. */
+    var confusion   : Float;
+    /** Multiplicador de scroll speed (default 1.0). -1 = invertido. */
+    var scrollMult  : Float;
+    /** Inversión X de notas (0=normal, 1=espejo alrededor del strum). */
+    var flipX       : Float;
+    /** Offset X plano para todas las notas del strum (px). */
+    var noteOffsetX : Float;
+    /** Offset Y plano para todas las notas del strum (px). */
+    var noteOffsetY : Float;
+    /** Amplitud de ola Y global (todas las notas oscilan juntas). */
+    var bumpy       : Float;
+    /** Velocidad de la ola bumpy (default 2.0). */
+    var bumpySpeed  : Float;
+}
+
+// ─── Estado de cámara controlado por modchart ─────────────────────────────────
+
+/**
+ * PlayState lee estos valores cada frame y los suma al estado base de la cámara.
+ * Todos empiezan en 0 / 1 y se interpolan con el sistema de tweens normal.
+ */
+typedef CameraModState =
+{
+    /** Zoom extra (se suma al zoom base del juego; 0 = sin efecto). */
+    var zoom    : Float;
+    /** Offset horizontal de cámara (px). */
+    var offsetX : Float;
+    /** Offset vertical de cámara (px). */
+    var offsetY : Float;
+    /** Rotación extra de cámara (grados). */
+    var angle   : Float;
 }
 
 // ─── Evento en ejecución ──────────────────────────────────────────────────────
@@ -67,6 +97,19 @@ class ModChartManager
      * Estado de cada strum:  states[groupId][strumIdx 0-3]
      */
     private var states:Map<String, Array<StrumState>> = new Map();
+
+    /**
+     * Estado de cámara — PlayState lo lee cada frame y lo aplica.
+     * Ejemplo en PlayState.update():
+     *   if (modChartManager != null) {
+     *     var cs = modChartManager.camState;
+     *     camGame.zoom = defaultCamZoom + cs.zoom;
+     *     camGame.scroll.x += cs.offsetX;
+     *     camGame.scroll.y += cs.offsetY;
+     *     camGame.angle = cs.angle;
+     *   }
+     */
+    public var camState:CameraModState = { zoom: 0, offsetX: 0, offsetY: 0, angle: 0 };
 
     // ── Eventos pendientes (aún no disparados) ─────────────────────────────────
     private var pending:Array<ModChartEvent> = [];
@@ -151,18 +194,30 @@ class ModChartManager
                 }
 
                 var st:StrumState = {
-                    baseX   : spr.x,
-                    baseY   : spr.y,
-                    offsetX : 0,
-                    offsetY : 0,
-                    absX    : null,
-                    absY    : null,
-                    angle   : 0,
-                    spinRate: 0,
-                    alpha   : 1,
-                    scaleX  : spr.scale.x,
-                    scaleY  : spr.scale.y,
-                    visible : spr.visible
+                    baseX       : spr.x,
+                    baseY       : spr.y,
+                    offsetX     : 0,
+                    offsetY     : 0,
+                    absX        : null,
+                    absY        : null,
+                    angle       : 0,
+                    spinRate    : 0,
+                    alpha       : 1,
+                    scaleX      : spr.scale.x,
+                    scaleY      : spr.scale.y,
+                    visible     : spr.visible,
+                    // per-nota modifiers
+                    drunkX      : 0,
+                    drunkY      : 0,
+                    drunkFreq   : 1.0,
+                    tornado     : 0,
+                    confusion   : 0,
+                    scrollMult  : 1.0,
+                    flipX       : 0,
+                    noteOffsetX : 0,
+                    noteOffsetY : 0,
+                    bumpy       : 0,
+                    bumpySpeed  : 2.0
                 };
 
                 arr.push(st);
@@ -177,18 +232,30 @@ class ModChartManager
     private function makeDefaultState(bx:Float, by:Float):StrumState
     {
         return {
-            baseX   : bx,
-            baseY   : by,
-            offsetX : 0,
-            offsetY : 0,
-            absX    : null,
-            absY    : null,
-            angle   : 0,
-            spinRate: 0,
-            alpha   : 1,
-            scaleX  : 0.7,
-            scaleY  : 0.7,
-            visible : true
+            baseX      : bx,
+            baseY      : by,
+            offsetX    : 0,
+            offsetY    : 0,
+            absX       : null,
+            absY       : null,
+            angle      : 0,
+            spinRate   : 0,
+            alpha      : 1,
+            scaleX     : 0.7,
+            scaleY     : 0.7,
+            visible    : true,
+            // per-nota
+            drunkX     : 0,
+            drunkY     : 0,
+            drunkFreq  : 1.0,
+            tornado    : 0,
+            confusion  : 0,
+            scrollMult : 1.0,
+            flipX      : 0,
+            noteOffsetX: 0,
+            noteOffsetY: 0,
+            bumpy      : 0,
+            bumpySpeed : 2.0
         };
     }
 
@@ -312,18 +379,36 @@ class ModChartManager
             var interp = new hscript.Interp();
 
             // ── Exponer constantes de ModEventType ──────────────────────────
-            interp.variables.set('MOVE_X',    ModEventType.MOVE_X);
-            interp.variables.set('MOVE_Y',    ModEventType.MOVE_Y);
-            interp.variables.set('ANGLE',     ModEventType.ANGLE);
-            interp.variables.set('ALPHA',     ModEventType.ALPHA);
-            interp.variables.set('SCALE',     ModEventType.SCALE);
-            interp.variables.set('SCALE_X',   ModEventType.SCALE_X);
-            interp.variables.set('SCALE_Y',   ModEventType.SCALE_Y);
-            interp.variables.set('SPIN',      ModEventType.SPIN);
-            interp.variables.set('RESET',     ModEventType.RESET);
-            interp.variables.set('SET_ABS_X', ModEventType.SET_ABS_X);
-            interp.variables.set('SET_ABS_Y', ModEventType.SET_ABS_Y);
-            interp.variables.set('VISIBLE',   ModEventType.VISIBLE);
+            // strum básicos
+            interp.variables.set('MOVE_X',        ModEventType.MOVE_X);
+            interp.variables.set('MOVE_Y',        ModEventType.MOVE_Y);
+            interp.variables.set('SET_ABS_X',     ModEventType.SET_ABS_X);
+            interp.variables.set('SET_ABS_Y',     ModEventType.SET_ABS_Y);
+            interp.variables.set('ANGLE',         ModEventType.ANGLE);
+            interp.variables.set('ALPHA',         ModEventType.ALPHA);
+            interp.variables.set('SCALE',         ModEventType.SCALE);
+            interp.variables.set('SCALE_X',       ModEventType.SCALE_X);
+            interp.variables.set('SCALE_Y',       ModEventType.SCALE_Y);
+            interp.variables.set('SPIN',          ModEventType.SPIN);
+            interp.variables.set('RESET',         ModEventType.RESET);
+            interp.variables.set('VISIBLE',       ModEventType.VISIBLE);
+            // per-nota
+            interp.variables.set('DRUNK_X',       ModEventType.DRUNK_X);
+            interp.variables.set('DRUNK_Y',       ModEventType.DRUNK_Y);
+            interp.variables.set('DRUNK_FREQ',    ModEventType.DRUNK_FREQ);
+            interp.variables.set('TORNADO',       ModEventType.TORNADO);
+            interp.variables.set('CONFUSION',     ModEventType.CONFUSION);
+            interp.variables.set('SCROLL_MULT',   ModEventType.SCROLL_MULT);
+            interp.variables.set('FLIP_X',        ModEventType.FLIP_X);
+            interp.variables.set('NOTE_OFFSET_X', ModEventType.NOTE_OFFSET_X);
+            interp.variables.set('NOTE_OFFSET_Y', ModEventType.NOTE_OFFSET_Y);
+            interp.variables.set('BUMPY',         ModEventType.BUMPY);
+            interp.variables.set('BUMPY_SPEED',   ModEventType.BUMPY_SPEED);
+            // cámara
+            interp.variables.set('CAM_ZOOM',      ModEventType.CAM_ZOOM);
+            interp.variables.set('CAM_MOVE_X',    ModEventType.CAM_MOVE_X);
+            interp.variables.set('CAM_MOVE_Y',    ModEventType.CAM_MOVE_Y);
+            interp.variables.set('CAM_ANGLE',     ModEventType.CAM_ANGLE);
 
             // ── Exponer constantes de ModEase ────────────────────────────────
             interp.variables.set('LINEAR',      ModEase.LINEAR);
@@ -346,6 +431,17 @@ class ModChartManager
             // ── Exponer API del modchart ─────────────────────────────────────
             interp.variables.set('modChart', this);
             interp.variables.set('song', songName);
+            // ── Exponer utilidades de uso frecuente en scripts ───────────────
+            interp.variables.set('Math', Math);
+            interp.variables.set('FlxG', flixel.FlxG);
+            interp.variables.set('Conductor', funkin.data.Conductor);
+            // noteManager y playState: disponibles si el juego ya arrancó
+            interp.variables.set('noteManager',
+                funkin.gameplay.PlayState.instance != null
+                    ? funkin.gameplay.PlayState.instance.noteManager : null);
+            interp.variables.set('playState', funkin.gameplay.PlayState.instance);
+            // camState: referencia directa para leerla/modificarla desde scripts
+            interp.variables.set('camState', camState);
 
             // Ejecutar el programa (define funciones)
             interp.execute(prog);
@@ -439,17 +535,28 @@ class ModChartManager
             {
                 var st  = arr[i];
                 var spr = group.getStrum(i);
-                st.offsetX  = 0;
-                st.offsetY  = 0;
-                st.absX     = null;
-                st.absY     = null;
-                st.angle    = 0;
-                st.spinRate = 0;
-                st.alpha    = 1;
-                // Restaurar escala base real (no hardcodeada a 0.7)
-                st.scaleX   = (spr != null) ? spr.scale.x : 0.7;
-                st.scaleY   = (spr != null) ? spr.scale.y : 0.7;
-                st.visible  = true;
+                st.offsetX     = 0;
+                st.offsetY     = 0;
+                st.absX        = null;
+                st.absY        = null;
+                st.angle       = 0;
+                st.spinRate    = 0;
+                st.alpha       = 1;
+                st.scaleX      = (spr != null) ? spr.scale.x : 0.7;
+                st.scaleY      = (spr != null) ? spr.scale.y : 0.7;
+                st.visible     = true;
+                // per-nota
+                st.drunkX      = 0;
+                st.drunkY      = 0;
+                st.drunkFreq   = 1.0;
+                st.tornado     = 0;
+                st.confusion   = 0;
+                st.scrollMult  = 1.0;
+                st.flipX       = 0;
+                st.noteOffsetX = 0;
+                st.noteOffsetY = 0;
+                st.bumpy       = 0;
+                st.bumpySpeed  = 2.0;
             }
         }
 
@@ -480,13 +587,18 @@ class ModChartManager
             {
                 var st  = arr[i];
                 var spr = group.getStrum(i);
-                st.offsetX = 0; st.offsetY = 0;
-                st.absX = null; st.absY = null;
-                st.angle = 0; st.spinRate = 0;
-                st.alpha = 1;
-                st.scaleX = (spr != null) ? spr.scale.x : 0.7;
-                st.scaleY = (spr != null) ? spr.scale.y : 0.7;
-                st.visible = true;
+                st.offsetX     = 0; st.offsetY = 0;
+                st.absX        = null; st.absY = null;
+                st.angle       = 0; st.spinRate = 0;
+                st.alpha       = 1;
+                st.scaleX      = (spr != null) ? spr.scale.x : 0.7;
+                st.scaleY      = (spr != null) ? spr.scale.y : 0.7;
+                st.visible     = true;
+                st.drunkX      = 0; st.drunkY = 0; st.drunkFreq = 1.0;
+                st.tornado     = 0; st.confusion = 0;
+                st.scrollMult  = 1.0; st.flipX = 0;
+                st.noteOffsetX = 0; st.noteOffsetY = 0;
+                st.bumpy       = 0; st.bumpySpeed = 2.0;
             }
         }
 
@@ -575,17 +687,30 @@ class ModChartManager
             }
             else
             {
-                // Crear tween para este evento
-                final targets = resolveTargets(ev.target, ev.strumIdx);
-                for (t in targets)
+                if (ModChartHelpers.isCameraType(ev.type))
                 {
+                    // Los eventos de cámara no tienen grupo/strum — un solo tween global
                     activeTweens.push({
                         event     : ev,
                         startBeat : ev.beat,
-                        startVal  : getStateValue(t.groupId, t.strumIdx, ev.type),
-                        groupId   : t.groupId,
-                        strumIdx  : t.strumIdx
+                        startVal  : getStateValue("", -1, ev.type),
+                        groupId   : "__camera__",
+                        strumIdx  : 0
                     });
+                }
+                else
+                {
+                    final targets = resolveTargets(ev.target, ev.strumIdx);
+                    for (t in targets)
+                    {
+                        activeTweens.push({
+                            event     : ev,
+                            startBeat : ev.beat,
+                            startVal  : getStateValue(t.groupId, t.strumIdx, ev.type),
+                            groupId   : t.groupId,
+                            strumIdx  : t.strumIdx
+                        });
+                    }
                 }
             }
         }
@@ -726,45 +851,100 @@ class ModChartManager
 
     private function getStateValue(groupId:String, strumIdx:Int, type:ModEventType):Float
     {
+        // Eventos de cámara: leer del camState global
+        if (ModChartHelpers.isCameraType(type))
+        {
+            return switch (type)
+            {
+                case CAM_ZOOM   : camState.zoom;
+                case CAM_MOVE_X : camState.offsetX;
+                case CAM_MOVE_Y : camState.offsetY;
+                case CAM_ANGLE  : camState.angle;
+                default         : 0;
+            };
+        }
+
         var arr = states.get(groupId);
         if (arr == null || strumIdx < 0 || strumIdx >= arr.length) return 0;
         var st = arr[strumIdx];
 
         return switch (type)
         {
-            case MOVE_X | SET_ABS_X : type == MOVE_X ? st.offsetX : (st.absX != null ? st.absX : st.baseX);
-            case MOVE_Y | SET_ABS_Y : type == MOVE_Y ? st.offsetY : (st.absY != null ? st.absY : st.baseY);
-            case ANGLE              : st.angle;
-            case ALPHA              : st.alpha;
-            case SCALE              : st.scaleX;
-            case SCALE_X            : st.scaleX;
-            case SCALE_Y            : st.scaleY;
-            case SPIN               : st.spinRate;
-            case VISIBLE            : st.visible ? 1 : 0;
-            default                 : 0;
+            case MOVE_X        : st.offsetX;
+            case MOVE_Y        : st.offsetY;
+            case SET_ABS_X     : st.absX != null ? st.absX : st.baseX;
+            case SET_ABS_Y     : st.absY != null ? st.absY : st.baseY;
+            case ANGLE         : st.angle;
+            case ALPHA         : st.alpha;
+            case SCALE         : st.scaleX;
+            case SCALE_X       : st.scaleX;
+            case SCALE_Y       : st.scaleY;
+            case SPIN          : st.spinRate;
+            case VISIBLE       : st.visible ? 1 : 0;
+            case DRUNK_X       : st.drunkX;
+            case DRUNK_Y       : st.drunkY;
+            case DRUNK_FREQ    : st.drunkFreq;
+            case TORNADO       : st.tornado;
+            case CONFUSION     : st.confusion;
+            case SCROLL_MULT   : st.scrollMult;
+            case FLIP_X        : st.flipX;
+            case NOTE_OFFSET_X : st.noteOffsetX;
+            case NOTE_OFFSET_Y : st.noteOffsetY;
+            case BUMPY         : st.bumpy;
+            case BUMPY_SPEED   : st.bumpySpeed;
+            // camera types are already handled above via isCameraType() guard
+            case CAM_ZOOM | CAM_MOVE_X | CAM_MOVE_Y | CAM_ANGLE: 0;
+            default            : 0;
         };
     }
 
     private function setStateValue(groupId:String, strumIdx:Int, type:ModEventType, value:Float):Void
     {
+        // Eventos de cámara: escribir en camState global
+        if (ModChartHelpers.isCameraType(type))
+        {
+            switch (type)
+            {
+                case CAM_ZOOM   : camState.zoom    = value;
+                case CAM_MOVE_X : camState.offsetX = value;
+                case CAM_MOVE_Y : camState.offsetY = value;
+                case CAM_ANGLE  : camState.angle   = value;
+                default:
+            }
+            return;
+        }
+
         var arr = states.get(groupId);
         if (arr == null || strumIdx < 0 || strumIdx >= arr.length) return;
         var st = arr[strumIdx];
 
         switch (type)
         {
-            case MOVE_X    : st.offsetX  = value; st.absX = null;
-            case MOVE_Y    : st.offsetY  = value; st.absY = null;
-            case SET_ABS_X : st.absX     = value;
-            case SET_ABS_Y : st.absY     = value;
-            case ANGLE     : st.angle    = value;
-            case ALPHA     : st.alpha    = value;
-            case SCALE     : st.scaleX   = value; st.scaleY = value;
-            case SCALE_X   : st.scaleX   = value;
-            case SCALE_Y   : st.scaleY   = value;
-            case SPIN      : st.spinRate = value;
-            case VISIBLE   : st.visible  = value >= 0.5;
-            case RESET     : /* handled separately */
+            case MOVE_X        : st.offsetX     = value; st.absX = null;
+            case MOVE_Y        : st.offsetY     = value; st.absY = null;
+            case SET_ABS_X     : st.absX        = value;
+            case SET_ABS_Y     : st.absY        = value;
+            case ANGLE         : st.angle       = value;
+            case ALPHA         : st.alpha       = value;
+            case SCALE         : st.scaleX      = value; st.scaleY = value;
+            case SCALE_X       : st.scaleX      = value;
+            case SCALE_Y       : st.scaleY      = value;
+            case SPIN          : st.spinRate    = value;
+            case VISIBLE       : st.visible     = value >= 0.5;
+            case DRUNK_X       : st.drunkX      = value;
+            case DRUNK_Y       : st.drunkY      = value;
+            case DRUNK_FREQ    : st.drunkFreq   = value;
+            case TORNADO       : st.tornado     = value;
+            case CONFUSION     : st.confusion   = value;
+            case SCROLL_MULT   : st.scrollMult  = value;
+            case FLIP_X        : st.flipX       = value;
+            case NOTE_OFFSET_X : st.noteOffsetX = value;
+            case NOTE_OFFSET_Y : st.noteOffsetY = value;
+            case BUMPY         : st.bumpy       = value;
+            case BUMPY_SPEED   : st.bumpySpeed  = value;
+            case RESET         : /* handled separately */
+            // camera types are already handled above via isCameraType() guard
+            case CAM_ZOOM | CAM_MOVE_X | CAM_MOVE_Y | CAM_ANGLE:
         }
     }
 
@@ -777,6 +957,14 @@ class ModChartManager
 
     private function applyReset(ev:ModChartEvent):Void
     {
+        // RESET "camera" también resetea el camState
+        if (ev.target == "camera" || ev.target == "cam")
+        {
+            camState.zoom = 0; camState.offsetX = 0;
+            camState.offsetY = 0; camState.angle = 0;
+            return;
+        }
+
         var targets = resolveTargets(ev.target, ev.strumIdx);
         for (t in targets)
         {
@@ -784,17 +972,23 @@ class ModChartManager
             if (arr == null) continue;
             if (t.strumIdx < 0 || t.strumIdx >= arr.length) continue;
             var st  = arr[t.strumIdx];
-            // Buscar el sprite para restaurar escala real
             var spr:Dynamic = null;
             for (g in strumsGroups)
                 if (g.id == t.groupId) { spr = g.getStrum(t.strumIdx); break; }
-            st.offsetX = 0; st.offsetY = 0;
-            st.absX = null; st.absY = null;
-            st.angle = 0; st.spinRate = 0;
-            st.alpha = 1;
-            st.scaleX = (spr != null) ? spr.scale.x : 0.7;
-            st.scaleY = (spr != null) ? spr.scale.y : 0.7;
-            st.visible = true;
+            // strum base
+            st.offsetX     = 0; st.offsetY = 0;
+            st.absX        = null; st.absY = null;
+            st.angle       = 0; st.spinRate = 0;
+            st.alpha       = 1;
+            st.scaleX      = (spr != null) ? spr.scale.x : 0.7;
+            st.scaleY      = (spr != null) ? spr.scale.y : 0.7;
+            st.visible     = true;
+            // per-nota
+            st.drunkX      = 0; st.drunkY = 0; st.drunkFreq = 1.0;
+            st.tornado     = 0; st.confusion = 0;
+            st.scrollMult  = 1.0; st.flipX = 0;
+            st.noteOffsetX = 0; st.noteOffsetY = 0;
+            st.bumpy       = 0; st.bumpySpeed = 2.0;
         }
     }
 

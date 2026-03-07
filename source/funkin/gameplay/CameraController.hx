@@ -41,6 +41,12 @@ class CameraController
 	// Cambiar con setTarget() desde EventManager.
 	public var currentTarget:String = 'opponent';
 
+	// === INITIAL STATE (for restart/rewind) ===
+	// Saved at construction time so resetToInitial() can fully restore the camera.
+	private var _initialTarget : String = 'opponent';
+	private var _initialZoom   : Float  = 1.05;
+	private var _initialLerp   : Float  = 0.04;
+
 	// === LERP SPEED del follow ===
 	// Puede sobreescribirse por evento (Camera Follow, value2).
 	public var followLerp:Float = 0.04;
@@ -92,6 +98,11 @@ class CameraController
 		camGame.follow(camFollow, FlxCameraFollowStyle.LOCKON, followLerp);
 		camGame.zoom = defaultZoom;
 
+		// Save initial state so resetToInitial() can fully restore it on rewind/restart.
+		_initialTarget = currentTarget;
+		_initialZoom   = defaultZoom;
+		_initialLerp   = followLerp;
+
 		// Posición inicial: sobre el oponente (target por defecto).
 		_snapToTarget();
 	}
@@ -125,6 +136,47 @@ class CameraController
 	{
 		followLerp = lerp;
 		camGame.followLerp = lerp;
+	}
+
+	/**
+	 * Restaura el estado inicial de la cámara (target, zoom, lerp).
+	 * Llamar desde PlayState._finishRestart() y PlayStateEditorState._onRestart()
+	 * DESPUÉS de que EventManager.rewindToStart() haya marcado los eventos como
+	 * no disparados, para que la cámara quede donde estaba al inicio de la canción.
+	 */
+	public function resetToInitial():Void
+	{
+		// Cancel any active zoom tween first
+		if (zoomTween != null) { zoomTween.cancel(); zoomTween = null; }
+
+		currentTarget = _initialTarget;
+		defaultZoom   = _initialZoom;
+		followLerp    = _initialLerp;
+		zoomEnabled   = false;
+		dadOffsetX    = 0;
+		dadOffsetY    = 0;
+		bfOffsetX     = 0;
+		bfOffsetY     = 0;
+
+		camGame.zoom        = defaultZoom;
+		camGame.followLerp  = followLerp;
+
+		_snapToTarget();
+		trace('[CameraController] resetToInitial → target=$currentTarget zoom=$defaultZoom');
+	}
+
+	/**
+	 * Toma una foto del estado actual como "estado inicial".
+	 * PlayState llama esto DESPUÉS de aplicar todos los overrides del stage
+	 * (defaultCamZoom, stageOffsets, lerpSpeed) para que resetToInitial()
+	 * vuelva al punto correcto tras un rewind.
+	 */
+	public function snapshotInitialState():Void
+	{
+		_initialTarget = currentTarget;
+		_initialZoom   = defaultZoom;
+		_initialLerp   = followLerp;
+		trace('[CameraController] snapshotInitialState → target=$_initialTarget zoom=$_initialZoom lerp=$_initialLerp');
 	}
 
 	// ─────────────────────────────────────────────────────────────

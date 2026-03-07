@@ -179,6 +179,39 @@ class HScriptInstance
 	// ── Hot-reload ────────────────────────────────────────────────────────────
 
 	/**
+	 * Initialises the interpreter from a raw code string instead of a file.
+	 * Useful for the PlayState editor's inline script panel.
+	 */
+	public function loadString(code:String):Bool
+	{
+		#if HSCRIPT_ALLOWED
+		if (code == null || code == '') return false;
+		try
+		{
+			_source = code;
+			if (interp == null)
+			{
+				interp = new Interp();
+				#if HSCRIPT_ALLOWED
+				try { Reflect.setField(interp, 'allowMetadata', true); } catch(_) {}
+				#end
+				ScriptAPI.expose(interp);
+			}
+			program = ScriptHandler.parser.parseString(_source, name);
+			interp.execute(program);
+			return true;
+		}
+		catch (e:Dynamic)
+		{
+			_handleError('loadString', e);
+			return false;
+		}
+		#else
+		return false;
+		#end
+	}
+
+	/**
 	 * Recarga el archivo desde disco sin recrear el intérprete.
 	 * Las variables que ya existen en `interp` se preservan.
 	 * El ScriptAPI se re-expone para que nuevas APIs sean visibles.

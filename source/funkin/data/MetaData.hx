@@ -126,39 +126,54 @@ class MetaData
 		var meta = new MetaData();
 		var global = GlobalConfig.instance;
 
-		var path:String = null;
-		#if sys
-		final songKey = songName.toLowerCase();
-		final modPath = ModManager.resolveInMod('songs/$songKey/meta.json');
-		if (modPath != null) path = modPath;
-		else
-		{
-			final basePath = 'assets/songs/$songKey/meta.json';
-			if (FileSystem.exists(basePath)) path = basePath;
-		}
-		#else
-		path = 'assets/songs/${songName.toLowerCase()}/meta.json';
-		#end
-
 		var rawData:SongMetaData = null;
 
-		if (path != null && FileSystem.exists(path))
+		#if sys
+		final songKey = songName.toLowerCase();
+
+		// ── Prioridad 1: bloque meta del archivo .level ───────────────────
+		final levelMeta = funkin.data.LevelFile.loadMeta(songKey);
+		if (levelMeta != null)
 		{
-			try
+			rawData = levelMeta;
+			meta.raw = rawData;
+			trace('[MetaData] Cargado desde .level: $songKey');
+		}
+
+		// ── Prioridad 2: meta.json legacy ──────────────────────────────────
+		if (rawData == null)
+		{
+			var path:String = null;
+			final modPath = ModManager.resolveInMod('songs/$songKey/meta.json');
+			if (modPath != null) path = modPath;
+			else
 			{
-				rawData = cast Json.parse(File.getContent(path));
-				meta.raw = rawData;
-				trace('[MetaData] Cargado: $path');
+				final basePath = 'assets/songs/$songKey/meta.json';
+				if (FileSystem.exists(basePath)) path = basePath;
 			}
-			catch (e)
+
+			if (path != null && FileSystem.exists(path))
 			{
-				trace('[MetaData] Error al parsear meta.json de "$songName": $e');
+				try
+				{
+					rawData = cast Json.parse(File.getContent(path));
+					meta.raw = rawData;
+					trace('[MetaData] Cargado meta.json: $path');
+				}
+				catch (e)
+				{
+					trace('[MetaData] Error al parsear meta.json de "$songName": $e');
+				}
+			}
+			else
+			{
+				trace('[MetaData] Sin meta para "$songName", usando GlobalConfig');
 			}
 		}
-		else
-		{
-			trace('[MetaData] Sin meta.json para "$songName", usando GlobalConfig');
-		}
+		#else
+		final legacyPath = 'assets/songs/${songName.toLowerCase()}/meta.json';
+		try { rawData = cast Json.parse(lime.utils.Assets.getText(legacyPath)); } catch (_) {}
+		#end
 
 		meta.ui        = resolveStr(rawData?.ui,       global.ui,       'default');
 		meta.noteSkin  = resolveStr(rawData?.noteSkin, global.noteSkin, 'default');
